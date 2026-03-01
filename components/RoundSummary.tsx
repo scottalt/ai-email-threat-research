@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { RoundResult, GameMode } from '@/lib/types';
 import { getRank } from '@/lib/rank';
+import { updateWeaknessHistory, getWeakPoints } from '@/lib/weakness-tracker';
 
 interface Props {
   score: number;
@@ -32,6 +33,17 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, on
   const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [dailyLeaderboard, setDailyLeaderboard] = useState<{ name: string; score: number }[]>([]);
+  const [weakPoints, setWeakPoints] = useState<{ technique: string; missRate: number; missed: number; attempts: number }[]>([]);
+
+  useEffect(() => {
+    if (mode !== 'research') return;
+    const techniqueResults = results.map((r) => ({
+      technique: (r.card as unknown as Record<string, unknown>).technique as string | null ?? null,
+      correct: r.correct,
+    }));
+    const updated = updateWeaknessHistory(techniqueResults);
+    setWeakPoints(getWeakPoints(updated));
+  }, [mode, results]);
 
   useEffect(() => {
     if (mode !== 'daily') return;
@@ -170,6 +182,27 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, on
           ))}
         </div>
       </div>
+
+      {/* Weakness tracking — research mode only */}
+      {mode === 'research' && weakPoints.length > 0 && (
+        <div className="term-border bg-[#060c06]">
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+            <span className="text-[#00aa28] text-xs tracking-widest">COGNITIVE_BLIND_SPOTS</span>
+          </div>
+          <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+            {weakPoints.map(({ technique, missRate, missed, attempts }) => (
+              <div key={technique} className="flex items-center px-3 py-2 gap-3">
+                <span className="text-[#ff3333] text-xs font-mono flex-1">{technique}</span>
+                <span className="text-[#003a0e] text-[10px] font-mono">{missed}/{attempts}</span>
+                <span className="text-[#ff3333] text-xs font-mono font-bold">{missRate}% miss</span>
+              </div>
+            ))}
+          </div>
+          <div className="px-3 py-2 text-[10px] font-mono text-[#003a0e]">
+            Based on your session history. Stored locally.
+          </div>
+        </div>
+      )}
 
       {/* Leaderboard submission */}
       <div className="term-border bg-[#060c06]">
