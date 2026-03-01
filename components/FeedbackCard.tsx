@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { RoundResult } from '@/lib/types';
+import { highlightBody } from '@/lib/highlightBody';
 
 interface Props {
   result: RoundResult;
@@ -87,6 +88,34 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           <span className="text-[#00ff41] font-black text-sm glow">{totalScore} PTS</span>
           <span className="text-[#00aa28]">STREAK: <span className="text-[#00ff41]">{streak}</span></span>
         </div>
+
+        {/* Message body with highlights */}
+        {wasPhishing && card.highlights && card.highlights.length > 0 && (
+          <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)]">
+            <div className="border-b border-[rgba(255,51,51,0.3)] px-3 py-1.5">
+              <span className="text-[#aa2222] text-xs tracking-widest">MESSAGE_BODY</span>
+            </div>
+            <pre className="px-3 py-3 text-xs text-[#00aa28] font-mono leading-relaxed whitespace-pre-wrap break-words">
+              {highlightBody(card.body, card.highlights).map((seg, i) =>
+                seg.highlighted ? (
+                  <mark
+                    key={i}
+                    style={{
+                      backgroundColor: '#ffaa00',
+                      color: '#060c06',
+                      borderRadius: '2px',
+                      padding: '0 2px',
+                    }}
+                  >
+                    {seg.text}
+                  </mark>
+                ) : (
+                  <span key={i}>{seg.text}</span>
+                )
+              )}
+            </pre>
+          </div>
+        )}
 
         {/* Explanation */}
         <div className="term-border bg-[#060c06]">
