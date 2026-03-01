@@ -119,9 +119,6 @@ export function RoundSummary({ score, total, totalScore, results, onPlayAgain }:
         [ RUN AGAIN ]
       </button>
 
-      <p className="text-center text-[#003a0e] text-xs font-mono">
-        scottaltiparmak.com
-      </p>
     </div>
   );
 }
