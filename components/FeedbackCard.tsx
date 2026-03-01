@@ -89,6 +89,40 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           <span className="text-[#00aa28]">STREAK: <span className="text-[#00ff41]">{streak}</span></span>
         </div>
 
+        {/* Sender recap */}
+        <div className="term-border bg-[#060c06] px-3 py-2 space-y-1">
+          <div className="flex gap-2 text-xs font-mono">
+            <span className="text-[#003a0e] w-10 shrink-0">FROM:</span>
+            <span className="text-[#00aa28] break-all">
+              {wasPhishing && card.highlights?.length
+                ? highlightBody(card.from, card.highlights).map((seg, i) =>
+                    seg.highlighted ? (
+                      <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
+                    ) : (
+                      <span key={i}>{seg.text}</span>
+                    )
+                  )
+                : card.from}
+            </span>
+          </div>
+          {card.subject && (
+            <div className="flex gap-2 text-xs font-mono">
+              <span className="text-[#003a0e] w-10 shrink-0">SUBJ:</span>
+              <span className="text-[#00aa28]">
+                {wasPhishing && card.highlights?.length
+                  ? highlightBody(card.subject, card.highlights).map((seg, i) =>
+                      seg.highlighted ? (
+                        <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
+                      ) : (
+                        <span key={i}>{seg.text}</span>
+                      )
+                    )
+                  : card.subject}
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* Message body with highlights */}
         {wasPhishing && card.highlights && card.highlights.length > 0 && (
           <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)]">
@@ -141,20 +175,6 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
             </ul>
           </div>
         )}
-
-        {/* Sender recap */}
-        <div className="term-border bg-[#060c06] px-3 py-2 space-y-1">
-          <div className="flex gap-2 text-xs font-mono">
-            <span className="text-[#003a0e] w-10 shrink-0">FROM:</span>
-            <span className="text-[#00aa28] break-all">{card.from}</span>
-          </div>
-          {card.subject && (
-            <div className="flex gap-2 text-xs font-mono">
-              <span className="text-[#003a0e] w-10 shrink-0">SUBJ:</span>
-              <span className="text-[#00aa28]">{card.subject}</span>
-            </div>
-          )}
-        </div>
 
         <button
           onClick={onNext}
