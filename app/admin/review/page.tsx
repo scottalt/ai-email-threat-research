@@ -84,16 +84,19 @@ export default function ReviewPage() {
   useEffect(() => { fetchNext(); }, [fetchNext]);
 
   // Keyboard shortcuts
+  const handleActionRef = useRef(handleAction);
+  handleActionRef.current = handleAction;
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === 'a') handleAction('approved');
-      if (e.key === 'r') handleAction('rejected');
-      if (e.key === 'n') handleAction('needs_review');
+      if (e.key === 'a') handleActionRef.current('approved');
+      if (e.key === 'r') handleActionRef.current('rejected');
+      if (e.key === 'n') handleActionRef.current('needs_review');
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
+  }, []);
 
   async function handleAction(action: 'approved' | 'rejected' | 'needs_review') {
     if (!card || submitting) return;

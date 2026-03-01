@@ -4,7 +4,10 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Only protect /admin routes (not /api/admin/login)
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+  const isAdminPage = pathname.startsWith('/admin') && !pathname.startsWith('/admin/login');
+  const isAdminApi = pathname.startsWith('/api/admin') && !pathname.startsWith('/api/admin/login');
+
+  if (isAdminPage || isAdminApi) {
     const token = req.cookies.get('admin_session')?.value;
     const expected = process.env.ADMIN_PASSWORD;
 
@@ -19,5 +22,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/admin/:path*'],
 };
