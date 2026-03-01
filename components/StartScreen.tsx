@@ -68,7 +68,7 @@ export function StartScreen({ onStart }: Props) {
     }
   }, [visibleCount]);
 
-  const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase();
+  const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
 
   return (
     <div className="w-full max-w-sm px-4 flex flex-col gap-6">
