@@ -10,7 +10,13 @@ const SPRING_DAMPING = 24;
 
 interface Props {
   card: Card;
-  onAnswer: (answer: Answer, confidence: Confidence) => void;
+  onAnswer: (answer: Answer, confidence: Confidence, timing?: {
+    timeFromRenderMs: number;
+    timeFromConfidenceMs: number | null;
+    confidenceSelectionTimeMs: number | null;
+    scrollDepthPct: number;
+    answerMethod: 'swipe' | 'button';
+  }) => void;
   questionNumber: number;
   total: number;
   streak: number;
@@ -35,7 +41,7 @@ function analystFace(streak: number): string {
   return '[._.]';
 }
 
-function EmailDisplay({ card }: { card: Card }) {
+function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number) => void }) {
   return (
     <div className="term-border bg-[#060c06] select-none">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
@@ -54,14 +60,21 @@ function EmailDisplay({ card }: { card: Card }) {
           </div>
         )}
       </div>
-      <div className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto font-mono">
+      <div
+        className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto font-mono"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const pct = Math.round(((el.scrollTop + el.clientHeight) / el.scrollHeight) * 100);
+          onScroll?.(pct);
+        }}
+      >
         {card.body}
       </div>
     </div>
   );
 }
 
-function SMSDisplay({ card }: { card: Card }) {
+function SMSDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number) => void }) {
   return (
     <div className="term-border bg-[#060c06] select-none">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
@@ -74,7 +87,14 @@ function SMSDisplay({ card }: { card: Card }) {
           <span className="text-[#00ff41] font-mono">{card.from}</span>
         </div>
       </div>
-      <div className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto font-mono">
+      <div
+        className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto font-mono"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const pct = Math.round(((el.scrollTop + el.clientHeight) / el.scrollHeight) * 100);
+          onScroll?.(pct);
+        }}
+      >
         {card.body}
       </div>
     </div>
@@ -86,6 +106,10 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
   // dragX drives stamp opacity — updated during drag via React state
   const [dragX, setDragX] = useState(0);
   const [flying, setFlying] = useState(false);
+
+  const renderTime          = useRef<number>(Date.now());
+  const confidenceTime      = useRef<number | null>(null);
+  const maxScrollDepth      = useRef<number>(0);
 
   const answered   = useRef(false);
   const dragging   = useRef(false);
@@ -134,13 +158,26 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
     rafId.current = requestAnimationFrame(step);
   }, []);
 
-  function fly(direction: 'left' | 'right', conf: Confidence) {
+  function fly(direction: 'left' | 'right', conf: Confidence, method: 'swipe' | 'button' = 'button') {
     if (answered.current) return;
     answered.current = true;
     cancelAnimationFrame(rafId.current);
     setFlying(true);
-    // CSS transition takes over for the fly-off
-    setTimeout(() => onAnswer(direction === 'left' ? 'phishing' : 'legit', conf), 230);
+    const now = Date.now();
+    const timeFromRender = now - renderTime.current;
+    const timeFromConfidence = confidenceTime.current !== null ? now - confidenceTime.current : null;
+    const confidenceSelectionTime = confidenceTime.current !== null ? confidenceTime.current - renderTime.current : null;
+    setTimeout(() => onAnswer(
+      direction === 'left' ? 'phishing' : 'legit',
+      conf,
+      {
+        timeFromRenderMs: timeFromRender,
+        timeFromConfidenceMs: timeFromConfidence,
+        confidenceSelectionTimeMs: confidenceSelectionTime,
+        scrollDepthPct: maxScrollDepth.current,
+        answerMethod: method,
+      }
+    ), 230);
   }
 
   function getVelocity(): number {
@@ -198,7 +235,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
     const shouldFly = Math.abs(x) > SWIPE_THRESHOLD || Math.abs(vx) > 0.4;
 
     if (shouldFly) {
-      fly(x > 0 || vx > 0 ? 'right' : 'left', confidence);
+      fly(x > 0 || vx > 0 ? 'right' : 'left', confidence, 'swipe');
     } else {
       // Restore transition then spring back
       if (cardRef.current) cardRef.current.style.transition = '';
@@ -208,7 +245,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
 
   function handleButton(answer: Answer) {
     if (!confidence || answered.current) return;
-    fly(answer === 'phishing' ? 'left' : 'right', confidence);
+    fly(answer === 'phishing' ? 'left' : 'right', confidence, 'button');
   }
 
   const progress = ((questionNumber - 1) / total) * 100;
@@ -304,7 +341,10 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
             willChange: 'transform',
           }}
         >
-          {card.type === 'email' ? <EmailDisplay card={card} /> : <SMSDisplay card={card} />}
+          {card.type === 'email'
+            ? <EmailDisplay card={card} onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }} />
+            : <SMSDisplay card={card} onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }} />
+          }
         </div>
       </div>
 
@@ -318,7 +358,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
             {CONFIDENCE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
-                onClick={() => setConfidence(opt.value)}
+                onClick={() => { setConfidence(opt.value); confidenceTime.current = Date.now(); }}
                 className={`flex-1 py-3 term-border font-mono text-xs tracking-wider transition-all active:scale-95 hover:bg-[rgba(0,255,65,0.06)] flex flex-col items-center gap-0.5 ${opt.color}`}
               >
                 <span>{opt.label}</span>
@@ -334,7 +374,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
             {' · '}
             {confidence === 'certain' ? '3x' : confidence === 'likely' ? '2x' : '1x'} PTS
             <button
-              onClick={() => { if (!answered.current) { setConfidence(null); setDragX(0); } }}
+              onClick={() => { if (!answered.current) { setConfidence(null); setDragX(0); confidenceTime.current = null; } }}
               className="ml-3 text-[#003a0e] hover:text-[#00aa28] transition-colors"
             >
               [change]
