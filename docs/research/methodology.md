@@ -13,17 +13,22 @@
 Has the rise of generative AI meaningfully changed phishing email characteristics in ways that reduce human recognition rates — even among security-aware individuals?
 
 Secondary questions:
+- Do emails with high prose fluency, grammar quality, and personalization have higher bypass rates than low-quality traditional phishing?
 - Which social engineering techniques have the highest bypass rate in text-based recognition tasks?
 - Does player confidence level (GUESSING / LIKELY / CERTAIN) correlate with accuracy?
-- Do players who spend more time on a card perform better or worse?
+- Does time-to-decision correlate with accuracy? Do faster answers produce more errors?
+- Does scroll depth affect accuracy? Do players who read the full email perform better?
 - Are email-based phishing attempts harder to detect than SMS-based?
-- Which technique categories are most affected by GenAI augmentation?
+- Do within-session learning effects exist? Do players improve over a 10-card session?
+- Does answer streak create overconfidence on subsequent cards?
 
 ---
 
 ## Hypothesis
 
-GenAI-crafted phishing emails — characterised by fluent prose, contextual awareness, and absence of traditional grammar tells — will have a statistically higher bypass rate in human recognition tasks compared to traditional phishing emails, even among a self-selected security-aware population.
+Primary: Phishing emails exhibiting high prose fluency, grammatical correctness, and contextual personalization — characteristics associated with GenAI generation — will have a statistically higher bypass rate in human recognition tasks compared to low-quality traditional phishing, even among a self-selected security-aware population.
+
+Secondary: Traditional phishing detection heuristics (grammar errors, urgency cues, domain spoofing) are becoming less reliable as GenAI raises the baseline quality of phishing prose.
 
 ---
 
@@ -34,10 +39,11 @@ GenAI-crafted phishing emails — characterised by fluent prose, contextual awar
 - **Phishing:** 600 (60%)
 - **Legitimate:** 400 (40%)
 - **Types:** Email and SMS (v1 is expected to be email-dominant due to corpus availability)
+- **Era:** Post-2023 samples only (GenAI era)
 - **Dataset version:** v1 — frozen once 1,000 cards are approved. No additions without a v2 release.
 
 ### Phishing Sources
-All phishing samples are sourced post-2023 to capture the GenAI era. Sources:
+All phishing samples are sourced post-2023 to capture the GenAI era:
 1. **Personal honeypot** — catch-all email address exposed to phishing campaigns. Primary original data source.
 2. **Any.run public sandbox** — community-submitted malicious email samples, filtered for phishing.
 3. **Malware-traffic-analysis.net** — real phishing samples published for educational use by Brad Duncan.
@@ -56,32 +62,99 @@ Pre-GenAI corpora (Enron, SpamAssassin, Nazario) are excluded by design. The res
 ## Curation Pipeline
 
 ### Stage 1: Import
-Raw emails ingested from each source corpus via Node.js import scripts. Written to `cards_staging` table in Supabase with: raw content, source corpus, import batch ID, deduplication hash (prevents duplicate entries across sources).
+Raw emails ingested from each source corpus via Node.js import scripts. Written to `cards_staging` with: raw content, source corpus, import batch ID, deduplication hash, full parsed email headers JSON, received date from headers, link list, attachment metadata, HTML vs plain text flag, detected language.
 
 ### Stage 2: AI Preprocessing
-Each staging row is processed by a configurable AI model (default: OpenAI GPT-4o, swappable via `AI_PROVIDER` env var). The model:
-1. **Strips PII first** — replaces real names, email addresses, phone numbers, account numbers, and identifying URLs with generic placeholders (`[RECIPIENT NAME]`, `[ACCOUNT NUMBER]`, etc.)
-2. Extracts clean from/subject/body from raw email format
-3. Identifies primary and secondary phishing technique
-4. Assesses whether the email shows GenAI characteristics (`is_genai_suspected`, `genai_confidence: low | medium | high`)
-5. Flags inappropriate content with reason
-6. Drafts a sanitized body alternative for flagged content
-7. Suggests difficulty rating, highlight phrases, analyst clues, and explanation text
+Each staging row is processed by a configurable AI model (default: OpenAI GPT-4o, swappable via `AI_PROVIDER` env var). Steps in order:
 
-The specific model used is stored per row (`ai_model` field) for reproducibility.
+1. **Strip PII first** — replaces real names, email addresses, phone numbers, account numbers, and identifying URLs with generic placeholders (`[RECIPIENT NAME]`, `[ACCOUNT NUMBER]`, etc.) before any other processing.
+2. Extract clean from/subject/body from raw email format.
+3. Identify primary and secondary phishing technique from taxonomy.
+4. **Linguistic quality scores** — assess grammar_quality, prose_fluency, personalization_level, contextual_coherence (each 0–5).
+5. **GenAI assessment** — classify is_genai_suspected and genai_confidence (low/medium/high) based on linguistic characteristics. Record full reasoning in genai_ai_reasoning.
+6. Flag inappropriate content with reason; draft sanitized body alternative.
+7. Suggest difficulty rating, highlight phrases, analyst clues, explanation text.
+
+The specific model and preprocessing prompt version are stored per row for reproducibility.
+
+### Stage 2b: AI Detector Score
+Each email body is independently scored by an AI text detection API (GPTZero or equivalent). Raw score (0–1) stored as `genai_detector_score`. This is a separate signal from the preprocessing model's assessment, providing an independent quantitative measure.
+
+### Stage 2c: Computed Linguistic Metrics
+Programmatically computed from the processed body (no subjectivity):
+- Flesch-Kincaid readability score
+- Average sentence length
+- Sentence length variance (burstiness — lower variance is a GenAI signal)
+- Word count, character count
+- Link count in display body
+- Exclamation mark count, capitalisation ratio (traditional phishing signals)
 
 ### Stage 3: Human Review
-All cards reviewed by Scott Altiparmak via `/admin` review UI before approval. Reviewer:
-- Sees raw content (left) and AI-processed fields (right)
-- Can edit any field inline
-- Marks each card as verbatim (original text preserved post-PII-strip) or adapted (sanitized/rewritten)
-- Assigns final technique tags, difficulty, GenAI assessment
+All cards reviewed by Scott Altiparmak via `/admin` review UI before approval. Reviewer sees:
+- Raw content (left panel)
+- AI-processed fields (right panel, all editable inline)
+- Linguistic metrics computed automatically
+- AI detector score
+- AI's GenAI reasoning
+
+Reviewer actions:
+- Edits any field
+- Confirms or overrides GenAI assessment, records own reasoning in `genai_reviewer_reasoning`
+- Marks verbatim (original text post-PII-strip) or adapted (sanitized/rewritten)
+- Assigns final technique tags, difficulty
 - Approves or rejects
+- Review time is recorded in `review_time_ms`
 
 No card enters the live dataset without human review.
 
 ### Stage 4: Dataset Freeze
-Once `cards_real` reaches 1,000 approved cards, the dataset is frozen as v1. The pipeline is closed for v1. All future collection targets v2.
+Once `cards_real` reaches 1,000 approved cards, the dataset is frozen as v1. The pipeline closes for v1. All future collection targets v2. Freeze event recorded in `dataset_versions` table.
+
+---
+
+## GenAI Classification Methodology
+
+### The Core Problem
+There is no definitive way to prove a phishing email was generated by an AI. No watermark, no metadata field confirms AI origin. All classification is probabilistic.
+
+### Three-Layer Classification
+
+**Layer 1 — AI Detector Score (quantitative, external)**
+Each email body is scored by an independent AI text detection API. Returns a probability (0–1). Imperfect — known false positive and negative rates — but provides a quantitative external signal not produced by the same model doing preprocessing. Stored as `genai_detector_score`.
+
+**Layer 2 — Computed Linguistic Metrics (quantitative, objective)**
+Observable characteristics of the text computed programmatically:
+- Flesch-Kincaid readability (GenAI scores higher)
+- Average sentence length and variance (GenAI has lower variance)
+- Grammar error count (GenAI has fewer)
+- Sentence complexity indicators
+
+These are facts about the text, not assertions about its origin. They are independently verifiable and reproducible.
+
+**Layer 3 — AI Model Assessment + Human Reviewer (qualitative)**
+The preprocessing model evaluates holistic characteristics and records reasoning. The human reviewer sees all three signals and makes the final classification call, recording their own reasoning.
+
+### Final Fields
+- `genai_detector_score` — raw API score (0–1)
+- `grammar_quality` — reviewer/AI assessed (0–5)
+- `prose_fluency` — reviewer/AI assessed (0–5)
+- `personalization_level` — reviewer/AI assessed (0–5)
+- `contextual_coherence` — reviewer/AI assessed (0–5)
+- `is_genai_suspected` — final boolean (human reviewer decision)
+- `genai_confidence` — low / medium / high (reviewer's confidence)
+- `genai_ai_reasoning` — preprocessing model's free-text explanation
+- `genai_reviewer_reasoning` — reviewer's free-text explanation
+
+### Primary Research Framing
+
+The primary analysis uses **observable linguistic characteristics** rather than binary GenAI classification. Research question: do emails with high fluency/personalization/grammar scores have higher bypass rates?
+
+This is more defensible because:
+1. It does not require proving AI origin — only measuring observable text quality
+2. Findings are directly actionable (defenders know what characteristics to watch for)
+3. Results are reproducible against the stored metric scores
+
+The `is_genai_suspected` flag is used as a secondary variable and narrative framing, with confidence levels applied as filters (primary analysis uses medium/high confidence only). Sensitivity analysis runs with and without low-confidence classifications.
 
 ---
 
@@ -89,17 +162,201 @@ Once `cards_real` reaches 1,000 approved cards, the dataset is frozen as v1. The
 
 PII stripping is mandatory and happens as the **first step** of AI preprocessing — before any other analysis. The raw body is never stored in `cards_real`. All PII is replaced with clearly bracketed generic placeholders. Cards marked verbatim have had PII stripped but otherwise retain original wording. Cards marked adapted have been rewritten for content reasons.
 
+The AI preprocessing prompt explicitly instructs the model to strip PII before performing any other task. The reviewer audits for missed PII before approving any card.
+
+---
+
+## Database Schema Overview
+
+### `cards_staging`
+Raw imports plus all preprocessing outputs. Full field list:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | UUID | Primary key |
+| raw_email_hash | TEXT | SHA-256 of raw content for deduplication |
+| import_batch_id | UUID | FK to import_batches |
+| source_corpus | TEXT | Origin source |
+| raw_from | TEXT | |
+| raw_subject | TEXT | |
+| raw_body | TEXT | |
+| email_headers_json | JSONB | Full parsed headers |
+| received_date | TIMESTAMPTZ | From email headers |
+| has_html | BOOLEAN | HTML vs plain text |
+| has_attachments | BOOLEAN | |
+| attachment_count | INT | |
+| attachment_types | TEXT[] | MIME types |
+| link_count | INT | URLs in raw email |
+| links_json | JSONB | Array of URLs found |
+| language_detected | TEXT | ISO language code |
+| inferred_type | TEXT | email / sms |
+| is_phishing | BOOLEAN | Nullable — may be unknown at import |
+| processed_from | TEXT | AI-cleaned sender |
+| processed_subject | TEXT | |
+| processed_body | TEXT | PII-stripped, cleaned |
+| sanitized_body | TEXT | Rewritten version if content flagged |
+| suggested_technique | TEXT | |
+| suggested_secondary_technique | TEXT | |
+| suggested_difficulty | TEXT | |
+| suggested_highlights | TEXT[] | |
+| suggested_clues | TEXT[] | |
+| suggested_explanation | TEXT | |
+| grammar_quality | SMALLINT | 0–5 |
+| prose_fluency | SMALLINT | 0–5 |
+| personalization_level | SMALLINT | 0–5 |
+| contextual_coherence | SMALLINT | 0–5 |
+| genai_detector_score | FLOAT | 0–1 from external API |
+| is_genai_suspected | BOOLEAN | |
+| genai_confidence | TEXT | low / medium / high |
+| genai_ai_assessment | TEXT | low / medium / high |
+| genai_ai_reasoning | TEXT | Model's free-text reasoning |
+| content_flagged | BOOLEAN | |
+| content_flag_reason | TEXT | |
+| ai_provider | TEXT | openai / anthropic |
+| ai_model | TEXT | e.g. gpt-4o |
+| ai_preprocessing_version | TEXT | Prompt version |
+| ai_processed_at | TIMESTAMPTZ | |
+| status | TEXT | pending / approved / rejected / needs_review |
+| reviewed_at | TIMESTAMPTZ | |
+| created_at | TIMESTAMPTZ | |
+
+### `cards_real`
+Approved, curated live dataset. Full field list:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | UUID | Primary key |
+| staging_id | UUID | FK to cards_staging (audit trail) |
+| card_id | TEXT | Unique game ID e.g. real-p-001 |
+| type | TEXT | email / sms |
+| is_phishing | BOOLEAN | |
+| difficulty | TEXT | easy / medium / hard |
+| from_address | TEXT | |
+| subject | TEXT | Nullable |
+| body | TEXT | |
+| body_truncated | BOOLEAN | True if original was cut for UI |
+| word_count | INT | Of displayed body |
+| char_count | INT | Of displayed body |
+| link_count_in_display | INT | |
+| technique | TEXT | Primary technique |
+| secondary_technique | TEXT | Nullable |
+| grammar_quality | SMALLINT | 0–5 |
+| prose_fluency | SMALLINT | 0–5 |
+| personalization_level | SMALLINT | 0–5 |
+| contextual_coherence | SMALLINT | 0–5 |
+| flesch_kincaid_score | FLOAT | Computed readability |
+| avg_sentence_length | FLOAT | |
+| sentence_length_variance | FLOAT | Burstiness measure |
+| genai_detector_score | FLOAT | Carried from staging |
+| is_genai_suspected | BOOLEAN | Final reviewer decision |
+| genai_confidence | TEXT | low / medium / high |
+| genai_ai_reasoning | TEXT | |
+| genai_reviewer_reasoning | TEXT | Reviewer's explanation |
+| is_verbatim | BOOLEAN | True = original post-PII-strip |
+| source_corpus | TEXT | |
+| highlights | TEXT[] | |
+| clues | TEXT[] | |
+| explanation | TEXT | |
+| review_notes | TEXT | Reviewer free text |
+| review_time_ms | INT | Time reviewer spent |
+| ai_model | TEXT | Which model preprocessed |
+| ai_preprocessing_version | TEXT | |
+| dataset_version | TEXT | v1 |
+| approved_at | TIMESTAMPTZ | |
+| created_at | TIMESTAMPTZ | |
+
+### `answers`
+Every answer event from research mode:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | UUID | Primary key |
+| session_id | UUID | Groups answers from same game |
+| card_id | TEXT | |
+| card_source | TEXT | generated / real |
+| is_phishing | BOOLEAN | Ground truth |
+| technique | TEXT | |
+| secondary_technique | TEXT | |
+| is_genai_suspected | BOOLEAN | |
+| genai_confidence | TEXT | |
+| grammar_quality | SMALLINT | Denormalised from card |
+| prose_fluency | SMALLINT | Denormalised from card |
+| personalization_level | SMALLINT | Denormalised from card |
+| contextual_coherence | SMALLINT | Denormalised from card |
+| difficulty | TEXT | |
+| type | TEXT | email / sms |
+| user_answer | TEXT | phishing / legit |
+| correct | BOOLEAN | |
+| confidence | TEXT | guessing / likely / certain |
+| time_from_render_ms | INT | Card shown → answer submitted |
+| time_from_confidence_ms | INT | Confidence selected → answer submitted |
+| confidence_selection_time_ms | INT | Card shown → confidence selected |
+| scroll_depth_pct | SMALLINT | 0–100 |
+| answer_method | TEXT | swipe / button |
+| answer_ordinal | SMALLINT | Position in session (1–10) |
+| streak_at_answer_time | SMALLINT | Player's streak at time of answer |
+| correct_count_at_time | SMALLINT | Correct answers so far in session |
+| game_mode | TEXT | research / training |
+| is_daily_challenge | BOOLEAN | |
+| dataset_version | TEXT | v1 |
+| created_at | TIMESTAMPTZ | |
+
+### `sessions`
+Session-level data (one row per game played):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| session_id | UUID | Primary key |
+| game_mode | TEXT | research / training |
+| is_daily_challenge | BOOLEAN | |
+| started_at | TIMESTAMPTZ | |
+| completed_at | TIMESTAMPTZ | Null if abandoned |
+| cards_answered | SMALLINT | May be < 10 if abandoned |
+| final_score | INT | |
+| final_rank | TEXT | |
+| device_type | TEXT | mobile / tablet / desktop |
+| viewport_width | SMALLINT | |
+| viewport_height | SMALLINT | |
+| referrer | TEXT | Where traffic came from |
+
+### `import_batches`
+Tracks each corpus import run:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| batch_id | UUID | Primary key |
+| source_corpus | TEXT | |
+| import_date | TIMESTAMPTZ | |
+| raw_count | INT | Emails imported |
+| processed_count | INT | AI preprocessed |
+| approved_count | INT | Approved by reviewer |
+| rejected_count | INT | |
+| notes | TEXT | |
+
+### `dataset_versions`
+Version registry:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| version | TEXT | v1, v2 etc. |
+| locked_at | TIMESTAMPTZ | Null until frozen |
+| total_cards | INT | |
+| phishing_count | INT | |
+| legit_count | INT | |
+| description | TEXT | |
+
 ---
 
 ## Data Collection (Gameplay)
 
-Player answers are collected anonymously via the Retro Phish game in **Research Mode**. Each answer event records:
-- Card ID, technique, is_genai_suspected, difficulty, type (email/SMS)
-- Player's answer (phishing/legit), whether correct
-- Confidence level (GUESSING / LIKELY / CERTAIN)
-- Time spent on card (ms) — from card render to answer submission
-- Session ID (UUID generated per game session, not persisted)
-- Game mode (research/training)
+Player answers collected anonymously in Research Mode. The session UUID is generated at game start, held in memory only, never persisted to localStorage or cookies.
+
+Timing measurements:
+- `time_from_render_ms` — from card first render to answer submission
+- `time_from_confidence_ms` — from confidence selection to answer submission (pure decision deliberation)
+- `confidence_selection_time_ms` — from card render to confidence selection (how long before committing to a confidence level)
+
+Scroll depth tracked via IntersectionObserver on the card body — records the maximum scroll percentage reached before answering.
 
 No personally identifiable information is collected. No accounts, no IP storage, no cookies beyond session state.
 
@@ -111,59 +368,77 @@ Players are informed via the game UI that answers in Research Mode contribute to
 ## Sample Characteristics and Limitations
 
 ### Self-Selected Sample
-Players who seek out a retro phishing awareness game are likely more security-aware than the general population. Results should be interpreted in the context of a **security-aware population**, not general users. This is noted as a limitation but also a feature: if even security-aware individuals show elevated bypass rates for GenAI phishing, the finding is conservative and stronger.
+Players who seek out a retro phishing awareness game are likely more security-aware than the general population. Results should be interpreted in the context of a **security-aware population**, not general users. This is a limitation but also a conservative bias — if even security-aware individuals show elevated bypass rates for high-quality phishing, the finding is stronger than a general population result.
 
 ### Text-Based Presentation
-The terminal interface strips all visual design cues (logos, branding, CSS styling). Real-world phishing detection in Gmail or Outlook also involves visual anomalies. Results reflect **text-based, linguistic phishing recognition** — not full email client simulation. This is a documented limitation.
+The terminal interface strips all visual design cues (logos, branding, CSS styling). Results reflect **text-based, linguistic phishing recognition** — not full email client simulation.
 
-This limitation is partially offset by the research focus: GenAI's primary advantage over traditional phishing is *text quality*, not visual design. Testing linguistic cues in isolation is appropriate for the GenAI research question.
+This limitation is partially offset by the research focus: GenAI's primary advantage over traditional phishing is text quality, not visual design. Testing linguistic cues in isolation is appropriate for the GenAI research question.
+
+### GenAI Classification Uncertainty
+GenAI classification is probabilistic, not definitive. Primary analysis uses observable linguistic characteristics (fluency, grammar, personalization scores) rather than binary AI/non-AI classification. Where `is_genai_suspected` is used, only medium/high confidence classifications are included in primary analysis. Sensitivity analysis disclosed in paper.
 
 ### SMS Coverage
-v1 is expected to be email-dominant. Public post-2023 smishing corpora are limited. SMS card count will be reported transparently.
+v1 is expected to be email-dominant. Public post-2023 smishing corpora are limited. SMS card count reported transparently.
 
 ### Synthetic Legitimate Emails
-Where synthetic legitimate emails are used, they are clearly labeled as synthetic in the dataset and disclosed in methodology. The research question concerns phishing detection; legitimate emails serve as foils.
+Where synthetic legitimate emails are used, they are clearly labeled as synthetic in the dataset and disclosed in methodology.
 
 ---
 
 ## Analysis Plan
 
-### Primary Analysis
-- GenAI phishing bypass rate vs. traditional phishing bypass rate (the headline finding)
-- Breakdown by technique category
-- Breakdown by difficulty
-- Breakdown by type (email vs SMS)
+### Primary Analysis — Linguistic Characteristics vs. Bypass Rate
+- Bypass rate segmented by prose_fluency score (0–5)
+- Bypass rate segmented by grammar_quality score (0–5)
+- Bypass rate segmented by personalization_level score (0–5)
+- Composite high-quality phishing (all three scores ≥ 4) vs. low-quality (all three ≤ 2)
+- Flesch-Kincaid readability correlation with bypass rate
 
-### Secondary Analysis
-- Confidence calibration: are CERTAIN answers more accurate? Does this hold for GenAI phishing?
-- Time-to-decision analysis: does longer deliberation improve accuracy?
-- Streak effects: does answer streak correlate with accuracy on subsequent cards?
-- Within-session learning: do players improve over a 10-card session?
+### Secondary Analysis — GenAI Classification
+- Bypass rate: is_genai_suspected = true (medium/high confidence only) vs. false
+- Sensitivity analysis including low-confidence classifications
+- GenAI detector score (continuous) correlation with bypass rate
 
-### Dataset Descriptive Statistics
+### Technique Analysis
+- Bypass rate by primary technique category
+- GenAI-associated techniques (hyper-personalization, fluent-prose) vs. traditional (grammar-tells, urgency)
+
+### Player Behaviour Analysis
+- Confidence calibration: CERTAIN vs. LIKELY vs. GUESSING accuracy
+- Time-to-decision: does longer deliberation improve accuracy?
+- Scroll depth: does reading the full card improve accuracy?
+- Answer ordinal: within-session learning curve (position 1–10)
+- Streak effect: does streak correlate with accuracy on subsequent cards?
+- Answer method: swipe vs. button — any accuracy difference?
+
+### Descriptive Statistics
 - Technique distribution across phishing cards
-- GenAI classification distribution and confidence breakdown
+- GenAI score distributions (detector score, linguistic scores)
 - Source corpus breakdown
-- Verbatim vs adapted breakdown
+- Verbatim vs. adapted breakdown
+- Import batch yield rates (imported → approved)
 
 ---
 
 ## Technique Taxonomy
 
-Phishing technique labels used in the dataset:
-
 | Label | Description |
 |-------|-------------|
-| `urgency` | Creates false time pressure or threat of account loss |
-| `domain-spoofing` | Uses lookalike domains (paypa1.com, secure-chase.net) |
+| `urgency` | False time pressure or threat of account loss |
+| `domain-spoofing` | Lookalike domains (paypa1.com, secure-chase.net) |
 | `authority-impersonation` | Impersonates IT, management, government, or known brand |
 | `grammar-tells` | Traditional phishing: poor grammar, awkward phrasing |
-| `hyper-personalization` | Uses recipient's name, role, or context convincingly (GenAI indicator) |
-| `fluent-prose` | Polished, natural language with no traditional tells (GenAI indicator) |
+| `hyper-personalization` | Uses recipient name, role, or context convincingly (GenAI indicator) |
+| `fluent-prose` | Polished natural language with no traditional tells (GenAI indicator) |
 | `reward-prize` | Fake prize, refund, or benefit as lure |
 | `it-helpdesk` | Impersonates internal IT support |
 | `credential-harvest` | Explicit credential request or login page redirect |
 | `invoice-fraud` | Fake invoice or payment request |
+| `pretexting` | Builds a false scenario or relationship before the ask |
+| `quishing` | QR code phishing — lure to scan a code |
+| `callback-phishing` | Asks recipient to call a number (vishing hybrid) |
+| `multi-stage` | Establishes rapport across multiple messages before the phish |
 
 Cards may have a primary and secondary technique.
 
@@ -171,8 +446,8 @@ Cards may have a primary and secondary technique.
 
 ## Publication Plan
 
-1. **Public analytics page** (`/intel`) — live aggregate findings, always current, citable URL
-2. **Blog post** (scottaltiparmak.com) — "State of Phishing in the GenAI Era" — detailed write-up with methodology, findings, and implications. Published once sufficient answer data collected.
+1. **Public analytics page** (`/intel`) — live aggregate findings, always current, citable URL. Methodology note links to this document.
+2. **Blog post** (scottaltiparmak.com) — "State of Phishing in the GenAI Era" — detailed write-up with methodology, findings, and implications. Published once sufficient answer data collected (target: 10,000+ answer events).
 3. **Potential journal submission** — mid-tier security awareness or human factors venue. Methodology section references this document.
 
 ---
@@ -181,4 +456,5 @@ Cards may have a primary and secondary technique.
 
 | Version | Date | Notes |
 |---------|------|-------|
-| 0.1 | 2026-03-01 | Initial methodology draft — pre-collection |
+| 0.1 | 2026-03-01 | Initial methodology draft |
+| 0.2 | 2026-03-01 | Full schema, GenAI classification methodology, three-layer approach, characteristics-based primary analysis, expanded technique taxonomy, complete answer/session fields |
