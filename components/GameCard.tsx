@@ -241,7 +241,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
           <span className="text-[#00aa28]">PTS:<span className="text-[#00ff41] glow">{totalScore}</span></span>
           <button
             onClick={onToggleSound}
-            className={`font-mono text-[10px] transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+            className={`font-mono text-[10px] transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#00aa28]'}`}
           >
             {soundEnabled ? '[SFX]' : '[SFX OFF]'}
           </button>
