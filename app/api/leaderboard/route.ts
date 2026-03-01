@@ -13,8 +13,12 @@ function isClean(name: string): boolean {
   return !BAD_WORDS.some((w) => lower.includes(w));
 }
 
-export async function GET() {
-  const results = await redis.zrange(KEY, 0, 19, {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const date = searchParams.get('date');
+  const key = date ? `leaderboard:daily:${date}` : KEY;
+
+  const results = await redis.zrange(key, 0, 19, {
     rev: true,
     withScores: true,
   }) as (string | number)[];
@@ -31,7 +35,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { name, score } = await req.json();
+    const { name, score, date } = await req.json();
+    const key = date ? `leaderboard:daily:${date}` : KEY;
 
     if (!name || typeof name !== 'string') {
       return NextResponse.json({ error: 'Name required' }, { status: 400 });
@@ -52,7 +57,11 @@ export async function POST(req: Request) {
     }
 
     const member = `${trimmed}:${Date.now()}`;
-    await redis.zadd(KEY, { score, member });
+    await redis.zadd(key, { score, member });
+
+    if (date) {
+      await redis.expire(key, 60 * 60 * 24 * 7);
+    }
 
     return NextResponse.json({ ok: true });
   } catch {
