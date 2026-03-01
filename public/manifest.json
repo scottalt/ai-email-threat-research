@@ -1,7 +1,7 @@
 {
-  "name": "Phish or Not",
-  "short_name": "PhishOrNot",
-  "description": "Can you spot a phishing attempt? A security awareness game.",
+  "name": "Retro Phish",
+  "short_name": "Retro Phish",
+  "description": "Can you spot a phishing attempt? A retro security awareness game.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",

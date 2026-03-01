@@ -9,17 +9,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Phish or Not',
-  description: 'Can you spot a phishing attempt? A security awareness game.',
+  title: 'Retro Phish',
+  description: 'Can you spot a phishing attempt? A retro security awareness game.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Phish or Not',
+    title: 'Retro Phish',
   },
   openGraph: {
-    title: 'Phish or Not',
-    description: 'Can you spot a phishing attempt? A security awareness game.',
+    title: 'Retro Phish',
+    description: 'Can you spot a phishing attempt? A retro security awareness game.',
     type: 'website',
   },
 };
