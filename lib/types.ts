@@ -13,6 +13,7 @@ export interface Card {
   body: string;
   clues: string[];
   explanation: string;
+  highlights?: string[];
 }
 
 export interface RoundResult {
