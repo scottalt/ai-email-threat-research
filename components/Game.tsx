@@ -7,6 +7,8 @@ import { FeedbackCard } from './FeedbackCard';
 import { RoundSummary } from './RoundSummary';
 import { StartScreen } from './StartScreen';
 import type { Card, Answer, Confidence, RoundResult, GameMode } from '@/lib/types';
+import { useSoundEnabled } from '@/lib/useSoundEnabled';
+import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
 
 const ROUND_SIZE = 10;
 const BASE_POINTS = 100;
@@ -29,6 +31,7 @@ export function Game() {
   const [totalScore, setTotalScore] = useState(0);
   const [mode, setMode] = useState<GameMode>('freeplay');
   const [dailyResult, setDailyResult] = useState<{ score: number; totalScore: number } | null>(null);
+  const { soundEnabled, toggleSound } = useSoundEnabled();
 
   function getToday(): string {
     const d = new Date();
@@ -78,6 +81,13 @@ export function Game() {
     setResults((prev) => [...prev, result]);
     setStreak(newStreak);
     setTotalScore((prev) => prev + pointsEarned);
+
+    if (soundEnabled) {
+      if (streakBonus > 0) playStreak();
+      else if (correct) playCorrect();
+      else playWrong();
+    }
+
     setPhase('feedback');
   }
 
@@ -166,6 +176,8 @@ export function Game() {
         total={ROUND_SIZE}
         streak={streak}
         totalScore={totalScore}
+        soundEnabled={soundEnabled}
+        onToggleSound={toggleSound}
       />
     );
   }
