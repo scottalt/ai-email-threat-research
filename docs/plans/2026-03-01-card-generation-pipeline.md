@@ -1,0 +1,816 @@
+# Card Generation Pipeline — Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Build the AI card generation script and prompt templates that populate `cards_staging` with 550 phishing and legitimate cards for the Retro Phish v1 research dataset.
+
+**Architecture:** CLI script (`scripts/generate-cards.ts`) reads prompt templates from `docs/prompts/`, calls the OpenAI API (GPT-4o) to generate batches of cards as structured JSON, validates them, and inserts them into `cards_staging`. The admin review UI (`/admin/review`, already built) processes them from there. Generation is per-technique per-difficulty — run the script once per combination.
+
+**Tech Stack:** ts-node, dotenv, openai SDK ^6.x, @supabase/supabase-js, Node.js fs
+
+---
+
+## What is already built (do NOT rebuild)
+
+These are complete and working. Read them for context, do not modify unless a task says to:
+
+- `/admin`, `/admin/login`, `/admin/review` — full admin UI with keyboard shortcuts (A=approve, R=reject, N=needs_review)
+- `middleware.ts` — protects `/admin/*` routes with cookie-based auth (`ADMIN_PASSWORD` env var)
+- `app/api/admin/review/route.ts` — GET (next pending card) + POST (approve → inserts to `cards_real`)
+- `app/api/admin/stats/route.ts` — dashboard stats (has a bug: `targetCards: 1000`, fix in Task 5)
+- `app/api/cards/research/route.ts` — serves cards from `cards_real` to research mode game
+- `app/api/answers/route.ts` — logs research mode answer events to `answers` table
+- `app/api/intel/route.ts` + `app/intel/page.tsx` — public analytics page
+- `components/Game.tsx` — research mode game flow fully wired
+- `lib/types.ts` — `ResearchCard`, `AnswerEvent`, `SessionPayload` types
+- `lib/supabase.ts` — `getSupabaseClient()` and `getSupabaseAdminClient()`
+- Supabase schema already deployed: `cards_staging`, `cards_real`, `answers`, `sessions`, `import_batches`, `dataset_versions`
+- OpenAI SDK (`openai ^6.x`) and Anthropic SDK already installed
+
+---
+
+## Generation overview
+
+Run the script 21 times to generate the full dataset:
+
+**Phishing (360 cards):** 6 techniques × 3 difficulty levels × 20 cards each
+```bash
+for technique in urgency authority-impersonation credential-harvest hyper-personalization pretexting fluent-prose; do
+  for difficulty in easy medium hard; do
+    npx ts-node -r dotenv/config scripts/generate-cards.ts --technique $technique --difficulty $difficulty --count 20
+  done
+done
+```
+
+**Legitimate (190 cards):**
+```bash
+npx ts-node -r dotenv/config scripts/generate-cards.ts --category transactional --count 70
+npx ts-node -r dotenv/config scripts/generate-cards.ts --category marketing --count 60
+npx ts-node -r dotenv/config scripts/generate-cards.ts --category workplace --count 60
+```
+
+Then review all 550 cards in `/admin/review`.
+
+---
+
+## Task 1: Create docs/prompts/system.md
+
+**Files:**
+- Create: `docs/prompts/system.md`
+
+**Step 1: Create the file**
+
+Create `docs/prompts/system.md` with exactly this content:
+
+```
+You are generating fictional phishing and legitimate email samples for a cybersecurity awareness training game. All content is educational — generated solely to help people learn to identify phishing.
+
+Rules:
+- All personal names, companies, and email addresses are fictional
+- Use plausible but made-up names: John Smith, Sarah Chen, Michael Okafor, etc.
+- Use plausible but made-up company names: Acme Corp, TechFlow Inc, Meridian Health, Cascade Finance, etc.
+- Never use real company domains for phishing senders — use lookalike patterns: paypal-secure.net, accounts-google.com, support-microsoft.help, etc.
+- For legitimate emails, use realistic sender patterns: noreply@techflow.io, support@meridianhealth.com, it@acmecorp.com
+- Grammar and spelling must be perfect in all emails
+- Body length: 60–250 words for email, 20–80 words for SMS
+- Vary industry context, sender role, and scenario across cards in the same batch — do not repeat the same context
+
+Output format — always return a valid JSON object with a "cards" array:
+{
+  "cards": [
+    {
+      "from": "Sender Name <email@domain.com>",
+      "subject": "Subject line",
+      "body": "Full message body in plain text",
+      "highlights": ["exact phrase to mark as notable", "another phrase"],
+      "clues": ["security analyst note about this phrase", "note about another element"],
+      "explanation": "One clear paragraph explaining why this is or is not phishing and what the key indicators are."
+    }
+  ]
+}
+
+For phishing cards:
+- highlights: exact phrases from the body that are red flags (suspicious domain, urgency language, credential request, etc.)
+- clues: security analyst observations — what each highlighted element reveals
+- explanation: clearly explain why this is phishing and what technique is being used
+
+For legitimate cards:
+- highlights: phrases that establish legitimacy (e.g., "this email was sent because you requested a password reset", transactional detail like an order number)
+- clues: note what makes this email trustworthy despite any elements that might superficially resemble phishing
+- explanation: explain why this is legitimate, acknowledge what a player might mistake for phishing, and clarify why it isn't
+
+For SMS: set "subject" to null.
+```
+
+**Step 2: Commit**
+
+```bash
+git add docs/prompts/system.md
+git commit -m "docs: add generation system prompt"
+```
+
+---
+
+## Task 2: Create docs/prompts/phishing/ technique files
+
+**Files:**
+- Create: `docs/prompts/phishing/urgency.md`
+- Create: `docs/prompts/phishing/authority-impersonation.md`
+- Create: `docs/prompts/phishing/credential-harvest.md`
+- Create: `docs/prompts/phishing/hyper-personalization.md`
+- Create: `docs/prompts/phishing/pretexting.md`
+- Create: `docs/prompts/phishing/fluent-prose.md`
+
+**Step 1: Create docs/prompts/phishing/urgency.md**
+
+```
+TECHNIQUE: urgency
+
+Definition: Creates false time pressure or threatens immediate negative consequences to prevent careful analysis. The goal is to make the recipient act before thinking.
+
+Difficulty calibration:
+- Easy: Urgency language is explicit and prominent ("Act within 24 hours or your account will be permanently deleted", "IMMEDIATE ACTION REQUIRED"). Sender domain is suspicious. The urgency is disproportionate to the stated cause.
+- Medium: Urgency is present but professional in tone ("We've placed a temporary hold on your account pending verification"). Context is plausible. Sender domain looks legitimate at first glance.
+- Hard: Urgency is subtle and embedded in routine-sounding correspondence. Time pressure feels natural ("Our systems will undergo scheduled maintenance on Friday — please update your payment method before then"). No obvious red flags — requires careful analysis to spot.
+
+Generation notes:
+- Easy: Include urgency keywords in caps or with exclamation marks, use a clearly suspicious domain
+- Medium: Professional tone, make the urgency feel like a service-protection measure
+- Hard: Urgency should feel routine. The harder the card, the less it should read like phishing on first pass.
+- Vary the context: banking, subscription services, email accounts, cloud storage, HR systems
+```
+
+**Step 2: Create docs/prompts/phishing/authority-impersonation.md**
+
+```
+TECHNIQUE: authority-impersonation
+
+Definition: Impersonates a trusted authority — IT department, senior management, government agency, or well-known brand — to bypass skepticism through perceived legitimacy.
+
+Difficulty calibration:
+- Easy: Authority figure is plausible but sender domain is wrong (support@apple-secure.net vs. apple.com). Uses generic addressing ("Dear Customer"). Brand or role is obviously copied without specific detail.
+- Medium: Sender name and branding match the authority convincingly. Domain looks legitimate at casual glance. References specific products or services the recipient would have.
+- Hard: Highly specific internal-sounding language. If impersonating IT: references real-sounding system names, ticket numbers, policies. If impersonating a brand: uses exact-sounding product names and account details. Very difficult to distinguish from genuine communication on first read.
+
+Generation notes:
+- Vary authority types across cards: IT helpdesk, C-suite executive, bank, government agency, cloud service
+- For easy: make the domain obviously off (misspelling, added words like "support-" or "-secure")
+- For hard: domain may look correct at first glance — subtle tricks (extra subdomain prefix, one character transposition)
+```
+
+**Step 3: Create docs/prompts/phishing/credential-harvest.md**
+
+```
+TECHNIQUE: credential-harvest
+
+Definition: Requests the recipient's login credentials, password, or access token — either directly or via a link to a fake login page.
+
+Difficulty calibration:
+- Easy: Direct and explicit request ("Please click here to reset your password" or "Verify your account by entering your credentials below"). Obvious that the email is asking for credentials.
+- Medium: Framed as a security measure or account protection ("To protect your account, we've temporarily restricted access. Click below to verify your identity"). The credential request is justified by a plausible context.
+- Hard: Credential request is embedded in a multi-step workflow. The ask feels like an expected step in a normal process (e.g., multi-factor re-authentication for a system upgrade, reactivating SSO access). Very low alarm level.
+
+Generation notes:
+- Vary the service being impersonated: corporate email, banking, HR system, cloud storage, corporate VPN
+- The link text should look legitimate (not "click here" — use realistic anchor text like "Verify Account" or "Complete Setup")
+- For hard cards: the credential ask should be one natural step in a longer, plausible process
+```
+
+**Step 4: Create docs/prompts/phishing/hyper-personalization.md**
+
+```
+TECHNIQUE: hyper-personalization
+
+Definition: Uses specific personal context — recipient's name, company, role, team, current project, or recent events — to build false credibility. This is a primary GenAI differentiator.
+
+Difficulty calibration:
+- Easy: Uses recipient name only. Generic role references ("as a member of the IT team"). Personalization is surface-level.
+- Medium: References name, company, and role naturally. May reference department or job function. Feels more personal than a template but details are generic enough to fit any employee in that role.
+- Hard: References specific-sounding project names, internal systems, team members, or recent events. Creates the impression that only someone with real insider access could have sent this email.
+
+Generation notes:
+- Create fictional but realistic personal contexts: "Hi Sarah — following up on the Q1 security audit we discussed last week"
+- For hard cards: the personalization details should feel impossibly specific — as if the sender has real access to internal information
+- Recipient roles to vary: senior analyst, project manager, finance director, software engineer, HR coordinator
+- Company types: tech company, financial services, healthcare, law firm, manufacturing
+```
+
+**Step 5: Create docs/prompts/phishing/pretexting.md**
+
+```
+TECHNIQUE: pretexting
+
+Definition: Creates a detailed false scenario or narrative to make the eventual request seem natural and necessary. The pretext establishes context that logically justifies the ask.
+
+Difficulty calibration:
+- Easy: The scenario is thin (1–2 sentences of setup) and the ask is obvious and comes quickly. The story is implausible or too generic.
+- Medium: Two-paragraph setup with a plausible business scenario. The ask follows logically from the scenario. Requires reading the whole email to understand the request.
+- Hard: Full-narrative email that reads like routine business correspondence. The scenario is detailed, internally consistent, and highly plausible. The ask — credentials, payment action, sensitive information — feels like the obvious next step in the described process.
+
+Generation notes:
+- Common pretexting scenarios: vendor onboarding, contract renewal, compliance audit, IT system migration, benefits enrollment, quarterly reconciliation
+- For hard cards: give the pretext enough specific detail that it feels like a real ongoing business relationship
+- The ask should be proportionate to the pretext — a vendor relationship might request a wire transfer, an IT audit might request VPN credentials
+```
+
+**Step 6: Create docs/prompts/phishing/fluent-prose.md**
+
+```
+TECHNIQUE: fluent-prose
+
+Definition: Phishing delivered through polished, grammatically perfect, naturally-flowing language with none of the traditional tells. This is the GenAI quality-floor technique — the email is indistinguishable from professional correspondence in tone and quality.
+
+Difficulty calibration:
+- Easy: The phishing intent is detectable on careful reading — a suspicious link, an unusual ask, or a mismatched context — but the language quality is high throughout.
+- Medium: The phishing angle requires careful second reading to spot. Natural professional language with no red flags in tone, grammar, or word choice.
+- Hard: Passes a casual read as completely legitimate. The phishing mechanism (malicious link, credential ask, or urgency) is so well-integrated into plausible correspondence that only systematic red-flag analysis reveals it. A player's natural trust in polished prose works against them.
+
+Generation notes:
+- This technique must always include one actual phishing mechanism (suspicious link, credential ask, urgency, or authority claim) — the technique is about HOW it's delivered, not removing the phishing element entirely
+- Every card must have perfect grammar, natural transitions, appropriate vocabulary for context, and authentic professional tone
+- For hard cards: the phishing mechanism should be embedded in a perfectly reasonable-sounding email — a link to "update payment details" in an otherwise routine invoice email, for example
+- Contexts that work well: vendor invoices, IT service updates, HR policy updates, finance approvals
+```
+
+**Step 7: Commit**
+
+```bash
+git add docs/prompts/phishing/
+git commit -m "docs: add phishing technique prompt templates (6 techniques)"
+```
+
+---
+
+## Task 3: Create docs/prompts/legitimate/ category files
+
+**Files:**
+- Create: `docs/prompts/legitimate/transactional.md`
+- Create: `docs/prompts/legitimate/marketing.md`
+- Create: `docs/prompts/legitimate/workplace.md`
+
+**Step 1: Create docs/prompts/legitimate/transactional.md**
+
+```
+CATEGORY: transactional (legitimate)
+
+Definition: Routine automated emails that the recipient is expecting or would receive in the normal course of using a service. These are NOT phishing.
+
+Types to generate (vary across cards):
+- Order confirmations: "Your order #12847 has been placed"
+- Shipping notifications: "Your package is out for delivery"
+- Payment receipts: "Receipt for your subscription renewal"
+- Password reset confirmations: "Your password was changed successfully"
+- Account statements: "Your monthly statement is ready to view"
+- Booking confirmations: flights, hotels, restaurants, appointments
+- Service activation/renewal confirmations
+
+Quality requirements:
+- Must feel like emails from real automated systems — transactional language, reference numbers, dates
+- Include appropriate order numbers, tracking numbers, amounts — all fictional but realistic-looking
+- No urgency, no credential requests, no suspicious links
+- highlights: note transactional signals that establish legitimacy (reference numbers, "No action required", expected formatting)
+- clues: explain what makes each element trustworthy
+- explanation: acknowledge why a player might initially suspect this (it mentions an account, it has numbers) and clearly explain why it is legitimate
+```
+
+**Step 2: Create docs/prompts/legitimate/marketing.md**
+
+```
+CATEGORY: marketing (legitimate)
+
+Definition: Promotional emails from companies and services that are genuinely informational or promotional, not deceptive. These are NOT phishing.
+
+Types to generate (vary across cards):
+- Product announcements: "Introducing our new analytics dashboard"
+- Sales promotions: "This weekend only: 30% off annual plans"
+- Event invitations: "Join us for our annual user conference"
+- Newsletter updates: "What's new in [Product] this month"
+- Webinar invitations: "Register for our security best practices webinar"
+- Partnership announcements
+- Service and policy updates
+
+Quality requirements:
+- Promotional but not deceptive — no fake urgency, no false scarcity beyond normal marketing language
+- Sender should clearly match the company being promoted
+- highlights: note what distinguishes legitimate marketing (unsubscribe link reference, clear company identity, no credential request, promotional context is clearly labeled)
+- clues: note what a security-minded player would observe to confirm legitimacy
+- explanation: note why this is legitimate despite being promotional content
+```
+
+**Step 3: Create docs/prompts/legitimate/workplace.md**
+
+```
+CATEGORY: workplace (legitimate)
+
+Definition: Internal or professional communications that employees receive as part of normal work. These are NOT phishing, but they often superficially resemble phishing because they come from IT, HR, or management and may request actions.
+
+Types to generate (vary across cards):
+- IT notifications: "Scheduled maintenance tonight 11pm–1am EST"
+- HR updates: "Annual benefits enrollment opens Monday"
+- Meeting invitations: "Q2 planning session — please confirm attendance"
+- Project status updates: "Update on the infrastructure migration project"
+- Compliance requirements: "Required: Complete your annual security training by Friday"
+- System access notifications: "Your VPN access certificate has been renewed"
+- Policy updates: "Updated remote work policy effective March 1"
+
+Quality requirements:
+- Must feel authentically internal — reference job functions, systems, processes that employees actually use
+- Can request actions (complete training, confirm attendance, update profile) — but the actions are legitimate and proportionate
+- This is the highest false-positive risk category — players frequently flag these as phishing
+- highlights: note the elements that confirm legitimacy (sender domain is internal, action is proportionate and routine, contact information is provided for verification)
+- clues: specifically explain why this is not phishing despite requesting action
+- explanation: clearly explain what distinguishes this legitimate workplace email from phishing that uses similar patterns (IT, HR, management impersonation)
+```
+
+**Step 4: Commit**
+
+```bash
+git add docs/prompts/legitimate/
+git commit -m "docs: add legitimate category prompt templates (3 categories)"
+```
+
+---
+
+## Task 4: Write scripts/generate-cards.ts
+
+**Files:**
+- Create: `scripts/generate-cards.ts`
+
+**Step 1: Write the script**
+
+Create `scripts/generate-cards.ts`:
+
+```typescript
+/**
+ * Generate Cards Script
+ *
+ * Generates phishing or legitimate email cards using GPT-4o and writes them
+ * to cards_staging for admin review.
+ *
+ * Usage:
+ *   # Phishing cards
+ *   npx ts-node -r dotenv/config scripts/generate-cards.ts \
+ *     --technique urgency --difficulty easy --count 20
+ *
+ *   # Legitimate cards
+ *   npx ts-node -r dotenv/config scripts/generate-cards.ts \
+ *     --category transactional --count 20
+ *
+ *   # Dry run (prints JSON, no database writes)
+ *   npx ts-node -r dotenv/config scripts/generate-cards.ts \
+ *     --technique urgency --difficulty easy --count 3 --dry-run
+ */
+
+import fs from 'fs';
+import path from 'path';
+import { createClient } from '@supabase/supabase-js';
+import OpenAI from 'openai';
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const MODEL_ID = 'gpt-4o';
+const GENERATION_VERSION = '1.0';
+
+const PHISHING_TECHNIQUES = [
+  'urgency',
+  'authority-impersonation',
+  'credential-harvest',
+  'hyper-personalization',
+  'pretexting',
+  'fluent-prose',
+] as const;
+
+const LEGITIMATE_CATEGORIES = ['transactional', 'marketing', 'workplace'] as const;
+
+// ---------------------------------------------------------------------------
+// Supabase client
+// ---------------------------------------------------------------------------
+
+function getAdminClient() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY env vars');
+  return createClient(url, key);
+}
+
+// ---------------------------------------------------------------------------
+// Arg parsing
+// ---------------------------------------------------------------------------
+
+function getArg(flag: string): string | null {
+  const idx = process.argv.indexOf(flag);
+  return idx !== -1 ? process.argv[idx + 1] ?? null : null;
+}
+
+function hasFlag(flag: string): boolean {
+  return process.argv.includes(flag);
+}
+
+// ---------------------------------------------------------------------------
+// Prompt loading
+// ---------------------------------------------------------------------------
+
+function loadFile(relativePath: string): string {
+  const filePath = path.join(__dirname, '..', relativePath);
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
+  return fs.readFileSync(filePath, 'utf-8');
+}
+
+// ---------------------------------------------------------------------------
+// Card types
+// ---------------------------------------------------------------------------
+
+interface GeneratedCard {
+  from: string;
+  subject: string | null;
+  body: string;
+  highlights: string[];
+  clues: string[];
+  explanation: string;
+}
+
+// ---------------------------------------------------------------------------
+// Generation
+// ---------------------------------------------------------------------------
+
+async function generateCards(
+  systemPrompt: string,
+  techniqueContext: string,
+  userMessage: string,
+): Promise<GeneratedCard[]> {
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const fullSystemPrompt = `${systemPrompt}\n\n${techniqueContext}`;
+
+  const response = await client.chat.completions.create({
+    model: MODEL_ID,
+    messages: [
+      { role: 'system', content: fullSystemPrompt },
+      { role: 'user', content: userMessage },
+    ],
+    response_format: { type: 'json_object' },
+    temperature: 0.8,
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content) throw new Error('OpenAI returned empty response');
+
+  const parsed = JSON.parse(content);
+  if (!Array.isArray(parsed.cards)) {
+    throw new Error(`Expected { cards: [...] }, got: ${JSON.stringify(parsed).slice(0, 200)}`);
+  }
+
+  return parsed.cards as GeneratedCard[];
+}
+
+function isValidCard(card: unknown, index: number): card is GeneratedCard {
+  if (!card || typeof card !== 'object') {
+    console.warn(`  Card ${index + 1}: not an object — skipped`);
+    return false;
+  }
+  const c = card as Record<string, unknown>;
+
+  if (typeof c.from !== 'string' || !c.from.trim()) {
+    console.warn(`  Card ${index + 1}: missing 'from' — skipped`);
+    return false;
+  }
+  if (typeof c.body !== 'string' || !c.body.trim()) {
+    console.warn(`  Card ${index + 1}: missing 'body' — skipped`);
+    return false;
+  }
+  if (!Array.isArray(c.highlights)) {
+    console.warn(`  Card ${index + 1}: 'highlights' is not an array — skipped`);
+    return false;
+  }
+  if (!Array.isArray(c.clues)) {
+    console.warn(`  Card ${index + 1}: 'clues' is not an array — skipped`);
+    return false;
+  }
+  if (typeof c.explanation !== 'string' || !c.explanation.trim()) {
+    console.warn(`  Card ${index + 1}: missing 'explanation' — skipped`);
+    return false;
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+async function main() {
+  const technique = getArg('--technique') as typeof PHISHING_TECHNIQUES[number] | null;
+  const category = getArg('--category') as typeof LEGITIMATE_CATEGORIES[number] | null;
+  const difficulty = getArg('--difficulty') as 'easy' | 'medium' | 'hard' | null;
+  const countArg = getArg('--count');
+  const isDryRun = hasFlag('--dry-run');
+  const count = countArg ? parseInt(countArg, 10) : 20;
+
+  // Validation
+  if (!technique && !category) {
+    console.error('Error: provide --technique or --category');
+    console.error('  Techniques: urgency, authority-impersonation, credential-harvest, hyper-personalization, pretexting, fluent-prose');
+    console.error('  Categories: transactional, marketing, workplace');
+    process.exit(1);
+  }
+  if (technique && !PHISHING_TECHNIQUES.includes(technique)) {
+    console.error(`Unknown technique: ${technique}`);
+    process.exit(1);
+  }
+  if (category && !LEGITIMATE_CATEGORIES.includes(category)) {
+    console.error(`Unknown category: ${category}`);
+    process.exit(1);
+  }
+  if (technique && !difficulty) {
+    console.error('--difficulty is required for phishing cards (easy | medium | hard)');
+    process.exit(1);
+  }
+  if (difficulty && !['easy', 'medium', 'hard'].includes(difficulty)) {
+    console.error('--difficulty must be easy, medium, or hard');
+    process.exit(1);
+  }
+  if (isNaN(count) || count < 1 || count > 50) {
+    console.error('--count must be between 1 and 50');
+    process.exit(1);
+  }
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('OPENAI_API_KEY is not set');
+    process.exit(1);
+  }
+  if (!isDryRun && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+    console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+    process.exit(1);
+  }
+
+  // Load prompts
+  const systemPrompt = loadFile('docs/prompts/system.md');
+  const techniqueContext = technique
+    ? loadFile(`docs/prompts/phishing/${technique}.md`)
+    : loadFile(`docs/prompts/legitimate/${category}.md`);
+
+  // Build user message
+  const label = technique
+    ? `${difficulty} difficulty "${technique}" phishing`
+    : `"${category}" legitimate`;
+  const userMessage = technique
+    ? `Generate ${count} ${difficulty} difficulty phishing emails using the "${technique}" technique.`
+    : `Generate ${count} legitimate ${category} emails.`;
+
+  console.log(`\nGenerating ${count} ${label} cards using ${MODEL_ID}...`);
+
+  let cards: GeneratedCard[];
+  try {
+    cards = await generateCards(systemPrompt, techniqueContext, userMessage);
+  } catch (err) {
+    console.error('Generation failed:', (err as Error).message);
+    process.exit(1);
+  }
+
+  const validCards = cards.filter((card, i) => isValidCard(card, i));
+  console.log(`Generated: ${cards.length} total, ${validCards.length} valid`);
+
+  if (validCards.length === 0) {
+    console.error('No valid cards generated.');
+    process.exit(1);
+  }
+
+  if (isDryRun) {
+    console.log('\n--- DRY RUN OUTPUT ---');
+    console.log(JSON.stringify(validCards, null, 2));
+    console.log('\n(dry run — nothing written to database)');
+    return;
+  }
+
+  // Create import batch
+  const supabase = getAdminClient();
+  const notes = technique
+    ? `technique=${technique}, difficulty=${difficulty}, model=${MODEL_ID}, prompt_version=${GENERATION_VERSION}`
+    : `category=${category}, model=${MODEL_ID}, prompt_version=${GENERATION_VERSION}`;
+
+  const { data: batch, error: batchError } = await supabase
+    .from('import_batches')
+    .insert({ source_corpus: 'generated', notes })
+    .select('batch_id')
+    .single();
+
+  if (batchError || !batch) {
+    console.error('Failed to create import batch:', batchError?.message);
+    process.exit(1);
+  }
+
+  // Insert cards
+  let inserted = 0;
+  for (const card of validCards) {
+    const { error } = await supabase.from('cards_staging').insert({
+      import_batch_id: batch.batch_id,
+      source_corpus: 'generated',
+      raw_from: card.from,
+      raw_subject: card.subject ?? null,
+      raw_body: card.body,
+      processed_from: card.from,
+      processed_subject: card.subject ?? null,
+      processed_body: card.body,
+      inferred_type: 'email',
+      is_phishing: technique !== null,
+      suggested_technique: technique ?? null,
+      suggested_difficulty: difficulty ?? 'medium',
+      suggested_highlights: card.highlights,
+      suggested_clues: card.clues,
+      suggested_explanation: card.explanation,
+      ai_model: MODEL_ID,
+      ai_preprocessing_version: GENERATION_VERSION,
+      status: 'pending',
+    });
+
+    if (error) {
+      console.warn(`  Failed to insert card: ${error.message}`);
+    } else {
+      inserted++;
+    }
+  }
+
+  // Update batch counts
+  const { error: updateError } = await supabase
+    .from('import_batches')
+    .update({ raw_count: validCards.length, processed_count: inserted })
+    .eq('batch_id', batch.batch_id);
+
+  if (updateError) {
+    console.warn('Failed to update batch counts:', updateError.message);
+  }
+
+  console.log(`\nInserted ${inserted} / ${validCards.length} cards`);
+  console.log(`Batch ID: ${batch.batch_id}`);
+  console.log(`Review at: /admin/review`);
+}
+
+main().catch((err) => {
+  console.error('Fatal error:', err.message);
+  process.exit(1);
+});
+```
+
+**Step 2: Dry-run test**
+
+With `.env.local` containing `OPENAI_API_KEY`:
+
+```bash
+npx ts-node -r dotenv/config scripts/generate-cards.ts \
+  --technique urgency --difficulty easy --count 3 --dry-run
+```
+
+Expected output:
+- `Generating 3 easy difficulty "urgency" phishing cards using gpt-4o...`
+- `Generated: 3 total, 3 valid`
+- JSON array of 3 cards with `from`, `subject`, `body`, `highlights`, `clues`, `explanation`
+
+**Step 3: Live test with 1 card (writes to Supabase)**
+
+```bash
+npx ts-node -r dotenv/config scripts/generate-cards.ts \
+  --technique urgency --difficulty easy --count 1
+```
+
+Expected output:
+- `Inserted 1 / 1 cards`
+- `Batch ID: <uuid>`
+
+Verify in Supabase Table Editor: `cards_staging` should have a new row with `status = 'pending'`, `source_corpus = 'generated'`, `is_phishing = true`, `suggested_technique = 'urgency'`.
+
+**Step 4: Commit**
+
+```bash
+git add scripts/generate-cards.ts
+git commit -m "feat: add generate-cards script for AI card generation pipeline"
+```
+
+---
+
+## Task 5: Fix stats route target count
+
+**Files:**
+- Modify: `app/api/admin/stats/route.ts:22`
+
+The `targetCards` value is currently `1000` but should be `550` to match the approved dataset size.
+
+**Step 1: Open the file and find the line**
+
+Read `app/api/admin/stats/route.ts`. Find:
+```typescript
+      targetCards: 1000,
+```
+
+**Step 2: Change it**
+
+Replace with:
+```typescript
+      targetCards: 550,
+```
+
+**Step 3: Verify**
+
+```bash
+grep targetCards app/api/admin/stats/route.ts
+```
+Expected: `targetCards: 550,`
+
+**Step 4: Commit**
+
+```bash
+git add app/api/admin/stats/route.ts
+git commit -m "fix: update dataset target from 1000 to 550"
+```
+
+---
+
+## Task 6: Update technique list in admin review page
+
+**Files:**
+- Modify: `app/admin/review/page.tsx:147-153`
+
+The TECHNIQUES array has 14 entries from the old plan. Update it to the 6 techniques in use.
+
+**Step 1: Find the TECHNIQUES constant**
+
+Read `app/admin/review/page.tsx`. Find:
+```typescript
+  const TECHNIQUES = [
+    'urgency', 'domain-spoofing', 'authority-impersonation', 'grammar-tells',
+    'hyper-personalization', 'fluent-prose', 'reward-prize', 'it-helpdesk',
+    'credential-harvest', 'invoice-fraud', 'pretexting', 'quishing',
+    'callback-phishing', 'multi-stage',
+  ];
+```
+
+**Step 2: Replace with the 6 active techniques**
+
+```typescript
+  const TECHNIQUES = [
+    'urgency',
+    'authority-impersonation',
+    'credential-harvest',
+    'hyper-personalization',
+    'pretexting',
+    'fluent-prose',
+  ];
+```
+
+**Step 3: Commit**
+
+```bash
+git add app/admin/review/page.tsx
+git commit -m "fix: update admin review technique list to 6 active techniques"
+```
+
+---
+
+## Task 7: Smoke-test the full pipeline
+
+**Step 1: Generate a small batch of each type**
+
+```bash
+# 2 cards per technique × difficulty combination for a quick test
+npx ts-node -r dotenv/config scripts/generate-cards.ts --technique urgency --difficulty easy --count 2
+npx ts-node -r dotenv/config scripts/generate-cards.ts --technique urgency --difficulty hard --count 2
+npx ts-node -r dotenv/config scripts/generate-cards.ts --technique fluent-prose --difficulty hard --count 2
+npx ts-node -r dotenv/config scripts/generate-cards.ts --category transactional --count 2
+npx ts-node -r dotenv/config scripts/generate-cards.ts --category workplace --count 2
+```
+
+Expected: Each run outputs `Inserted X / X cards`
+
+**Step 2: Verify cards appear in admin**
+
+- Navigate to `http://localhost:3000/admin/login`
+- Log in with `ADMIN_PASSWORD`
+- Navigate to `/admin` — verify pending count is 10
+- Navigate to `/admin/review` — a card should appear
+- Verify it shows the generated from/subject/body and pre-filled technique/difficulty fields
+- Press A to approve one card
+
+**Step 3: Verify approved card lands in cards_real**
+
+In Supabase Table Editor: check `cards_real` for one row from the approved card.
+
+**Step 4: Verify research mode sees it**
+
+In the game at `http://localhost:3000`:
+- Click `[ RESEARCH MODE — REAL DATA ]`
+- The card should appear in the game
+
+**Step 5: Commit any fixes found during smoke test**
+
+---
+
+## After this plan: generating the full dataset
+
+Once all tasks pass:
+
+1. Run the generation commands for all 21 technique+difficulty combinations (see Generation Overview above)
+2. Review all 550 cards in `/admin/review` (approve / reject / edit as needed)
+3. Once 550 cards approved in `cards_real`, the dataset is ready
+4. Collect 600+ research mode answers before publishing
+
+The generation commands take ~30 seconds per batch of 20. All 21 batches = about 10 minutes of API time + generation cost.
