@@ -1,0 +1,21 @@
+export type CardType = 'email' | 'sms';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Answer = 'phishing' | 'legit';
+
+export interface Card {
+  id: string;
+  type: CardType;
+  difficulty: Difficulty;
+  isPhishing: boolean;
+  from: string;
+  subject?: string;
+  body: string;
+  clues: string[];
+  explanation: string;
+}
+
+export interface RoundResult {
+  card: Card;
+  userAnswer: Answer;
+  correct: boolean;
+}
