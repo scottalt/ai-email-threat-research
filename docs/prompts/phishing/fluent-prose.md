@@ -1,6 +1,6 @@
 TECHNIQUE: fluent-prose
 
-Definition: Phishing delivered through polished, grammatically perfect, naturally-flowing language with none of the traditional tells. This is the GenAI quality-floor technique — the email is indistinguishable from professional correspondence in tone and quality.
+Definition: Phishing delivered through polished, grammatically perfect, naturally-flowing language with none of the traditional tells. This is the GenAI quality-floor technique — the email is indistinguishable from professional correspondence in tone and quality. The distinguishing factor from other techniques is the language itself: no urgency keywords, no generic addressing, no suspicious phrasing — only completely natural professional prose. The phishing mechanism (link, credential ask, or payment request) is embedded in correspondence that reads as entirely routine.
 
 Difficulty calibration:
 - Easy: The phishing intent is detectable on careful reading — a suspicious link, an unusual ask, or a mismatched context — but the language quality is high throughout.

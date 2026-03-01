@@ -9,5 +9,5 @@ Difficulty calibration:
 
 Generation notes:
 - Vary the service being impersonated: corporate email, banking, HR system, cloud storage, corporate VPN
-- The link text should look legitimate (not "click here" — use realistic anchor text like "Verify Account" or "Complete Setup")
+- Body text is plain text: links must be written as raw URLs, not markdown. Use realistic-looking but fictional URLs (e.g., https://verify.techflow-accounts.com, https://accounts-cascade.net/verify). The URL is the red flag for easy and medium cards. For hard cards, the multi-step workflow framing is the primary tell — the URL should look plausible.
 - For hard cards: the credential ask should be one natural step in a longer, plausible process

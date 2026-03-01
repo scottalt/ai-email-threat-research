@@ -18,20 +18,20 @@ Output format — always return a valid JSON object with a "cards" array:
       "subject": "Subject line",
       "body": "Full message body in plain text",
       "highlights": ["exact phrase to mark as notable", "another phrase"],
-      "clues": ["security analyst note about this phrase", "note about another element"],
+      "clues": ["security analyst note about this phrase — one clue per highlight, same index order", "note about another element"],
       "explanation": "One clear paragraph explaining why this is or is not phishing and what the key indicators are."
     }
   ]
 }
 
 For phishing cards:
-- highlights: exact phrases from the body that are red flags (suspicious domain, urgency language, credential request, etc.)
-- clues: security analyst observations — what each highlighted element reveals
+- highlights: 2–4 exact phrases from the body that are red flags (suspicious domain, urgency language, credential request, etc.)
+- clues: 2–4 analyst notes, one per highlight in the same index order — each clue explains the corresponding highlighted phrase
 - explanation: clearly explain why this is phishing and what technique is being used
 
 For legitimate cards:
-- highlights: phrases that establish legitimacy (e.g., "this email was sent because you requested a password reset", transactional detail like an order number)
-- clues: note what makes this email trustworthy despite any elements that might superficially resemble phishing
+- highlights: 2–4 phrases that establish legitimacy (e.g., "this email was sent because you requested a password reset", transactional detail like an order number)
+- clues: 2–4 analyst notes, one per highlight in the same index order — note what makes each highlighted element trustworthy despite any superficial resemblance to phishing
 - explanation: explain why this is legitimate, acknowledge what a player might mistake for phishing, and clarify why it isn't
 
 For SMS: set "subject" to null.

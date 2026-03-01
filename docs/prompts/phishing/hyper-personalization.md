@@ -12,3 +12,4 @@ Generation notes:
 - For hard cards: the personalization details should feel impossibly specific — as if the sender has real access to internal information
 - Recipient roles to vary: senior analyst, project manager, finance director, software engineer, HR coordinator
 - Company types: tech company, financial services, healthcare, law firm, manufacturing
+- Every hyper-personalization card must include a concrete phishing ask — credential request, malicious link, wire transfer, or sensitive information disclosure. The personalization establishes credibility; it is not the phishing mechanism itself. Use any of: a link to a fake login page, a request to verify account credentials, a request to approve a payment, or a request to share sensitive information.
