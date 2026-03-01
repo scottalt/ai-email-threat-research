@@ -36,7 +36,18 @@ function getAdminClient() {
   return createClient(url, key);
 }
 
+function validateEnv() {
+  const provider = process.env.AI_PROVIDER ?? 'openai';
+  if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not set (or set AI_PROVIDER=anthropic and ANTHROPIC_API_KEY)');
+  }
+  if (provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is not set');
+  }
+}
+
 async function main() {
+  validateEnv();
   const limit = parseInt(getArg('--limit') ?? '10', 10);
   const dryRun = hasFlag('--dry-run');
 
@@ -141,4 +152,7 @@ async function main() {
   console.log(`\nDone: ${succeeded} succeeded, ${failed} failed`);
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err instanceof Error ? err.message : err);
+  process.exit(1);
+});
