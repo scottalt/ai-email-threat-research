@@ -61,12 +61,11 @@ CREATE TABLE cards_staging (
 
 CREATE INDEX idx_cards_staging_status ON cards_staging(status);
 CREATE INDEX idx_cards_staging_batch ON cards_staging(import_batch_id);
-CREATE INDEX idx_cards_staging_hash ON cards_staging(raw_email_hash);
 
 -- cards_real: curated live dataset
 CREATE TABLE cards_real (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  staging_id UUID REFERENCES cards_staging(id),
+  staging_id UUID REFERENCES cards_staging(id) ON DELETE SET NULL,
   card_id TEXT UNIQUE NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('email', 'sms')),
   is_phishing BOOLEAN NOT NULL,
@@ -148,7 +147,7 @@ CREATE TABLE answers (
   streak_at_answer_time SMALLINT,
   correct_count_at_time SMALLINT,
   -- Context
-  game_mode TEXT NOT NULL CHECK (game_mode IN ('research', 'training', 'freeplay', 'daily')),
+  game_mode TEXT NOT NULL CHECK (game_mode IN ('research', 'freeplay', 'daily')),
   is_daily_challenge BOOLEAN DEFAULT FALSE,
   dataset_version TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -164,7 +163,7 @@ CREATE INDEX idx_answers_correct ON answers(correct);
 -- sessions: one row per game played
 CREATE TABLE sessions (
   session_id UUID PRIMARY KEY,
-  game_mode TEXT NOT NULL CHECK (game_mode IN ('research', 'training', 'freeplay', 'daily')),
+  game_mode TEXT NOT NULL CHECK (game_mode IN ('research', 'freeplay', 'daily')),
   is_daily_challenge BOOLEAN DEFAULT FALSE,
   started_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,

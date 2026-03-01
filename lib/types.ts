@@ -56,9 +56,9 @@ export interface AnswerEvent {
   contextualCoherence: number | null;
   difficulty: string;
   type: string;
-  userAnswer: string;
+  userAnswer: Answer;
   correct: boolean;
-  confidence: string;
+  confidence: Confidence;
   timeFromRenderMs: number | null;
   timeFromConfidenceMs: number | null;
   confidenceSelectionTimeMs: number | null;
@@ -67,7 +67,7 @@ export interface AnswerEvent {
   answerOrdinal: number;
   streakAtAnswerTime: number;
   correctCountAtTime: number;
-  gameMode: string;
+  gameMode: GameMode;
   isDailyChallenge: boolean;
   datasetVersion: string | null;
 }
@@ -75,7 +75,7 @@ export interface AnswerEvent {
 // Session payload sent alongside each answer event
 export interface SessionPayload {
   sessionId: string;
-  gameMode: string;
+  gameMode: GameMode;
   isDailyChallenge: boolean;
   startedAt: string;
   completedAt: string | null;
