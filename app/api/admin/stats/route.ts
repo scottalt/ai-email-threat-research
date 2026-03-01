@@ -19,7 +19,7 @@ export async function GET() {
       rejected: rejected.count ?? 0,
       needsReview: needsReview.count ?? 0,
       liveCards: real.count ?? 0,
-      targetCards: 1000,
+      targetCards: 550,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

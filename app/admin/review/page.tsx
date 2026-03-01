@@ -145,10 +145,12 @@ export default function ReviewPage() {
   }
 
   const TECHNIQUES = [
-    'urgency', 'domain-spoofing', 'authority-impersonation', 'grammar-tells',
-    'hyper-personalization', 'fluent-prose', 'reward-prize', 'it-helpdesk',
-    'credential-harvest', 'invoice-fraud', 'pretexting', 'quishing',
-    'callback-phishing', 'multi-stage',
+    'urgency',
+    'authority-impersonation',
+    'credential-harvest',
+    'hyper-personalization',
+    'pretexting',
+    'fluent-prose',
   ];
 
   if (loading) return (
