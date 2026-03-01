@@ -182,6 +182,10 @@ function isValidCard(card: unknown, index: number): card is GeneratedCard {
     console.warn(`  Card ${index + 1}: missing 'explanation' — skipped`);
     return false;
   }
+  if ((c.highlights as unknown[]).length !== (c.clues as unknown[]).length) {
+    console.warn(`  Card ${index + 1}: highlights/clues length mismatch (${(c.highlights as unknown[]).length} vs ${(c.clues as unknown[]).length}) — skipped`);
+    return false;
+  }
   return true;
 }
 
@@ -346,7 +350,7 @@ async function main() {
       inferred_type: 'email',
       is_phishing: technique !== null,
       suggested_technique: technique ?? null,
-      suggested_difficulty: difficulty ?? 'medium',
+      suggested_difficulty: difficulty,
       suggested_highlights: card.highlights,
       suggested_clues: card.clues,
       suggested_explanation: card.explanation,
