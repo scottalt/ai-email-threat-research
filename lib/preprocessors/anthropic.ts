@@ -20,10 +20,14 @@ export class AnthropicPreprocessor implements AIPreprocessor {
     });
 
     const block = message.content[0];
-    if (block.type !== 'text') throw new Error('Anthropic returned non-text response');
+    if (!block || block.type !== 'text') throw new Error('Anthropic returned empty or non-text response');
 
     // Strip any markdown code fences if present
-    const json = block.text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+    const trimmed = block.text.trim();
+    const json = trimmed
+      .replace(/^```[a-zA-Z]*\n?/, '')
+      .replace(/\n?```$/, '')
+      .trim();
     return JSON.parse(json) as PreprocessResult;
   }
 }
