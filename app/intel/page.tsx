@@ -153,23 +153,25 @@ export default async function IntelPage() {
               </div>
             )}
 
-            <div className="term-border bg-[#060c06]">
-              <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-                <span className="text-[#00aa28] text-xs tracking-widest">CONFIDENCE CALIBRATION</span>
+            {data.byConfidence.some((c) => c.total > 0) && (
+              <div className="term-border bg-[#060c06]">
+                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+                  <span className="text-[#00aa28] text-xs tracking-widest">CONFIDENCE CALIBRATION</span>
+                </div>
+                <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                  {data.byConfidence.map(({ confidence, accuracyRate, total }) => (
+                    <div key={confidence} className="flex items-center px-3 py-2 gap-3">
+                      <span className="text-[#00aa28] text-xs font-mono flex-1">{confidence.toUpperCase()}</span>
+                      <span className="text-[#00ff41] text-xs font-mono">{accuracyRate}% accurate</span>
+                      <span className="text-[#003a0e] text-[10px] font-mono">n={total}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
+                  Are players who bet CERTAIN actually more accurate?
+                </div>
               </div>
-              <div className="divide-y divide-[rgba(0,255,65,0.08)]">
-                {data.byConfidence.map(({ confidence, accuracyRate, total }) => (
-                  <div key={confidence} className="flex items-center px-3 py-2 gap-3">
-                    <span className="text-[#00aa28] text-xs font-mono flex-1">{confidence.toUpperCase()}</span>
-                    <span className="text-[#00ff41] text-xs font-mono">{accuracyRate}% accurate</span>
-                    <span className="text-[#003a0e] text-[10px] font-mono">n={total}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
-                Are players who bet CERTAIN actually more accurate?
-              </div>
-            </div>
+            )}
 
             <div className="term-border bg-[#060c06] px-3 py-3 text-[10px] font-mono text-[#003a0e] space-y-1 leading-relaxed">
               <div className="text-[#00aa28]">METHODOLOGY</div>
