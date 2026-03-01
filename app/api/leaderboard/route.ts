@@ -9,9 +9,16 @@ const BAD_WORDS = [
   'bitch', 'ass', 'cock', 'dick', 'pussy', 'whore', 'slut', 'bastard',
 ];
 
+const BLOCKED_NAMES = ['dailytester', 'testuser', 'test'];
+
 function isClean(name: string): boolean {
   const lower = name.toLowerCase().replace(/\s+/g, '');
   return !BAD_WORDS.some((w) => lower.includes(w));
+}
+
+function isAllowed(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return !BLOCKED_NAMES.includes(lower);
 }
 
 export async function GET(req: Request) {
@@ -57,6 +64,10 @@ export async function POST(req: Request) {
 
     if (!isClean(trimmed)) {
       return NextResponse.json({ error: 'Keep it clean.' }, { status: 400 });
+    }
+
+    if (!isAllowed(trimmed)) {
+      return NextResponse.json({ error: 'Name not allowed.' }, { status: 400 });
     }
 
     if (typeof score !== 'number' || score < 0 || !Number.isFinite(score)) {
