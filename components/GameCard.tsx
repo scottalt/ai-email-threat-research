@@ -15,6 +15,8 @@ interface Props {
   total: number;
   streak: number;
   totalScore: number;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
 }
 
 const CONFIDENCE_OPTIONS: { value: Confidence; label: string; multiplier: string; color: string }[] = [
@@ -79,7 +81,7 @@ function SMSDisplay({ card }: { card: Card }) {
   );
 }
 
-export function GameCard({ card, onAnswer, questionNumber, total, streak, totalScore }: Props) {
+export function GameCard({ card, onAnswer, questionNumber, total, streak, totalScore, soundEnabled, onToggleSound }: Props) {
   const [confidence, setConfidence] = useState<Confidence | null>(null);
   // dragX drives stamp opacity — updated during drag via React state
   const [dragX, setDragX] = useState(0);
@@ -237,6 +239,12 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
             STREAK:<span className="text-[#00ff41]">{streak}</span>
           </span>
           <span className="text-[#00aa28]">PTS:<span className="text-[#00ff41] glow">{totalScore}</span></span>
+          <button
+            onClick={onToggleSound}
+            className={`font-mono text-[10px] transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+          >
+            {soundEnabled ? '[SFX]' : '[SFX OFF]'}
+          </button>
           <span className="text-[#003a0e] font-mono text-sm">{analystFace(streak)}</span>
         </div>
       </div>
