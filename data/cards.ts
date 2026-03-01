@@ -893,7 +893,7 @@ function dateToSeed(dateStr: string): number {
 
 export function getDailyDeck(): Card[] {
   const d = new Date();
-  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
   const rand = mulberry32(dateToSeed(today));
   const shuffled = [...CARDS];
   for (let i = shuffled.length - 1; i > 0; i--) {
