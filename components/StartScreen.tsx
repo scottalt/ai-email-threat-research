@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
   onStart: () => void;
@@ -41,28 +40,22 @@ export function StartScreen({ onStart }: Props) {
     <div className="w-full max-w-sm px-4 flex flex-col gap-6">
       {/* Terminal window */}
       <div className="term-border bg-[#060c06]">
-        {/* Title bar */}
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
           <span className="text-[#00aa28] text-xs tracking-widest">ANALYST_TERMINAL</span>
           <span className="text-[#00aa28] text-xs">■ □ □</span>
         </div>
-
-        {/* Boot output */}
         <div className="px-3 py-4 min-h-48 space-y-1">
           {visibleLines.map((line, i) => (
-            <motion.div
+            <div
               key={i}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.1 }}
-              className={`text-xs font-mono leading-relaxed ${
+              className={`anim-fade-in text-xs font-mono leading-relaxed ${
                 line.includes('─') || line.includes('READY')
                   ? 'text-[#00ff41]'
                   : 'text-[#00aa28]'
               } ${line.includes('READY') ? 'glow' : ''}`}
             >
               {line}
-            </motion.div>
+            </div>
           ))}
           {!showButton && visibleLines.length < BOOT_LINES.length && (
             <span className="cursor" />
@@ -70,67 +63,57 @@ export function StartScreen({ onStart }: Props) {
         </div>
       </div>
 
-      {/* How it works */}
-      <AnimatePresence>
-        {showButton && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-4"
-          >
-            <div className="term-border bg-[#060c06]">
-              <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-                <span className="text-[#00aa28] text-xs tracking-widest">HOW_TO_PLAY</span>
-              </div>
-              <div className="px-3 py-3 space-y-2.5">
-                {[
-                  ['[1]', 'Read the email or SMS carefully'],
-                  ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
-                  ['[3]', 'Classify: PHISHING or LEGIT'],
-                  ['[4]', 'More confidence + correct = more points'],
-                  ['[5]', '3-streak bonus: +50 pts per milestone'],
-                ].map(([tag, desc]) => (
-                  <div key={tag} className="flex gap-3 text-xs">
-                    <span className="text-[#00ff41] shrink-0 glow">{tag}</span>
-                    <span className="text-[#00aa28]">{desc}</span>
-                  </div>
-                ))}
-              </div>
+      {showButton && (
+        <div className="anim-fade-in-up space-y-4">
+          <div className="term-border bg-[#060c06]">
+            <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+              <span className="text-[#00aa28] text-xs tracking-widest">HOW_TO_PLAY</span>
             </div>
-
-            {/* Difficulty legend */}
-            <div className="flex gap-2 text-xs font-mono">
-              {(['EASY', 'MEDIUM', 'HARD'] as const).map((d) => (
-                <div
-                  key={d}
-                  className={`flex-1 text-center py-1.5 term-border ${
-                    d === 'EASY'
-                      ? 'text-[#00ff41] border-[rgba(0,255,65,0.4)]'
-                      : d === 'MEDIUM'
-                      ? 'text-[#ffaa00] border-[rgba(255,170,0,0.4)]'
-                      : 'text-[#ff3333] border-[rgba(255,51,51,0.4)]'
-                  }`}
-                >
-                  {d}
+            <div className="px-3 py-3 space-y-2.5">
+              {[
+                ['[1]', 'Read the email or SMS carefully'],
+                ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
+                ['[3]', 'Classify: PHISHING or LEGIT'],
+                ['[4]', 'More confidence + correct = more points'],
+                ['[5]', '3-streak bonus: +50 pts per milestone'],
+              ].map(([tag, desc]) => (
+                <div key={tag} className="flex gap-3 text-xs">
+                  <span className="text-[#00ff41] shrink-0 glow">{tag}</span>
+                  <span className="text-[#00aa28]">{desc}</span>
                 </div>
               ))}
             </div>
+          </div>
 
-            {/* Start button */}
-            <button
-              onClick={onStart}
-              className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
-            >
-              [ INITIALIZE SESSION ]
-            </button>
+          <div className="flex gap-2 text-xs font-mono">
+            {(['EASY', 'MEDIUM', 'HARD'] as const).map((d) => (
+              <div
+                key={d}
+                className={`flex-1 text-center py-1.5 term-border ${
+                  d === 'EASY'
+                    ? 'text-[#00ff41] border-[rgba(0,255,65,0.4)]'
+                    : d === 'MEDIUM'
+                    ? 'text-[#ffaa00] border-[rgba(255,170,0,0.4)]'
+                    : 'text-[#ff3333] border-[rgba(255,51,51,0.4)]'
+                }`}
+              >
+                {d}
+              </div>
+            ))}
+          </div>
 
-            <p className="text-[#003a0e] text-xs text-center font-mono">
-              10 questions per round · email + SMS · randomized
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <button
+            onClick={onStart}
+            className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+          >
+            [ INITIALIZE SESSION ]
+          </button>
+
+          <p className="text-[#003a0e] text-xs text-center font-mono">
+            10 questions per round · email + SMS · randomized
+          </p>
+        </div>
+      )}
     </div>
   );
 }

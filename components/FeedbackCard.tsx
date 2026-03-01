@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import type { RoundResult } from '@/lib/types';
 
 interface Props {
@@ -29,19 +28,14 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
   }, []);
 
   const headline = correct
-    ? wasPhishing
-      ? 'THREAT NEUTRALIZED'
-      : 'ASSET CLEARED'
-    : wasPhishing
-    ? 'BREACH DETECTED'
-    : 'FALSE POSITIVE';
+    ? wasPhishing ? 'THREAT NEUTRALIZED' : 'ASSET CLEARED'
+    : wasPhishing ? 'BREACH DETECTED' : 'FALSE POSITIVE';
 
   const headlineColor = correct ? 'text-[#00ff41]' : 'text-[#ff3333]';
   const headlineGlow = correct ? 'glow' : 'glow-red';
 
   return (
     <div className="w-full max-w-sm px-4 relative">
-      {/* Flash overlay */}
       {showFlash && (
         <div
           className={`fixed inset-0 pointer-events-none z-50 ${
@@ -50,12 +44,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
         />
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-        className="flex flex-col gap-4"
-      >
+      <div className="anim-fade-in-up flex flex-col gap-4">
         {/* Result header */}
         <div className={`term-border bg-[#060c06] ${correct ? 'border-[rgba(0,255,65,0.6)]' : 'border-[rgba(255,51,51,0.6)]'}`}>
           <div className={`border-b px-3 py-2 flex items-center justify-between ${correct ? 'border-[rgba(0,255,65,0.4)]' : 'border-[rgba(255,51,51,0.4)]'}`}>
@@ -74,8 +63,6 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                 : `This was LEGIT. You said: ${userAnswer.toUpperCase()}.`}
             </div>
           </div>
-
-          {/* Points earned */}
           <div className={`border-t px-3 py-2 flex items-center justify-between ${correct ? 'border-[rgba(0,255,65,0.25)]' : 'border-[rgba(255,51,51,0.25)]'}`}>
             <span className="text-xs font-mono text-[#00aa28]">
               CONFIDENCE: <span className="text-[#00ff41]">{CONFIDENCE_LABEL[confidence]}</span>
@@ -85,7 +72,6 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
               +{pointsEarned} PTS
             </span>
           </div>
-
           {streakMilestone && (
             <div className="border-t border-[rgba(0,255,65,0.25)] px-3 py-1.5 text-center">
               <span className="text-xs font-mono text-[#ffaa00] glow-amber">
@@ -110,7 +96,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           <p className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed font-mono">{card.explanation}</p>
         </div>
 
-        {/* Red flags — phishing only */}
+        {/* Red flags */}
         {wasPhishing && card.clues.length > 0 && (
           <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)]">
             <div className="border-b border-[rgba(255,51,51,0.3)] px-3 py-1.5">
@@ -141,14 +127,13 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           )}
         </div>
 
-        {/* Next button */}
         <button
           onClick={onNext}
           className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
         >
           {questionNumber === total ? '[ VIEW RESULTS ]' : '[ NEXT TRANSMISSION ]'}
         </button>
-      </motion.div>
+      </div>
     </div>
   );
 }

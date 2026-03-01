@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import type { RoundResult } from '@/lib/types';
 
 interface Props {
@@ -28,16 +27,11 @@ export function RoundSummary({ score, total, totalScore, results, onPlayAgain }:
   const legitCorrect = results.filter((r) => !r.card.isPhishing && r.correct).length;
   const phishingTotal = results.filter((r) => r.card.isPhishing).length;
   const legitTotal = results.filter((r) => !r.card.isPhishing).length;
-  const maxPossible = results.reduce((acc, r) => acc + 300, 0); // 10 × 3x × 100
+  const maxPossible = results.length * 300;
   const efficiency = Math.round((totalScore / maxPossible) * 100);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-      className="w-full max-w-sm px-4 flex flex-col gap-4"
-    >
+    <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col gap-4">
       {/* Score header */}
       <div className="term-border bg-[#060c06]">
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
@@ -82,13 +76,13 @@ export function RoundSummary({ score, total, totalScore, results, onPlayAgain }:
         </div>
       </div>
 
-      {/* Round breakdown table */}
+      {/* Round log */}
       <div className="term-border bg-[#060c06]">
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
           <span className="text-[#00aa28] text-xs tracking-widest">ROUND_LOG</span>
         </div>
         <div className="divide-y divide-[rgba(0,255,65,0.1)]">
-          {results.map((r, i) => (
+          {results.map((r) => (
             <div key={r.card.id} className="flex items-center gap-2 px-3 py-2">
               <span className={`text-xs font-mono font-bold w-4 ${r.correct ? 'text-[#00ff41]' : 'text-[#ff3333]'}`}>
                 {r.correct ? '✓' : '✗'}
@@ -118,7 +112,6 @@ export function RoundSummary({ score, total, totalScore, results, onPlayAgain }:
         </div>
       </div>
 
-      {/* Play again */}
       <button
         onClick={onPlayAgain}
         className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:scale-95 transition-all glow"
@@ -129,6 +122,6 @@ export function RoundSummary({ score, total, totalScore, results, onPlayAgain }:
       <p className="text-center text-[#003a0e] text-xs font-mono">
         scottaltiparmak.com
       </p>
-    </motion.div>
+    </div>
   );
 }
