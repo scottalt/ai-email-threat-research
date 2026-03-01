@@ -38,7 +38,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, on
   useEffect(() => {
     if (mode !== 'research') return;
     const techniqueResults = results.map((r) => ({
-      technique: (r.card as unknown as Record<string, unknown>).technique as string | null ?? null,
+      technique: r.card.technique ?? null,
       correct: r.correct,
     }));
     const updated = updateWeaknessHistory(techniqueResults);

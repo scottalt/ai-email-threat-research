@@ -14,6 +14,7 @@ export interface Card {
   clues: string[];
   explanation: string;
   highlights?: string[];
+  technique?: string | null;
 }
 
 export interface RoundResult {

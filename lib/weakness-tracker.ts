@@ -21,7 +21,9 @@ export function updateWeaknessHistory(results: { technique: string | null; corre
     history[technique].attempts++;
     if (!correct) history[technique].missed++;
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  }
   return history;
 }
 
