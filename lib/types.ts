@@ -22,3 +22,5 @@ export interface RoundResult {
   confidence: Confidence;
   pointsEarned: number;
 }
+
+export type GameMode = 'daily' | 'freeplay';
