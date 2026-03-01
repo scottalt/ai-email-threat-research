@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   if (format === 'csv') {
     if (!data || data.length === 0) return new NextResponse('', { status: 200, headers: { 'Content-Type': 'text/csv' } });
-    const headers = Object.keys(data[0]).join(',');
+    const headers = Object.keys(data[0]).map((k) => `"${k}"`).join(',');
     const rows = data.map((row) =>
       Object.values(row).map((v) =>
         v === null ? '' : typeof v === 'string' ? `"${v.replace(/"/g, '""')}"` : String(v)
