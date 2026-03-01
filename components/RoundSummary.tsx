@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { RoundResult, GameMode } from '@/lib/types';
+import { getRank } from '@/lib/rank';
 
 interface Props {
   score: number;
@@ -26,6 +27,7 @@ const CONFIDENCE_LABEL: Record<string, string> = { guessing: 'G', likely: 'L', c
 
 export function RoundSummary({ score, total, totalScore, results, mode, date, onPlayAgain }: Props) {
   const tier = getTier(score, total);
+  const rank = getRank(totalScore);
   const [name, setName] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -98,6 +100,12 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, on
             {tier.label}
           </div>
           <div className="text-xs font-mono text-[#00aa28]">{tier.sub}</div>
+          <div
+            className={`text-xs font-mono font-bold tracking-widest mt-1 ${rank.glowClass}`}
+            style={{ color: rank.color }}
+          >
+            [ {rank.label} ]
+          </div>
         </div>
         <div className="border-t border-[rgba(0,255,65,0.25)] px-3 py-2 flex items-center justify-between">
           <div className="text-center">
