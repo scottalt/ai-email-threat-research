@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { RoundResult } from '@/lib/types';
 
 interface Props {
@@ -23,6 +24,33 @@ const CONFIDENCE_LABEL: Record<string, string> = { guessing: 'G', likely: 'L', c
 
 export function RoundSummary({ score, total, totalScore, results, onPlayAgain }: Props) {
   const tier = getTier(score, total);
+  const [name, setName] = useState('');
+  const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || submitState === 'loading') return;
+    setSubmitState('loading');
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), score: totalScore }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error ?? 'Submission failed.');
+        setSubmitState('error');
+      } else {
+        setSubmitState('done');
+      }
+    } catch {
+      setErrorMsg('Network error.');
+      setSubmitState('error');
+    }
+  }
   const phishingCaught = results.filter((r) => r.card.isPhishing && r.correct).length;
   const legitCorrect = results.filter((r) => !r.card.isPhishing && r.correct).length;
   const phishingTotal = results.filter((r) => r.card.isPhishing).length;
@@ -109,6 +137,41 @@ export function RoundSummary({ score, total, totalScore, results, onPlayAgain }:
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Leaderboard submission */}
+      <div className="term-border bg-[#060c06]">
+        <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+          <span className="text-[#00aa28] text-xs tracking-widest">SUBMIT_TO_LEADERBOARD</span>
+        </div>
+        <div className="px-3 py-3">
+          {submitState === 'done' ? (
+            <div className="text-[#00ff41] text-xs font-mono text-center glow py-1">
+              SCORE LOGGED. GL HF.
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => { setName(e.target.value); setSubmitState('idle'); setErrorMsg(''); }}
+                placeholder="ENTER CALLSIGN"
+                maxLength={20}
+                className="flex-1 bg-transparent border border-[rgba(0,255,65,0.3)] text-[#00ff41] font-mono text-xs px-2 py-1.5 placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.7)]"
+              />
+              <button
+                type="submit"
+                disabled={!name.trim() || submitState === 'loading'}
+                className="px-3 py-1.5 term-border text-[#00ff41] font-mono text-xs tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                {submitState === 'loading' ? '...' : 'LOG'}
+              </button>
+            </form>
+          )}
+          {submitState === 'error' && (
+            <div className="text-[#ff3333] text-[10px] font-mono mt-1.5">{errorMsg}</div>
+          )}
         </div>
       </div>
 
