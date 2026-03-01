@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Retro Phish
 
-## Getting Started
+A terminal-aesthetic phishing awareness game. Identify phishing emails and SMS messages before they get you.
 
-First, run the development server:
+**Live:** [retro-phish.scottaltiparmak.com](https://retro-phish.scottaltiparmak.com)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## What it is
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Retro Phish presents real-world phishing scenarios styled as a retro terminal interface. Players classify each message as phishing or legit, bet confidence levels on their answers, and earn points based on accuracy and streaks. After each round, red flags are highlighted inline so players can see exactly what they missed.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- 40 phishing and legitimate email/SMS scenarios across easy, medium, and hard difficulty
+- Confidence betting: GUESSING (1x), LIKELY (2x), CERTAIN (3x) — risk/reward on every answer
+- Streak bonuses every 3 consecutive correct answers
+- Rank system: NOVICE → OPERATOR → ANALYST → SPECIALIST → ELITE based on score efficiency
+- Daily challenge mode with a shared daily leaderboard
+- Global all-time leaderboard
+- Inline red flag highlighting on the feedback screen
+- Chiptune sound effects via Web Audio API (off by default)
+- Swipe or button-click to answer
+- PWA-ready
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16 App Router, TypeScript, Tailwind CSS v4
+- Upstash Redis (leaderboard storage)
+- Web Audio API (sounds, no audio files)
+- Vercel (hosting)
