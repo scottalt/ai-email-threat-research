@@ -98,19 +98,18 @@ function main() {
 
     // Filter by date
     const rawDate = row[dateCol] ?? '';
-    if (afterDate) {
-      if (!rawDate.trim()) {
-        if (strictDate) {
-          skippedDate++;
-          continue;
-        }
-        // No date — include unless strict mode
-      } else {
-        const rowDate = new Date(rawDate);
-        if (isNaN(rowDate.getTime()) || rowDate < afterDate) {
-          skippedDate++;
-          continue;
-        }
+    const hasDate = !!rawDate.trim();
+
+    if (!hasDate && strictDate) {
+      skippedDate++;
+      continue;
+    }
+
+    if (afterDate && hasDate) {
+      const rowDate = new Date(rawDate);
+      if (isNaN(rowDate.getTime()) || rowDate < afterDate) {
+        skippedDate++;
+        continue;
       }
     }
 
