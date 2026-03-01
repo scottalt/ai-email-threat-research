@@ -3,6 +3,24 @@
 **Working Title:** State of Phishing in the Rise of GenAI
 **Author:** Scott Altiparmak
 **Status:** Pre-collection — pipeline in development
+
+---
+
+## Core Research Question (LOCKED)
+
+**Which phishing techniques are humans most likely to miss when linguistic quality is no longer a reliable detection signal?**
+
+### Design decisions that flow from this question
+
+- Dataset is entirely GenAI-generated phishing emails. Linguistic quality is held constant as the baseline assumption, not studied as a variable. This is the post-GenAI reality: grammar and fluency can no longer be relied upon as tells.
+- Technique is the primary independent variable. The 14-category taxonomy (urgency, domain-spoofing, authority-impersonation, grammar-tells, hyper-personalization, fluent-prose, reward-prize, it-helpdesk, credential-harvest, invoice-fraud, pretexting, quishing, callback-phishing, multi-stage) provides the breakdown.
+- Human detection rate (correct identification as phishing) is the primary outcome metric.
+- Behavioral signals are secondary findings: response time, confidence level, confidence selection time, scroll depth, answer method, session position.
+- Sample is self-selected game players. Not claimed as security-aware or general population. Limitation noted: the game's nature may attract security-interested individuals, meaning bypass rates may be conservative estimates for the general population.
+
+### Why this is novel
+
+Existing technique-level phishing detection literature was built on datasets where grammar and fluency varied. This study holds linguistic quality constant at AI-generation level and isolates technique as the sole variable. No published baseline exists for technique-level human detection rates in a world where AI-quality writing is assumed. This study establishes that baseline.
 **Publication target:** Personal blog (scottaltiparmak.com) with potential journal submission
 **Last updated:** 2026-03-01
 
