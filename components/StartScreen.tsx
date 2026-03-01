@@ -1,6 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+}
 
 interface Props {
   onStart: () => void;
@@ -22,6 +27,20 @@ const BOOT_LINES: { text: string; bright: boolean }[] = [
 export function StartScreen({ onStart }: Props) {
   const [visibleCount, setVisibleCount] = useState(0);
   const [showButton, setShowButton] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      const res = await fetch('/api/leaderboard');
+      if (res.ok) setLeaderboard(await res.json());
+    } catch {
+      // silently fail
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -115,6 +134,30 @@ export function StartScreen({ onStart }: Props) {
           <p className="text-[#003a0e] text-xs text-center font-mono">
             10 questions per round · email + SMS · randomized
           </p>
+
+          {leaderboard.length > 0 && (
+            <div className="term-border bg-[#060c06]">
+              <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
+                <span className="text-[#00aa28] text-xs tracking-widest">TOP_ANALYSTS</span>
+                <span className="text-[#003a0e] text-xs font-mono">GLOBAL</span>
+              </div>
+              <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                {leaderboard.slice(0, 10).map((entry, i) => (
+                  <div key={i} className="flex items-center gap-3 px-3 py-1.5">
+                    <span className={`text-[10px] font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>
+                      {i + 1}
+                    </span>
+                    <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">
+                      {entry.name}
+                    </span>
+                    <span className="text-[#00ff41] text-xs font-mono font-bold glow">
+                      {entry.score}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

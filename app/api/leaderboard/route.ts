@@ -1,0 +1,61 @@
+import { NextResponse } from 'next/server';
+import { redis } from '@/lib/redis';
+
+const KEY = 'leaderboard';
+
+const BAD_WORDS = [
+  'fuck', 'shit', 'cunt', 'nigger', 'nigga', 'faggot', 'fag', 'retard',
+  'bitch', 'ass', 'cock', 'dick', 'pussy', 'whore', 'slut', 'bastard',
+];
+
+function isClean(name: string): boolean {
+  const lower = name.toLowerCase().replace(/\s+/g, '');
+  return !BAD_WORDS.some((w) => lower.includes(w));
+}
+
+export async function GET() {
+  const results = await redis.zrange(KEY, 0, 19, {
+    rev: true,
+    withScores: true,
+  }) as (string | number)[];
+
+  const entries: { name: string; score: number }[] = [];
+  for (let i = 0; i < results.length; i += 2) {
+    const member = results[i] as string;
+    const score = results[i + 1] as number;
+    entries.push({ name: member.split(':')[0], score });
+  }
+
+  return NextResponse.json(entries);
+}
+
+export async function POST(req: Request) {
+  try {
+    const { name, score } = await req.json();
+
+    if (!name || typeof name !== 'string') {
+      return NextResponse.json({ error: 'Name required' }, { status: 400 });
+    }
+
+    const trimmed = name.trim().slice(0, 20);
+
+    if (trimmed.length < 1) {
+      return NextResponse.json({ error: 'Name required' }, { status: 400 });
+    }
+
+    if (!isClean(trimmed)) {
+      return NextResponse.json({ error: 'Keep it clean.' }, { status: 400 });
+    }
+
+    if (typeof score !== 'number' || score < 0 || !Number.isFinite(score)) {
+      return NextResponse.json({ error: 'Invalid score' }, { status: 400 });
+    }
+
+    const member = `${trimmed}:${Date.now()}`;
+    await redis.zadd(KEY, { score, member });
+
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
