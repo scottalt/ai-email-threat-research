@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import type { Card } from '@/lib/types';
+import type { ResearchCard } from '@/lib/types';
 
 export async function GET() {
   try {
@@ -16,7 +16,7 @@ export async function GET() {
 
     // Map Supabase rows to the Card interface the game expects,
     // with research metadata attached
-    const cards: (Card & Record<string, unknown>)[] = data.map((row) => ({
+    const cards: ResearchCard[] = data.map((row) => ({
       id: row.card_id,
       type: row.type,
       isPhishing: row.is_phishing,

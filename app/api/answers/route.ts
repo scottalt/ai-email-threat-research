@@ -39,9 +39,9 @@ export async function POST(req: NextRequest) {
       dataset_version: body.answer.datasetVersion,
     });
 
-    if (answerError) throw answerError;
+    if (answerError) console.error('Answer insert failed:', answerError);
 
-    // Upsert session (updates on each answer so completed_at and cards_answered stay current)
+    // Upsert session — runs independently regardless of answer insert result
     const { error: sessionError } = await supabase.from('sessions').upsert({
       session_id: body.session.sessionId,
       game_mode: body.session.gameMode,
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       referrer: body.session.referrer,
     }, { onConflict: 'session_id' });
 
-    if (sessionError) throw sessionError;
+    if (sessionError) console.error('Session upsert failed:', sessionError);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
