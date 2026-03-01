@@ -72,14 +72,22 @@ interface CardGenerator {
 }
 
 function parseCardsJson(raw: string): GeneratedCard[] {
-  // Strip markdown code fences if present (Anthropic sometimes adds them)
-  const cleaned = raw
+  // Try to extract a JSON object directly — handles plain JSON, fenced JSON, and mixed responses
+  const fenceStripped = raw
     .trim()
     .replace(/^```[a-zA-Z]*\n?/, '')
     .replace(/\n?```$/, '')
     .trim();
 
-  const parsed = JSON.parse(cleaned);
+  // Find the first { and last } to extract the outermost JSON object
+  const start = fenceStripped.indexOf('{');
+  const end = fenceStripped.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error(`No JSON object found in response: ${fenceStripped.slice(0, 200)}`);
+  }
+  const jsonStr = fenceStripped.slice(start, end + 1);
+
+  const parsed = JSON.parse(jsonStr);
   if (!Array.isArray(parsed.cards)) {
     throw new Error(`Expected { cards: [...] }, got: ${JSON.stringify(parsed).slice(0, 200)}`);
   }
@@ -229,6 +237,10 @@ async function main() {
     console.error('Error: provide --technique or --category');
     console.error('  Techniques: urgency, authority-impersonation, credential-harvest, hyper-personalization, pretexting, fluent-prose');
     console.error('  Categories: transactional, marketing, workplace');
+    process.exit(1);
+  }
+  if (technique && category) {
+    console.error('Error: --technique and --category are mutually exclusive');
     process.exit(1);
   }
   if (technique && !(PHISHING_TECHNIQUES as readonly string[]).includes(technique)) {
