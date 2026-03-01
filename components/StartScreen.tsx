@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { GameMode } from '@/lib/types';
+import { getRank } from '@/lib/rank';
 
 interface LeaderboardEntry {
   name: string;
@@ -158,6 +159,11 @@ export function StartScreen({ onStart }: Props) {
                     <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">
                       {entry.name}
                     </span>
+                    {(() => { const r = getRank(entry.score); return (
+                      <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
+                        {r.label}
+                      </span>
+                    ); })()}
                     <span className="text-[#00ff41] text-xs font-mono font-bold glow">
                       {entry.score}
                     </span>
@@ -195,6 +201,11 @@ export function StartScreen({ onStart }: Props) {
                     <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">
                       {entry.name}
                     </span>
+                    {(() => { const r = getRank(entry.score); return (
+                      <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
+                        {r.label}
+                      </span>
+                    ); })()}
                     <span className="text-[#00ff41] text-xs font-mono font-bold glow">
                       {entry.score}
                     </span>
