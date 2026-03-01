@@ -470,7 +470,7 @@ LinkedIn Corporation, 1000 West Maude Avenue, Sunnyvale, CA 94085`,
 
 Unusual sign-in activity
 
-We detected something unusual about a recent sign-in to the Microsoft account scott@example.com.
+We detected something unusual about a recent sign-in to the Microsoft account alex@example.com.
 
 Sign-in details
 Country/Region:  Brazil
@@ -498,7 +498,7 @@ The Microsoft account team`,
     isPhishing: false,
     from: 'service@paypal.com',
     subject: 'You received a payment',
-    body: `Hi Scott,
+    body: `Hi Alex,
 
 You've got money!
 
@@ -926,7 +926,7 @@ AWS — Amazon Web Services`,
     subject: "Action required: Your domain alexchen.io's SSL certificate",
     body: `Cloudflare
 
-Hi Scott,
+Hi Alex,
 
 This is a reminder that the SSL/TLS certificate for alexchen.io is managed by Cloudflare and is set to auto-renew.
 
