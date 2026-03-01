@@ -24,4 +24,66 @@ export interface RoundResult {
   pointsEarned: number;
 }
 
-export type GameMode = 'daily' | 'freeplay';
+export type GameMode = 'freeplay' | 'daily' | 'research';
+
+// Research mode card — extends Card with research metadata from cards_real
+export interface ResearchCard extends Card {
+  cardSource: 'real';
+  technique: string | null;
+  secondaryTechnique: string | null;
+  isGenaiSuspected: boolean | null;
+  genaiConfidence: 'low' | 'medium' | 'high' | null;
+  grammarQuality: number | null;
+  proseFluency: number | null;
+  personalizationLevel: number | null;
+  contextualCoherence: number | null;
+  datasetVersion: string;
+}
+
+// Answer event payload sent to POST /api/answers
+export interface AnswerEvent {
+  sessionId: string;
+  cardId: string;
+  cardSource: 'generated' | 'real';
+  isPhishing: boolean;
+  technique: string | null;
+  secondaryTechnique: string | null;
+  isGenaiSuspected: boolean | null;
+  genaiConfidence: string | null;
+  grammarQuality: number | null;
+  proseFluency: number | null;
+  personalizationLevel: number | null;
+  contextualCoherence: number | null;
+  difficulty: string;
+  type: string;
+  userAnswer: string;
+  correct: boolean;
+  confidence: string;
+  timeFromRenderMs: number | null;
+  timeFromConfidenceMs: number | null;
+  confidenceSelectionTimeMs: number | null;
+  scrollDepthPct: number;
+  answerMethod: 'swipe' | 'button';
+  answerOrdinal: number;
+  streakAtAnswerTime: number;
+  correctCountAtTime: number;
+  gameMode: string;
+  isDailyChallenge: boolean;
+  datasetVersion: string | null;
+}
+
+// Session payload sent alongside each answer event
+export interface SessionPayload {
+  sessionId: string;
+  gameMode: string;
+  isDailyChallenge: boolean;
+  startedAt: string;
+  completedAt: string | null;
+  cardsAnswered: number;
+  finalScore: number | null;
+  finalRank: string | null;
+  deviceType: 'mobile' | 'tablet' | 'desktop';
+  viewportWidth: number;
+  viewportHeight: number;
+  referrer: string;
+}
