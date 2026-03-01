@@ -181,6 +181,14 @@ export function StartScreen({ onStart }: Props) {
             [ FREEPLAY ]
           </button>
 
+          {/* Research Mode button */}
+          <button
+            onClick={() => onStart('research')}
+            className="w-full py-3 term-border text-[#ffaa00] border-[rgba(255,170,0,0.4)] font-mono font-bold tracking-widest text-xs hover:bg-[rgba(255,170,0,0.05)] active:scale-95 transition-all"
+          >
+            [ RESEARCH MODE — REAL DATA ]
+          </button>
+
           <p className="text-[#003a0e] text-xs text-center font-mono">
             10 questions per round · email + SMS · randomized
           </p>
