@@ -91,7 +91,12 @@ export function Game() {
         .then((r) => r.json())
         .then((cards: Card[]) => {
           if (!cards.length) { setPhase('start'); return; }
-          const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, ROUND_SIZE);
+          const arr = [...cards];
+          for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+          }
+          const shuffled = arr.slice(0, ROUND_SIZE);
           setDeck(shuffled);
           setPhase('playing');
         })
