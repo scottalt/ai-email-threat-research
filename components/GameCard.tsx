@@ -58,21 +58,21 @@ function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number)
     if (card.authStatus === 'verified') {
       return {
         spf: 'PASS', dkim: 'PASS', dmarc: 'PASS',
-        replyTo: card.from, returnPath: `<${card.from}>`,
+        replyTo: card.replyTo ?? card.from, returnPath: `<${card.from}>`,
         color: { spf: '#00aa28', dkim: '#00aa28', dmarc: '#00aa28' },
       };
     }
     if (card.authStatus === 'fail') {
       return {
         spf: 'FAIL', dkim: 'FAIL', dmarc: 'FAIL',
-        replyTo: card.from, returnPath: `<${card.from}>`,
+        replyTo: card.replyTo ?? card.from, returnPath: `<${card.from}>`,
         color: { spf: '#ff3333', dkim: '#ff3333', dmarc: '#ff3333' },
       };
     }
     // unverified
     return {
       spf: 'NONE', dkim: 'NONE', dmarc: 'NONE',
-      replyTo: card.from, returnPath: `<${card.from}>`,
+      replyTo: card.replyTo ?? card.from, returnPath: `<${card.from}>`,
       color: { spf: '#ffaa00', dkim: '#ffaa00', dmarc: '#ffaa00' },
     };
   })();
