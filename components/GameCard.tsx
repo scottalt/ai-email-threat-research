@@ -72,7 +72,7 @@ function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number)
     // unverified
     return {
       spf: 'NONE', dkim: 'NONE', dmarc: 'NONE',
-      replyTo: 'NOT PRESENT', returnPath: 'NOT PRESENT',
+      replyTo: card.from, returnPath: `<${card.from}>`,
       color: { spf: '#ffaa00', dkim: '#ffaa00', dmarc: '#ffaa00' },
     };
   })();
@@ -83,7 +83,7 @@ function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number)
         <span className="text-[#00aa28] text-xs tracking-widest">INCOMING_EMAIL</span>
         <button
           onClick={(e) => { e.stopPropagation(); setHeadersOpen((o) => !o); }}
-          className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors"
+          className="text-[#00aa28] text-xs font-mono hover:text-[#00ff41] transition-colors"
         >
           [HEADERS]
         </button>
