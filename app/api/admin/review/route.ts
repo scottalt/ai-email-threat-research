@@ -12,8 +12,14 @@ export async function GET() {
     .limit(1)
     .single();
 
-  if (error) return NextResponse.json({ card: null });
-  return NextResponse.json({ card: data });
+  if (error) return NextResponse.json({ card: null, pendingCount: 0 });
+
+  const { count } = await supabase
+    .from('cards_staging')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+
+  return NextResponse.json({ card: data, pendingCount: count ?? 0 });
 }
 
 // POST — approve, reject, or mark needs_review
@@ -36,8 +42,8 @@ export async function POST(req: NextRequest) {
 
   // If approved, insert into cards_real
   if (action === 'approved' && reviewedFields) {
-    const wordCount = reviewedFields.body ? reviewedFields.body.trim().split(/\s+/).length : 0;
-    const charCount = reviewedFields.body ? reviewedFields.body.length : 0;
+    const wordCount = reviewedFields.processed_body ? reviewedFields.processed_body.trim().split(/\s+/).length : 0;
+    const charCount = reviewedFields.processed_body ? reviewedFields.processed_body.length : 0;
 
     const { error: realError } = await supabase.from('cards_real').insert({
       staging_id: stagingId,
@@ -51,17 +57,6 @@ export async function POST(req: NextRequest) {
       word_count: wordCount,
       char_count: charCount,
       technique: reviewedFields.suggested_technique,
-      secondary_technique: reviewedFields.suggested_secondary_technique,
-      grammar_quality: reviewedFields.grammar_quality,
-      prose_fluency: reviewedFields.prose_fluency,
-      personalization_level: reviewedFields.personalization_level,
-      contextual_coherence: reviewedFields.contextual_coherence,
-      genai_detector_score: reviewedFields.genai_detector_score,
-      is_genai_suspected: reviewedFields.is_genai_suspected,
-      genai_confidence: reviewedFields.genai_confidence,
-      genai_ai_reasoning: reviewedFields.genai_ai_reasoning,
-      genai_reviewer_reasoning: reviewedFields.genai_reviewer_reasoning ?? null,
-      is_verbatim: reviewedFields.is_verbatim ?? false,
       source_corpus: reviewedFields.source_corpus,
       highlights: reviewedFields.suggested_highlights,
       clues: reviewedFields.suggested_clues,
