@@ -128,7 +128,7 @@ class OpenAICardGenerator implements CardGenerator {
 
 class AnthropicCardGenerator implements CardGenerator {
   readonly provider = 'anthropic';
-  readonly modelId = 'claude-opus-4-6';
+  readonly modelId = 'claude-haiku-4-5-20251001';
   private client: Anthropic;
 
   constructor() {
