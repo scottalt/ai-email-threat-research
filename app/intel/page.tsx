@@ -18,6 +18,22 @@ interface IntelData {
     traditionalSample: number;
   };
   byConfidence: { confidence: string; total: number; accuracyRate: number }[];
+  // New research signal analytics
+  toolUsage?: {
+    headersOpenedPct: number;
+    urlInspectedPct: number;
+    headersOpenedAccuracy: number | null;
+    headersNotOpenedAccuracy: number | null;
+    urlInspectedAccuracy: number | null;
+    urlNotInspectedAccuracy: number | null;
+    headersOpenedSample: number;
+    urlInspectedSample: number;
+  };
+  authTrap?: {
+    bypassRate: number | null;
+    sample: number;
+  };
+  medianTimeByTechnique?: { technique: string; medianMs: number; sample: number }[];
 }
 
 async function getIntel(): Promise<IntelData | null> {
@@ -169,6 +185,95 @@ export default async function IntelPage() {
                 </div>
                 <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
                   Are players who bet CERTAIN actually more accurate?
+                </div>
+              </div>
+            )}
+
+            {data.toolUsage && data.toolUsage.headersOpenedSample >= 10 && (
+              <div className="term-border bg-[#060c06]">
+                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+                  <span className="text-[#00aa28] text-xs tracking-widest">TOOL_USAGE_CORRELATION</span>
+                </div>
+                <div className="px-3 py-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="term-border px-2 py-2 text-center">
+                      <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.toolUsage.headersOpenedPct}%</div>
+                      <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">opened [HEADERS]</div>
+                    </div>
+                    <div className="term-border px-2 py-2 text-center">
+                      <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.toolUsage.urlInspectedPct}%</div>
+                      <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">inspected URLs</div>
+                    </div>
+                  </div>
+                  {data.toolUsage.headersOpenedAccuracy !== null && data.toolUsage.headersNotOpenedAccuracy !== null && (
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-[#00aa28]">accuracy w/ headers open</span>
+                        <span className="text-[#00ff41] glow">{data.toolUsage.headersOpenedAccuracy}%</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-[#00aa28]">accuracy w/o headers open</span>
+                        <span className="text-[#ffaa00]">{data.toolUsage.headersNotOpenedAccuracy}%</span>
+                      </div>
+                      {data.toolUsage.urlInspectedAccuracy !== null && (
+                        <>
+                          <div className="flex justify-between text-xs font-mono">
+                            <span className="text-[#00aa28]">accuracy w/ URL inspected</span>
+                            <span className="text-[#00ff41] glow">{data.toolUsage.urlInspectedAccuracy}%</span>
+                          </div>
+                          <div className="flex justify-between text-xs font-mono">
+                            <span className="text-[#00aa28]">accuracy w/o URL inspected</span>
+                            <span className="text-[#ffaa00]">{data.toolUsage.urlNotInspectedAccuracy}%</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {data.authTrap && data.authTrap.sample >= 10 && data.authTrap.bypassRate !== null && (
+              <div className="term-border bg-[#060c06]">
+                <div className="border-b border-[rgba(255,51,51,0.35)] px-3 py-1.5">
+                  <span className="text-[#ff3333] text-xs tracking-widest glow-red">AUTH_TRAP_FINDING</span>
+                </div>
+                <div className="px-3 py-3">
+                  <div className="text-center mb-2">
+                    <div className="text-[#ff3333] text-2xl font-mono font-bold glow-red">{data.authTrap.bypassRate}%</div>
+                    <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">bypass rate on PASS-headers phishing</div>
+                    <div className="text-[#003a0e] text-[10px] font-mono">n={data.authTrap.sample}</div>
+                  </div>
+                  <p className="text-[#00aa28] text-[10px] font-mono leading-relaxed">
+                    Cards where SPF/DKIM/DMARC passed but the email was phishing. Authentication headers alone are insufficient — attackers configure valid auth on lookalike domains.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {data.medianTimeByTechnique && data.medianTimeByTechnique.length > 0 && (
+              <div className="term-border bg-[#060c06]">
+                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+                  <span className="text-[#00aa28] text-xs tracking-widest">MEDIAN_DECISION_TIME</span>
+                </div>
+                <div className="px-3 py-3 space-y-2">
+                  {data.medianTimeByTechnique.map(({ technique, medianMs }) => {
+                    const maxMs = Math.max(...data.medianTimeByTechnique!.map((t) => t.medianMs));
+                    const pct = Math.round((medianMs / maxMs) * 100);
+                    const secs = (medianMs / 1000).toFixed(1);
+                    return (
+                      <div key={technique} className="space-y-0.5">
+                        <div className="flex justify-between text-[10px] font-mono">
+                          <span className="text-[#00aa28] truncate">{technique}</span>
+                          <span className="text-[#00ff41] shrink-0 ml-2">{secs}s</span>
+                        </div>
+                        <div className="h-1 bg-[#003a0e] w-full">
+                          <div className="h-full bg-[#00aa28]" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <p className="text-[#003a0e] text-[10px] font-mono pt-1">Faster decisions may indicate higher confidence — or less investigation.</p>
                 </div>
               </div>
             )}
