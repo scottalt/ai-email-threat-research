@@ -11,17 +11,22 @@ interface Props {
   onNext: () => void;
   questionNumber: number;
   total: number;
+  sessionId: string;
 }
 
 const CONFIDENCE_LABEL = { guessing: 'GUESSING', likely: 'LIKELY', certain: 'CERTAIN' };
 const CONFIDENCE_MULTI = { guessing: '1x', likely: '2x', certain: '3x' };
 
-export function FeedbackCard({ result, streak, totalScore, onNext, questionNumber, total }: Props) {
+export function FeedbackCard({ result, streak, totalScore, onNext, questionNumber, total, sessionId }: Props) {
   const { card, correct, userAnswer, confidence, pointsEarned } = result;
   const wasPhishing = card.isPhishing;
   const streakMilestone = streak > 0 && streak % 3 === 0;
 
   const [showFlash, setShowFlash] = useState(true);
+  const [showFlag, setShowFlag] = useState(false);
+  const [flagReason, setFlagReason] = useState('');
+  const [flagComment, setFlagComment] = useState('');
+  const [flagDone, setFlagDone] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setShowFlash(false), 600);
@@ -182,6 +187,65 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
         >
           {questionNumber === total ? '[ VIEW RESULTS ]' : '[ NEXT TRANSMISSION ]'}
         </button>
+
+        {/* Flag */}
+        {!flagDone ? (
+          <div className="text-center">
+            {!showFlag ? (
+              <button
+                onClick={() => setShowFlag(true)}
+                className="text-[#003a0e] hover:text-[#00aa28] font-mono text-xs transition-colors"
+              >
+                [ REPORT ISSUE ]
+              </button>
+            ) : (
+              <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.2)] px-3 py-3 space-y-2 text-left">
+                <div className="text-[#aa2222] text-xs font-mono tracking-widest">REPORT_ISSUE</div>
+                <select
+                  value={flagReason}
+                  onChange={(e) => setFlagReason(e.target.value)}
+                  className="w-full bg-[#060c06] border border-[rgba(255,51,51,0.3)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none"
+                >
+                  <option value="">-- SELECT REASON --</option>
+                  <option value="wrong_answer">Wrong answer (misclassified)</option>
+                  <option value="too_obvious">Too obvious / not challenging</option>
+                  <option value="poor_quality">Poor quality content</option>
+                  <option value="other">Other</option>
+                </select>
+                <input
+                  value={flagComment}
+                  onChange={(e) => setFlagComment(e.target.value)}
+                  placeholder="Comment (optional)"
+                  className="w-full bg-transparent border border-[rgba(255,51,51,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1 focus:outline-none placeholder:text-[#003a0e]"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      await fetch('/api/flag', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ cardId: card.id, sessionId, reason: flagReason || null, comment: flagComment || null }),
+                      });
+                      setFlagDone(true);
+                    }}
+                    disabled={!flagReason}
+                    className="flex-1 py-1.5 border border-[rgba(255,51,51,0.4)] text-[#ff3333] font-mono text-xs hover:bg-[rgba(255,51,51,0.08)] disabled:opacity-30 transition-all"
+                  >
+                    SUBMIT
+                  </button>
+                  <button
+                    onClick={() => setShowFlag(false)}
+                    className="px-3 py-1.5 border border-[rgba(0,255,65,0.2)] text-[#003a0e] font-mono text-xs hover:text-[#00aa28] transition-all"
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center text-[#003a0e] font-mono text-xs">FLAG SUBMITTED</div>
+        )}
       </div>
     </div>
   );

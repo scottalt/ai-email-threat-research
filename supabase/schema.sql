@@ -202,3 +202,13 @@ CREATE TABLE dataset_versions (
 
 INSERT INTO dataset_versions (version, description)
 VALUES ('v1', 'Initial dataset — GenAI era phishing, post-2023 samples, 600 phishing / 400 legitimate');
+
+-- card_flags: player-reported issues with cards
+CREATE TABLE card_flags (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  card_id TEXT NOT NULL,
+  session_id TEXT,
+  reason TEXT CHECK (reason IN ('wrong_answer', 'too_obvious', 'poor_quality', 'other')),
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

@@ -274,6 +274,7 @@ export function Game() {
         onNext={handleNext}
         questionNumber={currentIndex + 1}
         total={ROUND_SIZE}
+        sessionId={sessionId.current}
       />
     );
   }

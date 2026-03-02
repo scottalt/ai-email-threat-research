@@ -180,8 +180,11 @@ export default function ReviewPage() {
 
         {/* Editable card — full width */}
         <div className="term-border bg-[#060c06]">
-          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
             <span className="text-[#00aa28] text-xs tracking-widest">CARD · EDITABLE</span>
+            {card.ai_model && (
+              <span className="text-[#003a0e] text-xs font-mono">{card.ai_model}</span>
+            )}
           </div>
           <div className="px-3 py-2 space-y-2">
             <input value={processedFrom} onChange={(e) => setProcessedFrom(e.target.value)}
