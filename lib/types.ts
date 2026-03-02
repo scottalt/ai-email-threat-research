@@ -76,7 +76,7 @@ export interface AnswerEvent {
   datasetVersion: string | null;
   headersOpened: boolean;
   urlInspected: boolean;
-  authStatusSignal: string;      // card.authStatus — denormalized for analytics
+  authStatusSignal: AuthStatus;  // card.authStatus — denormalized for analytics
   hasReplyTo: boolean;           // card.replyTo is present (mismatched reply-to)
   hasUrl: boolean;               // card body contains at least one URL
   hasAttachment: boolean;        // card references an attachment (future use, always false for now)
