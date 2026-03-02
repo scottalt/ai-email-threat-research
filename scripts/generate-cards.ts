@@ -144,13 +144,19 @@ class OpenAICardGenerator implements CardGenerator {
   }
 }
 
+const ANTHROPIC_MODELS: Record<string, string> = {
+  haiku: 'claude-haiku-4-5-20251001',
+  sonnet: 'claude-sonnet-4-6',
+};
+
 class AnthropicCardGenerator implements CardGenerator {
   readonly provider = 'anthropic';
-  readonly modelId = 'claude-haiku-4-5-20251001';
+  readonly modelId: string;
   private client: Anthropic;
 
-  constructor() {
+  constructor(modelAlias = 'haiku') {
     if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set');
+    this.modelId = ANTHROPIC_MODELS[modelAlias] ?? modelAlias; // allow raw model IDs too
     this.client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   }
 
@@ -168,10 +174,10 @@ class AnthropicCardGenerator implements CardGenerator {
   }
 }
 
-function getCardGenerator(provider: string): CardGenerator {
-  if (provider === 'anthropic') return new AnthropicCardGenerator();
+function getCardGenerator(provider: string, model?: string): CardGenerator {
+  if (provider === 'anthropic') return new AnthropicCardGenerator(model ?? 'haiku');
   if (provider === 'openai') return new OpenAICardGenerator();
-  throw new Error(`Unknown provider: ${provider}. Use 'openai' or 'anthropic'.`);
+  throw new Error(`Unknown provider: ${provider}. Use 'anthropic'.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -254,9 +260,10 @@ async function main() {
   const technique = getArg('--technique') as typeof PHISHING_TECHNIQUES[number] | null;
   const category = getArg('--category') as typeof LEGITIMATE_CATEGORIES[number] | null;
   const difficulty = getArg('--difficulty') as 'easy' | 'medium' | 'hard' | 'extreme' | null;
-  const providerArg = getArg('--provider') ?? 'openai';
+  const providerArg = getArg('--provider') ?? 'anthropic';
   const countArg = getArg('--count');
   const industryArg = getArg('--industry');
+  const modelArg = getArg('--model');
   const isDryRun = hasFlag('--dry-run');
   const count = countArg ? parseInt(countArg, 10) : 20;
 
@@ -295,7 +302,7 @@ async function main() {
     process.exit(1);
   }
   if (providerArg === 'anthropic' && count > 10) {
-    console.warn(`Warning: Anthropic batches > 10 may exceed output token limits and produce truncated JSON. Consider using --count 10 and running multiple times.`);
+    console.warn(`Warning: Anthropic batches > 10 may exceed output token limits. Consider --count 10 and running multiple times.`);
   }
   if (!isDryRun && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set for live runs');
@@ -317,7 +324,7 @@ async function main() {
   // Build generator
   let generator: CardGenerator;
   try {
-    generator = getCardGenerator(providerArg);
+    generator = getCardGenerator(providerArg, modelArg ?? undefined);
   } catch (err) {
     console.error((err as Error).message);
     process.exit(1);
