@@ -286,6 +286,7 @@ Michael (sent from my personal email while traveling)`,
     explanation:
       "Business Email Compromise (BEC). The attacker impersonates an executive, creates urgency, and blocks verbal verification. Always verify wire transfers via a known phone number — never by replying to the email.",
     authStatus: 'verified',
+    replyTo: 'j.hartwell.ceo@gmail.com',
   },
   {
     id: 'p-hard-002',
@@ -321,6 +322,7 @@ LinkedIn Events Team`,
     explanation:
       "Spear phishing using OSINT. The attacker found your SFISSA involvement on LinkedIn and crafted a targeted message. LinkedIn notifications come from @linkedin.com — this domain leads to a credential harvesting page.",
     authStatus: 'unverified',
+    replyTo: 'linkedinsupport.help@outlook.com',
   },
 
   // ===== LEGIT - EASY =====
@@ -754,6 +756,7 @@ The GitHub Team`,
     explanation:
       "This is hard because the 'from' looks like GitHub. But the link domain is github-email-verify.com — completely different from github.com. GitHub's own verification emails link to github.com paths. Always hover over links before clicking.",
     authStatus: 'unverified',
+    replyTo: 'github-security@protonmail.com',
   },
   {
     id: 'p-hard-004',
@@ -792,6 +795,7 @@ Delta Tech Supplies`,
     explanation:
       "Vendor payment fraud: attackers compromise or spoof a known supplier's email and redirect payments to attacker accounts. Always verify banking detail changes via a known phone number from your records — not from the email itself.",
     authStatus: 'verified',
+    replyTo: 'd.chen88@hotmail.com',
   },
   {
     id: 'p-hard-005',
@@ -832,6 +836,7 @@ IT Helpdesk`,
     explanation:
       "Tech support social engineering. Real IT teams deploy patches via management tools — they do not email employees and ask them to download remote access software. Calling the provided number connects you to the attacker, not your IT team.",
     authStatus: 'unverified',
+    replyTo: 'ithelpdesk.admin@gmail.com',
   },
 
   // ===== LEGIT - EASY (additional) =====
