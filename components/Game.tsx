@@ -242,7 +242,7 @@ export function Game() {
         results={results}
         mode={mode}
         date={getToday()}
-        onPlayAgain={() => startRound('freeplay')}
+        onPlayAgain={() => setPhase('start')}
       />
     );
   }
