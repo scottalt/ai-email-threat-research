@@ -6,7 +6,7 @@ export async function GET() {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
     .from('cards_real')
-    .select('id, card_id, is_phishing, technique, difficulty, from_address, subject, body, explanation, highlights, clues, review_notes, ai_model, approved_at')
+    .select('id, card_id, is_phishing, technique, difficulty, from_address, subject, body, explanation, highlights, clues, review_notes, ai_model, approved_at, auth_status')
     .order('approved_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

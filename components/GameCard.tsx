@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import type { Card, Answer, Confidence } from '@/lib/types';
+import type { Card, Answer, Confidence, AuthStatus } from '@/lib/types';
 
 const SWIPE_THRESHOLD = 75;
 const FLY_DISTANCE = 650;
@@ -41,12 +41,28 @@ function analystFace(streak: number): string {
   return '[._.]';
 }
 
+function AuthBadge({ status }: { status: AuthStatus }) {
+  if (status === 'verified') return <span className="text-[#003a0e] text-xs font-mono">[AUTH: VERIFIED]</span>;
+  if (status === 'fail') return <span className="text-[#ff3333] text-xs font-mono glow-red">[AUTH: FAIL]</span>;
+  return <span className="text-[#ffaa00] text-xs font-mono">[UNVERIFIED]</span>;
+}
+
+function parseBody(text: string): Array<{ type: 'text' | 'url'; content: string }> {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  return parts.map((part) =>
+    /^https?:\/\//.test(part) ? { type: 'url', content: part } : { type: 'text', content: part }
+  );
+}
+
 function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number) => void }) {
+  const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
+  const segments = parseBody(card.body);
+
   return (
     <div className="term-border bg-[#060c06] select-none">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
         <span className="text-[#00aa28] text-xs tracking-widest">INCOMING_EMAIL</span>
-        <span className="text-[#003a0e] text-xs">■ □ □</span>
+        <AuthBadge status={card.authStatus} />
       </div>
       <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.2)] space-y-1">
         <div className="flex gap-2 text-xs">
@@ -68,18 +84,42 @@ function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number)
           onScroll?.(pct);
         }}
       >
-        {card.body}
+        {segments.map((seg, i) =>
+          seg.type === 'url' ? (
+            <span
+              key={i}
+              className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
+              onClick={(e) => { e.stopPropagation(); setInspectedUrl(seg.content); }}
+            >
+              {seg.content}
+            </span>
+          ) : (
+            <span key={i}>{seg.content}</span>
+          )
+        )}
       </div>
+      {inspectedUrl && (
+        <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[#ffaa00] text-xs font-mono tracking-widest">URL_INSPECTOR</span>
+            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors">[ × ]</button>
+          </div>
+          <span className="text-[#ffaa00] font-mono text-xs break-all">{inspectedUrl}</span>
+        </div>
+      )}
     </div>
   );
 }
 
 function SMSDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number) => void }) {
+  const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
+  const segments = parseBody(card.body);
+
   return (
     <div className="term-border bg-[#060c06] select-none">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
         <span className="text-[#00aa28] text-xs tracking-widest">INCOMING_SMS</span>
-        <span className="text-[#003a0e] text-xs">■ □ □</span>
+        <AuthBadge status={card.authStatus} />
       </div>
       <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.2)]">
         <div className="flex gap-2 text-xs">
@@ -95,8 +135,29 @@ function SMSDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number) =
           onScroll?.(pct);
         }}
       >
-        {card.body}
+        {segments.map((seg, i) =>
+          seg.type === 'url' ? (
+            <span
+              key={i}
+              className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
+              onClick={(e) => { e.stopPropagation(); setInspectedUrl(seg.content); }}
+            >
+              {seg.content}
+            </span>
+          ) : (
+            <span key={i}>{seg.content}</span>
+          )
+        )}
       </div>
+      {inspectedUrl && (
+        <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[#ffaa00] text-xs font-mono tracking-widest">URL_INSPECTOR</span>
+            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors">[ × ]</button>
+          </div>
+          <span className="text-[#ffaa00] font-mono text-xs break-all">{inspectedUrl}</span>
+        </div>
+      )}
     </div>
   );
 }

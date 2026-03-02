@@ -49,6 +49,11 @@ export async function POST(req: NextRequest) {
     const wordCount = reviewedFields.processed_body ? reviewedFields.processed_body.trim().split(/\s+/).length : 0;
     const charCount = reviewedFields.processed_body ? reviewedFields.processed_body.length : 0;
 
+    const authStatus = reviewedFields.auth_status ??
+      (!reviewedFields.is_phishing ? 'verified'
+        : ['easy', 'medium'].includes(reviewedFields.suggested_difficulty) ? 'fail'
+        : 'unverified');
+
     const { error: realError } = await supabase.from('cards_real').insert({
       staging_id: stagingId,
       card_id: `real-${reviewedFields.is_phishing ? 'p' : 'l'}-${Date.now()}`,
@@ -69,6 +74,7 @@ export async function POST(req: NextRequest) {
       review_time_ms: reviewedFields.review_time_ms ?? null,
       ai_model: reviewedFields.ai_model,
       ai_preprocessing_version: reviewedFields.ai_preprocessing_version,
+      auth_status: authStatus,
     });
 
     if (realError) return NextResponse.json({ error: realError.message }, { status: 500 });

@@ -49,6 +49,7 @@ export default function ReviewPage() {
   const [technique, setTechnique] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
   const [isPhishing, setIsPhishing] = useState(true);
+  const [authStatus, setAuthStatus] = useState<'verified' | 'unverified' | 'fail'>('fail');
   const [reviewNotes, setReviewNotes] = useState('');
 
   const fetchNext = useCallback(async () => {
@@ -65,8 +66,11 @@ export default function ReviewPage() {
         setProcessedSubject(next.processed_subject ?? next.raw_subject ?? '');
         setProcessedBody(next.processed_body ?? next.raw_body ?? '');
         setTechnique(next.suggested_technique ?? '');
-        setDifficulty(next.suggested_difficulty ?? 'medium');
-        setIsPhishing(next.is_phishing ?? true);
+        const diff = next.suggested_difficulty ?? 'medium';
+        const phishing = next.is_phishing ?? true;
+        setDifficulty(diff);
+        setIsPhishing(phishing);
+        setAuthStatus(!phishing ? 'verified' : ['easy', 'medium'].includes(diff) ? 'fail' : 'unverified');
         setReviewNotes('');
         cardLoadTime.current = Date.now();
       }
@@ -120,6 +124,7 @@ export default function ReviewPage() {
             review_time_ms: reviewTimeMs,
             ai_model: card.ai_model,
             ai_preprocessing_version: card.ai_preprocessing_version,
+            auth_status: authStatus,
           } : null,
         }),
       });
@@ -219,7 +224,11 @@ export default function ReviewPage() {
 
             <div className="flex gap-2">
               {['phishing', 'legit'].map((v) => (
-                <button key={v} onClick={() => setIsPhishing(v === 'phishing')}
+                <button key={v} onClick={() => {
+                  const phishing = v === 'phishing';
+                  setIsPhishing(phishing);
+                  setAuthStatus(!phishing ? 'verified' : ['easy', 'medium'].includes(difficulty) ? 'fail' : 'unverified');
+                }}
                   className={`flex-1 py-1.5 text-xs font-mono border transition-all ${
                     (v === 'phishing') === isPhishing
                       ? v === 'phishing' ? 'text-[#ff3333] border-[rgba(255,51,51,0.6)] bg-[rgba(255,51,51,0.08)]' : 'text-[#00ff41] border-[rgba(0,255,65,0.6)] bg-[rgba(0,255,65,0.08)]'
@@ -238,7 +247,11 @@ export default function ReviewPage() {
                   {TECHNIQUES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
 
-                <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}
+                <select value={difficulty} onChange={(e) => {
+                  const d = e.target.value;
+                  setDifficulty(d);
+                  setAuthStatus(['easy', 'medium'].includes(d) ? 'fail' : 'unverified');
+                }}
                   className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.3)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none">
                   <option value="easy">EASY</option>
                   <option value="medium">MEDIUM</option>
@@ -249,6 +262,13 @@ export default function ReviewPage() {
             ) : (
               <div className="text-[#003a0e] text-xs font-mono">LEGITIMATE — no technique or difficulty</div>
             )}
+
+            <select value={authStatus} onChange={(e) => setAuthStatus(e.target.value as 'verified' | 'unverified' | 'fail')}
+              className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.3)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none">
+              <option value="verified">AUTH: VERIFIED</option>
+              <option value="unverified">UNVERIFIED</option>
+              <option value="fail">AUTH: FAIL</option>
+            </select>
 
             <textarea value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)}
               placeholder="Review notes (optional)"
