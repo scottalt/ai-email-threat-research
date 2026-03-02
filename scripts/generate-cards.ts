@@ -27,6 +27,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { createHash } from 'crypto';
 import { config as loadEnv } from 'dotenv';
 
 // Load .env.local (Next.js convention) — falls back gracefully if not found
@@ -342,9 +343,14 @@ async function main() {
   // Insert cards
   let inserted = 0;
   for (const card of validCards) {
+    const rawEmailHash = createHash('sha256')
+      .update(`${card.from}|${card.subject ?? ''}|${card.body}`)
+      .digest('hex');
+
     const { error } = await supabase.from('cards_staging').insert({
       import_batch_id: batch.batch_id,
       source_corpus: 'generated',
+      raw_email_hash: rawEmailHash,
       raw_from: card.from,
       raw_subject: card.subject ?? null,
       raw_body: card.body,
