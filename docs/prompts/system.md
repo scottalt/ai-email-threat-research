@@ -13,6 +13,7 @@ Rules:
 - Vary industry context, sender role, and scenario across cards in the same batch — do not repeat the same context. Draw from a wide range of industries: healthcare, banking and finance, legal, education, retail, logistics, manufacturing, real estate, government, HR and recruiting, insurance, energy and utilities, hospitality, and media. Do not default to tech or cloud services unless explicitly specified.
 - Every phishing card at every difficulty level must have exactly one detectable tell in the sender's email domain — a near-perfect but checkable discrepancy: one transposed character, a wrong TLD (.net instead of .com), or a convincing subdomain prefix. This applies without exception, including BEC-style extreme cards. The domain discrepancy is the player's one forensic anchor.
 - To make this discrepancy findable with fictional companies: the email body or signature must include a reference to the sender's legitimate domain (a website URL, a portal link, or an email address in a signature block). The FROM address uses a lookalike of that domain. The player's tell is the mismatch between the FROM domain and the domain referenced inside the email. Example: FROM is s.chen@meridian-grp.com but the signature reads "Sarah Chen | meridiangroup.com". For legitimate cards, the FROM domain and all body domain references must match exactly.
+- For legitimate cards, vary sender organisation size: include a mix of major companies (Google, banks, retailers), mid-size businesses (regional law firms, healthcare practices, local retailers), and small organisations (nonprofits, community groups, independent professionals). Smaller senders realistically have no SPF/DKIM — set authStatus accordingly.
 
 Output format — always return a valid JSON object with a "cards" array:
 {
@@ -23,7 +24,8 @@ Output format — always return a valid JSON object with a "cards" array:
       "body": "Full message body in plain text",
       "highlights": ["exact phrase to mark as notable", "another phrase"],
       "clues": ["security analyst note about this phrase — one clue per highlight, same index order", "note about another element"],
-      "explanation": "One clear paragraph explaining why this is or is not phishing and what the key indicators are."
+      "explanation": "One clear paragraph explaining why this is or is not phishing and what the key indicators are.",
+      "authStatus": "verified"
     }
   ]
 }
@@ -39,3 +41,17 @@ For legitimate cards:
 - explanation: explain why this is legitimate, acknowledge what a player might mistake for phishing, and clarify why it isn't
 
 For SMS: set "subject" to null.
+
+For authStatus — set this field on every card based on the rules below. It controls what the email authentication headers show when a player inspects them.
+
+Phishing cards:
+- easy/medium: "fail" — attacker cannot authenticate with the target domain's keys
+- hard/extreme: use your judgment based on the attack pattern:
+  - If the attacker registered their own lookalike domain (e.g. acmecorp-global.com, delta-tech-supplies.com): "verified" — they own the domain and configured SPF/DKIM properly. This is realistic for sophisticated attackers and is a valid hard-card trap.
+  - If the attacker is spoofing a well-known domain (e.g. github.com, microsoft.com): "unverified" — headers are stripped or absent, NONE result
+  - Mix roughly 40-50% "verified" and 50-60% "unverified" across hard/extreme phishing cards in any batch
+
+Legitimate cards:
+- Major company senders (Google, Microsoft, Apple, Amazon, banks, large retailers): always "verified"
+- Small businesses, nonprofits, community orgs, individual professionals: "unverified" (NONE) — common for smaller senders without IT infrastructure. Aim for ~20% of legit cards in a batch.
+- Misconfigured senders (rare, realistic): "fail" — use sparingly, ~2-5% of legit cards
