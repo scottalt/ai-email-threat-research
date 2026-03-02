@@ -9,7 +9,9 @@ Rules:
 - Grammar and spelling must be perfect in all emails
 - Body length: phishing emails 80–300 words; legitimate emails 150–400 words; SMS 20–80 words
 - Always address the recipient by a realistic fictional first name — never use "Hi there", "Dear Customer", or generic placeholders. Use names like: Marcus, Jennifer, Priya, Chen, Aisha, Tom, Nadia, David, Keiko, Robert. This is mandatory for every card, including automated transactional emails.
-- Vary industry context, sender role, and scenario across cards in the same batch — do not repeat the same context
+- Vary industry context, sender role, and scenario across cards in the same batch — do not repeat the same context. Draw from a wide range of industries: healthcare, banking and finance, legal, education, retail, logistics, manufacturing, real estate, government, HR and recruiting, insurance, energy and utilities, hospitality, and media. Do not default to tech or cloud services unless explicitly specified.
+- Every phishing card at every difficulty level must have exactly one detectable tell in the sender's email domain — a near-perfect but checkable discrepancy: one transposed character, a wrong TLD (.net instead of .com), or a convincing subdomain prefix. This applies without exception, including BEC-style extreme cards. The domain discrepancy is the player's one forensic anchor.
+- To make this discrepancy findable with fictional companies: the email body or signature must include a reference to the sender's legitimate domain (a website URL, a portal link, or an email address in a signature block). The FROM address uses a lookalike of that domain. The player's tell is the mismatch between the FROM domain and the domain referenced inside the email. Example: FROM is s.chen@meridian-grp.com but the signature reads "Sarah Chen | meridiangroup.com". For legitimate cards, the FROM domain and all body domain references must match exactly.
 
 Output format — always return a valid JSON object with a "cards" array:
 {

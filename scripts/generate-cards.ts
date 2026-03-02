@@ -42,6 +42,23 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const GENERATION_VERSION = '1.0';
 
+const INDUSTRIES = [
+  'healthcare and medical',
+  'banking and financial services',
+  'legal and law firms',
+  'education and universities',
+  'retail and e-commerce',
+  'logistics and shipping',
+  'manufacturing and industrial',
+  'real estate and property management',
+  'government and public sector',
+  'HR and recruiting',
+  'insurance',
+  'energy and utilities',
+  'hospitality and travel',
+  'media and entertainment',
+] as const;
+
 const PHISHING_TECHNIQUES = [
   'urgency',
   'authority-impersonation',
@@ -239,8 +256,12 @@ async function main() {
   const difficulty = getArg('--difficulty') as 'easy' | 'medium' | 'hard' | 'extreme' | null;
   const providerArg = getArg('--provider') ?? 'openai';
   const countArg = getArg('--count');
+  const industryArg = getArg('--industry');
   const isDryRun = hasFlag('--dry-run');
   const count = countArg ? parseInt(countArg, 10) : 20;
+
+  // Resolve industry: explicit arg, or pick one at random
+  const industry = industryArg ?? INDUSTRIES[Math.floor(Math.random() * INDUSTRIES.length)];
 
   // Validation
   if (!technique && !category) {
@@ -288,9 +309,10 @@ async function main() {
     : loadFile(`docs/prompts/legitimate/${category}.md`);
 
   // Build user message
+  const industryContext = ` All scenarios in this batch must be set in the ${industry} industry — company names, sender roles, referenced systems, and scenario contexts must reflect that industry specifically.`;
   const userMessage = technique
-    ? `Generate ${count} ${difficulty} difficulty phishing emails using the "${technique}" technique.`
-    : `Generate ${count} legitimate ${category} emails.`;
+    ? `Generate ${count} ${difficulty} difficulty phishing emails using the "${technique}" technique.${industryContext}`
+    : `Generate ${count} legitimate ${category} emails.${industryContext}`;
 
   // Build generator
   let generator: CardGenerator;
