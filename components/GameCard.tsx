@@ -16,6 +16,8 @@ interface Props {
     confidenceSelectionTimeMs: number | null;
     scrollDepthPct: number;
     answerMethod: 'swipe' | 'button';
+    headersOpened: boolean;
+    urlInspected: boolean;
   }) => void;
   questionNumber: number;
   total: number;
@@ -49,7 +51,12 @@ function parseBody(text: string): Array<{ type: 'text' | 'url'; content: string 
   );
 }
 
-function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number) => void }) {
+function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
+  card: Card;
+  onScroll?: (pct: number) => void;
+  onHeadersOpened?: () => void;
+  onUrlInspected?: () => void;
+}) {
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
   const [headersOpen, setHeadersOpen] = useState(false);
   const segments = parseBody(card.body);
@@ -82,7 +89,7 @@ function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number)
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
         <span className="text-[#00aa28] text-xs tracking-widest">INCOMING_EMAIL</span>
         <button
-          onClick={(e) => { e.stopPropagation(); setHeadersOpen((o) => !o); }}
+          onClick={(e) => { e.stopPropagation(); if (!headersOpen) onHeadersOpened?.(); setHeadersOpen((o) => !o); }}
           className="text-[#00aa28] text-xs font-mono hover:text-[#00ff41] transition-colors"
         >
           [HEADERS]
@@ -148,7 +155,7 @@ function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number)
             <span
               key={i}
               className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
-              onClick={(e) => { e.stopPropagation(); setInspectedUrl(seg.content); }}
+              onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.content); }}
             >
               {seg.content}
             </span>
@@ -230,6 +237,8 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
   const renderTime          = useRef<number>(Date.now());
   const confidenceTime      = useRef<number | null>(null);
   const maxScrollDepth      = useRef<number>(0);
+  const headersEverOpened   = useRef(false);
+  const urlEverInspected    = useRef(false);
 
   const answered   = useRef(false);
   const dragging   = useRef(false);
@@ -296,6 +305,8 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
         confidenceSelectionTimeMs: confidenceSelectionTime,
         scrollDepthPct: maxScrollDepth.current,
         answerMethod: method,
+        headersOpened: headersEverOpened.current,
+        urlInspected: urlEverInspected.current,
       }
     ), 230);
   }
@@ -455,7 +466,12 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
           }}
         >
           {card.type === 'email'
-            ? <EmailDisplay card={card} onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }} />
+            ? <EmailDisplay
+                card={card}
+                onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }}
+                onHeadersOpened={() => { headersEverOpened.current = true; }}
+                onUrlInspected={() => { urlEverInspected.current = true; }}
+              />
             : <SMSDisplay card={card} onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }} />
           }
         </div>
