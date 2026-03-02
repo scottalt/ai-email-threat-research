@@ -37,6 +37,12 @@ export async function POST(req: NextRequest) {
       game_mode: body.answer.gameMode,
       is_daily_challenge: body.answer.isDailyChallenge,
       dataset_version: body.answer.datasetVersion,
+      headers_opened: body.answer.headersOpened,
+      url_inspected: body.answer.urlInspected,
+      auth_status: body.answer.authStatusSignal,
+      has_reply_to: body.answer.hasReplyTo,
+      has_url: body.answer.hasUrl,
+      has_attachment: body.answer.hasAttachment,
     });
 
     if (answerError) console.error('Answer insert failed:', answerError);
