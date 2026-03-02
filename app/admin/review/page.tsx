@@ -38,6 +38,7 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
   const cardLoadTime = useRef<number>(Date.now());
 
   // Editable fields — pre-filled from AI suggestions
@@ -45,13 +46,8 @@ export default function ReviewPage() {
   const [processedSubject, setProcessedSubject] = useState('');
   const [processedBody, setProcessedBody] = useState('');
   const [technique, setTechnique] = useState('');
-  const [secondaryTechnique, setSecondaryTechnique] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
   const [isPhishing, setIsPhishing] = useState(true);
-  const [isVerbatim, setIsVerbatim] = useState(false);
-  const [isGenai, setIsGenai] = useState(false);
-  const [genaiConfidence, setGenaiConfidence] = useState('low');
-  const [genaiReviewerReasoning, setGenaiReviewerReasoning] = useState('');
   const [reviewNotes, setReviewNotes] = useState('');
 
   const fetchNext = useCallback(async () => {
@@ -59,20 +55,16 @@ export default function ReviewPage() {
     setDone(false);
     try {
       const res = await fetch('/api/admin/review');
-      const { card: next } = await res.json();
+      const { card: next, pendingCount: count } = await res.json();
+      setPendingCount(count ?? null);
       if (!next) { setDone(true); setCard(null); } else {
         setCard(next);
         setProcessedFrom(next.processed_from ?? next.raw_from ?? '');
         setProcessedSubject(next.processed_subject ?? next.raw_subject ?? '');
         setProcessedBody(next.processed_body ?? next.raw_body ?? '');
         setTechnique(next.suggested_technique ?? '');
-        setSecondaryTechnique(next.suggested_secondary_technique ?? '');
         setDifficulty(next.suggested_difficulty ?? 'medium');
         setIsPhishing(next.is_phishing ?? true);
-        setIsVerbatim(false);
-        setIsGenai(next.is_genai_suspected ?? false);
-        setGenaiConfidence(next.genai_confidence ?? 'low');
-        setGenaiReviewerReasoning('');
         setReviewNotes('');
         cardLoadTime.current = Date.now();
       }
@@ -103,7 +95,7 @@ export default function ReviewPage() {
     setSubmitting(true);
     const reviewTimeMs = Date.now() - cardLoadTime.current;
 
-    await fetch('/api/admin/review', {
+    const res = await fetch('/api/admin/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -116,21 +108,10 @@ export default function ReviewPage() {
           processed_subject: processedSubject || null,
           processed_body: processedBody,
           suggested_technique: technique,
-          suggested_secondary_technique: secondaryTechnique || null,
           suggested_difficulty: difficulty,
           suggested_highlights: card.suggested_highlights ?? [],
           suggested_clues: card.suggested_clues ?? [],
           suggested_explanation: card.suggested_explanation ?? '',
-          grammar_quality: card.grammar_quality,
-          prose_fluency: card.prose_fluency,
-          personalization_level: card.personalization_level,
-          contextual_coherence: card.contextual_coherence,
-          genai_detector_score: card.genai_detector_score,
-          is_genai_suspected: isGenai,
-          genai_confidence: genaiConfidence,
-          genai_ai_reasoning: card.genai_ai_reasoning,
-          genai_reviewer_reasoning: genaiReviewerReasoning || null,
-          is_verbatim: isVerbatim,
           source_corpus: card.source_corpus,
           review_notes: reviewNotes || null,
           review_time_ms: reviewTimeMs,
@@ -139,6 +120,13 @@ export default function ReviewPage() {
         } : null,
       }),
     });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(`Action failed: ${err.error ?? res.status}`);
+      setSubmitting(false);
+      return;
+    }
 
     setSubmitting(false);
     fetchNext();
@@ -175,7 +163,12 @@ export default function ReviewPage() {
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between text-xs font-mono">
-          <span className="text-[#00aa28] tracking-widest">REVIEW_QUEUE</span>
+          <span className="text-[#00aa28] tracking-widest">
+            REVIEW_QUEUE
+            {pendingCount !== null && (
+              <span className="text-[#003a0e]"> · {pendingCount} PENDING</span>
+            )}
+          </span>
           <span className="text-[#003a0e]">A=approve · R=reject · N=needs_review</span>
         </div>
 
@@ -185,43 +178,28 @@ export default function ReviewPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          {/* Left: Raw */}
-          <div className="term-border bg-[#060c06] space-y-0">
-            <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-              <span className="text-[#003a0e] text-xs tracking-widest">RAW_INPUT · {card.source_corpus}</span>
-            </div>
-            <div className="px-3 py-2 text-xs font-mono space-y-1">
-              <div><span className="text-[#003a0e]">FROM:</span> <span className="text-[#00aa28]">{card.raw_from}</span></div>
-              {card.raw_subject && <div><span className="text-[#003a0e]">SUBJ:</span> <span className="text-[#00aa28]">{card.raw_subject}</span></div>}
-            </div>
-            <div className="px-3 pb-3 text-xs text-[#003a0e] font-mono whitespace-pre-wrap max-h-64 overflow-y-auto leading-relaxed">
-              {card.raw_body}
-            </div>
+        {/* Editable card — full width */}
+        <div className="term-border bg-[#060c06]">
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+            <span className="text-[#00aa28] text-xs tracking-widest">CARD · EDITABLE</span>
           </div>
-
-          {/* Right: Processed (editable) */}
-          <div className="term-border bg-[#060c06]">
-            <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-              <span className="text-[#00aa28] text-xs tracking-widest">AI_PROCESSED · EDITABLE</span>
-            </div>
-            <div className="px-3 py-2 space-y-2">
-              <input value={processedFrom} onChange={(e) => setProcessedFrom(e.target.value)}
-                className="w-full bg-transparent border border-[rgba(0,255,65,0.2)] text-[#00ff41] font-mono text-xs px-2 py-1 focus:outline-none focus:border-[rgba(0,255,65,0.6)]"
-                placeholder="FROM" />
-              <input value={processedSubject} onChange={(e) => setProcessedSubject(e.target.value)}
-                className="w-full bg-transparent border border-[rgba(0,255,65,0.2)] text-[#00ff41] font-mono text-xs px-2 py-1 focus:outline-none focus:border-[rgba(0,255,65,0.6)]"
-                placeholder="SUBJECT (optional)" />
-              <textarea value={processedBody} onChange={(e) => setProcessedBody(e.target.value)}
-                rows={6}
-                className="w-full bg-transparent border border-[rgba(0,255,65,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1 focus:outline-none focus:border-[rgba(0,255,65,0.6)] resize-none"
-              />
-            </div>
+          <div className="px-3 py-2 space-y-2">
+            <input value={processedFrom} onChange={(e) => setProcessedFrom(e.target.value)}
+              className="w-full bg-transparent border border-[rgba(0,255,65,0.2)] text-[#00ff41] font-mono text-xs px-2 py-1 focus:outline-none focus:border-[rgba(0,255,65,0.6)]"
+              placeholder="FROM" />
+            <input value={processedSubject} onChange={(e) => setProcessedSubject(e.target.value)}
+              className="w-full bg-transparent border border-[rgba(0,255,65,0.2)] text-[#00ff41] font-mono text-xs px-2 py-1 focus:outline-none focus:border-[rgba(0,255,65,0.6)]"
+              placeholder="SUBJECT (optional)" />
+            <textarea value={processedBody} onChange={(e) => setProcessedBody(e.target.value)}
+              rows={10}
+              className="w-full bg-transparent border border-[rgba(0,255,65,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1 focus:outline-none focus:border-[rgba(0,255,65,0.6)] resize-none"
+            />
           </div>
         </div>
 
-        {/* Classification fields */}
+        {/* Classification + Feedback Preview */}
         <div className="grid grid-cols-2 gap-4">
+          {/* Classification */}
           <div className="term-border bg-[#060c06] px-3 py-3 space-y-3">
             <div className="text-[#00aa28] text-xs font-mono tracking-widest">CLASSIFICATION</div>
 
@@ -238,87 +216,70 @@ export default function ReviewPage() {
               ))}
             </div>
 
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}
-              className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.3)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none">
-              <option value="easy">EASY</option>
-              <option value="medium">MEDIUM</option>
-              <option value="hard">HARD</option>
-            </select>
+            {isPhishing ? (
+              <>
+                <select value={technique} onChange={(e) => setTechnique(e.target.value)}
+                  className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.3)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none">
+                  <option value="">-- PRIMARY TECHNIQUE --</option>
+                  {TECHNIQUES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
 
-            <select value={technique} onChange={(e) => setTechnique(e.target.value)}
-              className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.3)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none">
-              <option value="">-- PRIMARY TECHNIQUE --</option>
-              {TECHNIQUES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-
-            <select value={secondaryTechnique} onChange={(e) => setSecondaryTechnique(e.target.value)}
-              className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.3)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none">
-              <option value="">-- SECONDARY TECHNIQUE (optional) --</option>
-              {TECHNIQUES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-
-            <div className="flex gap-4 text-xs font-mono">
-              <label className="flex items-center gap-2 text-[#00aa28] cursor-pointer">
-                <input type="checkbox" checked={isVerbatim} onChange={(e) => setIsVerbatim(e.target.checked)} className="accent-[#00ff41]" />
-                VERBATIM
-              </label>
-            </div>
-          </div>
-
-          <div className="term-border bg-[#060c06] px-3 py-3 space-y-3">
-            <div className="text-[#00aa28] text-xs font-mono tracking-widest">GENAI ASSESSMENT</div>
-
-            {card.genai_detector_score !== null && (
-              <div className="text-xs font-mono">
-                <span className="text-[#003a0e]">DETECTOR SCORE: </span>
-                <span className="text-[#ffaa00]">{(card.genai_detector_score * 100).toFixed(1)}%</span>
-              </div>
+                <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}
+                  className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.3)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none">
+                  <option value="easy">EASY</option>
+                  <option value="medium">MEDIUM</option>
+                  <option value="hard">HARD</option>
+                </select>
+              </>
+            ) : (
+              <div className="text-[#003a0e] text-xs font-mono">LEGITIMATE — no technique or difficulty</div>
             )}
-
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-              {[
-                { label: 'GRAMMAR', value: card.grammar_quality },
-                { label: 'FLUENCY', value: card.prose_fluency },
-                { label: 'PERSONAL', value: card.personalization_level },
-                { label: 'COHERENCE', value: card.contextual_coherence },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between">
-                  <span className="text-[#003a0e]">{label}:</span>
-                  <span className="text-[#00aa28]">{value ?? '—'}/5</span>
-                </div>
-              ))}
-            </div>
-
-            {card.genai_ai_reasoning && (
-              <div className="text-[10px] font-mono text-[#003a0e] leading-relaxed">
-                {card.genai_ai_reasoning}
-              </div>
-            )}
-
-            <div className="flex gap-2 items-center">
-              <label className="flex items-center gap-2 text-xs font-mono text-[#00aa28] cursor-pointer">
-                <input type="checkbox" checked={isGenai} onChange={(e) => setIsGenai(e.target.checked)} className="accent-[#00ff41]" />
-                GENAI SUSPECTED
-              </label>
-              <select value={genaiConfidence} onChange={(e) => setGenaiConfidence(e.target.value)}
-                className="flex-1 bg-[#060c06] border border-[rgba(0,255,65,0.3)] text-[#00aa28] font-mono text-xs px-1 py-1 focus:outline-none">
-                <option value="low">LOW</option>
-                <option value="medium">MEDIUM</option>
-                <option value="high">HIGH</option>
-              </select>
-            </div>
-
-            <textarea value={genaiReviewerReasoning} onChange={(e) => setGenaiReviewerReasoning(e.target.value)}
-              placeholder="Reviewer GenAI reasoning (optional)"
-              rows={2}
-              className="w-full bg-transparent border border-[rgba(0,255,65,0.15)] text-[#00aa28] font-mono text-xs px-2 py-1 focus:outline-none resize-none placeholder:text-[#003a0e]"
-            />
 
             <textarea value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)}
               placeholder="Review notes (optional)"
-              rows={2}
+              rows={3}
               className="w-full bg-transparent border border-[rgba(0,255,65,0.15)] text-[#00aa28] font-mono text-xs px-2 py-1 focus:outline-none resize-none placeholder:text-[#003a0e]"
             />
+          </div>
+
+          {/* Feedback Preview */}
+          <div className="term-border bg-[#060c06] px-3 py-3 space-y-3">
+            <div className="text-[#00aa28] text-xs font-mono tracking-widest">FEEDBACK PREVIEW</div>
+
+            <div>
+              <div className="text-[#003a0e] text-xs font-mono mb-1">HIGHLIGHTS</div>
+              {card.suggested_highlights && card.suggested_highlights.length > 0 ? (
+                <ul className="space-y-0.5">
+                  {card.suggested_highlights.map((h, i) => (
+                    <li key={i} className="text-[#ffaa00] font-mono text-xs">&bull; &quot;{h}&quot;</li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="text-[#003a0e] font-mono text-xs">—</span>
+              )}
+            </div>
+
+            <div>
+              <div className="text-[#003a0e] text-xs font-mono mb-1">CLUES</div>
+              {card.suggested_clues && card.suggested_clues.length > 0 ? (
+                <ul className="space-y-0.5">
+                  {card.suggested_clues.map((c, i) => (
+                    <li key={i} className="text-[#00aa28] font-mono text-xs">[{i + 1}] {c}</li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="text-[#003a0e] font-mono text-xs">—</span>
+              )}
+            </div>
+
+            <div>
+              <div className="text-[#003a0e] text-xs font-mono mb-1">EXPLANATION</div>
+              {card.suggested_explanation ? (
+                <p className="text-[#00aa28] font-mono text-xs leading-relaxed">{card.suggested_explanation}</p>
+              ) : (
+                <span className="text-[#003a0e] font-mono text-xs">—</span>
+              )}
+            </div>
           </div>
         </div>
 
