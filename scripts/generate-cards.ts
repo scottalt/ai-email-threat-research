@@ -118,6 +118,7 @@ class OpenAICardGenerator implements CardGenerator {
       ],
       response_format: { type: 'json_object' },
       temperature: 0.8,
+      max_tokens: 16000,
     });
 
     const content = response.choices[0]?.message?.content;
@@ -139,7 +140,7 @@ class AnthropicCardGenerator implements CardGenerator {
   async generate(systemPrompt: string, techniqueContext: string, userMessage: string): Promise<GeneratedCard[]> {
     const message = await this.client.messages.create({
       model: this.modelId,
-      max_tokens: 8192,
+      max_tokens: 16000,
       system: `${systemPrompt}\n\n${techniqueContext}\n\nIMPORTANT: Respond with raw JSON only. Do not wrap in markdown code fences.`,
       messages: [{ role: 'user', content: userMessage }],
     });
@@ -271,6 +272,9 @@ async function main() {
   if (isNaN(count) || count < 1 || count > 50) {
     console.error('--count must be between 1 and 50');
     process.exit(1);
+  }
+  if (providerArg === 'anthropic' && count > 10) {
+    console.warn(`Warning: Anthropic batches > 10 may exceed output token limits and produce truncated JSON. Consider using --count 10 and running multiple times.`);
   }
   if (!isDryRun && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set for live runs');
