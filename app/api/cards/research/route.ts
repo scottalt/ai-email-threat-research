@@ -8,7 +8,6 @@ export async function GET() {
     const { data, error } = await supabase
       .from('cards_real')
       .select('*')
-      .eq('dataset_version', 'v1')
       .order('approved_at', { ascending: true });
 
     if (error) throw error;
@@ -28,6 +27,7 @@ export async function GET() {
       explanation: row.explanation ?? '',
       highlights: row.highlights ?? [],
       authStatus: (row.auth_status ?? 'unverified') as 'verified' | 'unverified' | 'fail',
+      replyTo: row.reply_to ?? undefined,
       // Research metadata
       cardSource: 'real' as const,
       technique: row.technique,
