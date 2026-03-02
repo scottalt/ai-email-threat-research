@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import type { Card, Answer, Confidence, AuthStatus } from '@/lib/types';
+import type { Card, Answer, Confidence } from '@/lib/types';
 
 const SWIPE_THRESHOLD = 75;
 const FLY_DISTANCE = 650;
@@ -41,11 +41,6 @@ function analystFace(streak: number): string {
   return '[._.]';
 }
 
-function AuthBadge({ status }: { status: AuthStatus }) {
-  if (status === 'verified') return <span className="text-[#00aa28] text-xs font-mono">[AUTH: VERIFIED]</span>;
-  if (status === 'fail') return <span className="text-[#ff3333] text-xs font-mono glow-red">[AUTH: FAIL]</span>;
-  return <span className="text-[#ffaa00] text-xs font-mono">[UNVERIFIED]</span>;
-}
 
 function parseBody(text: string): Array<{ type: 'text' | 'url'; content: string }> {
   const parts = text.split(/(https?:\/\/[^\s]+)/g);
@@ -56,13 +51,42 @@ function parseBody(text: string): Array<{ type: 'text' | 'url'; content: string 
 
 function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number) => void }) {
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
+  const [headersOpen, setHeadersOpen] = useState(false);
   const segments = parseBody(card.body);
+
+  const headers = (() => {
+    if (card.authStatus === 'verified') {
+      return {
+        spf: 'PASS', dkim: 'PASS', dmarc: 'PASS',
+        replyTo: card.from, returnPath: `<${card.from}>`,
+        color: { spf: '#00aa28', dkim: '#00aa28', dmarc: '#00aa28' },
+      };
+    }
+    if (card.authStatus === 'fail') {
+      return {
+        spf: 'FAIL', dkim: 'FAIL', dmarc: 'FAIL',
+        replyTo: card.from, returnPath: `<${card.from}>`,
+        color: { spf: '#ff3333', dkim: '#ff3333', dmarc: '#ff3333' },
+      };
+    }
+    // unverified
+    return {
+      spf: 'NONE', dkim: 'NONE', dmarc: 'NONE',
+      replyTo: 'NOT PRESENT', returnPath: 'NOT PRESENT',
+      color: { spf: '#ffaa00', dkim: '#ffaa00', dmarc: '#ffaa00' },
+    };
+  })();
 
   return (
     <div className="term-border bg-[#060c06] select-none">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
         <span className="text-[#00aa28] text-xs tracking-widest">INCOMING_EMAIL</span>
-        <AuthBadge status={card.authStatus} />
+        <button
+          onClick={(e) => { e.stopPropagation(); setHeadersOpen((o) => !o); }}
+          className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors"
+        >
+          [HEADERS]
+        </button>
       </div>
       <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.2)] space-y-1">
         <div className="flex gap-2 text-xs">
@@ -76,6 +100,41 @@ function EmailDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number)
           </div>
         )}
       </div>
+      {headersOpen && (
+        <div className="border-b border-[rgba(0,255,65,0.2)] px-3 py-2 bg-[rgba(0,255,65,0.02)]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[#ffaa00] text-xs font-mono tracking-widest">HEADERS</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); setHeadersOpen(false); }}
+              className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors"
+            >
+              [ × ]
+            </button>
+          </div>
+          <div className="space-y-1 text-xs font-mono">
+            <div className="flex gap-2">
+              <span className="text-[#00aa28] w-14 shrink-0">SPF:</span>
+              <span style={{ color: headers.color.spf }}>{headers.spf}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-[#00aa28] w-14 shrink-0">DKIM:</span>
+              <span style={{ color: headers.color.dkim }}>{headers.dkim}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-[#00aa28] w-14 shrink-0">DMARC:</span>
+              <span style={{ color: headers.color.dmarc }}>{headers.dmarc}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-[#00aa28] w-14 shrink-0">Reply-To:</span>
+              <span className="text-[#00ff41] break-all">{headers.replyTo}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-[#00aa28] w-14 shrink-0">Ret-Path:</span>
+              <span className="text-[#00ff41] break-all">{headers.returnPath}</span>
+            </div>
+          </div>
+        </div>
+      )}
       <div
         className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto font-mono"
         onScroll={(e) => {
