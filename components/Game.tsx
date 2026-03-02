@@ -113,6 +113,8 @@ export function Game() {
     confidenceSelectionTimeMs: number | null;
     scrollDepthPct: number;
     answerMethod: 'swipe' | 'button';
+    headersOpened: boolean;
+    urlInspected: boolean;
   }) {
     const card = deck[currentIndex];
     const correct = (answer === 'phishing') === card.isPhishing;
@@ -169,6 +171,12 @@ export function Game() {
         gameMode: mode,
         isDailyChallenge: mode === 'daily',
         datasetVersion: (researchCard.datasetVersion as string | null) ?? null,
+        headersOpened: timing?.headersOpened ?? false,
+        urlInspected: timing?.urlInspected ?? false,
+        authStatusSignal: card.authStatus,
+        hasReplyTo: !!card.replyTo,
+        hasUrl: /https?:\/\//.test(card.body),
+        hasAttachment: false,
       };
 
       const sessionPayload: SessionPayload = {
