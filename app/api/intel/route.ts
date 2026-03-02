@@ -9,7 +9,7 @@ export async function GET() {
 
     const { data: answers } = await supabase
       .from('answers')
-      .select('correct, technique, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source')
+      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url')
       .eq('game_mode', 'research');
 
     if (!answers || answers.length === 0) {
@@ -19,6 +19,47 @@ export async function GET() {
     const total = answers.length;
     const correct = answers.filter((a) => a.correct).length;
     const overallBypassRate = Math.round(((total - correct) / total) * 100);
+
+    // Tool usage rates
+    const withHeaders = answers.filter((a) => a.headers_opened);
+    const withUrl     = answers.filter((a) => a.url_inspected);
+    const headersOpenedPct      = Math.round((withHeaders.length / total) * 100);
+    const urlInspectedPct       = Math.round((withUrl.length / total) * 100);
+    const headersOpenedAccuracy = withHeaders.length
+      ? Math.round((withHeaders.filter((a) => a.correct).length / withHeaders.length) * 100) : null;
+    const headersNotOpenedAccuracy = (total - withHeaders.length)
+      ? Math.round((answers.filter((a) => !a.headers_opened && a.correct).length / (total - withHeaders.length)) * 100) : null;
+    const urlInspectedAccuracy = withUrl.length
+      ? Math.round((withUrl.filter((a) => a.correct).length / withUrl.length) * 100) : null;
+    const urlNotInspectedAccuracy = (total - withUrl.length)
+      ? Math.round((answers.filter((a) => !a.url_inspected && a.correct).length / (total - withUrl.length)) * 100) : null;
+
+    // Auth-trap cards: phishing with PASS headers (hardest scenario)
+    const authTrapAnswers = answers.filter((a) => a.is_phishing && a.auth_status === 'verified');
+    const authTrapBypassRate = authTrapAnswers.length
+      ? Math.round((authTrapAnswers.filter((a) => !a.correct).length / authTrapAnswers.length) * 100) : null;
+
+    // Median time-to-answer by technique
+    function median(nums: number[]): number {
+      const sorted = [...nums].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+    }
+
+    const techniqueTimeMap: Record<string, number[]> = {};
+    for (const a of answers) {
+      if (!a.technique || a.time_from_render_ms == null) continue;
+      if (!techniqueTimeMap[a.technique]) techniqueTimeMap[a.technique] = [];
+      techniqueTimeMap[a.technique].push(a.time_from_render_ms);
+    }
+    const medianTimeByTechnique = Object.entries(techniqueTimeMap)
+      .filter(([, times]) => times.length >= 10)
+      .map(([technique, times]) => ({
+        technique,
+        medianMs: median(times),
+        sample: times.length,
+      }))
+      .sort((a, b) => a.medianMs - b.medianMs);
 
     // Bypass rate by technique
     const techniqueMap: Record<string, { total: number; bypassed: number }> = {};
@@ -70,6 +111,21 @@ export async function GET() {
       fluency: { highFluencyBypassRate, lowFluencyBypassRate, highFluencySample: highFluency.length, lowFluencySample: lowFluency.length },
       genai: { genaiBypassRate, traditionalBypassRate, genaiSample: genaiAnswers.length, traditionalSample: nonGenaiAnswers.length },
       byConfidence,
+      toolUsage: {
+        headersOpenedPct,
+        urlInspectedPct,
+        headersOpenedAccuracy,
+        headersNotOpenedAccuracy,
+        urlInspectedAccuracy,
+        urlNotInspectedAccuracy,
+        headersOpenedSample: withHeaders.length,
+        urlInspectedSample: withUrl.length,
+      },
+      authTrap: {
+        bypassRate: authTrapBypassRate,
+        sample: authTrapAnswers.length,
+      },
+      medianTimeByTechnique,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
