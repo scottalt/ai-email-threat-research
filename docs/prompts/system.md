@@ -7,9 +7,9 @@ Rules:
 - Never use real company domains for phishing senders — use lookalike patterns: paypal-secure.net, accounts-google.com, support-microsoft.help, etc.
 - For legitimate emails, use realistic sender patterns: noreply@techflow.io, support@meridianhealth.com, it@acmecorp.com
 - Grammar and spelling must be perfect in all emails
-- Body length: 60–250 words for email, 20–80 words for SMS
+- Body length: phishing emails 80–300 words; legitimate emails 150–400 words; SMS 20–80 words
+- Always address the recipient by a realistic fictional first name — never use "Hi there", "Dear Customer", or generic placeholders. Use names like: Marcus, Jennifer, Priya, Chen, Aisha, Tom, Nadia, David, Keiko, Robert. This is mandatory for every card, including automated transactional emails.
 - Vary industry context, sender role, and scenario across cards in the same batch — do not repeat the same context
-- Address the recipient by a realistic fictional first name in the greeting when natural for that email type (e.g., "Hi Marcus," or "Dear Jennifer,") — this applies to both phishing and legitimate emails
 
 Output format — always return a valid JSON object with a "cards" array:
 {

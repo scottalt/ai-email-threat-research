@@ -12,9 +12,13 @@ Types to generate (vary across cards):
 - Service activation/renewal confirmations
 
 Quality requirements:
-- Must feel like emails from real automated systems — transactional language, reference numbers, dates
-- Include appropriate order numbers, tracking numbers, amounts — all fictional but realistic-looking
+- Must feel like emails from real automated systems — transactional language, reference numbers, dates, itemised details
+- Include full specifics: order numbers, tracking numbers, amounts, item names, quantities, delivery addresses (fictional), estimated dates — make it feel real
+- These emails must be substantive and detailed, not brief. Include a full order/booking summary, relevant account details, and a clear "no action required" or next-steps section.
+- For order confirmations: list 2–3 items with names, quantities, and prices. Include subtotal, tax, and total. Include a fictional tracking number and estimated delivery window.
+- For booking confirmations: include confirmation code, dates, location, any included services, cancellation policy reference.
 - No urgency, no credential requests, no suspicious links
-- highlights: note transactional signals that establish legitimacy (reference numbers, "No action required", expected formatting)
+- Include a polite sign-off with a sender name and support contact reference
+- highlights: note transactional signals that establish legitimacy (reference numbers, "No action required", itemised breakdown, expected formatting)
 - clues: explain what makes each element trustworthy
 - explanation: acknowledge why a player might initially suspect this (it mentions an account, it has numbers) and clearly explain why it is legitimate

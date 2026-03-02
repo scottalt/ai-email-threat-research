@@ -232,6 +232,7 @@ export default function ReviewPage() {
                   <option value="easy">EASY</option>
                   <option value="medium">MEDIUM</option>
                   <option value="hard">HARD</option>
+                  <option value="extreme">EXTREME</option>
                 </select>
               </>
             ) : (
