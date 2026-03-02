@@ -21,6 +21,7 @@ interface ApprovedCard {
   is_phishing: boolean;
   technique: string | null;
   difficulty: string;
+  auth_status: string | null;
   from_address: string;
   subject: string | null;
   body: string;
@@ -51,6 +52,7 @@ export default function ApprovedPage() {
   const [editTechnique, setEditTechnique] = useState('');
   const [editDifficulty, setEditDifficulty] = useState('');
   const [editIsPhishing, setEditIsPhishing] = useState(true);
+  const [editAuthStatus, setEditAuthStatus] = useState<'verified' | 'unverified' | 'fail'>('fail');
   const [editExplanation, setEditExplanation] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
@@ -75,6 +77,7 @@ export default function ApprovedPage() {
     setEditTechnique(card.technique ?? '');
     setEditDifficulty(card.difficulty);
     setEditIsPhishing(card.is_phishing);
+    setEditAuthStatus((card.auth_status ?? 'unverified') as 'verified' | 'unverified' | 'fail');
     setEditExplanation(card.explanation);
     setEditNotes(card.review_notes ?? '');
   }
@@ -93,6 +96,7 @@ export default function ApprovedPage() {
           technique: editTechnique || null,
           difficulty: editDifficulty,
           is_phishing: editIsPhishing,
+          auth_status: editAuthStatus,
           explanation: editExplanation,
           review_notes: editNotes || null,
           word_count: editBody.trim().split(/\s+/).length,
@@ -267,6 +271,12 @@ export default function ApprovedPage() {
                       <select value={editDifficulty} onChange={(e) => setEditDifficulty(e.target.value)}
                         className="bg-[#060c06] border border-[rgba(0,255,65,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1 focus:outline-none">
                         {DIFFICULTIES.map((d) => <option key={d} value={d}>{d.toUpperCase()}</option>)}
+                      </select>
+                      <select value={editAuthStatus} onChange={(e) => setEditAuthStatus(e.target.value as 'verified' | 'unverified' | 'fail')}
+                        className="bg-[#060c06] border border-[rgba(0,255,65,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1 focus:outline-none">
+                        <option value="verified">VERIFIED</option>
+                        <option value="unverified">UNVERIFIED</option>
+                        <option value="fail">FAIL</option>
                       </select>
                       <input value={editNotes} onChange={(e) => setEditNotes(e.target.value)}
                         placeholder="Review notes"

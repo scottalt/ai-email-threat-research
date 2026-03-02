@@ -2,6 +2,7 @@ export type CardType = 'email' | 'sms';
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'extreme';
 export type Answer = 'phishing' | 'legit';
 export type Confidence = 'guessing' | 'likely' | 'certain';
+export type AuthStatus = 'verified' | 'unverified' | 'fail';
 
 export interface Card {
   id: string;
@@ -15,6 +16,7 @@ export interface Card {
   explanation: string;
   highlights?: string[];
   technique?: string | null;
+  authStatus: AuthStatus;
 }
 
 export interface RoundResult {

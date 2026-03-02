@@ -27,6 +27,7 @@ export async function GET() {
       clues: row.clues ?? [],
       explanation: row.explanation ?? '',
       highlights: row.highlights ?? [],
+      authStatus: (row.auth_status ?? 'unverified') as 'verified' | 'unverified' | 'fail',
       // Research metadata
       cardSource: 'real' as const,
       technique: row.technique,

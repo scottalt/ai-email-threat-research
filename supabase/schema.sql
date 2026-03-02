@@ -104,6 +104,7 @@ CREATE TABLE cards_real (
   review_time_ms INT,
   ai_model TEXT,
   ai_preprocessing_version TEXT,
+  auth_status TEXT CHECK (auth_status IN ('verified', 'unverified', 'fail')),
   dataset_version TEXT DEFAULT 'v1',
   approved_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()

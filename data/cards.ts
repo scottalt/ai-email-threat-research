@@ -35,6 +35,7 @@ PayPal Security Team`,
     ],
     explanation:
       "Classic impersonation. The sender swapped the lowercase 'l' for the number '1' in the domain. PayPal always addresses you by name and links only to paypal.com.",
+    authStatus: 'fail',
   },
   {
     id: 'p-easy-002',
@@ -60,6 +61,7 @@ Offer expires in 2 hours. Reply STOP to unsubscribe.`,
     ],
     explanation:
       "If you didn't enter a contest, you didn't win one. The 'Reply STOP' text is designed to look legitimate. The link leads to a credential harvesting or malware page.",
+    authStatus: 'fail',
   },
   {
     id: 'p-easy-003',
@@ -93,6 +95,7 @@ U.S. Department of the Treasury`,
     ],
     explanation:
       'The IRS does not email taxpayers to initiate contact — they send letters. The real IRS domain is irs.gov. Refunds are processed through your already-filed return, not via a link.',
+    authStatus: 'fail',
   },
   {
     id: 'p-easy-004',
@@ -113,6 +116,7 @@ U.S. Department of the Treasury`,
     ],
     explanation:
       "This is a precursor to a vishing attack. The fraudster triggers a real password reset, sends you the code, then calls pretending to be the bank asking for it to 'verify your identity.'",
+    authStatus: 'fail',
   },
 
   // ===== PHISHING - MEDIUM =====
@@ -148,6 +152,7 @@ Microsoft 365 Support`,
     ],
     explanation:
       'Subdomain trick: m365-password-update.microsoft-support-center.net looks official at a glance, but the actual domain is microsoft-support-center.net. Microsoft sends password notices from microsoft.com domains.',
+    authStatus: 'fail',
   },
   {
     id: 'p-med-002',
@@ -172,6 +177,7 @@ $0.30 address validation fee required.`,
     ],
     explanation:
       "USPS smishing is extremely common. The small fee is a hook — the goal is your payment card details, not $0.30. USPS sends tracking texts from 28777 (ATUSPS), not random numbers.",
+    authStatus: 'fail',
   },
   {
     id: 'p-med-003',
@@ -205,6 +211,7 @@ Chase Online Security`,
     ],
     explanation:
       "Chase's real domain is chase.com. Your real bank's fraud team calls you — they don't send links to re-enter credentials. If you get a fraud alert, log in directly via your bank's app or website.",
+    authStatus: 'fail',
   },
   {
     id: 'p-med-004',
@@ -239,6 +246,7 @@ Zoom Trust & Safety`,
     ],
     explanation:
       "Zoom phishing targeting your credentials. Real Zoom communications come from @zoom.us domains. The vague violation reason is intentional — it makes you anxious without giving details you could verify.",
+    authStatus: 'fail',
   },
 
   // ===== PHISHING - HARD =====
@@ -277,6 +285,7 @@ Michael (sent from my personal email while traveling)`,
     ],
     explanation:
       "Business Email Compromise (BEC). The attacker impersonates an executive, creates urgency, and blocks verbal verification. Always verify wire transfers via a known phone number — never by replying to the email.",
+    authStatus: 'unverified',
   },
   {
     id: 'p-hard-002',
@@ -311,6 +320,7 @@ LinkedIn Events Team`,
     ],
     explanation:
       "Spear phishing using OSINT. The attacker found your SFISSA involvement on LinkedIn and crafted a targeted message. LinkedIn notifications come from @linkedin.com — this domain leads to a credential harvesting page.",
+    authStatus: 'unverified',
   },
 
   // ===== LEGIT - EASY =====
@@ -339,6 +349,7 @@ Amazon.com`,
     clues: [],
     explanation:
       'Legitimate Amazon shipping email. The sender domain is amazon.com, your name is used, the order number is specific, and the tracking link goes to amazon.com. No credential requests, no urgency.',
+    authStatus: 'verified',
   },
   {
     id: 'l-easy-002',
@@ -359,6 +370,7 @@ Thanks for riding with Uber!`,
     clues: [],
     explanation:
       "Legitimate Uber receipt SMS. Comes from the 'Uber' alphanumeric sender ID, contains specific trip details (driver name, route, exact cost), and links to riders.uber.com.",
+    authStatus: 'verified',
   },
 
   // ===== LEGIT - MEDIUM =====
@@ -384,6 +396,7 @@ https://github.com/settings/keys
     clues: [],
     explanation:
       "Legitimate GitHub security notification. Comes from noreply@github.com, addresses your username (not 'valued customer'), provides the actual key fingerprint, and links to github.com/settings.",
+    authStatus: 'verified',
   },
   {
     id: 'l-med-002',
@@ -410,6 +423,7 @@ Apple`,
     clues: [],
     explanation:
       "Legitimate Apple receipt. Comes from email.apple.com (Apple's email domain), shows your actual Apple ID, includes a specific app name and document number, and links only to apple.com domains.",
+    authStatus: 'verified',
   },
   {
     id: 'l-med-003',
@@ -435,6 +449,7 @@ Do Not Share: This email contains a secure link to DocuSign. Please do not share
     clues: [],
     explanation:
       "Legitimate DocuSign notification. Comes from dse@docusign.net (DocuSign's sending domain), includes your full name, a specific envelope ID, and the name of the sending organization.",
+    authStatus: 'verified',
   },
   {
     id: 'l-med-004',
@@ -463,6 +478,7 @@ LinkedIn Corporation, 1000 West Maude Avenue, Sunnyvale, CA 94085`,
     clues: [],
     explanation:
       'Legitimate LinkedIn job alert. Comes from jobs-noreply@linkedin.com, uses your name, shows real company names with salary ranges, and includes a physical mailing address (required by CAN-SPAM). No credential requests.',
+    authStatus: 'verified',
   },
 
   // ===== LEGIT - HARD =====
@@ -497,6 +513,7 @@ The Microsoft account team`,
     clues: [],
     explanation:
       "Legitimate Microsoft security alert. The sender domain 'accountprotection.microsoft.com' is a real Microsoft domain. It includes specific sign-in details and links only to account.microsoft.com. Note the explicit statement: 'Microsoft will never ask for your password in an email.'",
+    authStatus: 'verified',
   },
   {
     id: 'l-hard-002',
@@ -525,6 +542,7 @@ PayPal`,
     clues: [],
     explanation:
       'Legitimate PayPal notification. Comes from service@paypal.com, addresses you by name, includes a specific payment amount and sender name with a personal note, and shows your current balance. No links asking for credentials.',
+    authStatus: 'verified',
   },
   {
     id: 'l-hard-003',
@@ -551,6 +569,7 @@ Bank of America`,
     clues: [],
     explanation:
       "Legitimate Bank of America statement notice. Critically, it includes NO clickable link to the statement — it tells you to log in directly at bankofamerica.com. This is a hallmark of a legitimate bank email. It also explicitly explains why there's no link.",
+    authStatus: 'verified',
   },
   {
     id: 'l-hard-004',
@@ -568,6 +587,7 @@ Track at usps.com/track
     clues: [],
     explanation:
       "Legitimate USPS tracking SMS. Sent from 28777 (ATUSPS — the official USPS short code), includes a real 22-digit tracking number, and links only to usps.com. No payment request, no urgency tactics.",
+    authStatus: 'verified',
   },
 
   // ===== PHISHING - EASY (additional) =====
@@ -602,6 +622,7 @@ Netflix Support`,
     ],
     explanation:
       "Netflix phishing is extremely common. The real Netflix domain is netflix.com and they address you by your account name. Payment issues are managed through your account settings at netflix.com — not via emailed links.",
+    authStatus: 'fail',
   },
   {
     id: 'p-easy-006',
@@ -625,6 +646,7 @@ Reply STOP to opt out.`,
     ],
     explanation:
       "Google does not send security alerts via SMS to random numbers. Real sign-in alerts go to your Gmail or through the Google app. The 'goog-' prefix is meant to look familiar at a glance.",
+    authStatus: 'fail',
   },
 
   // ===== PHISHING - MEDIUM (additional) =====
@@ -660,6 +682,7 @@ Acme Corporation`,
     ],
     explanation:
       "Payroll diversion is a high-value BEC attack. Attackers spoof or compromise HR addresses and redirect employee direct deposits to attacker-controlled accounts. Always verify payroll changes through your official HR system or by calling HR directly.",
+    authStatus: 'fail',
   },
   {
     id: 'p-med-006',
@@ -697,6 +720,7 @@ DocuSign, Inc.`,
     ],
     explanation:
       "DocuSign phishing is common because people are conditioned to click signature links quickly. Real DocuSign emails come from docusign.net or docusign.com and always include a specific Envelope ID and the full name of the sending organization.",
+    authStatus: 'fail',
   },
 
   // ===== PHISHING - HARD (additional) =====
@@ -729,6 +753,7 @@ The GitHub Team`,
     ],
     explanation:
       "This is hard because the 'from' looks like GitHub. But the link domain is github-email-verify.com — completely different from github.com. GitHub's own verification emails link to github.com paths. Always hover over links before clicking.",
+    authStatus: 'unverified',
   },
   {
     id: 'p-hard-004',
@@ -766,6 +791,7 @@ Delta Tech Supplies`,
     ],
     explanation:
       "Vendor payment fraud: attackers compromise or spoof a known supplier's email and redirect payments to attacker accounts. Always verify banking detail changes via a known phone number from your records — not from the email itself.",
+    authStatus: 'unverified',
   },
   {
     id: 'p-hard-005',
@@ -805,6 +831,7 @@ IT Helpdesk`,
     ],
     explanation:
       "Tech support social engineering. Real IT teams deploy patches via management tools — they do not email employees and ask them to download remote access software. Calling the provided number connects you to the attacker, not your IT team.",
+    authStatus: 'unverified',
   },
 
   // ===== LEGIT - EASY (additional) =====
@@ -828,6 +855,7 @@ You received this email to let you know about important changes to your Google A
     clues: [],
     explanation:
       'Legitimate Google security alert. Comes from no-reply@accounts.google.com, addresses your specific account, contains no clickable links asking for credentials, and no urgency tactics. Google sends these as informational notices.',
+    authStatus: 'verified',
   },
   {
     id: 'l-easy-004',
@@ -855,6 +883,7 @@ Thanks for being a Premium member.`,
     clues: [],
     explanation:
       'Legitimate Spotify billing receipt. Comes from no-reply@spotify.com, uses your name, shows your masked payment card, a specific billing amount, and links only to spotify.com. No credential requests.',
+    authStatus: 'verified',
   },
 
   // ===== LEGIT - MEDIUM (additional) =====
@@ -880,6 +909,7 @@ Manage notification preferences`,
     clues: [],
     explanation:
       "Legitimate Slack notification. Comes from notifications@slack.com, addresses you by name, references your specific workspace and real channel names, and links to the Slack app. No credential requests or urgency.",
+    authStatus: 'verified',
   },
   {
     id: 'l-med-006',
@@ -893,6 +923,7 @@ This code expires in 10 minutes. Do not share this code with anyone, including C
     clues: [],
     explanation:
       "Legitimate 2FA SMS from Coinbase via Twilio. The alphanumeric sender ID is identifiable, the message explicitly says do not share the code (including with support), and there are no links. You only receive this when you initiate a login.",
+    authStatus: 'verified',
   },
 
   // ===== LEGIT - HARD (additional) =====
@@ -927,6 +958,7 @@ AWS — Amazon Web Services`,
     clues: [],
     explanation:
       'Legitimate AWS billing email. Comes from aws-billing-information@amazon.com, includes your full name and account ID, itemizes specific service charges, and links only to console.aws.amazon.com. AWS billing emails never ask for payment via a separate link.',
+    authStatus: 'verified',
   },
   {
     id: 'l-hard-006',
@@ -956,6 +988,7 @@ Cloudflare, Inc.`,
     clues: [],
     explanation:
       'Legitimate Cloudflare notification. Comes from noreply@notify.cloudflare.com (Cloudflare\'s sending domain), references your specific domain, explicitly states "no action required," and links only to dash.cloudflare.com. No credential requests.',
+    authStatus: 'verified',
   },
 ];
 
