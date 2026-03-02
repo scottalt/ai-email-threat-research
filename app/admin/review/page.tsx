@@ -97,41 +97,47 @@ export default function ReviewPage() {
     setSubmitting(true);
     const reviewTimeMs = Date.now() - cardLoadTime.current;
 
-    const res = await fetch('/api/admin/review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action,
-        stagingId: card.id,
-        reviewedFields: action === 'approved' ? {
-          inferred_type: card.inferred_type,
-          is_phishing: isPhishing,
-          processed_from: processedFrom,
-          processed_subject: processedSubject || null,
-          processed_body: processedBody,
-          suggested_technique: technique,
-          suggested_difficulty: difficulty,
-          suggested_highlights: card.suggested_highlights ?? [],
-          suggested_clues: card.suggested_clues ?? [],
-          suggested_explanation: card.suggested_explanation ?? '',
-          source_corpus: card.source_corpus,
-          review_notes: reviewNotes || null,
-          review_time_ms: reviewTimeMs,
-          ai_model: card.ai_model,
-          ai_preprocessing_version: card.ai_preprocessing_version,
-        } : null,
-      }),
-    });
+    try {
+      const res = await fetch('/api/admin/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          stagingId: card.id,
+          reviewedFields: action === 'approved' ? {
+            inferred_type: card.inferred_type,
+            is_phishing: isPhishing,
+            processed_from: processedFrom,
+            processed_subject: processedSubject || null,
+            processed_body: processedBody,
+            suggested_technique: technique,
+            suggested_difficulty: difficulty,
+            suggested_highlights: card.suggested_highlights ?? [],
+            suggested_clues: card.suggested_clues ?? [],
+            suggested_explanation: card.suggested_explanation ?? '',
+            source_corpus: card.source_corpus,
+            review_notes: reviewNotes || null,
+            review_time_ms: reviewTimeMs,
+            ai_model: card.ai_model,
+            ai_preprocessing_version: card.ai_preprocessing_version,
+          } : null,
+        }),
+      });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(`Action failed: ${err.error ?? res.status}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('Action failed:', err);
+        alert(`Action failed: ${err.error ?? res.status}`);
+        return;
+      }
+
+      fetchNext();
+    } catch (err) {
+      console.error('handleAction threw:', err);
+      alert(`Action failed: ${String(err)}`);
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    setSubmitting(false);
-    fetchNext();
   }
 
   const TECHNIQUES = [
