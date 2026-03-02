@@ -9,24 +9,28 @@
  *
  * Usage:
  *   # Phishing cards (OpenAI, default)
- *   npx ts-node -r dotenv/config scripts/generate-cards.ts \
+ *   npx ts-node --project tsconfig.scripts.json scripts/generate-cards.ts \
  *     --technique urgency --difficulty easy --count 20
  *
  *   # Phishing cards (Anthropic)
- *   npx ts-node -r dotenv/config scripts/generate-cards.ts \
+ *   npx ts-node --project tsconfig.scripts.json scripts/generate-cards.ts \
  *     --technique urgency --difficulty easy --count 20 --provider anthropic
  *
  *   # Legitimate cards
- *   npx ts-node -r dotenv/config scripts/generate-cards.ts \
+ *   npx ts-node --project tsconfig.scripts.json scripts/generate-cards.ts \
  *     --category transactional --count 20
  *
  *   # Dry run (prints JSON, no database writes)
- *   npx ts-node -r dotenv/config scripts/generate-cards.ts \
+ *   npx ts-node --project tsconfig.scripts.json scripts/generate-cards.ts \
  *     --technique urgency --difficulty easy --count 3 --dry-run
  */
 
 import fs from 'fs';
 import path from 'path';
+import { config as loadEnv } from 'dotenv';
+
+// Load .env.local (Next.js convention) — falls back gracefully if not found
+loadEnv({ path: path.join(__dirname, '..', '.env.local') });
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
