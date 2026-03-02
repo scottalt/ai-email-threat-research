@@ -17,6 +17,7 @@ export interface Card {
   highlights?: string[];
   technique?: string | null;
   authStatus: AuthStatus;
+  replyTo?: string;
 }
 
 export interface RoundResult {
