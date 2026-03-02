@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 
-// GET — fetch next pending card for review (random order)
+// GET — fetch next pending card for review (random order) + approved count
 export async function GET() {
   const supabase = getSupabaseAdminClient();
 
-  const { count } = await supabase
-    .from('cards_staging')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending');
+  const [{ count: pendingCount }, { count: approvedCount }] = await Promise.all([
+    supabase.from('cards_staging').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('cards_real').select('*', { count: 'exact', head: true }),
+  ]);
 
-  if (!count) return NextResponse.json({ card: null, pendingCount: 0 });
+  if (!pendingCount) return NextResponse.json({ card: null, pendingCount: 0, approvedCount: approvedCount ?? 0 });
 
-  const randomOffset = Math.floor(Math.random() * count);
+  const randomOffset = Math.floor(Math.random() * pendingCount);
 
   const { data, error } = await supabase
     .from('cards_staging')
@@ -21,9 +21,9 @@ export async function GET() {
     .range(randomOffset, randomOffset)
     .single();
 
-  if (error) return NextResponse.json({ card: null, pendingCount: 0 });
+  if (error) return NextResponse.json({ card: null, pendingCount: 0, approvedCount: approvedCount ?? 0 });
 
-  return NextResponse.json({ card: data, pendingCount: count ?? 0 });
+  return NextResponse.json({ card: data, pendingCount, approvedCount: approvedCount ?? 0 });
 }
 
 // POST — approve, reject, or mark needs_review

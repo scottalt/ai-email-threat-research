@@ -39,6 +39,7 @@ export default function ReviewPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [approvedCount, setApprovedCount] = useState<number | null>(null);
   const cardLoadTime = useRef<number>(Date.now());
 
   // Editable fields — pre-filled from AI suggestions
@@ -55,8 +56,9 @@ export default function ReviewPage() {
     setDone(false);
     try {
       const res = await fetch('/api/admin/review');
-      const { card: next, pendingCount: count } = await res.json();
+      const { card: next, pendingCount: count, approvedCount: approved } = await res.json();
       setPendingCount(count ?? null);
+      setApprovedCount(approved ?? null);
       if (!next) { setDone(true); setCard(null); } else {
         setCard(next);
         setProcessedFrom(next.processed_from ?? next.raw_from ?? '');
@@ -167,6 +169,9 @@ export default function ReviewPage() {
             REVIEW_QUEUE
             {pendingCount !== null && (
               <span className="text-[#003a0e]"> · {pendingCount} PENDING</span>
+            )}
+            {approvedCount !== null && (
+              <span className="text-[#003a0e]"> · {approvedCount}<span className="text-[#002a0a]">/550</span> APPROVED</span>
             )}
           </span>
           <span className="text-[#003a0e]">A=approve · R=reject · N=needs_review</span>

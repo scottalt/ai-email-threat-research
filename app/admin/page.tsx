@@ -71,6 +71,12 @@ export default async function AdminPage() {
             [ REVIEW QUEUE ]
           </Link>
           <Link
+            href="/admin/approved"
+            className="block w-full py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
+          >
+            [ APPROVED CARDS ]
+          </Link>
+          <Link
             href="/api/admin/export?format=json"
             className="block w-full py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
           >
