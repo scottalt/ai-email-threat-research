@@ -285,7 +285,7 @@ Michael (sent from my personal email while traveling)`,
     ],
     explanation:
       "Business Email Compromise (BEC). The attacker impersonates an executive, creates urgency, and blocks verbal verification. Always verify wire transfers via a known phone number — never by replying to the email.",
-    authStatus: 'unverified',
+    authStatus: 'verified',
   },
   {
     id: 'p-hard-002',
@@ -791,7 +791,7 @@ Delta Tech Supplies`,
     ],
     explanation:
       "Vendor payment fraud: attackers compromise or spoof a known supplier's email and redirect payments to attacker accounts. Always verify banking detail changes via a known phone number from your records — not from the email itself.",
-    authStatus: 'unverified',
+    authStatus: 'verified',
   },
   {
     id: 'p-hard-005',
