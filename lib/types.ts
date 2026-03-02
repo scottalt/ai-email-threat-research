@@ -1,5 +1,5 @@
 export type CardType = 'email' | 'sms';
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'extreme';
 export type Answer = 'phishing' | 'legit';
 export type Confidence = 'guessing' | 'likely' | 'certain';
 

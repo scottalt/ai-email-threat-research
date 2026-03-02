@@ -235,7 +235,7 @@ function loadFile(relativePath: string): string {
 async function main() {
   const technique = getArg('--technique') as typeof PHISHING_TECHNIQUES[number] | null;
   const category = getArg('--category') as typeof LEGITIMATE_CATEGORIES[number] | null;
-  const difficulty = getArg('--difficulty') as 'easy' | 'medium' | 'hard' | null;
+  const difficulty = getArg('--difficulty') as 'easy' | 'medium' | 'hard' | 'extreme' | null;
   const providerArg = getArg('--provider') ?? 'openai';
   const countArg = getArg('--count');
   const isDryRun = hasFlag('--dry-run');
@@ -261,11 +261,11 @@ async function main() {
     process.exit(1);
   }
   if (technique && !difficulty) {
-    console.error('--difficulty is required for phishing cards (easy | medium | hard)');
+    console.error('--difficulty is required for phishing cards (easy | medium | hard | extreme)');
     process.exit(1);
   }
-  if (difficulty && !['easy', 'medium', 'hard'].includes(difficulty)) {
-    console.error('--difficulty must be easy, medium, or hard');
+  if (difficulty && !['easy', 'medium', 'hard', 'extreme'].includes(difficulty)) {
+    console.error('--difficulty must be easy, medium, hard, or extreme');
     process.exit(1);
   }
   if (isNaN(count) || count < 1 || count > 50) {
