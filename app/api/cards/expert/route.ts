@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdminClient } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase';
 
 export async function GET() {
-  const supabase = getSupabaseAdminClient();
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('cards_real')
     .select('*')
@@ -23,7 +23,7 @@ export async function GET() {
     highlights: Array.isArray(c.highlights) ? c.highlights : [],
     explanation: c.explanation,
     technique: c.technique ?? null,
-    authStatus: c.auth_status ?? 'verified',
+    authStatus: c.auth_status ?? 'unverified',
     replyTo: c.reply_to ?? undefined,
     attachmentName: c.attachment_name ?? undefined,
     sentAt: c.sent_at ?? undefined,
