@@ -86,6 +86,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
 
   useEffect(() => {
     if (!signedIn || !profile?.displayName || leaderboardFired.current) return;
+    if (!xpResult) return; // Wait for XP to resolve so we submit the post-XP level
     leaderboardFired.current = true;
     setSubmitState('loading');
     fetch('/api/leaderboard', {
@@ -94,7 +95,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       body: JSON.stringify({
         name: profile.displayName,
         score: totalScore,
-        level: profile.level,
+        level: xpResult.level,
         ...(mode === 'daily' ? { date } : {}),
       }),
     })
@@ -114,7 +115,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
         }
       })
       .catch(() => { setSubmitState('error'); });
-  }, [signedIn, profile?.displayName]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [signedIn, profile?.displayName, xpResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const phishingCaught = results.filter((r) => r.card.isPhishing && r.correct).length;
   const legitCorrect = results.filter((r) => !r.card.isPhishing && r.correct).length;
