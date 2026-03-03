@@ -5,7 +5,8 @@ import { getSupabaseAdminClient } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
-  const redirectTo = req.nextUrl.searchParams.get('next') ?? '/';
+  const rawNext = req.nextUrl.searchParams.get('next') ?? '';
+  const redirectTo = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
 
   if (!code) return NextResponse.redirect(new URL('/', req.url));
 
@@ -30,10 +31,13 @@ export async function GET(req: NextRequest) {
 
   // Upsert player record on first sign in
   const admin = getSupabaseAdminClient();
-  await admin.from('players').upsert(
+  const { error: upsertError } = await admin.from('players').upsert(
     { auth_id: session.user.id },
     { onConflict: 'auth_id', ignoreDuplicates: true }
   );
+  if (upsertError) {
+    console.error('[auth/callback] player upsert failed:', upsertError.message);
+  }
 
   return NextResponse.redirect(new URL(redirectTo, req.url));
 }
