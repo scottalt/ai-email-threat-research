@@ -1,7 +1,5 @@
 import Link from 'next/link';
 
-const COLLECTION_TARGET = 600; // minimum answers before publishing
-
 interface IntelData {
   totalAnswers: number;
   phishingAnswers?: number;
@@ -81,28 +79,6 @@ export default async function IntelPage() {
             </div>
           </div>
         </div>
-
-        {/* Collection progress — always visible */}
-        {data && !data.insufficient && (
-          <div className="term-border bg-[#060c06]">
-            <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-              <span className="text-[#00aa28] text-xs tracking-widest">COLLECTION_PROGRESS</span>
-              <span className="text-[#003a0e] text-[10px] font-mono">{data.totalAnswers} / {COLLECTION_TARGET} answers</span>
-            </div>
-            <div className="px-3 py-3 space-y-2">
-              <div className="h-2 bg-[#003a0e] w-full">
-                <div
-                  className="h-full bg-[#00ff41]"
-                  style={{ width: `${Math.min(100, Math.round((data.totalAnswers / COLLECTION_TARGET) * 100))}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[10px] font-mono">
-                <span className="text-[#003a0e]">{Math.round((data.totalAnswers / COLLECTION_TARGET) * 100)}% toward publication threshold</span>
-                <span className="text-[#003a0e]">{Math.max(0, COLLECTION_TARGET - data.totalAnswers)} remaining</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {!data || data.insufficient ? (
           <div className="term-border bg-[#060c06] px-3 py-6 text-center">
