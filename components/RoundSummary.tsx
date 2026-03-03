@@ -108,6 +108,8 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
             setGlobalLeaderboard(global);
             setDailyLeaderboard(daily);
           }).catch(() => {});
+        } else {
+          setSubmitState('error');
         }
       })
       .catch(() => { setSubmitState('error'); });
@@ -261,11 +263,15 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
               <div className="text-[#00ff41] text-xs font-mono text-center glow py-1">
                 SCORE LOGGED. GL HF.
               </div>
-            ) : (
+            ) : submitState === 'error' ? (
+              <div className="text-[#ff3333] text-xs font-mono text-center py-1">
+                SUBMISSION FAILED.
+              </div>
+            ) : submitState === 'loading' ? (
               <div className="text-[#003a0e] text-[10px] font-mono text-center py-1">
                 SUBMITTING...
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       ) : (
