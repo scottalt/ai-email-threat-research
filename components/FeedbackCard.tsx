@@ -186,7 +186,11 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
 
             // Reply-To mismatch — email only
             if (card.replyTo) {
-              signals.push(`Reply-To: ${card.replyTo} — replies would route to the attacker's address, not the sender's domain.`);
+              signals.push(
+                wasPhishing
+                  ? `Reply-To: ${card.replyTo} — replies would route to the attacker's address, not the sender's domain.`
+                  : `Reply-To: ${card.replyTo} — sender uses a separate reply address. Common in marketing and bulk mail.`
+              );
             }
           }
 
