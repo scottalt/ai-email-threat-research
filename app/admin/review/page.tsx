@@ -57,6 +57,7 @@ export default function ReviewPage() {
   const [replyTo, setReplyTo] = useState('');
   const [attachmentName, setAttachmentName] = useState('');
   const [reviewNotes, setReviewNotes] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   function suggestAttachmentName(body: string): string {
     const b = body.toLowerCase();
@@ -224,11 +225,65 @@ export default function ReviewPage() {
         {/* Editable card — full width */}
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-            <span className="text-[#00aa28] text-xs tracking-widest">CARD · EDITABLE</span>
-            {card.ai_model && (
-              <span className="text-[#003a0e] text-xs font-mono">{card.ai_model}</span>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="text-[#00aa28] text-xs tracking-widest">CARD · EDITABLE</span>
+              {card.ai_model && (
+                <span className="text-[#003a0e] text-xs font-mono">{card.ai_model}</span>
+              )}
+            </div>
+            <button
+              onClick={() => setPreviewOpen((o) => !o)}
+              className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors"
+            >
+              {previewOpen ? '[HIDE PREVIEW]' : '[PREVIEW]'}
+            </button>
           </div>
+          {previewOpen && (
+            <div className="border-b border-[rgba(0,255,65,0.2)] bg-[rgba(0,255,65,0.02)]">
+              <div className="border-b border-[rgba(0,255,65,0.15)] px-3 py-1 flex items-center justify-between">
+                <span className="text-[#003a0e] text-[10px] font-mono tracking-widest">AS SEEN BY PLAYER</span>
+              </div>
+              {/* Email header metadata */}
+              <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.15)] space-y-1">
+                <div className="flex gap-2 text-xs">
+                  <span className="text-[#00aa28] w-10 shrink-0">FROM:</span>
+                  <span className="text-[#00ff41] font-mono break-all text-xs">{processedFrom}</span>
+                </div>
+                {processedSubject && (
+                  <div className="flex gap-2 text-xs">
+                    <span className="text-[#00aa28] w-10 shrink-0">SUBJ:</span>
+                    <span className="text-[#00ff41] font-mono text-xs">{processedSubject}</span>
+                  </div>
+                )}
+                {card.suggested_sent_at && (
+                  <div className="flex gap-2 text-xs">
+                    <span className="text-[#00aa28] w-10 shrink-0">SENT:</span>
+                    <span className="text-[#00ff41] font-mono text-[10px]">{card.suggested_sent_at}</span>
+                  </div>
+                )}
+                {attachmentName.trim() && (
+                  <div className="flex gap-2 text-xs">
+                    <span className="text-[#00aa28] w-10 shrink-0">ATCH:</span>
+                    <span className="text-[#ffaa00] font-mono text-xs">📎 {attachmentName}</span>
+                  </div>
+                )}
+              </div>
+              {/* Auth status row */}
+              <div className="px-3 py-1.5 border-b border-[rgba(0,255,65,0.1)] flex items-center gap-3 text-[10px] font-mono">
+                <span className="text-[#003a0e]">AUTH:</span>
+                <span style={{ color: authStatus === 'verified' ? '#00aa28' : authStatus === 'fail' ? '#ff3333' : '#ffaa00' }}>
+                  {authStatus === 'verified' ? 'SPF PASS · DKIM PASS · DMARC PASS' : authStatus === 'fail' ? 'SPF FAIL · DKIM FAIL · DMARC FAIL' : 'SPF NONE · DKIM NONE · DMARC NONE'}
+                </span>
+                {replyTo.trim() && (
+                  <span className="text-[#ffaa00] ml-2">Reply-To: {replyTo}</span>
+                )}
+              </div>
+              {/* Body */}
+              <div className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed whitespace-pre-wrap font-mono max-h-40 overflow-y-auto">
+                {processedBody}
+              </div>
+            </div>
+          )}
           <div className="px-3 py-2 space-y-2">
             <input value={processedFrom} onChange={(e) => setProcessedFrom(e.target.value)}
               className="w-full bg-transparent border border-[rgba(0,255,65,0.2)] text-[#00ff41] font-mono text-xs px-2 py-1 focus:outline-none focus:border-[rgba(0,255,65,0.6)]"
