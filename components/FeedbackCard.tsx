@@ -17,6 +17,26 @@ interface Props {
 const CONFIDENCE_LABEL = { guessing: 'GUESSING', likely: 'LIKELY', certain: 'CERTAIN' };
 const CONFIDENCE_MULTI = { guessing: '1x', likely: '2x', certain: '3x' };
 
+type BodySegment =
+  | { type: 'text'; content: string }
+  | { type: 'url'; display: string; actual: string };
+
+function parseBodySegments(text: string): BodySegment[] {
+  const urlRe = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)|(https?:\/\/[^\s]+)/g;
+  const segments: BodySegment[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  // eslint-disable-next-line no-cond-assign
+  while ((m = urlRe.exec(text)) !== null) {
+    if (m.index > last) segments.push({ type: 'text', content: text.slice(last, m.index) });
+    if (m[1] && m[2]) segments.push({ type: 'url', display: m[1], actual: m[2] });
+    else segments.push({ type: 'url', display: m[3], actual: m[3] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) segments.push({ type: 'text', content: text.slice(last) });
+  return segments;
+}
+
 export function FeedbackCard({ result, streak, totalScore, onNext, questionNumber, total, sessionId }: Props) {
   const { card, correct, userAnswer, confidence, pointsEarned } = result;
   const wasPhishing = card.isPhishing;
@@ -29,6 +49,8 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
   const [flagDone, setFlagDone] = useState(false);
   const [displayedHeadline, setDisplayedHeadline] = useState('');
   const [headlineDone, setHeadlineDone] = useState(false);
+  const [headersOpen, setHeadersOpen] = useState(false);
+  const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
 
   const headline = correct
     ? wasPhishing ? 'THREAT NEUTRALIZED' : 'ASSET CLEARED'
@@ -56,6 +78,28 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
 
   const headlineColor = correct ? 'text-[#00ff41]' : 'text-[#ff3333]';
   const headlineGlow = correct ? 'glow' : 'glow-red';
+
+  const headers = (() => {
+    if (card.authStatus === 'verified') {
+      return {
+        spf: 'PASS', dkim: 'PASS', dmarc: 'PASS',
+        replyTo: card.replyTo ?? card.from, returnPath: `<${card.from}>`,
+        color: { spf: '#00aa28', dkim: '#00aa28', dmarc: '#00aa28' },
+      };
+    }
+    if (card.authStatus === 'fail') {
+      return {
+        spf: 'FAIL', dkim: 'FAIL', dmarc: 'FAIL',
+        replyTo: card.replyTo ?? card.from, returnPath: `<${card.from}>`,
+        color: { spf: '#ff3333', dkim: '#ff3333', dmarc: '#ff3333' },
+      };
+    }
+    return {
+      spf: 'NONE', dkim: 'NONE', dmarc: 'NONE',
+      replyTo: card.replyTo ?? card.from, returnPath: `<${card.from}>`,
+      color: { spf: '#ffaa00', dkim: '#ffaa00', dmarc: '#ffaa00' },
+    };
+  })();
 
   return (
     <div className="w-full max-w-sm px-4 relative">
@@ -139,67 +183,142 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           </div>
         )}
 
-        {/* Sender recap */}
-        <div className="term-border bg-[#060c06] px-3 py-2 space-y-1">
-          <div className="flex gap-2 text-xs font-mono">
-            <span className="text-[#003a0e] w-10 shrink-0">FROM:</span>
-            <span className="text-[#00aa28] break-all">
-              {wasPhishing && card.highlights?.length
-                ? highlightBody(card.from, card.highlights).map((seg, i) =>
-                    seg.highlighted ? (
-                      <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
-                    ) : (
-                      <span key={i}>{seg.text}</span>
-                    )
-                  )
-                : card.from}
+        {/* Interactive card review */}
+        <div className="term-border bg-[#060c06]">
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
+            <span className="text-[#00aa28] text-xs tracking-widest">
+              {card.type === 'sms' ? 'INCOMING_SMS' : 'INCOMING_EMAIL'}
             </span>
+            {card.type === 'email' ? (
+              <button
+                onClick={() => setHeadersOpen((o) => !o)}
+                className="text-[#00aa28] text-xs font-mono hover:text-[#00ff41] transition-colors"
+              >
+                [HEADERS]
+              </button>
+            ) : (
+              <span className="text-[#003a0e] text-xs font-mono">■ □ □</span>
+            )}
           </div>
-          {card.subject && (
+
+          {/* Header rows */}
+          <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.2)] space-y-1">
             <div className="flex gap-2 text-xs font-mono">
-              <span className="text-[#003a0e] w-10 shrink-0">SUBJ:</span>
-              <span className="text-[#00aa28]">
+              <span className="text-[#003a0e] w-10 shrink-0">FROM:</span>
+              <span className="text-[#00aa28] break-all">
                 {wasPhishing && card.highlights?.length
-                  ? highlightBody(card.subject, card.highlights).map((seg, i) =>
-                      seg.highlighted ? (
-                        <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
-                      ) : (
-                        <span key={i}>{seg.text}</span>
-                      )
+                  ? highlightBody(card.from, card.highlights).map((seg, i) =>
+                      seg.highlighted
+                        ? <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
+                        : <span key={i}>{seg.text}</span>
                     )
-                  : card.subject}
+                  : card.from}
               </span>
+            </div>
+            {card.subject && (
+              <div className="flex gap-2 text-xs font-mono">
+                <span className="text-[#003a0e] w-10 shrink-0">SUBJ:</span>
+                <span className="text-[#00aa28]">
+                  {wasPhishing && card.highlights?.length
+                    ? highlightBody(card.subject, card.highlights).map((seg, i) =>
+                        seg.highlighted
+                          ? <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
+                          : <span key={i}>{seg.text}</span>
+                      )
+                    : card.subject}
+                </span>
+              </div>
+            )}
+            {card.sentAt && (
+              <div className="flex gap-2 text-xs font-mono">
+                <span className="text-[#003a0e] w-10 shrink-0">SENT:</span>
+                <span className="text-[#00aa28] text-[10px]">{card.sentAt}</span>
+              </div>
+            )}
+            {card.attachmentName && (
+              <div className="flex gap-2 text-xs font-mono">
+                <span className="text-[#003a0e] w-10 shrink-0">ATCH:</span>
+                <span className="text-[#ffaa00] font-mono">📎 {card.attachmentName}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Expandable headers panel */}
+          {headersOpen && card.type === 'email' && (
+            <div className="border-b border-[rgba(0,255,65,0.2)] px-3 py-2 bg-[rgba(0,255,65,0.02)]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[#ffaa00] text-xs font-mono tracking-widest">HEADERS</span>
+                <button
+                  onClick={() => setHeadersOpen(false)}
+                  className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors"
+                >
+                  [ × ]
+                </button>
+              </div>
+              <div className="space-y-1 text-xs font-mono">
+                <div className="flex gap-2">
+                  <span className="text-[#00aa28] w-14 shrink-0">SPF:</span>
+                  <span style={{ color: headers.color.spf }}>{headers.spf}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-[#00aa28] w-14 shrink-0">DKIM:</span>
+                  <span style={{ color: headers.color.dkim }}>{headers.dkim}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-[#00aa28] w-14 shrink-0">DMARC:</span>
+                  <span style={{ color: headers.color.dmarc }}>{headers.dmarc}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-[#00aa28] w-14 shrink-0">Reply-To:</span>
+                  <span className="text-[#00ff41] break-all">{headers.replyTo}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-[#00aa28] w-14 shrink-0">Ret-Path:</span>
+                  <span className="text-[#00ff41] break-all">{headers.returnPath}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Body */}
+          <pre className="px-3 py-3 text-xs text-[#00aa28] font-mono leading-relaxed whitespace-pre-wrap break-words max-h-52 overflow-y-auto">
+            {parseBodySegments(card.body).map((seg, i) =>
+              seg.type === 'url' ? (
+                <span
+                  key={i}
+                  className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
+                  onClick={() => setInspectedUrl(seg.actual === inspectedUrl ? null : seg.actual)}
+                >
+                  {seg.display}<span className="opacity-50 text-[9px] ml-0.5">[↗]</span>
+                </span>
+              ) : (
+                wasPhishing && card.highlights?.length
+                  ? highlightBody(seg.content, card.highlights).map((hl, j) =>
+                      hl.highlighted
+                        ? <mark key={j} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{hl.text}</mark>
+                        : <span key={j}>{hl.text}</span>
+                    )
+                  : <span key={i}>{seg.content}</span>
+              )
+            )}
+          </pre>
+
+          {/* URL inspector */}
+          {inspectedUrl && (
+            <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[#ffaa00] text-xs font-mono tracking-widest">URL_INSPECTOR</span>
+                <button
+                  onClick={() => setInspectedUrl(null)}
+                  className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors"
+                >
+                  [ × ]
+                </button>
+              </div>
+              <span className="text-[#ffaa00] font-mono text-xs break-all">{inspectedUrl}</span>
             </div>
           )}
         </div>
-
-        {/* Message body with highlights */}
-        {wasPhishing && card.highlights && card.highlights.length > 0 && (
-          <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)]">
-            <div className="border-b border-[rgba(255,51,51,0.3)] px-3 py-1.5">
-              <span className="text-[#aa2222] text-xs tracking-widest">MESSAGE_BODY</span>
-            </div>
-            <pre className="px-3 py-3 text-xs text-[#00aa28] font-mono leading-relaxed whitespace-pre-wrap break-words">
-              {highlightBody(card.body, card.highlights).map((seg, i) =>
-                seg.highlighted ? (
-                  <mark
-                    key={i}
-                    style={{
-                      backgroundColor: '#ffaa00',
-                      color: '#060c06',
-                      borderRadius: '2px',
-                      padding: '0 2px',
-                    }}
-                  >
-                    {seg.text}
-                  </mark>
-                ) : (
-                  <span key={i}>{seg.text}</span>
-                )
-              )}
-            </pre>
-          </div>
-        )}
 
         {/* Explanation */}
         <div className="term-border bg-[#060c06]">
