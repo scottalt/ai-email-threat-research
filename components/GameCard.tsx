@@ -44,11 +44,30 @@ function analystFace(streak: number): string {
 }
 
 
-function parseBody(text: string): Array<{ type: 'text' | 'url'; content: string }> {
-  const parts = text.split(/(https?:\/\/[^\s]+)/g);
-  return parts.map((part) =>
-    /^https?:\/\//.test(part) ? { type: 'url', content: part } : { type: 'text', content: part }
-  );
+type Segment =
+  | { type: 'text'; content: string }
+  | { type: 'url'; display: string; actual: string };
+
+function parseBody(text: string): Segment[] {
+  const re = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)|(https?:\/\/[^\s]+)/g;
+  const segments: Segment[] = [];
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > last) {
+      segments.push({ type: 'text', content: text.slice(last, match.index) });
+    }
+    if (match[1] && match[2]) {
+      segments.push({ type: 'url', display: match[1], actual: match[2] });
+    } else {
+      segments.push({ type: 'url', display: match[3], actual: match[3] });
+    }
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) {
+    segments.push({ type: 'text', content: text.slice(last) });
+  }
+  return segments;
 }
 
 function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
@@ -167,9 +186,9 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
             <span
               key={i}
               className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
-              onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.content); }}
+              onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.actual); }}
             >
-              {seg.content}
+              {seg.display}<span className="opacity-50 text-[9px] ml-0.5">[↗]</span>
             </span>
           ) : (
             <span key={i}>{seg.content}</span>
@@ -222,9 +241,9 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
             <span
               key={i}
               className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
-              onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.content); }}
+              onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.actual); }}
             >
-              {seg.content}
+              {seg.display}<span className="opacity-50 text-[9px] ml-0.5">[↗]</span>
             </span>
           ) : (
             <span key={i}>{seg.content}</span>
