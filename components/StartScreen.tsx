@@ -34,8 +34,11 @@ export function StartScreen({ onStart }: Props) {
   const [showButton, setShowButton] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const { profile, loading: playerLoading, signedIn, signInWithEmail, signOut } = usePlayer();
+  const { profile, loading: playerLoading, signedIn, signInWithEmail, signOut, refreshProfile } = usePlayer();
   const [showAuthFlow, setShowAuthFlow] = useState(false);
+  const [callsign, setCallsign] = useState('');
+  const [callsignLoading, setCallsignLoading] = useState(false);
+  const [callsignError, setCallsignError] = useState('');
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'score' | 'xp'>('score');
 
@@ -77,6 +80,32 @@ export function StartScreen({ onStart }: Props) {
     }
   }, [visibleCount]);
 
+  async function handleSetCallsign(e: React.FormEvent) {
+    e.preventDefault();
+    const name = callsign.trim();
+    if (!name) return;
+    setCallsignLoading(true);
+    setCallsignError('');
+    try {
+      const res = await fetch('/api/player', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: name }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCallsignError(data.error ?? 'Failed to set callsign.');
+      } else {
+        await refreshProfile();
+        setCallsign('');
+      }
+    } catch {
+      setCallsignError('Network error.');
+    } finally {
+      setCallsignLoading(false);
+    }
+  }
+
   const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
 
   return (
@@ -109,10 +138,39 @@ export function StartScreen({ onStart }: Props) {
           {/* Player Profile Card */}
           {!playerLoading && (
             <div className="anim-fade-in-up">
-              {signedIn && profile ? (
+              {signedIn && profile && !profile.displayName ? (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <span className="text-[#00aa28] text-xs tracking-widest">{profile.displayName ?? 'OPERATOR'}</span>
+                    <span className="text-[#00aa28] text-xs tracking-widest">SET_CALLSIGN</span>
+                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">SIGN OUT</button>
+                  </div>
+                  <div className="px-3 py-3 space-y-2">
+                    <div className="text-[#003a0e] text-[10px] font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
+                    <form onSubmit={handleSetCallsign} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={callsign}
+                        onChange={(e) => { setCallsign(e.target.value); setCallsignError(''); }}
+                        placeholder="ENTER CALLSIGN"
+                        maxLength={20}
+                        autoFocus
+                        className="flex-1 bg-transparent border border-[rgba(0,255,65,0.3)] text-[#00ff41] font-mono text-xs px-2 py-1.5 placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.7)]"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!callsign.trim() || callsignLoading}
+                        className="px-3 py-1.5 term-border text-[#00ff41] font-mono text-xs tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      >
+                        {callsignLoading ? '...' : 'SET'}
+                      </button>
+                    </form>
+                    {callsignError && <div className="text-[#ff3333] text-[10px] font-mono">{callsignError}</div>}
+                  </div>
+                </div>
+              ) : signedIn && profile ? (
+                <div className="term-border bg-[#060c06]">
+                  <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
+                    <span className="text-[#00aa28] text-xs tracking-widest">{profile.displayName}</span>
                     <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">SIGN OUT</button>
                   </div>
                   <div className="px-3 py-2 space-y-2">
