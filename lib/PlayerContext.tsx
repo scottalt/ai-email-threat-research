@@ -32,8 +32,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) refreshProfile().finally(() => setLoading(false));
+    // getUser() validates against the server and triggers token refresh if needed,
+    // unlike getSession() which can return a stale cached session.
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) refreshProfile().finally(() => setLoading(false));
       else setLoading(false);
     });
 
