@@ -85,14 +85,16 @@ export function StartScreen({ onStart }: Props) {
   }, []);
 
   useEffect(() => {
-    if (visibleCount > 0 && visibleCount <= BOOT_LINES.length) {
-      playBootTick();
-    }
     if (visibleCount === BOOT_LINES.length) {
       const t = setTimeout(() => setShowButton(true), 300);
       return () => clearTimeout(t);
     }
   }, [visibleCount]);
+
+  function handleStart(mode: GameMode) {
+    playBootTick();
+    onStart(mode);
+  }
 
   async function handleSetCallsign(e: React.FormEvent) {
     e.preventDefault();
@@ -268,14 +270,14 @@ export function StartScreen({ onStart }: Props) {
 
           {/* Daily challenge button - featured */}
           <button
-            onClick={() => onStart('daily')}
+            onClick={() => handleStart('daily')}
             className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
           >
             [ DAILY CHALLENGE — {dateLabel} ]
           </button>
 
           <button
-            onClick={() => onStart('research')}
+            onClick={() => handleStart('research')}
             className="w-full py-3 term-border text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
           >
             [ PLAY ]
@@ -283,7 +285,7 @@ export function StartScreen({ onStart }: Props) {
 
           {signedIn && profile?.researchGraduated && (
             <button
-              onClick={() => onStart('expert')}
+              onClick={() => handleStart('expert')}
               className="w-full py-4 term-border border-[rgba(255,170,0,0.4)] text-center text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.05)]"
             >
               [ EXPERT MODE ]
