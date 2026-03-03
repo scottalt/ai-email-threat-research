@@ -39,8 +39,8 @@ export async function GET(req: Request) {
     const member = results[i] as string;
     const score = results[i + 1] as number;
     const parts = member.split(':');
-    const name = parts[0];
-    const level = parts.length >= 3 ? parseInt(parts[1], 10) || 1 : 1;
+    const level = parts.length >= 3 ? parseInt(parts[parts.length - 2], 10) || 1 : 1;
+    const name = parts.length >= 3 ? parts.slice(0, parts.length - 2).join(':') : parts[0];
     entries.push({ name, score, level });
   }
 
