@@ -189,7 +189,11 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
   );
 }
 
-function SMSDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number) => void }) {
+function SMSDisplay({ card, onScroll, onUrlInspected }: {
+  card: Card;
+  onScroll?: (pct: number) => void;
+  onUrlInspected?: () => void;
+}) {
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
   const segments = parseBody(card.body);
 
@@ -218,7 +222,7 @@ function SMSDisplay({ card, onScroll }: { card: Card; onScroll?: (pct: number) =
             <span
               key={i}
               className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
-              onClick={(e) => { e.stopPropagation(); setInspectedUrl(seg.content); }}
+              onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.content); }}
             >
               {seg.content}
             </span>
@@ -484,7 +488,11 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
                 onHeadersOpened={() => { headersEverOpened.current = true; }}
                 onUrlInspected={() => { urlEverInspected.current = true; }}
               />
-            : <SMSDisplay card={card} onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }} />
+            : <SMSDisplay
+                card={card}
+                onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }}
+                onUrlInspected={() => { urlEverInspected.current = true; }}
+              />
           }
         </div>
       </div>

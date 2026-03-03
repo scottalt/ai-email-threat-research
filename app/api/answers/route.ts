@@ -4,7 +4,8 @@ import type { AnswerEvent, SessionPayload } from '@/lib/types';
 
 const VALID_ANSWERS = ['phishing', 'legit'] as const;
 const VALID_CONFIDENCES = ['guessing', 'likely', 'certain'] as const;
-const VALID_MODES = ['research', 'freeplay', 'daily'] as const;
+const VALID_MODES = ['research', 'freeplay', 'daily', 'preview'] as const;
+const MAX_RESEARCH_ANSWERS = 10;
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,62 +26,100 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true }); // silent reject — don't break the game
     }
 
+    // Preview mode — never write to DB
+    if (a.gameMode === 'preview') {
+      return NextResponse.json({ ok: true });
+    }
+
     const supabase = getSupabaseAdminClient();
+
+    // Research mode: verify correct and technique server-side + session dedup
+    let verifiedCorrect = a.correct;
+    let verifiedIsPhishing = a.isPhishing;
+    let verifiedTechnique = a.technique;
+
+    if (a.gameMode === 'research') {
+      // Session dedup: reject if session already has MAX_RESEARCH_ANSWERS research answers
+      const { count } = await supabase
+        .from('answers')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', a.sessionId)
+        .eq('game_mode', 'research');
+
+      if ((count ?? 0) >= MAX_RESEARCH_ANSWERS) {
+        return NextResponse.json({ ok: true }); // silent reject
+      }
+
+      // Look up card in cards_real to recompute correct and technique server-side
+      const { data: card } = await supabase
+        .from('cards_real')
+        .select('is_phishing, technique')
+        .eq('card_id', a.cardId)
+        .single();
+
+      if (card) {
+        verifiedIsPhishing = card.is_phishing;
+        verifiedTechnique = card.technique;
+        verifiedCorrect = (a.userAnswer === 'phishing') === card.is_phishing;
+      }
+    }
 
     // Insert answer event
     const { error: answerError } = await supabase.from('answers').insert({
-      session_id: body.answer.sessionId,
-      card_id: body.answer.cardId,
-      card_source: body.answer.cardSource,
-      is_phishing: body.answer.isPhishing,
-      technique: body.answer.technique,
-      secondary_technique: body.answer.secondaryTechnique,
-      is_genai_suspected: body.answer.isGenaiSuspected,
-      genai_confidence: body.answer.genaiConfidence,
-      grammar_quality: body.answer.grammarQuality,
-      prose_fluency: body.answer.proseFluency,
-      personalization_level: body.answer.personalizationLevel,
-      contextual_coherence: body.answer.contextualCoherence,
-      difficulty: body.answer.difficulty,
-      type: body.answer.type,
-      user_answer: body.answer.userAnswer,
-      correct: body.answer.correct,
-      confidence: body.answer.confidence,
-      time_from_render_ms: body.answer.timeFromRenderMs,
-      time_from_confidence_ms: body.answer.timeFromConfidenceMs,
-      confidence_selection_time_ms: body.answer.confidenceSelectionTimeMs,
-      scroll_depth_pct: body.answer.scrollDepthPct,
-      answer_method: body.answer.answerMethod,
-      answer_ordinal: body.answer.answerOrdinal,
-      streak_at_answer_time: body.answer.streakAtAnswerTime,
-      correct_count_at_time: body.answer.correctCountAtTime,
-      game_mode: body.answer.gameMode,
-      is_daily_challenge: body.answer.isDailyChallenge,
-      dataset_version: body.answer.datasetVersion,
-      headers_opened: body.answer.headersOpened,
-      url_inspected: body.answer.urlInspected,
-      auth_status: body.answer.authStatusSignal,
-      has_reply_to: body.answer.hasReplyTo,
-      has_url: body.answer.hasUrl,
-      has_attachment: body.answer.hasAttachment,
+      session_id: a.sessionId,
+      card_id: a.cardId,
+      card_source: a.cardSource,
+      is_phishing: verifiedIsPhishing,
+      technique: verifiedTechnique,
+      secondary_technique: a.secondaryTechnique,
+      is_genai_suspected: a.isGenaiSuspected,
+      genai_confidence: a.genaiConfidence,
+      grammar_quality: a.grammarQuality,
+      prose_fluency: a.proseFluency,
+      personalization_level: a.personalizationLevel,
+      contextual_coherence: a.contextualCoherence,
+      difficulty: a.difficulty,
+      type: a.type,
+      user_answer: a.userAnswer,
+      correct: verifiedCorrect,
+      confidence: a.confidence,
+      time_from_render_ms: a.timeFromRenderMs,
+      time_from_confidence_ms: a.timeFromConfidenceMs,
+      confidence_selection_time_ms: a.confidenceSelectionTimeMs,
+      scroll_depth_pct: a.scrollDepthPct,
+      answer_method: a.answerMethod,
+      answer_ordinal: a.answerOrdinal,
+      streak_at_answer_time: a.streakAtAnswerTime,
+      correct_count_at_time: a.correctCountAtTime,
+      game_mode: a.gameMode,
+      is_daily_challenge: a.isDailyChallenge,
+      dataset_version: a.datasetVersion,
+      headers_opened: a.headersOpened,
+      url_inspected: a.urlInspected,
+      auth_status: a.authStatusSignal,
+      has_reply_to: a.hasReplyTo,
+      has_url: a.hasUrl,
+      has_attachment: a.hasAttachment,
+      has_sent_at: a.hasSentAt,
     });
 
     if (answerError) console.error('Answer insert failed:', answerError);
 
     // Upsert session — runs independently regardless of answer insert result
+    const s = body.session;
     const { error: sessionError } = await supabase.from('sessions').upsert({
-      session_id: body.session.sessionId,
-      game_mode: body.session.gameMode,
-      is_daily_challenge: body.session.isDailyChallenge,
-      started_at: body.session.startedAt,
-      completed_at: body.session.completedAt,
-      cards_answered: body.session.cardsAnswered,
-      final_score: body.session.finalScore,
-      final_rank: body.session.finalRank,
-      device_type: body.session.deviceType,
-      viewport_width: body.session.viewportWidth,
-      viewport_height: body.session.viewportHeight,
-      referrer: body.session.referrer,
+      session_id: s.sessionId,
+      game_mode: s.gameMode,
+      is_daily_challenge: s.isDailyChallenge,
+      started_at: s.startedAt,
+      completed_at: s.completedAt,
+      cards_answered: s.cardsAnswered,
+      final_score: s.finalScore,
+      final_rank: s.finalRank,
+      device_type: s.deviceType,
+      viewport_width: s.viewportWidth,
+      viewport_height: s.viewportHeight,
+      referrer: s.referrer,
     }, { onConflict: 'session_id' });
 
     if (sessionError) console.error('Session upsert failed:', sessionError);

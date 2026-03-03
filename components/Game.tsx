@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { getShuffledDeck, getDailyDeck } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { FeedbackCard } from './FeedbackCard';
@@ -23,7 +23,7 @@ const STREAK_BONUS = 50;
 
 type GamePhase = 'start' | 'playing' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro' | 'research_unavailable';
 
-export function Game() {
+export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const [phase, setPhase] = useState<GamePhase>('start');
   const [deck, setDeck] = useState<Card[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -37,6 +37,16 @@ export function Game() {
   const sessionId = useRef<string>('');
   const sessionStartedAt = useRef<string>('');
   const [correctCount, setCorrectCount] = useState(0);
+  const hasAutoStarted = useRef(false);
+
+  // Auto-start in preview mode — skip the start screen entirely
+  useEffect(() => {
+    if (previewMode && !hasAutoStarted.current) {
+      hasAutoStarted.current = true;
+      startRound('preview');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function getToday(): string {
     const d = new Date();
@@ -87,7 +97,7 @@ export function Game() {
     setTotalScore(0);
     setCorrectCount(0);
 
-    if (newMode === 'research') {
+    if (newMode === 'research' || newMode === 'preview') {
       setPhase('loading' as GamePhase);
       fetch('/api/cards/research')
         .then((r) => r.json())
@@ -100,7 +110,8 @@ export function Game() {
           }
           const shuffled = arr.slice(0, ROUND_SIZE);
           setDeck(shuffled);
-          setPhase('research_intro');
+          // Preview mode skips the research intro and goes straight to playing
+          setPhase(newMode === 'preview' ? 'playing' : 'research_intro');
         })
         .catch(() => setPhase('start'));
     } else {
@@ -141,8 +152,8 @@ export function Game() {
       else playWrong();
     }
 
-    // Log answer event (fire and forget — never block the game)
-    if (typeof window !== 'undefined') {
+    // Log answer event (fire and forget — never block the game, skip in preview mode)
+    if (typeof window !== 'undefined' && mode !== 'preview') {
       const researchCard = card as Card & Record<string, unknown>;
       const answerEvent: AnswerEvent = {
         sessionId: sessionId.current,
@@ -179,6 +190,7 @@ export function Game() {
         hasReplyTo: !!card.replyTo,
         hasUrl: /https?:\/\//.test(card.body),
         hasAttachment: !!card.attachmentName,
+        hasSentAt: !!card.sentAt,
       };
 
       const sessionPayload: SessionPayload = {
@@ -216,8 +228,8 @@ export function Game() {
           JSON.stringify({ score: correctCount, totalScore })
         );
       }
-      // Record session completion — fire and forget
-      if (typeof window !== 'undefined') {
+      // Record session completion — fire and forget, skip in preview mode
+      if (typeof window !== 'undefined' && mode !== 'preview') {
         fetch('/api/sessions', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },

@@ -30,7 +30,7 @@ export interface RoundResult {
   pointsEarned: number;
 }
 
-export type GameMode = 'freeplay' | 'daily' | 'research';
+export type GameMode = 'freeplay' | 'daily' | 'research' | 'preview';
 
 // Research mode card — extends Card with research metadata from cards_real
 export interface ResearchCard extends Card {
@@ -82,6 +82,7 @@ export interface AnswerEvent {
   hasReplyTo: boolean;           // card.replyTo is present (mismatched reply-to)
   hasUrl: boolean;               // card body contains at least one URL
   hasAttachment: boolean;        // card.attachmentName is set
+  hasSentAt: boolean;            // card.sentAt is present (odd-hours signal available)
 }
 
 // Session payload sent alongside each answer event
