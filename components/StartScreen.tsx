@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { usePlayer } from '@/lib/usePlayer';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
+import { playBootTick } from '@/lib/sounds';
 
 interface LeaderboardEntry {
   name: string;
@@ -27,7 +28,7 @@ const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
 
 // bright=true → phosphor green + glow (separators, READY line)
 const BOOT_LINES: { text: string; bright: boolean }[] = [
-  { text: '> PHISH_OR_NOT THREAT ANALYZER', bright: false },
+  { text: '> RETRO_PHISH THREAT ANALYZER',  bright: false },
   { text: '> RESEARCH PLATFORM v1.0',       bright: false },
   { text: '> \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', bright: true  },
   { text: '> LOADING RESEARCH DATASET.....', bright: false },
@@ -84,6 +85,9 @@ export function StartScreen({ onStart }: Props) {
   }, []);
 
   useEffect(() => {
+    if (visibleCount > 0 && visibleCount <= BOOT_LINES.length) {
+      playBootTick();
+    }
     if (visibleCount === BOOT_LINES.length) {
       const t = setTimeout(() => setShowButton(true), 300);
       return () => clearTimeout(t);
