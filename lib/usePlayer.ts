@@ -20,7 +20,7 @@ export function usePlayer(): UsePlayerReturn {
 
   const refreshProfile = useCallback(async () => {
     try {
-      const res = await fetch('/api/player');
+      const res = await fetch('/api/player', { cache: 'no-store' });
       if (res.ok) setProfile(await res.json());
       else setProfile(null);
     } catch {

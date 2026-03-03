@@ -50,7 +50,9 @@ export async function GET(req: NextRequest) {
     .single();
 
   if (error || !data) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
-  return NextResponse.json(toProfile(data as unknown as Record<string, unknown>));
+  return NextResponse.json(toProfile(data as unknown as Record<string, unknown>), {
+    headers: { 'Cache-Control': 'no-store' },
+  });
 }
 
 // POST /api/player — update display_name and/or background
