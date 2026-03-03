@@ -87,6 +87,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
   useEffect(() => {
     if (!signedIn || !profile?.displayName || leaderboardFired.current) return;
     leaderboardFired.current = true;
+    setSubmitState('loading');
     fetch('/api/leaderboard', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -109,7 +110,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
           }).catch(() => {});
         }
       })
-      .catch(() => {});
+      .catch(() => { setSubmitState('error'); });
   }, [signedIn, profile?.displayName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const phishingCaught = results.filter((r) => r.card.isPhishing && r.correct).length;
