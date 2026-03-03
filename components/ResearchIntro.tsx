@@ -33,6 +33,7 @@ export function ResearchIntro({ onBegin }: Props) {
             {[
               'Sender domain — compare FROM address against any domain referenced in the body',
               'Send time — check [SENT] for odd hours or mismatched timezones',
+              'Attachment name — check [ATCH] for suspicious filenames or unexpected file types',
               'Authentication headers — tap [HEADERS] for SPF/DKIM/DMARC result',
               'Reply-To mismatch — visible in [HEADERS] panel',
               'URL destinations — tap any link to inspect the full URL',

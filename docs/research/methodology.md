@@ -178,6 +178,10 @@ Approved, curated live dataset:
 | highlights | TEXT[] | Phrases to highlight in feedback |
 | clues | TEXT[] | Analyst clues |
 | explanation | TEXT | Why this is/isn't phishing |
+| auth_status | TEXT | verified / unverified / fail — simulated SPF/DKIM/DMARC result |
+| reply_to | TEXT | Mismatched reply-to address (hard/extreme phishing only) |
+| attachment_name | TEXT | Filename shown in ATCH row (when card references an attachment) |
+| sent_at | TEXT | RFC 2822 timestamp — odd hours for phishing, business hours for legit |
 | ai_model | TEXT | Which model generated the card |
 | ai_preprocessing_version | TEXT | Prompt template version |
 | dataset_version | TEXT | v1 |
@@ -210,6 +214,12 @@ Every answer event from research mode:
 | game_mode | TEXT | research / training |
 | is_daily_challenge | BOOLEAN | |
 | dataset_version | TEXT | v1 |
+| headers_opened | BOOLEAN | Player opened the [HEADERS] panel |
+| url_inspected | BOOLEAN | Player tapped a URL to inspect it |
+| auth_status | TEXT | Card's SPF/DKIM/DMARC result (verified/unverified/fail) |
+| has_reply_to | BOOLEAN | Card had a mismatched Reply-To address |
+| has_url | BOOLEAN | Card body contained at least one URL |
+| has_attachment | BOOLEAN | Card had an attachment name set |
 | created_at | TIMESTAMPTZ | |
 
 ### `sessions`
@@ -304,6 +314,25 @@ Difficulty is balanced equally across techniques (20 easy/20 medium/20 hard per 
 - **Streak effect:** does a correct-answer streak correlate with accuracy on subsequent cards?
 - **Answer method:** swipe vs. button — any accuracy difference?
 
+### Secondary Analysis — Tool Usage
+
+Six signals are available to players during gameplay. Three are passive (always visible), three are active (require deliberate interaction):
+
+| Signal | Type | Behavioral field |
+|--------|------|-----------------|
+| Sender domain (FROM vs body) | Passive | — |
+| Send time (SENT row) | Passive | — |
+| Attachment name (ATCH row) | Passive | `has_attachment` on card |
+| Authentication headers ([HEADERS]) | Active | `headers_opened` |
+| Reply-To mismatch ([HEADERS]) | Active | `headers_opened` |
+| URL destinations (URL inspector) | Active | `url_inspected` |
+
+Active tool interactions are logged per answer. Analysis questions:
+- What percentage of players open the headers panel? Inspect URLs?
+- Does opening headers improve accuracy on phishing cards? By technique?
+- Does URL inspection improve accuracy?
+- On cards where auth status is PASS (sophisticated attacker with valid domain), do players who open headers still detect the phishing?
+
 ### Descriptive Statistics
 
 - Total answers collected, sessions played, completion rate
@@ -327,6 +356,16 @@ Players who seek out a retro phishing awareness game are likely more security-aw
 The terminal interface strips all visual design cues (logos, branding, CSS styling). Results reflect **text-based linguistic phishing recognition**, not full email client simulation.
 
 This is appropriate for the research question. GenAI's primary advantage over traditional phishing is text quality, not visual design. Testing linguistic cues in isolation directly matches the research question.
+
+### Training Effect — Immediate Feedback
+
+The game provides immediate post-answer feedback including the technique label, difficulty, and forensic signal analysis. This creates a within-session and cross-session learning effect: players calibrate over a session and improve across sessions.
+
+**How this is controlled for:**
+`answer_ordinal` is logged for every answer (position 1–10 within the session). This allows isolation of naive answers (early ordinals) from calibrated answers (later ordinals). Primary analysis uses all ordinals combined. A sensitivity analysis using only ordinals 1–3 (first three cards of each session) tests whether the technique ranking is robust to the learning effect. If the technique ordering holds across both cuts, the finding is valid.
+
+**Secondary finding enabled:**
+The learning structure is an opportunity, not only a limitation. Players who return for multiple sessions provide data on technique-specific trainability — which attacks remain hard even after repeated exposure to feedback. Techniques with persistently high bypass rates across return players represent harder-to-train threats. This is separately reportable and directly relevant to security awareness program design.
 
 ### All-Generated Dataset
 
@@ -352,3 +391,4 @@ Both limitations are disclosed in the publication.
 | 0.1 | 2026-03-01 | Initial methodology draft (real-world corpus plan) |
 | 0.2 | 2026-03-01 | Full schema, GenAI classification methodology |
 | 1.0 | 2026-03-01 | Pivot to all-generated dataset. New research question locked. 550 cards, 6 techniques. Methodology rewritten. |
+| 1.1 | 2026-03-02 | Added auth_status, reply_to, attachment_name, sent_at card fields. Added behavioral tracking (headers_opened, url_inspected, has_reply_to, has_url, has_attachment). Added tool usage secondary analysis. Added training effect / learning section. Signal count corrected to 6. |
