@@ -222,8 +222,12 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
                 }`}>
                   {CONFIDENCE_LABEL[r.confidence]}
                 </span>
-                <span className={`text-xs font-mono font-bold ${r.correct ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}>
-                  +{r.pointsEarned}
+                <span className={`text-xs font-mono font-bold ${
+                  r.pointsEarned > 0 ? 'text-[#00ff41]'
+                  : r.pointsEarned < 0 ? 'text-[#ff3333]'
+                  : 'text-[#003a0e]'
+                }`}>
+                  {r.pointsEarned > 0 ? `+${r.pointsEarned}` : r.pointsEarned}
                 </span>
               </div>
             </div>

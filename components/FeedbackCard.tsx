@@ -74,8 +74,12 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
               CONFIDENCE: <span className="text-[#00ff41]">{CONFIDENCE_LABEL[confidence]}</span>
               {' '}({CONFIDENCE_MULTI[confidence]})
             </span>
-            <span className={`text-sm font-black font-mono ${correct ? 'text-[#00ff41] glow' : 'text-[#003a0e]'}`}>
-              +{pointsEarned} PTS
+            <span className={`text-sm font-black font-mono ${
+              pointsEarned > 0 ? 'text-[#00ff41] glow'
+              : pointsEarned < 0 ? 'text-[#ff3333]'
+              : 'text-[#003a0e]'
+            }`}>
+              {pointsEarned > 0 ? `+${pointsEarned}` : pointsEarned} PTS
             </span>
           </div>
           {streakMilestone && (
