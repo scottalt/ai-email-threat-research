@@ -416,9 +416,16 @@ export default function ReviewPage() {
           </div>
         </div>
 
+        {/* Validation warning */}
+        {isPhishing && !technique && (
+          <div className="term-border border-[rgba(255,51,51,0.4)] px-3 py-2 text-xs font-mono text-[#ff3333]">
+            ⚠ Technique required before approving a phishing card.
+          </div>
+        )}
+
         {/* Action buttons */}
         <div className="flex gap-3">
-          <button onClick={() => handleAction('approved')} disabled={submitting}
+          <button onClick={() => handleAction('approved')} disabled={submitting || (isPhishing && !technique)}
             className="flex-1 py-3 border border-[rgba(0,255,65,0.5)] text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 transition-all">
             [A] APPROVE
           </button>

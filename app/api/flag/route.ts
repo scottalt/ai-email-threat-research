@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 
-const VALID_REASONS = ['incorrect_classification', 'offensive_content', 'poor_quality', 'other'] as const;
+// These values must match the <option value="..."> in FeedbackCard.tsx
+const VALID_REASONS = ['wrong_answer', 'too_obvious', 'poor_quality', 'other'] as const;
 
 export async function POST(req: NextRequest) {
   const { cardId, sessionId, reason, comment } = await req.json();

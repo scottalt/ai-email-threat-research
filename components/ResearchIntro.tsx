@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 interface Props {
   onBegin: () => void;
 }
@@ -48,7 +50,9 @@ export function ResearchIntro({ onBegin }: Props) {
 
         <div className="text-[#003a0e] text-[10px] font-mono text-center">
           Anonymous · voluntary · aggregate findings at{' '}
-          <span className="text-[#003a0e]">retro-phish.scottaltiparmak.com/intel</span>
+          <Link href="/intel" className="text-[#00aa28] hover:underline">
+            /intel
+          </Link>
         </div>
 
         <button

@@ -280,7 +280,7 @@ Research Mode answers collected anonymously. Session UUID generated at game star
 - `time_from_confidence_ms` — confidence selection to answer submission (pure decision deliberation)
 - `confidence_selection_time_ms` — card render to confidence selection
 
-**Scroll depth:** tracked via IntersectionObserver on card body. Records maximum scroll percentage reached before answering.
+**Scroll depth:** tracked via scrollTop ratio on the card body element. Records maximum scroll percentage reached before answering.
 
 **No PII collected.** No accounts, no IP storage, no cookies beyond session state.
 

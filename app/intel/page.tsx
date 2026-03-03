@@ -1,9 +1,14 @@
 import Link from 'next/link';
 
+const COLLECTION_TARGET = 600; // minimum answers before publishing
+
 interface IntelData {
   totalAnswers: number;
+  phishingAnswers?: number;
+  legitAnswers?: number;
   insufficient?: boolean;
   overallBypassRate: number;
+  falsePositiveRate?: number;
   byTechnique: { technique: string; total: number; bypassRate: number }[];
   fluency: {
     highFluencyBypassRate: number | null;
@@ -18,7 +23,6 @@ interface IntelData {
     traditionalSample: number;
   };
   byConfidence: { confidence: string; total: number; accuracyRate: number }[];
-  // New research signal analytics
   toolUsage?: {
     headersOpenedPct: number;
     urlInspectedPct: number;
@@ -78,6 +82,28 @@ export default async function IntelPage() {
           </div>
         </div>
 
+        {/* Collection progress — always visible */}
+        {data && !data.insufficient && (
+          <div className="term-border bg-[#060c06]">
+            <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
+              <span className="text-[#00aa28] text-xs tracking-widest">COLLECTION_PROGRESS</span>
+              <span className="text-[#003a0e] text-[10px] font-mono">{data.totalAnswers} / {COLLECTION_TARGET} answers</span>
+            </div>
+            <div className="px-3 py-3 space-y-2">
+              <div className="h-2 bg-[#003a0e] w-full">
+                <div
+                  className="h-full bg-[#00ff41]"
+                  style={{ width: `${Math.min(100, Math.round((data.totalAnswers / COLLECTION_TARGET) * 100))}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-mono">
+                <span className="text-[#003a0e]">{Math.round((data.totalAnswers / COLLECTION_TARGET) * 100)}% toward publication threshold</span>
+                <span className="text-[#003a0e]">{Math.max(0, COLLECTION_TARGET - data.totalAnswers)} remaining</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {!data || data.insufficient ? (
           <div className="term-border bg-[#060c06] px-3 py-6 text-center">
             <div className="text-[#00aa28] text-xs font-mono">COLLECTING DATA...</div>
@@ -87,8 +113,22 @@ export default async function IntelPage() {
           <>
             <div className="grid grid-cols-2 gap-3">
               <StatBlock label="TOTAL ANSWERS" value={data.totalAnswers.toLocaleString()} />
-              <StatBlock label="OVERALL BYPASS RATE" value={`${data.overallBypassRate}%`} sub="phishing not detected" />
+              <StatBlock label="PHISHING BYPASS RATE" value={`${data.overallBypassRate}%`} sub="phishing not detected" />
             </div>
+            {data.falsePositiveRate !== undefined && (
+              <div className="grid grid-cols-2 gap-3">
+                <StatBlock
+                  label="FALSE POSITIVE RATE"
+                  value={`${data.falsePositiveRate}%`}
+                  sub="legit flagged as phishing"
+                />
+                <StatBlock
+                  label="PHISHING ANSWERS"
+                  value={(data.phishingAnswers ?? 0).toLocaleString()}
+                  sub={`legit: ${(data.legitAnswers ?? 0).toLocaleString()}`}
+                />
+              </div>
+            )}
 
             {(data.fluency.highFluencyBypassRate !== null || data.fluency.lowFluencyBypassRate !== null) && (
               <div className="term-border bg-[#060c06]">
@@ -282,11 +322,21 @@ export default async function IntelPage() {
 
             <div className="term-border bg-[#060c06] px-3 py-3 text-[10px] font-mono text-[#003a0e] space-y-1 leading-relaxed">
               <div className="text-[#00aa28]">METHODOLOGY</div>
-              <div>Research Mode only. Anonymous, voluntary. Text-based recognition task — visual cues stripped. Self-selected security-aware sample. GenAI classification is probabilistic based on linguistic characteristics, not ground truth. Sample sizes shown as n=.</div>
+              <div>Research Mode only. Anonymous, voluntary. Text-based recognition task — visual cues stripped. Self-selected security-aware sample. All cards are AI-generated (GPT-4o, Claude). Sample sizes shown as n=.</div>
               <div className="mt-2">
-                Full methodology: <span className="text-[#00aa28]">retro-phish.scottaltiparmak.com/docs/research/methodology</span>
+                Full methodology:{' '}
+                <Link href="/methodology" className="text-[#00aa28] hover:underline">
+                  retro-phish.scottaltiparmak.com/methodology
+                </Link>
               </div>
             </div>
+
+            <Link
+              href="/"
+              className="block w-full py-4 term-border-bright text-center text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+            >
+              [ JOIN THE RESEARCH ]
+            </Link>
           </>
         )}
       </div>

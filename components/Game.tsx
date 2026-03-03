@@ -10,6 +10,7 @@ import { ResearchIntro } from './ResearchIntro';
 import type { Card, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
+import { getRank } from '@/lib/rank';
 
 const ROUND_SIZE = 10;
 const BASE_POINTS = 100;
@@ -20,7 +21,7 @@ const CONFIDENCE_MULTIPLIER: Record<Confidence, number> = {
 };
 const STREAK_BONUS = 50;
 
-type GamePhase = 'start' | 'playing' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro';
+type GamePhase = 'start' | 'playing' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro' | 'research_unavailable';
 
 export function Game() {
   const [phase, setPhase] = useState<GamePhase>('start');
@@ -91,7 +92,7 @@ export function Game() {
       fetch('/api/cards/research')
         .then((r) => r.json())
         .then((cards: Card[]) => {
-          if (!cards.length) { setPhase('start'); return; }
+          if (!cards.length) { setPhase('research_unavailable'); return; }
           const arr = [...cards];
           for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -215,6 +216,20 @@ export function Game() {
           JSON.stringify({ score: correctCount, totalScore })
         );
       }
+      // Record session completion — fire and forget
+      if (typeof window !== 'undefined') {
+        fetch('/api/sessions', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionId.current,
+            finalScore: totalScore,
+            finalRank: getRank(totalScore).label,
+            completedAt: new Date().toISOString(),
+            cardsAnswered: Math.min(deck.length, ROUND_SIZE),
+          }),
+        }).catch(() => {});
+      }
       setPhase('summary');
     } else {
       setCurrentIndex(nextIndex);
@@ -236,6 +251,31 @@ export function Game() {
 
   if (phase === 'research_intro') {
     return <ResearchIntro onBegin={() => setPhase('playing')} />;
+  }
+
+  if (phase === 'research_unavailable') {
+    return (
+      <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col gap-4">
+        <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
+          <div className="border-b border-[rgba(255,170,0,0.3)] px-3 py-1.5">
+            <span className="text-[#ffaa00] text-xs tracking-widest">RESEARCH_MODE</span>
+          </div>
+          <div className="px-3 py-6 text-center space-y-2">
+            <div className="text-[#ffaa00] text-sm font-mono font-black tracking-wide">DATASET UNAVAILABLE</div>
+            <p className="text-[#00aa28] text-xs font-mono leading-relaxed">
+              The research dataset is still being assembled. No cards are available yet.
+            </p>
+            <p className="text-[#003a0e] text-xs font-mono">Check back soon.</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setPhase('start')}
+          className="w-full py-4 term-border text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
+        >
+          [ BACK TO TERMINAL ]
+        </button>
+      </div>
+    );
   }
 
   if (phase === 'summary') {
