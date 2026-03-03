@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { RoundResult, GameMode } from '@/lib/types';
 import { getRank } from '@/lib/rank';
 import { updateWeaknessHistory, getWeakPoints } from '@/lib/weakness-tracker';
+import { usePlayer } from '@/lib/usePlayer';
+import { LevelMeter } from './LevelMeter';
+import { getXpForRound } from '@/lib/xp';
 
 interface Props {
   score: number;
@@ -12,6 +15,7 @@ interface Props {
   results: RoundResult[];
   mode: GameMode;
   date: string;
+  sessionId: string;
   onPlayAgain: () => void;
 }
 
@@ -26,7 +30,7 @@ function getTier(score: number, total: number): { label: string; sub: string; co
 
 const CONFIDENCE_LABEL: Record<string, string> = { guessing: 'G', likely: 'L', certain: 'C' };
 
-export function RoundSummary({ score, total, totalScore, results, mode, date, onPlayAgain }: Props) {
+export function RoundSummary({ score, total, totalScore, results, mode, date, sessionId, onPlayAgain }: Props) {
   const tier = getTier(score, total);
   const rank = getRank(totalScore);
   const [name, setName] = useState('');
@@ -36,6 +40,11 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, on
   const [dailyLeaderboard, setDailyLeaderboard] = useState<{ name: string; score: number }[]>([]);
   const [leaderboardTab, setLeaderboardTab] = useState<'daily' | 'global'>('global');
   const [weakPoints, setWeakPoints] = useState<{ technique: string; missRate: number; missed: number; attempts: number }[]>([]);
+  const { profile, signedIn, refreshProfile } = usePlayer();
+  const [xpResult, setXpResult] = useState<{
+    xpEarned: number; level: number; levelUp: boolean; graduated: boolean;
+  } | null>(null);
+  const xpFired = useRef(false);
 
   useEffect(() => {
     if (mode !== 'research') return;
@@ -56,6 +65,24 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, on
       setDailyLeaderboard(daily);
     }).catch(() => {});
   }, [date]);
+
+  const correctCount = results.filter(r => r.correct).length;
+  const xpEarned = getXpForRound(correctCount, total, mode);
+
+  useEffect(() => {
+    if (!signedIn || xpFired.current) return;
+    xpFired.current = true;
+    fetch('/api/player/xp', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ xpEarned, score: totalScore, gameMode: mode, sessionCompleted: true, sessionId }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) { setXpResult(data); refreshProfile(); }
+      })
+      .catch(() => {});
+  }, [signedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -100,6 +127,25 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, on
 
   return (
     <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col gap-4">
+      {/* XP award — only shown when signed in and API has responded */}
+      {signedIn && xpResult && (
+        <div className="term-border bg-[#060c06] px-3 py-3 space-y-2">
+          <div className="flex justify-between text-xs font-mono">
+            <span className="text-[#00aa28]">XP EARNED</span>
+            <span className="text-[#00ff41] font-bold glow">+{xpResult.xpEarned} XP</span>
+          </div>
+          {xpResult.levelUp && (
+            <div className="text-[#ffaa00] text-xs font-mono glow text-center">LEVEL UP → {xpResult.level}</div>
+          )}
+          {xpResult.graduated && (
+            <div className="term-border border-[rgba(255,170,0,0.4)] px-2 py-2 text-center">
+              <div className="text-[#ffaa00] text-xs font-mono font-bold">RESEARCH GRADUATED</div>
+              <div className="text-[#003a0e] text-[10px] font-mono mt-0.5">Expert Mode unlocked. You&apos;ve completed 10 research sessions.</div>
+            </div>
+          )}
+          {profile && <LevelMeter xp={profile.xp} level={profile.level} />}
+        </div>
+      )}
       {/* Score header */}
       <div className="term-border bg-[#060c06]">
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
