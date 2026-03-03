@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import type { Card, Answer, Confidence } from '@/lib/types';
+import type { Card, Answer, Confidence, GameMode } from '@/lib/types';
 
 const SWIPE_THRESHOLD = 75;
 const FLY_DISTANCE = 650;
@@ -26,6 +26,7 @@ interface Props {
   soundEnabled: boolean;
   onToggleSound: () => void;
   onQuit: () => void;
+  mode?: GameMode;
 }
 
 const CONFIDENCE_OPTIONS: { value: Confidence; label: string; multiplier: string; color: string }[] = [
@@ -264,7 +265,7 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
   );
 }
 
-export function GameCard({ card, onAnswer, questionNumber, total, streak, totalScore, soundEnabled, onToggleSound, onQuit }: Props) {
+export function GameCard({ card, onAnswer, questionNumber, total, streak, totalScore, soundEnabled, onToggleSound, onQuit, mode }: Props) {
   const [confidence, setConfidence] = useState<Confidence | null>(null);
   // dragX drives stamp opacity — updated during drag via React state
   const [dragX, setDragX] = useState(0);
@@ -416,7 +417,6 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
     fly(answer === 'phishing' ? 'left' : 'right', confidence, 'button');
   }
 
-  const progress = ((questionNumber - 1) / total) * 100;
   const streakAtBonus = streak > 0 && streak % 3 === 0;
 
   // Stamp opacity driven by React dragX state (updated during drag and reset after spring)
@@ -427,15 +427,28 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
     <div className="flex flex-col items-center gap-4 w-full max-w-sm px-4">
       {/* HUD */}
       <div className="w-full flex items-center justify-between text-xs font-mono">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={onQuit}
             className="text-[#003a0e] text-[10px] font-mono hover:text-[#ff3333] transition-colors"
           >
             [QUIT]
           </button>
-          <span className="text-[#00aa28]">
-            Q<span className="text-[#00ff41] glow">{questionNumber}</span>/{total}
+          {mode === 'research' && (
+            <span className="text-[#ffaa00] text-[10px] font-mono glow-amber">[RES]</span>
+          )}
+          <span className="font-mono text-[10px]">
+            <span className="text-[#003a0e]">[</span>
+            {Array.from({ length: total }, (_, i) => (
+              <span
+                key={i}
+                style={{
+                  color: i < questionNumber - 1 ? '#00ff41' : '#003a0e',
+                  textShadow: i < questionNumber - 1 ? '0 0 4px rgba(0,255,65,0.8)' : 'none',
+                }}
+              >▓</span>
+            ))}
+            <span className="text-[#003a0e]">]</span>
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -453,13 +466,6 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="w-full h-px bg-[#003a0e] relative overflow-hidden">
-        <div
-          className="absolute left-0 top-0 h-full bg-[#00ff41] transition-all duration-300"
-          style={{ width: `${progress}%`, boxShadow: '0 0 6px rgba(0,255,65,0.8)' }}
-        />
-      </div>
 
       {confidence && (
         <div className="flex justify-between w-full text-xs text-[#003a0e] font-mono tracking-wider">

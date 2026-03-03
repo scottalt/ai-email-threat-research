@@ -27,15 +27,32 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
   const [flagReason, setFlagReason] = useState('');
   const [flagComment, setFlagComment] = useState('');
   const [flagDone, setFlagDone] = useState(false);
+  const [displayedHeadline, setDisplayedHeadline] = useState('');
+  const [headlineDone, setHeadlineDone] = useState(false);
+
+  const headline = correct
+    ? wasPhishing ? 'THREAT NEUTRALIZED' : 'ASSET CLEARED'
+    : wasPhishing ? 'BREACH DETECTED' : 'FALSE POSITIVE';
 
   useEffect(() => {
     const t = setTimeout(() => setShowFlash(false), 600);
     return () => clearTimeout(t);
   }, []);
 
-  const headline = correct
-    ? wasPhishing ? 'THREAT NEUTRALIZED' : 'ASSET CLEARED'
-    : wasPhishing ? 'BREACH DETECTED' : 'FALSE POSITIVE';
+  useEffect(() => {
+    setDisplayedHeadline('');
+    setHeadlineDone(false);
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setDisplayedHeadline(headline.slice(0, i));
+      if (i >= headline.length) {
+        clearInterval(interval);
+        setHeadlineDone(true);
+      }
+    }, 35);
+    return () => clearInterval(interval);
+  }, [headline]);
 
   const headlineColor = correct ? 'text-[#00ff41]' : 'text-[#ff3333]';
   const headlineGlow = correct ? 'glow' : 'glow-red';
@@ -52,7 +69,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
 
       <div className="anim-fade-in-up flex flex-col gap-4">
         {/* Result header */}
-        <div className={`term-border bg-[#060c06] ${correct ? 'border-[rgba(0,255,65,0.6)]' : 'border-[rgba(255,51,51,0.6)]'}`}>
+        <div className={`term-border bg-[#060c06] ${correct ? 'border-[rgba(0,255,65,0.6)]' : 'border-[rgba(255,51,51,0.6)]'} ${!correct ? 'anim-glitch' : ''}`}>
           <div className={`border-b px-3 py-2 flex items-center justify-between ${correct ? 'border-[rgba(0,255,65,0.4)]' : 'border-[rgba(255,51,51,0.4)]'}`}>
             <span className={`text-xs font-mono tracking-widest ${correct ? 'text-[#00aa28]' : 'text-[#aa2222]'}`}>
               ANALYSIS_RESULT
@@ -60,8 +77,15 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
             <span className="text-xs font-mono text-[#003a0e]">Q{questionNumber}/{total}</span>
           </div>
           <div className="px-3 py-4 text-center space-y-1">
-            <div className={`text-2xl font-black font-mono tracking-widest ${headlineColor} ${headlineGlow}`}>
-              {headline}
+            <div className="flex items-center justify-center gap-3">
+              <div className={`text-2xl font-black font-mono tracking-widest ${headlineColor} ${headlineGlow}`}>
+                {displayedHeadline}{!headlineDone && <span className="cursor" />}
+              </div>
+              {headlineDone && (
+                <span className={`text-sm font-mono ${correct ? 'text-[#00aa28]' : 'text-[#aa2222]'}`}>
+                  {correct ? (streak >= 6 ? '[^_^]' : streak >= 3 ? '[o_o]' : '[._.]') : '[x_x]'}
+                </span>
+              )}
             </div>
             <div className="text-xs font-mono text-[#00aa28]">
               {wasPhishing
@@ -269,7 +293,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
 
         <button
           onClick={onNext}
-          className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+          className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow anim-pulse-glow"
         >
           {questionNumber === total ? '[ VIEW RESULTS ]' : '[ NEXT TRANSMISSION ]'}
         </button>
