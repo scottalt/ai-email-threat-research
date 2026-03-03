@@ -125,10 +125,35 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           }
         })
         .catch(() => setPhase('start'));
-    } else {
-      setDeck(newMode === 'daily' ? getDailyDeck() : getShuffledDeck(ROUND_SIZE));
-      setPhase('playing');
+      return;
     }
+
+    if (newMode === 'expert') {
+      setPhase('loading' as GamePhase);
+      fetch('/api/cards/expert')
+        .then((r) => r.json())
+        .then((cards: Card[]) => {
+          if (!cards.length) {
+            // No extreme cards yet — fall back to freeplay silently
+            setMode('freeplay');
+            setDeck(getShuffledDeck(ROUND_SIZE));
+            setPhase('playing');
+            return;
+          }
+          const arr = [...cards];
+          for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+          }
+          setDeck(arr.slice(0, ROUND_SIZE));
+          setPhase('playing');
+        })
+        .catch(() => setPhase('start'));
+      return;
+    }
+
+    setDeck(newMode === 'daily' ? getDailyDeck() : getShuffledDeck(ROUND_SIZE));
+    setPhase('playing');
   }
 
   function handleAnswer(answer: Answer, confidence: Confidence, timing?: {
