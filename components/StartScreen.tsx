@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { GameMode, PlayerBackground } from '@/lib/types';
-import { getRank } from '@/lib/rank';
+import { getRankFromLevel } from '@/lib/rank';
 import Link from 'next/link';
 import { usePlayer } from '@/lib/usePlayer';
 import { AuthFlow } from './AuthFlow';
@@ -11,6 +11,7 @@ import { LevelMeter } from './LevelMeter';
 interface LeaderboardEntry {
   name: string;
   score: number;
+  level?: number;
 }
 
 interface Props {
@@ -285,7 +286,7 @@ export function StartScreen({ onStart }: Props) {
                     <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">
                       {entry.name}
                     </span>
-                    {(() => { const r = getRank(entry.score); return (
+                    {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
                       <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
                         {r.label}
                       </span>
@@ -346,7 +347,7 @@ export function StartScreen({ onStart }: Props) {
                     <div key={i} className="flex items-center gap-3 px-3 py-1.5">
                       <span className={`text-[10px] font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
                       <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">{entry.name}</span>
-                      {(() => { const r = getRank(entry.score); return (
+                      {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
                         <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
                       ); })()}
                       <span className="text-[#00ff41] text-xs font-mono font-bold glow">{entry.score}</span>
@@ -361,7 +362,11 @@ export function StartScreen({ onStart }: Props) {
                       <span className="text-[#003a0e] w-4">{i + 1}.</span>
                       <span className="text-[#00aa28] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
                       {row.research_graduated && <span className="text-[#ffaa00] text-[10px]">★</span>}
-                      <span className="text-[#003a0e] text-[10px]">LVL {row.level}</span>
+                      {(() => { const r = getRankFromLevel(row.level); return (
+                        <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
+                          {r.label}
+                        </span>
+                      ); })()}
                       <span className="text-[#00ff41]">{row.xp.toLocaleString()} XP</span>
                     </div>
                   ))}
