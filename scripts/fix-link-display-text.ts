@@ -63,16 +63,42 @@ async function main() {
   const supabase = createClient(supabaseUrl, supabaseKey);
   const anthropic = new Anthropic({ apiKey: anthropicKey });
 
+  // cards_staging uses processed_body / suggested_difficulty / suggested_technique
+  // cards_real uses body / difficulty / technique
   const [stagingRes, realRes] = await Promise.all([
-    supabase.from('cards_staging').select('id, body, is_phishing, difficulty, technique').ilike('body', '%http%'),
-    supabase.from('cards_real').select('id, body, is_phishing, difficulty, technique').ilike('body', '%http%'),
+    supabase
+      .from('cards_staging')
+      .select('id, processed_body, is_phishing, suggested_difficulty, suggested_technique')
+      .ilike('processed_body', '%http%'),
+    supabase
+      .from('cards_real')
+      .select('id, body, is_phishing, difficulty, technique')
+      .ilike('body', '%http%'),
   ]);
 
   if (stagingRes.error) throw stagingRes.error;
   if (realRes.error) throw realRes.error;
 
-  const staging = (stagingRes.data ?? []).filter((c) => hasRawUrl(c.body));
-  const real = (realRes.data ?? []).filter((c) => hasRawUrl(c.body));
+  // Normalise staging rows to a common shape
+  const staging = (stagingRes.data ?? [])
+    .filter((c) => hasRawUrl(c.processed_body))
+    .map((c) => ({
+      id: c.id as string,
+      body: c.processed_body as string,
+      is_phishing: c.is_phishing as boolean,
+      difficulty: c.suggested_difficulty as string | null,
+      technique: c.suggested_technique as string | null,
+    }));
+
+  const real = (realRes.data ?? [])
+    .filter((c) => hasRawUrl(c.body))
+    .map((c) => ({
+      id: c.id as string,
+      body: c.body as string,
+      is_phishing: c.is_phishing as boolean,
+      difficulty: c.difficulty as string | null,
+      technique: c.technique as string | null,
+    }));
 
   console.log(`Found ${staging.length} cards_staging + ${real.length} cards_real to update (dry-run: ${isDryRun})`);
 
@@ -97,7 +123,9 @@ async function main() {
         console.log('BEFORE:', card.body.slice(0, 150));
         console.log('AFTER: ', newBody.slice(0, 150));
       } else {
-        const { error } = await supabase.from(table).update({ body: newBody }).eq('id', card.id);
+        // cards_staging writes back to processed_body; cards_real writes to body
+        const updateField = table === 'cards_staging' ? { processed_body: newBody } : { body: newBody };
+        const { error } = await supabase.from(table).update(updateField).eq('id', card.id);
         if (error) throw error;
         console.log(`✓ ${table} ${card.id}`);
       }
