@@ -8,11 +8,16 @@ import Link from 'next/link';
 import type { PlayerBackground } from '@/lib/types';
 
 const RANKS = [
-  { label: 'NOVICE',     levels: '1–6',   color: '#00aa28', glowClass: '',          minLevel: 1  },
-  { label: 'OPERATOR',   levels: '7–12',  color: '#00ff41', glowClass: '',          minLevel: 7  },
-  { label: 'ANALYST',    levels: '13–18', color: '#00ff41', glowClass: 'glow',      minLevel: 13 },
-  { label: 'SPECIALIST', levels: '19–24', color: '#ffaa00', glowClass: '',          minLevel: 19 },
-  { label: 'ELITE',      levels: '25–30', color: '#ffaa00', glowClass: 'glow-amber',minLevel: 25 },
+  { label: 'ZERO_DAY',         levels: '28–30', color: '#ff3333', glowClass: 'glow-red',   minLevel: 28 },
+  { label: 'APT_ANALYST',      levels: '25–27', color: '#ff4400', glowClass: '',           minLevel: 25 },
+  { label: 'RED_TEAMER',       levels: '22–24', color: '#ffaa00', glowClass: 'glow-amber', minLevel: 22 },
+  { label: 'INCIDENT_HANDLER', levels: '19–21', color: '#ffaa00', glowClass: '',           minLevel: 19 },
+  { label: 'THREAT_HUNTER',    levels: '16–18', color: '#ffcc00', glowClass: '',           minLevel: 16 },
+  { label: 'SOC_ANALYST',      levels: '13–15', color: '#00ff41', glowClass: 'glow',       minLevel: 13 },
+  { label: 'HEADER_READER',    levels: '10–12', color: '#00ff41', glowClass: '',           minLevel: 10 },
+  { label: 'LINK_CHECKER',     levels: '7–9',   color: '#00aa28', glowClass: '',           minLevel: 7  },
+  { label: 'PHISH_BAIT',       levels: '4–6',   color: '#447744', glowClass: '',           minLevel: 4  },
+  { label: 'CLICK_HAPPY',      levels: '1–3',   color: '#2a4a2a', glowClass: '',           minLevel: 1  },
 ];
 
 const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
@@ -183,7 +188,10 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-2">
                     {isCurrent && <span className="text-[#00ff41] text-[9px] font-mono">▶</span>}
                     {!isCurrent && <span className="text-[9px] font-mono opacity-0">▶</span>}
-                    <span className={`text-xs font-mono font-bold ${rank.glowClass}`} style={{ color: rank.color }}>
+                    <span
+                      className={`text-xs font-mono font-bold ${rank.glowClass} ${isCurrent ? 'anim-rank-pulse' : ''}`}
+                      style={{ color: rank.color }}
+                    >
                       {rank.label}
                     </span>
                   </div>

@@ -34,6 +34,20 @@ const CONFIDENCE_LABEL: Record<string, string> = { guessing: 'G', likely: 'L', c
 export function RoundSummary({ score, total, totalScore, results, mode, date, sessionId, onPlayAgain }: Props) {
   const tier = getTier(score, total);
   const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [displayScore, setDisplayScore] = useState(0);
+  useEffect(() => {
+    if (totalScore === 0) { setDisplayScore(0); return; }
+    const duration = 900;
+    const start = performance.now();
+    function tick(now: number) {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplayScore(Math.round(eased * totalScore));
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }, [totalScore]);
   const [globalLeaderboard, setGlobalLeaderboard] = useState<{ name: string; score: number; level?: number }[]>([]);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<{ name: string; score: number; level?: number }[]>([]);
   const [leaderboardTab, setLeaderboardTab] = useState<'daily' | 'global'>('global');
@@ -173,7 +187,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
         </div>
         <div className="border-t border-[rgba(0,255,65,0.25)] px-3 py-2 flex items-center justify-between">
           <div className="text-center">
-            <div className="text-lg font-black font-mono text-[#00ff41] glow">{totalScore}</div>
+            <div className="text-lg font-black font-mono text-[#00ff41] glow">{displayScore}</div>
             <div className="text-[10px] font-mono text-[#003a0e]">TOTAL PTS</div>
           </div>
           <div className="text-center">

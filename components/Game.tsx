@@ -43,6 +43,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const sessionStartedAt = useRef<string>('');
   const [correctCount, setCorrectCount] = useState(0);
   const hasAutoStarted = useRef(false);
+  const [flashClass, setFlashClass] = useState<string | null>(null);
 
   // Auto-start in preview mode — skip the start screen entirely
   useEffect(() => {
@@ -172,6 +173,10 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   }) {
     const card = deck[currentIndex];
     const correct = (answer === 'phishing') === card.isPhishing;
+
+    const fc = correct ? 'anim-clear-flash' : 'anim-breach-flash';
+    setFlashClass(fc);
+    setTimeout(() => setFlashClass(null), 500);
 
     const newStreak = correct ? streak + 1 : 0;
     const streakBonus = correct && newStreak > 0 && newStreak % 3 === 0 ? STREAK_BONUS : 0;
@@ -391,17 +396,26 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const currentCard = deck[currentIndex];
   if (phase === 'playing' && currentCard) {
     return (
-      <GameCard
-        key={currentCard.id}
-        card={currentCard}
-        onAnswer={handleAnswer}
-        questionNumber={currentIndex + 1}
-        total={ROUND_SIZE}
-        streak={streak}
-        totalScore={totalScore}
-        soundEnabled={soundEnabled}
-        onToggleSound={toggleSound}
-      />
+      <>
+        {flashClass && (
+          <div
+            key={flashClass + Date.now()}
+            className={`fixed inset-0 pointer-events-none z-50 ${flashClass}`}
+            style={{ background: flashClass.includes('clear') ? 'rgba(0,255,65,0.12)' : 'rgba(255,51,51,0.12)' }}
+          />
+        )}
+        <GameCard
+          key={currentCard.id}
+          card={currentCard}
+          onAnswer={handleAnswer}
+          questionNumber={currentIndex + 1}
+          total={ROUND_SIZE}
+          streak={streak}
+          totalScore={totalScore}
+          soundEnabled={soundEnabled}
+          onToggleSound={toggleSound}
+        />
+      </>
     );
   }
 

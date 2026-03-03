@@ -104,7 +104,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
   })();
 
   return (
-    <div className="term-border bg-[#060c06] select-none">
+    <div className="term-border bg-[#060c06] select-none scanline">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
         <span className="text-[#00aa28] text-xs tracking-widest">INCOMING_EMAIL</span>
         <button
@@ -217,7 +217,7 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
   const segments = parseBody(card.body);
 
   return (
-    <div className="term-border bg-[#060c06] select-none">
+    <div className="term-border bg-[#060c06] select-none scanline">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
         <span className="text-[#00aa28] text-xs tracking-widest">INCOMING_SMS</span>
         <span className="text-[#003a0e] text-xs font-mono">■ □ □</span>

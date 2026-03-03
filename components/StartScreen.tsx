@@ -342,9 +342,9 @@ export function StartScreen({ onStart }: Props) {
                 <span className="text-[#003a0e] text-xs font-mono">GLOBAL</span>
               </div>
               {activeTab === 'score' && leaderboard.length > 0 && (
-                <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                <div key={`score-${leaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
                   {leaderboard.slice(0, 10).map((entry, i) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-1.5">
+                    <div key={i} className="flex items-center gap-3 px-3 py-1.5 anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
                       <span className={`text-[10px] font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
                       <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">{entry.name}</span>
                       {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
@@ -356,9 +356,9 @@ export function StartScreen({ onStart }: Props) {
                 </div>
               )}
               {activeTab === 'xp' && xpLeaderboard.length > 0 && (
-                <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                <div key={`xp-${xpLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
                   {xpLeaderboard.map((row, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono">
+                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
                       <span className="text-[#003a0e] w-4">{i + 1}.</span>
                       <span className="text-[#00aa28] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
                       {row.research_graduated && <span className="text-[#ffaa00] text-[10px]">★</span>}

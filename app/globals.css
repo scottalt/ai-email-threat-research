@@ -114,6 +114,9 @@ body::after {
   animation: clear-flash 0.4s ease-out forwards;
 }
 
+.anim-breach-flash { animation: breach-flash 0.5s ease-out forwards; }
+.anim-clear-flash  { animation: clear-flash 0.4s ease-out forwards; }
+
 /* Progress bar fill */
 @keyframes fill {
   from { width: 0%; }
@@ -146,6 +149,34 @@ body::after {
 
 .anim-card-entry {
   animation: cardEntry 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Rank badge pulse */
+@keyframes rank-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+.anim-rank-pulse {
+  animation: rank-pulse 2s ease-in-out infinite;
+}
+
+/* Card scanlines */
+.scanline {
+  position: relative;
+}
+.scanline::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.04) 3px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* Prevent text selection during swipe */
