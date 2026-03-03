@@ -192,7 +192,10 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           // Auth status — email only (SPF/DKIM/DMARC don't apply to SMS)
           if (card.type === 'email') {
             if (card.authStatus === 'fail') {
-              signals.push('SPF/DKIM/DMARC: FAIL — sender could not authenticate with the claimed domain. Strong indicator of spoofing.');
+              signals.push(wasPhishing
+                ? 'SPF/DKIM/DMARC: FAIL — sender could not authenticate with the claimed domain. Strong indicator of spoofing.'
+                : 'SPF/DKIM/DMARC: FAIL — sender\'s authentication failed. Some legitimate senders have misconfigured email infrastructure. Failure alone is not proof of phishing, but it warrants closer inspection.'
+              );
             } else if (card.authStatus === 'unverified') {
               signals.push(wasPhishing
                 ? 'SPF/DKIM/DMARC: NONE — authentication headers absent, consistent with domain spoofing.'
