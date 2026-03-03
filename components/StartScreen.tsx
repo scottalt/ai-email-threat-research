@@ -113,7 +113,7 @@ export function StartScreen({ onStart }: Props) {
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
                     <span className="text-[#00aa28] text-xs tracking-widest">{profile.displayName ?? 'OPERATOR'}</span>
-                    <button onClick={signOut} className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">SIGN OUT</button>
+                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">SIGN OUT</button>
                   </div>
                   <div className="px-3 py-2 space-y-2">
                     <LevelMeter xp={profile.xp} level={profile.level} />
