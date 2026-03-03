@@ -34,11 +34,14 @@ export async function GET(req: Request) {
     withScores: true,
   }) as (string | number)[];
 
-  const entries: { name: string; score: number }[] = [];
+  const entries: { name: string; score: number; level: number }[] = [];
   for (let i = 0; i < results.length; i += 2) {
     const member = results[i] as string;
     const score = results[i + 1] as number;
-    entries.push({ name: member.split(':')[0], score });
+    const parts = member.split(':');
+    const name = parts[0];
+    const level = parts.length >= 3 ? parseInt(parts[1], 10) || 1 : 1;
+    entries.push({ name, score, level });
   }
 
   return NextResponse.json(entries);
@@ -46,7 +49,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { name, score, date } = await req.json();
+    const { name, score, date, level } = await req.json();
     if (date && (typeof date !== 'string' || !DATE_RE.test(date))) {
       return NextResponse.json({ error: 'Invalid date' }, { status: 400 });
     }
@@ -74,7 +77,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid score' }, { status: 400 });
     }
 
-    const member = `${trimmed}:${Date.now()}`;
+    const safeLevel = typeof level === 'number' && level >= 1 && level <= 30 ? level : 1;
+    const member = `${trimmed}:${safeLevel}:${Date.now()}`;
     await redis.zadd(key, { score, member });
 
     if (date) {
