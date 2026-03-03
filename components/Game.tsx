@@ -414,6 +414,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           totalScore={totalScore}
           soundEnabled={soundEnabled}
           onToggleSound={toggleSound}
+          onQuit={() => setPhase('start')}
         />
       </>
     );

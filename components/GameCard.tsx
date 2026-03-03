@@ -25,6 +25,7 @@ interface Props {
   totalScore: number;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  onQuit: () => void;
 }
 
 const CONFIDENCE_OPTIONS: { value: Confidence; label: string; multiplier: string; color: string }[] = [
@@ -263,7 +264,7 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
   );
 }
 
-export function GameCard({ card, onAnswer, questionNumber, total, streak, totalScore, soundEnabled, onToggleSound }: Props) {
+export function GameCard({ card, onAnswer, questionNumber, total, streak, totalScore, soundEnabled, onToggleSound, onQuit }: Props) {
   const [confidence, setConfidence] = useState<Confidence | null>(null);
   // dragX drives stamp opacity — updated during drag via React state
   const [dragX, setDragX] = useState(0);
@@ -427,6 +428,12 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
       {/* HUD */}
       <div className="w-full flex items-center justify-between text-xs font-mono">
         <div className="flex items-center gap-3">
+          <button
+            onClick={onQuit}
+            className="text-[#003a0e] text-[10px] font-mono hover:text-[#ff3333] transition-colors"
+          >
+            [QUIT]
+          </button>
           <span className="text-[#00aa28]">
             Q<span className="text-[#00ff41] glow">{questionNumber}</span>/{total}
           </span>
