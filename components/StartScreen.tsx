@@ -34,7 +34,7 @@ export function StartScreen({ onStart }: Props) {
   const [showButton, setShowButton] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const { profile, loading: playerLoading, signedIn, signInWithEmail, signOut, refreshProfile } = usePlayer();
+  const { profile, loading: playerLoading, signedIn, signInWithEmail, signOut, refreshProfile, applyProfile } = usePlayer();
   const [showAuthFlow, setShowAuthFlow] = useState(false);
   const [callsign, setCallsign] = useState('');
   const [callsignLoading, setCallsignLoading] = useState(false);
@@ -96,7 +96,7 @@ export function StartScreen({ onStart }: Props) {
       if (!res.ok) {
         setCallsignError(data.error ?? 'Failed to set callsign.');
       } else {
-        await refreshProfile();
+        applyProfile(data);
         setCallsign('');
       }
     } catch {

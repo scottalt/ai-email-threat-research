@@ -11,6 +11,7 @@ interface UsePlayerReturn {
   signInWithEmail: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  applyProfile: (p: PlayerProfile) => void;
 }
 
 export function usePlayer(): UsePlayerReturn {
@@ -69,5 +70,6 @@ export function usePlayer(): UsePlayerReturn {
     signInWithEmail,
     signOut,
     refreshProfile,
+    applyProfile: setProfile,
   };
 }
