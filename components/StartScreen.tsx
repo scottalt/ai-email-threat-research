@@ -16,10 +16,10 @@ interface Props {
 // bright=true → phosphor green + glow (separators, READY line)
 const BOOT_LINES: { text: string; bright: boolean }[] = [
   { text: '> PHISH_OR_NOT THREAT ANALYZER', bright: false },
-  { text: '> SOC TRAINING MODULE v2.0',     bright: false },
+  { text: '> RESEARCH PLATFORM v1.0',       bright: false },
   { text: '> \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', bright: true  },
-  { text: '> LOADING THREAT DATABASE......', bright: false },
-  { text: '> PHISHING SAMPLES: 40 LOADED',  bright: false },
+  { text: '> LOADING RESEARCH DATASET.....', bright: false },
+  { text: '> 550 CARDS LOADED',             bright: false },
   { text: '> CONFIDENCE SCORING: ENABLED',  bright: false },
   { text: '> STREAK DETECTION: ONLINE',     bright: false },
   { text: '> \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', bright: true  },
@@ -175,20 +175,11 @@ export function StartScreen({ onStart }: Props) {
             </div>
           )}
 
-          {/* Freeplay button - secondary */}
-          <button
-            onClick={() => onStart('freeplay')}
-            className="w-full py-3 term-border text-[#00aa28] font-mono font-bold tracking-widest text-xs hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
-          >
-            [ FREEPLAY ]
-          </button>
-
-          {/* Research Mode button */}
           <button
             onClick={() => onStart('research')}
-            className="w-full py-3 term-border text-[#ffaa00] border-[rgba(255,170,0,0.4)] font-mono font-bold tracking-widest text-xs hover:bg-[rgba(255,170,0,0.05)] active:scale-95 transition-all"
+            className="w-full py-3 term-border text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
           >
-            [ RESEARCH MODE — REAL DATA ]
+            [ PLAY ]
           </button>
 
           <p className="text-[#003a0e] text-xs text-center font-mono">

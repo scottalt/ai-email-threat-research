@@ -102,7 +102,13 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       fetch('/api/cards/research')
         .then((r) => r.json())
         .then((cards: Card[]) => {
-          if (!cards.length) { setPhase('research_unavailable'); return; }
+          if (!cards.length) {
+            // Research deck not ready — fall back to freeplay silently
+            setMode('freeplay');
+            setDeck(getShuffledDeck(ROUND_SIZE));
+            setPhase('playing');
+            return;
+          }
           const arr = [...cards];
           for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -110,8 +116,13 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           }
           const shuffled = arr.slice(0, ROUND_SIZE);
           setDeck(shuffled);
-          // Preview mode skips the research intro and goes straight to playing
-          setPhase(newMode === 'preview' ? 'playing' : 'research_intro');
+          // Preview mode skips intro; return players (localStorage) skip intro
+          if (newMode === 'preview') {
+            setPhase('playing');
+          } else {
+            const hasSeenIntro = typeof window !== 'undefined' && localStorage.getItem('research_intro_seen') === '1';
+            setPhase(hasSeenIntro ? 'playing' : 'research_intro');
+          }
         })
         .catch(() => setPhase('start'));
     } else {
