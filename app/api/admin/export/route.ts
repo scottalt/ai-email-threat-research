@@ -22,14 +22,17 @@ export async function GET(req: NextRequest) {
     .order('approved_at', { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data?.length) return NextResponse.json({ error: 'No approved cards to export.' }, { status: 404 });
+
+  // Double cast required — Supabase can't infer column types from a dynamic select string
+  const rows = (data as unknown as ExportRow[] | null) ?? [];
+  if (!rows.length) return NextResponse.json({ error: 'No approved cards to export.' }, { status: 404 });
 
   const date = new Date().toISOString().slice(0, 10);
   const filename = `retro-phish-v1-${date}`;
 
-  if (format === 'csv') return exportCsv(data, filename);
-  if (format === 'jsonl') return exportJsonl(data, filename);
-  return exportJson(data, filename);
+  if (format === 'csv') return exportCsv(rows, filename);
+  if (format === 'jsonl') return exportJsonl(rows, filename);
+  return exportJson(rows, filename);
 }
 
 function buildMetadata(data: ExportRow[]) {

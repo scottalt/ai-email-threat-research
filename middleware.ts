@@ -1,10 +1,40 @@
-import { createHmac } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
-export function middleware(req: NextRequest) {
+function redirectToLogin(req: NextRequest) {
+  const loginUrl = req.nextUrl.clone();
+  loginUrl.pathname = '/admin/login';
+  return NextResponse.redirect(loginUrl);
+}
+
+// Web Crypto HMAC verification — Edge Runtime compatible (no Node.js crypto)
+async function verifyToken(token: string, secret: string): Promise<boolean> {
+  const dotIndex = token.lastIndexOf('.');
+  if (dotIndex === -1) return false;
+
+  const nonce = token.slice(0, dotIndex);
+  const providedHex = token.slice(dotIndex + 1);
+
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+    const providedBytes = new Uint8Array(
+      providedHex.match(/.{2}/g)?.map((b) => parseInt(b, 16)) ?? []
+    );
+    return crypto.subtle.verify('HMAC', key, providedBytes, encoder.encode(nonce));
+  } catch {
+    return false;
+  }
+}
+
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Only protect /admin routes (not /api/admin/login)
   const isAdminPage = pathname.startsWith('/admin') && !pathname.startsWith('/admin/login');
   const isAdminApi = pathname.startsWith('/api/admin') && !pathname.startsWith('/api/admin/login');
 
@@ -12,28 +42,10 @@ export function middleware(req: NextRequest) {
     const token = req.cookies.get('admin_session')?.value;
     const expected = process.env.ADMIN_PASSWORD;
 
-    if (!expected || !token) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = '/admin/login';
-      return NextResponse.redirect(loginUrl);
-    }
+    if (!expected || !token) return redirectToLogin(req);
 
-    // Verify HMAC token: nonce.HMAC(nonce, password)
-    const dotIndex = token.lastIndexOf('.');
-    if (dotIndex === -1) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = '/admin/login';
-      return NextResponse.redirect(loginUrl);
-    }
-    const nonce = token.slice(0, dotIndex);
-    const providedHmac = token.slice(dotIndex + 1);
-    const expectedHmac = createHmac('sha256', expected).update(nonce).digest('hex');
-
-    if (providedHmac !== expectedHmac) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = '/admin/login';
-      return NextResponse.redirect(loginUrl);
-    }
+    const valid = await verifyToken(token, expected);
+    if (!valid) return redirectToLogin(req);
   }
 
   return NextResponse.next();
