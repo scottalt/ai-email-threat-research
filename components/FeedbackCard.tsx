@@ -164,6 +164,56 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           <p className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed font-mono">{card.explanation}</p>
         </div>
 
+        {/* Forensic signals */}
+        {(() => {
+          const signals: string[] = [];
+
+          // Auth status — email only (SPF/DKIM/DMARC don't apply to SMS)
+          if (card.type === 'email') {
+            if (card.authStatus === 'fail') {
+              signals.push('SPF/DKIM/DMARC: FAIL — sender could not authenticate with the claimed domain. Strong indicator of spoofing.');
+            } else if (card.authStatus === 'unverified') {
+              signals.push(wasPhishing
+                ? 'SPF/DKIM/DMARC: NONE — authentication headers absent, consistent with domain spoofing.'
+                : 'SPF/DKIM/DMARC: NONE — small senders often lack email authentication. Absence of auth headers alone is not a reliable phishing indicator.'
+              );
+            } else if (card.authStatus === 'verified') {
+              signals.push(wasPhishing
+                ? 'SPF/DKIM/DMARC: PASS — attacker registered a lookalike domain with valid authentication. Headers are clean; the domain name itself is the tell.'
+                : 'SPF/DKIM/DMARC: PASS — sender domain authenticated correctly.'
+              );
+            }
+
+            // Reply-To mismatch — email only
+            if (card.replyTo) {
+              signals.push(`Reply-To: ${card.replyTo} — replies would route to the attacker's address, not the sender's domain.`);
+            }
+          }
+
+          // URL presence — applies to both email and SMS
+          if (/https?:\/\/\S+/.test(card.body)) {
+            signals.push(`This ${card.type === 'sms' ? 'message' : 'email'} contained URLs. The URL inspector reveals the full destination before clicking.`);
+          }
+
+          if (signals.length === 0) return null;
+
+          return (
+            <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
+              <div className="border-b border-[rgba(255,170,0,0.3)] px-3 py-1.5">
+                <span className="text-[#ffaa00] text-xs tracking-widest">FORENSIC_SIGNALS</span>
+              </div>
+              <ul className="px-3 py-3 space-y-2">
+                {signals.map((signal, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-[#00aa28] font-mono">
+                    <span className="text-[#ffaa00] shrink-0">▸</span>
+                    <span>{signal}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
+
         {/* Red flags */}
         {wasPhishing && card.clues.length > 0 && (
           <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)]">
