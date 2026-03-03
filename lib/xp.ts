@@ -4,7 +4,7 @@ export const XP_PER_SESSION_COMPLETE = 25; // flat bonus for finishing
 export const RESEARCH_GRADUATION_SESSIONS = 10;
 
 // 30 levels. Cumulative XP thresholds — each level takes more XP than the last.
-// Level 1 = 0 XP, level 2 = 100 XP, level 30 = ~14,000 XP (rough logarithmic curve)
+// Level 1 = 0 XP, level 2 = 100 XP, level 30 = ~37,700 XP (compounding ~15% per level)
 export const LEVEL_THRESHOLDS: number[] = (() => {
   const t = [0]; // level 1 starts at 0
   for (let i = 1; i < 30; i++) {
