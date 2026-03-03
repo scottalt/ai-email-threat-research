@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { GameMode } from '@/lib/types';
 import { getRank } from '@/lib/rank';
+import Link from 'next/link';
 import { usePlayer } from '@/lib/usePlayer';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
@@ -170,7 +171,7 @@ export function StartScreen({ onStart }: Props) {
               ) : signedIn && profile ? (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <span className="text-[#00aa28] text-xs tracking-widest">{profile.displayName}</span>
+                    <Link href="/profile" className="text-[#00aa28] text-xs tracking-widest hover:text-[#00ff41]">{profile.displayName}</Link>
                     <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">SIGN OUT</button>
                   </div>
                   <div className="px-3 py-2 space-y-2">
