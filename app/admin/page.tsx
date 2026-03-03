@@ -54,6 +54,64 @@ export default async function AdminPage() {
                   </div>
                   <div className="text-[10px] font-mono text-[#003a0e] text-right">{progress}% COMPLETE</div>
                 </div>
+
+                {stats.pendingBreakdown && (
+                  <div className="space-y-2">
+                    <div className="text-[#003a0e] text-xs font-mono tracking-widest">PENDING QUEUE — PHISHING</div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs font-mono">
+                        <thead>
+                          <tr>
+                            <th className="text-left text-[#003a0e] pb-1 pr-3">TECHNIQUE</th>
+                            {['easy', 'medium', 'hard'].map(d => (
+                              <th key={d} className="text-[#003a0e] pb-1 px-2 text-center w-12">{d.toUpperCase()}</th>
+                            ))}
+                            <th className="text-[#003a0e] pb-1 px-2 text-center w-12">TOTAL</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {['urgency', 'authority-impersonation', 'credential-harvest', 'hyper-personalization', 'pretexting', 'fluent-prose'].map(technique => {
+                            const row = stats.pendingBreakdown.phishing[technique] ?? {};
+                            const total = (row.easy ?? 0) + (row.medium ?? 0) + (row.hard ?? 0);
+                            return (
+                              <tr key={technique} className="border-t border-[rgba(0,255,65,0.08)]">
+                                <td className="text-[#00aa28] pr-3 py-1 truncate max-w-[120px]">{technique}</td>
+                                {['easy', 'medium', 'hard'].map(d => {
+                                  const count = row[d] ?? 0;
+                                  const color = count === 0 ? 'text-[#003a0e]' : count >= 20 ? 'text-[#00ff41]' : 'text-[#ffaa00]';
+                                  return <td key={d} className={`${color} text-center px-2 py-1 font-black`}>{count}</td>;
+                                })}
+                                <td className={`text-center px-2 py-1 font-black ${total === 0 ? 'text-[#003a0e]' : 'text-[#00aa28]'}`}>{total}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {stats.pendingBreakdown && (
+                  <div className="space-y-2">
+                    <div className="text-[#003a0e] text-xs font-mono tracking-widest">PENDING QUEUE — LEGIT</div>
+                    <div className="flex gap-3">
+                      {[
+                        { label: 'TRANSACTIONAL', key: 'transactional', target: 70 },
+                        { label: 'MARKETING', key: 'marketing', target: 60 },
+                        { label: 'WORKPLACE', key: 'workplace', target: 60 },
+                      ].map(({ label, key, target }) => {
+                        const count = stats.pendingBreakdown.legit[key] ?? 0;
+                        const color = count === 0 ? 'text-[#003a0e]' : count >= target ? 'text-[#00ff41]' : 'text-[#ffaa00]';
+                        return (
+                          <div key={key} className="term-border px-3 py-2 flex-1 text-center">
+                            <div className={`text-xl font-black font-mono ${color}`}>{count}</div>
+                            <div className="text-[10px] font-mono text-[#003a0e] mt-0.5">{label}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-[#00aa28] text-xs font-mono text-center py-4">
