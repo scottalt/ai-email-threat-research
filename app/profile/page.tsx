@@ -3,8 +3,17 @@
 import { useState } from 'react';
 import { usePlayer } from '@/lib/usePlayer';
 import { LevelMeter } from '@/components/LevelMeter';
+import { getRankFromLevel } from '@/lib/rank';
 import Link from 'next/link';
 import type { PlayerBackground } from '@/lib/types';
+
+const RANKS = [
+  { label: 'NOVICE',     levels: '1–6',   color: '#00aa28', glowClass: '',          minLevel: 1  },
+  { label: 'OPERATOR',   levels: '7–12',  color: '#00ff41', glowClass: '',          minLevel: 7  },
+  { label: 'ANALYST',    levels: '13–18', color: '#00ff41', glowClass: 'glow',      minLevel: 13 },
+  { label: 'SPECIALIST', levels: '19–24', color: '#ffaa00', glowClass: '',          minLevel: 19 },
+  { label: 'ELITE',      levels: '25–30', color: '#ffaa00', glowClass: 'glow-amber',minLevel: 25 },
+];
 
 const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
   { value: 'other',             label: 'OTHER' },
@@ -158,6 +167,30 @@ export default function ProfilePage() {
 
           <div className="px-3 pb-3 pt-2">
             <LevelMeter xp={profile.xp} level={profile.level} />
+          </div>
+        </div>
+
+        {/* Rank ladder */}
+        <div className="term-border bg-[#060c06]">
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+            <span className="text-[#00aa28] text-xs tracking-widest">RANK_PROGRESSION</span>
+          </div>
+          <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+            {RANKS.map((rank) => {
+              const isCurrent = getRankFromLevel(profile.level).label === rank.label;
+              return (
+                <div key={rank.label} className={`flex items-center justify-between px-3 py-2 ${isCurrent ? 'bg-[rgba(0,255,65,0.04)]' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    {isCurrent && <span className="text-[#00ff41] text-[9px] font-mono">▶</span>}
+                    {!isCurrent && <span className="text-[9px] font-mono opacity-0">▶</span>}
+                    <span className={`text-xs font-mono font-bold ${rank.glowClass}`} style={{ color: rank.color }}>
+                      {rank.label}
+                    </span>
+                  </div>
+                  <span className="text-[#003a0e] text-[10px] font-mono">LVL {rank.levels}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
