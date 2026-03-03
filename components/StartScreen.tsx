@@ -187,7 +187,7 @@ export function StartScreen({ onStart }: Props) {
                   onClick={() => setShowAuthFlow(true)}
                   className="w-full px-3 py-2.5 term-border bg-[#060c06] text-left text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28] hover:bg-[rgba(0,255,65,0.03)]"
                 >
-                  [ CLAIM PROFILE ] — save XP across devices
+                  [ SIGN IN ] — new or returning · magic link · no password
                 </button>
               )}
             </div>
