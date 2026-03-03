@@ -292,7 +292,9 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   if (phase === ('loading' as GamePhase)) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <span className="text-[#00aa28] font-mono text-xs tracking-widest">LOADING RESEARCH DATA...</span>
+        <span className="text-[#00aa28] font-mono text-xs tracking-widest">
+          {mode === 'expert' ? 'LOADING EXPERT DECK...' : 'LOADING RESEARCH DATA...'}
+        </span>
       </div>
     );
   }
