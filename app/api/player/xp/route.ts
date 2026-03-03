@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest) {
 
   const newBest = Math.max(p.personal_best_score as number, score);
 
-  await admin.from('players').update({
+  const { error: updateErr } = await admin.from('players').update({
     xp: newXp,
     level: newLevel,
     total_sessions: newTotalSessions,
@@ -60,6 +60,7 @@ export async function PATCH(req: NextRequest) {
     personal_best_score: newBest,
     updated_at: new Date().toISOString(),
   }).eq('auth_id', authId);
+  if (updateErr) return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });
 
   return NextResponse.json({
     xp: newXp,
