@@ -10,7 +10,7 @@ import { ResearchIntro } from './ResearchIntro';
 import type { Card, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
-import { getRank } from '@/lib/rank';
+import { getRankFromLevel } from '@/lib/rank';
 
 const ROUND_SIZE = 10;
 const BASE_POINTS = 100;
@@ -277,7 +277,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           body: JSON.stringify({
             sessionId: sessionId.current,
             finalScore: totalScore,
-            finalRank: getRank(totalScore).label,
+            finalRank: getRankFromLevel(1).label,
             completedAt: new Date().toISOString(),
             cardsAnswered: Math.min(deck.length, ROUND_SIZE),
           }),
