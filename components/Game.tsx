@@ -20,6 +20,11 @@ const CONFIDENCE_MULTIPLIER: Record<Confidence, number> = {
   certain: 3,
 };
 const STREAK_BONUS = 50;
+const CONFIDENCE_PENALTY: Record<Confidence, number> = {
+  guessing: 0,
+  likely: -100,
+  certain: -200,
+};
 
 type GamePhase = 'start' | 'playing' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro' | 'research_unavailable';
 
@@ -172,7 +177,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     const streakBonus = correct && newStreak > 0 && newStreak % 3 === 0 ? STREAK_BONUS : 0;
     const pointsEarned = correct
       ? BASE_POINTS * CONFIDENCE_MULTIPLIER[confidence] + streakBonus
-      : 0;
+      : CONFIDENCE_PENALTY[confidence];
 
     const result: RoundResult = { card, userAnswer: answer, correct, confidence, pointsEarned };
     setLastResult(result);
@@ -180,7 +185,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     setStreak(newStreak);
     const newCorrectCount = correct ? correctCount + 1 : correctCount;
     setCorrectCount(newCorrectCount);
-    setTotalScore((prev) => prev + pointsEarned);
+    setTotalScore((prev) => Math.max(0, prev + pointsEarned));
 
     if (soundEnabled) {
       if (streakBonus > 0) playStreak();
