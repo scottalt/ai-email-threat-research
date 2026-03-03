@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { RoundResult, GameMode } from '@/lib/types';
-import { getRank } from '@/lib/rank';
+import { getRankFromLevel } from '@/lib/rank';
 import { updateWeaknessHistory, getWeakPoints } from '@/lib/weakness-tracker';
 import { usePlayer } from '@/lib/usePlayer';
 import { LevelMeter } from './LevelMeter';
@@ -33,13 +33,13 @@ const CONFIDENCE_LABEL: Record<string, string> = { guessing: 'G', likely: 'L', c
 
 export function RoundSummary({ score, total, totalScore, results, mode, date, sessionId, onPlayAgain }: Props) {
   const tier = getTier(score, total);
-  const rank = getRank(totalScore);
   const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  const [globalLeaderboard, setGlobalLeaderboard] = useState<{ name: string; score: number }[]>([]);
-  const [dailyLeaderboard, setDailyLeaderboard] = useState<{ name: string; score: number }[]>([]);
+  const [globalLeaderboard, setGlobalLeaderboard] = useState<{ name: string; score: number; level?: number }[]>([]);
+  const [dailyLeaderboard, setDailyLeaderboard] = useState<{ name: string; score: number; level?: number }[]>([]);
   const [leaderboardTab, setLeaderboardTab] = useState<'daily' | 'global'>('global');
   const [weakPoints, setWeakPoints] = useState<{ technique: string; missRate: number; missed: number; attempts: number }[]>([]);
   const { profile, signedIn, refreshProfile, signInWithEmail } = usePlayer();
+  const rank = profile ? getRankFromLevel(profile.level) : null;
   const [xpResult, setXpResult] = useState<{
     xpEarned: number; level: number; levelUp: boolean; graduated: boolean;
   } | null>(null);
@@ -94,6 +94,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       body: JSON.stringify({
         name: profile.displayName,
         score: totalScore,
+        level: profile.level,
         ...(mode === 'daily' ? { date } : {}),
       }),
     })
@@ -160,12 +161,14 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
             {tier.label}
           </div>
           <div className="text-xs font-mono text-[#00aa28]">{tier.sub}</div>
-          <div
-            className={`text-xs font-mono font-bold tracking-widest mt-1 ${rank.glowClass}`}
-            style={{ color: rank.color }}
-          >
-            [ {rank.label} ]
-          </div>
+          {rank && (
+            <div
+              className={`text-xs font-mono font-bold tracking-widest mt-1 ${rank.glowClass}`}
+              style={{ color: rank.color }}
+            >
+              [ {rank.label} ]
+            </div>
+          )}
         </div>
         <div className="border-t border-[rgba(0,255,65,0.25)] px-3 py-2 flex items-center justify-between">
           <div className="text-center">
@@ -324,7 +327,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
                       {i + 1}
                     </span>
                     <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">{entry.name}</span>
-                    {(() => { const r = getRank(entry.score); return (
+                    {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
                       <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
                         {r.label}
                       </span>
