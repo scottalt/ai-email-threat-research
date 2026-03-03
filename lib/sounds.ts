@@ -35,6 +35,14 @@ export function playWrong() {
   } catch { /* silently ignore if audio unavailable */ }
 }
 
+export function playBootTick() {
+  try {
+    const ctx = new AudioContext();
+    const t = ctx.currentTime;
+    createNote(ctx, 480, t, 0.04, 0.07);
+  } catch { /* silently ignore if audio unavailable */ }
+}
+
 export function playStreak() {
   try {
     const ctx = new AudioContext();
