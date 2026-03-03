@@ -167,7 +167,7 @@ export function Game() {
         scrollDepthPct: timing?.scrollDepthPct ?? 0,
         answerMethod: timing?.answerMethod ?? 'button',
         answerOrdinal: currentIndex + 1,
-        streakAtAnswerTime: streak,
+        streakAtAnswerTime: newStreak,
         correctCountAtTime: newCorrectCount,
         gameMode: mode,
         isDailyChallenge: mode === 'daily',
@@ -177,7 +177,7 @@ export function Game() {
         authStatusSignal: card.authStatus,
         hasReplyTo: !!card.replyTo,
         hasUrl: /https?:\/\//.test(card.body),
-        hasAttachment: false,
+        hasAttachment: !!card.attachmentName,
       };
 
       const sessionPayload: SessionPayload = {
@@ -207,7 +207,7 @@ export function Game() {
 
   function handleNext() {
     const nextIndex = currentIndex + 1;
-    if (nextIndex >= ROUND_SIZE) {
+    if (nextIndex >= deck.length || nextIndex >= ROUND_SIZE) {
       if (mode === 'daily') {
         const correctCount = results.filter((r) => r.correct).length;
         localStorage.setItem(

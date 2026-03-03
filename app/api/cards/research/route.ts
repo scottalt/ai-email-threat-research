@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdminClient } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase';
 import type { ResearchCard } from '@/lib/types';
 
 export async function GET() {
   try {
-    const supabase = getSupabaseAdminClient();
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('cards_real')
       .select('*')
@@ -28,6 +28,7 @@ export async function GET() {
       highlights: row.highlights ?? [],
       authStatus: (row.auth_status ?? 'unverified') as 'verified' | 'unverified' | 'fail',
       replyTo: row.reply_to ?? undefined,
+      attachmentName: row.attachment_name ?? undefined,
       // Research metadata
       cardSource: 'real' as const,
       technique: row.technique,

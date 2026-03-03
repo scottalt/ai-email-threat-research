@@ -1,3 +1,4 @@
+import { createHmac } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(req: NextRequest) {
@@ -11,7 +12,24 @@ export function middleware(req: NextRequest) {
     const token = req.cookies.get('admin_session')?.value;
     const expected = process.env.ADMIN_PASSWORD;
 
-    if (!expected || token !== expected) {
+    if (!expected || !token) {
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = '/admin/login';
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Verify HMAC token: nonce.HMAC(nonce, password)
+    const dotIndex = token.lastIndexOf('.');
+    if (dotIndex === -1) {
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = '/admin/login';
+      return NextResponse.redirect(loginUrl);
+    }
+    const nonce = token.slice(0, dotIndex);
+    const providedHmac = token.slice(dotIndex + 1);
+    const expectedHmac = createHmac('sha256', expected).update(nonce).digest('hex');
+
+    if (providedHmac !== expectedHmac) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = '/admin/login';
       return NextResponse.redirect(loginUrl);

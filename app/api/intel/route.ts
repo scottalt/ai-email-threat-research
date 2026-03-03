@@ -17,8 +17,16 @@ export async function GET() {
     }
 
     const total = answers.length;
-    const correct = answers.filter((a) => a.correct).length;
-    const overallBypassRate = Math.round(((total - correct) / total) * 100);
+    const phishingAnswers = answers.filter((a) => a.is_phishing);
+    const legitAnswers = answers.filter((a) => !a.is_phishing);
+    // Bypass rate = phishing cards that were missed (user said legit)
+    const overallBypassRate = phishingAnswers.length
+      ? Math.round((phishingAnswers.filter((a) => !a.correct).length / phishingAnswers.length) * 100)
+      : 0;
+    // False positive rate = legit cards incorrectly flagged as phishing
+    const falsePositiveRate = legitAnswers.length
+      ? Math.round((legitAnswers.filter((a) => !a.correct).length / legitAnswers.length) * 100)
+      : 0;
 
     // Tool usage rates
     const withHeaders = answers.filter((a) => a.headers_opened);
@@ -61,10 +69,10 @@ export async function GET() {
       }))
       .sort((a, b) => a.medianMs - b.medianMs);
 
-    // Bypass rate by technique
+    // Bypass rate by technique (phishing cards only — legit cards don't have techniques)
     const techniqueMap: Record<string, { total: number; bypassed: number }> = {};
     for (const a of answers) {
-      if (!a.technique) continue;
+      if (!a.technique || !a.is_phishing) continue;
       if (!techniqueMap[a.technique]) techniqueMap[a.technique] = { total: 0, bypassed: 0 };
       techniqueMap[a.technique].total++;
       if (!a.correct) techniqueMap[a.technique].bypassed++;
@@ -106,7 +114,10 @@ export async function GET() {
 
     return NextResponse.json({
       totalAnswers: total,
+      phishingAnswers: phishingAnswers.length,
+      legitAnswers: legitAnswers.length,
       overallBypassRate,
+      falsePositiveRate,
       byTechnique,
       fluency: { highFluencyBypassRate, lowFluencyBypassRate, highFluencySample: highFluency.length, lowFluencySample: lowFluency.length },
       genai: { genaiBypassRate, traditionalBypassRate, genaiSample: genaiAnswers.length, traditionalSample: nonGenaiAnswers.length },

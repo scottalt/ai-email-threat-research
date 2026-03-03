@@ -2,9 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import type { AnswerEvent, SessionPayload } from '@/lib/types';
 
+const VALID_ANSWERS = ['phishing', 'legit'] as const;
+const VALID_CONFIDENCES = ['guessing', 'likely', 'certain'] as const;
+const VALID_MODES = ['research', 'freeplay', 'daily'] as const;
+
 export async function POST(req: NextRequest) {
   try {
     const body: { answer: AnswerEvent; session: SessionPayload } = await req.json();
+
+    // Basic validation — reject obviously malformed payloads
+    const a = body?.answer;
+    if (
+      !a ||
+      typeof a.sessionId !== 'string' || a.sessionId.length > 100 ||
+      typeof a.cardId !== 'string' || !a.cardId ||
+      !(VALID_ANSWERS as readonly string[]).includes(a.userAnswer) ||
+      !(VALID_CONFIDENCES as readonly string[]).includes(a.confidence) ||
+      !(VALID_MODES as readonly string[]).includes(a.gameMode) ||
+      typeof a.correct !== 'boolean' ||
+      typeof a.isPhishing !== 'boolean'
+    ) {
+      return NextResponse.json({ ok: true }); // silent reject — don't break the game
+    }
+
     const supabase = getSupabaseAdminClient();
 
     // Insert answer event
