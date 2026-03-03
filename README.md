@@ -44,7 +44,7 @@ Research Mode answers are collected anonymously (no PII, no accounts, session UU
 - **Database:** Supabase (PostgreSQL) — card storage, answer collection, research data
 - **Leaderboard:** Upstash Redis (global + daily)
 - **Hosting:** Vercel (master branch → auto-deploy)
-- **Generation:** GPT-4o + Claude 3.5 Haiku/Sonnet via documented prompt templates
+- **Generation:** Claude Haiku + Sonnet via documented prompt templates (3 Haiku + 1 Sonnet per batch for cost/diversity balance)
 
 ## Local Development
 

@@ -298,7 +298,7 @@ export default async function IntelPage() {
 
             <div className="term-border bg-[#060c06] px-3 py-3 text-[10px] font-mono text-[#003a0e] space-y-1 leading-relaxed">
               <div className="text-[#00aa28]">METHODOLOGY</div>
-              <div>Research Mode only. Anonymous, voluntary. Text-based recognition task — visual cues stripped. Self-selected security-aware sample. All cards are AI-generated (GPT-4o, Claude). Sample sizes shown as n=.</div>
+              <div>Research Mode only. Anonymous, voluntary. Text-based recognition task — visual cues stripped. Self-selected security-aware sample. All cards are AI-generated (Claude Haiku + Sonnet). Sample sizes shown as n=.</div>
               <div className="mt-2">
                 Full methodology:{' '}
                 <Link href="/methodology" className="text-[#00aa28] hover:underline">

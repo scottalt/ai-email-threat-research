@@ -134,18 +134,26 @@ export default async function AdminPage() {
           >
             [ APPROVED CARDS ]
           </Link>
-          <Link
-            href="/api/admin/export?format=json"
-            className="block w-full py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
-          >
-            [ EXPORT DATASET (JSON) ]
-          </Link>
-          <Link
-            href="/api/admin/export?format=csv"
-            className="block w-full py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
-          >
-            [ EXPORT DATASET (CSV) ]
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/api/admin/export?format=json"
+              className="flex-1 py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
+            >
+              [ JSON ]
+            </Link>
+            <Link
+              href="/api/admin/export?format=csv"
+              className="flex-1 py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
+            >
+              [ CSV ]
+            </Link>
+            <Link
+              href="/api/admin/export?format=jsonl"
+              className="flex-1 py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
+            >
+              [ JSONL ]
+            </Link>
+          </div>
           <Link
             href="/admin/preview"
             className="block w-full py-3 term-border text-[#ffaa00] font-mono text-xs tracking-widest text-center hover:bg-[rgba(255,170,0,0.05)] transition-all"
