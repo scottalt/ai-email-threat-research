@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist_Mono } from 'next/font/google';
 import { ServiceWorker } from '@/components/ServiceWorker';
+import { PlayerProvider } from '@/lib/PlayerContext';
 import './globals.css';
 
 const geistMono = Geist_Mono({
@@ -44,7 +45,9 @@ export default function RootLayout({
       </head>
       <body className={`${geistMono.variable} antialiased`}>
         <ServiceWorker />
-        {children}
+        <PlayerProvider>
+          {children}
+        </PlayerProvider>
       </body>
     </html>
   );

@@ -4,7 +4,7 @@ import type { AnswerEvent, SessionPayload } from '@/lib/types';
 
 const VALID_ANSWERS = ['phishing', 'legit'] as const;
 const VALID_CONFIDENCES = ['guessing', 'likely', 'certain'] as const;
-const VALID_MODES = ['research', 'freeplay', 'daily', 'preview'] as const;
+const VALID_MODES = ['research', 'freeplay', 'daily', 'preview', 'expert'] as const;
 const MAX_RESEARCH_ANSWERS = 10;
 
 export async function POST(req: NextRequest) {

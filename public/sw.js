@@ -1,4 +1,4 @@
-const CACHE = 'retro-phish-v1';
+const CACHE = 'retro-phish-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -20,6 +20,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // Never cache API routes — always go to the network
+  if (new URL(event.request.url).pathname.startsWith('/api/')) return;
   event.respondWith(
     caches.match(event.request).then(
       (cached) => cached ?? fetch(event.request).then((res) => {

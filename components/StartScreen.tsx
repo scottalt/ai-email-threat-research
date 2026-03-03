@@ -1,8 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import type { GameMode } from '@/lib/types';
+import type { GameMode, PlayerBackground } from '@/lib/types';
 import { getRank } from '@/lib/rank';
+import Link from 'next/link';
+import { usePlayer } from '@/lib/usePlayer';
+import { AuthFlow } from './AuthFlow';
+import { LevelMeter } from './LevelMeter';
 
 interface LeaderboardEntry {
   name: string;
@@ -12,6 +16,13 @@ interface LeaderboardEntry {
 interface Props {
   onStart: (mode: GameMode) => void;
 }
+
+const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
+  { value: 'other',            label: 'OTHER' },
+  { value: 'technical',        label: 'TECHNICAL / NON-SECURITY' },
+  { value: 'infosec',          label: 'INFOSEC / CYBERSECURITY' },
+  { value: 'prefer_not_to_say', label: 'PREFER NOT TO SAY' },
+];
 
 // bright=true → phosphor green + glow (separators, READY line)
 const BOOT_LINES: { text: string; bright: boolean }[] = [
@@ -31,6 +42,14 @@ export function StartScreen({ onStart }: Props) {
   const [showButton, setShowButton] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const { profile, loading: playerLoading, signedIn, signInWithEmail, signOut, refreshProfile, applyProfile } = usePlayer();
+  const [showAuthFlow, setShowAuthFlow] = useState(false);
+  const [callsign, setCallsign] = useState('');
+  const [callsignLoading, setCallsignLoading] = useState(false);
+  const [callsignError, setCallsignError] = useState('');
+  const [background, setBackground] = useState<PlayerBackground | null>(null);
+  const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
+  const [activeTab, setActiveTab] = useState<'score' | 'xp'>('score');
 
   const fetchLeaderboard = useCallback(async () => {
     const d = new Date();
@@ -42,6 +61,7 @@ export function StartScreen({ onStart }: Props) {
       ]);
       if (globalRes.ok) setLeaderboard(await globalRes.json());
       if (dailyRes.ok) setDailyLeaderboard(await dailyRes.json());
+      fetch('/api/leaderboard/xp').then(r => r.ok ? r.json() : []).then(setXpLeaderboard).catch(() => {});
     } catch {
       // silently fail
     }
@@ -68,6 +88,32 @@ export function StartScreen({ onStart }: Props) {
       return () => clearTimeout(t);
     }
   }, [visibleCount]);
+
+  async function handleSetCallsign(e: React.FormEvent) {
+    e.preventDefault();
+    const name = callsign.trim();
+    if (!name) return;
+    setCallsignLoading(true);
+    setCallsignError('');
+    try {
+      const res = await fetch('/api/player', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: name, background }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCallsignError(data.error ?? 'Failed to set callsign.');
+      } else {
+        applyProfile(data);
+        setCallsign('');
+      }
+    } catch {
+      setCallsignError('Network error.');
+    } finally {
+      setCallsignLoading(false);
+    }
+  }
 
   const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
 
@@ -98,6 +144,84 @@ export function StartScreen({ onStart }: Props) {
 
       {showButton && (
         <div className="anim-fade-in-up space-y-4">
+          {/* Player Profile Card */}
+          {!playerLoading && (
+            <div className="anim-fade-in-up">
+              {signedIn && profile && !profile.displayName ? (
+                <div className="term-border bg-[#060c06]">
+                  <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
+                    <span className="text-[#00aa28] text-xs tracking-widest">SET_CALLSIGN</span>
+                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">SIGN OUT</button>
+                  </div>
+                  <div className="px-3 py-3 space-y-2">
+                    <div className="text-[#003a0e] text-[10px] font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
+                    <form onSubmit={handleSetCallsign} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={callsign}
+                        onChange={(e) => { setCallsign(e.target.value); setCallsignError(''); }}
+                        placeholder="ENTER CALLSIGN"
+                        maxLength={20}
+                        autoFocus
+                        className="flex-1 bg-transparent border border-[rgba(0,255,65,0.3)] text-[#00ff41] font-mono text-xs px-2 py-1.5 placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.7)]"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!callsign.trim() || callsignLoading}
+                        className="px-3 py-1.5 term-border text-[#00ff41] font-mono text-xs tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      >
+                        {callsignLoading ? '...' : 'SET'}
+                      </button>
+                    </form>
+                    <div className="space-y-1.5 pt-1">
+                      <div className="text-[#003a0e] text-[10px] font-mono tracking-wider">BACKGROUND</div>
+                      <div className="text-[#003a0e] text-[9px] font-mono leading-relaxed">Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {BACKGROUND_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setBackground(background === opt.value ? null : opt.value)}
+                            className={`py-1.5 font-mono text-[9px] tracking-wider transition-all border ${
+                              background === opt.value
+                                ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
+                                : 'text-[#003a0e] border-[rgba(0,255,65,0.15)] hover:text-[#00aa28] hover:border-[rgba(0,255,65,0.4)]'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {callsignError && <div className="text-[#ff3333] text-[10px] font-mono">{callsignError}</div>}
+                  </div>
+                </div>
+              ) : signedIn && profile ? (
+                <div className="term-border bg-[#060c06]">
+                  <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
+                    <Link href="/profile" className="text-[#00aa28] text-xs tracking-widest hover:text-[#00ff41]">{profile.displayName}</Link>
+                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">SIGN OUT</button>
+                  </div>
+                  <div className="px-3 py-2 space-y-2">
+                    <LevelMeter xp={profile.xp} level={profile.level} />
+                    {profile.researchGraduated && (
+                      <div className="text-[#ffaa00] text-[10px] font-mono">⬡ RESEARCH GRADUATED — EXPERT MODE UNLOCKED</div>
+                    )}
+                  </div>
+                </div>
+              ) : showAuthFlow ? (
+                <AuthFlow onSignIn={signInWithEmail} onCancel={() => setShowAuthFlow(false)} />
+              ) : (
+                <button
+                  onClick={() => setShowAuthFlow(true)}
+                  className="w-full px-3 py-2.5 term-border bg-[#060c06] text-left text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28] hover:bg-[rgba(0,255,65,0.03)]"
+                >
+                  [ SIGN IN ] — new or returning · magic link · no password
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="term-border bg-[#060c06]">
             <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
               <span className="text-[#00aa28] text-xs tracking-widest">HOW_TO_PLAY</span>
@@ -182,37 +306,73 @@ export function StartScreen({ onStart }: Props) {
             [ PLAY ]
           </button>
 
+          {signedIn && profile?.researchGraduated && (
+            <button
+              onClick={() => onStart('expert')}
+              className="w-full py-4 term-border border-[rgba(255,170,0,0.4)] text-center text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.05)]"
+            >
+              [ EXPERT MODE ]
+            </button>
+          )}
+
           <p className="text-[#003a0e] text-xs text-center font-mono">
             10 questions per round · email + SMS · randomized
           </p>
 
-          {/* Global leaderboard */}
-          {leaderboard.length > 0 && (
+          {/* Tabbed leaderboard — score or XP */}
+          {(leaderboard.length > 0 || xpLeaderboard.length > 0) && (
             <div className="term-border bg-[#060c06]">
               <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                <span className="text-[#00aa28] text-xs tracking-widest">TOP_ANALYSTS</span>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setActiveTab('score')}
+                    className={`text-xs font-mono tracking-widest ${activeTab === 'score' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                  >
+                    TOP_ANALYSTS
+                  </button>
+                  <span className="text-[#003a0e] text-xs">|</span>
+                  <button
+                    onClick={() => setActiveTab('xp')}
+                    className={`text-xs font-mono tracking-widest ${activeTab === 'xp' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                  >
+                    XP_LEADERS
+                  </button>
+                </div>
                 <span className="text-[#003a0e] text-xs font-mono">GLOBAL</span>
               </div>
-              <div className="divide-y divide-[rgba(0,255,65,0.08)]">
-                {leaderboard.slice(0, 10).map((entry, i) => (
-                  <div key={i} className="flex items-center gap-3 px-3 py-1.5">
-                    <span className={`text-[10px] font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>
-                      {i + 1}
-                    </span>
-                    <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">
-                      {entry.name}
-                    </span>
-                    {(() => { const r = getRank(entry.score); return (
-                      <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
-                        {r.label}
-                      </span>
-                    ); })()}
-                    <span className="text-[#00ff41] text-xs font-mono font-bold glow">
-                      {entry.score}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {activeTab === 'score' && leaderboard.length > 0 && (
+                <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                  {leaderboard.slice(0, 10).map((entry, i) => (
+                    <div key={i} className="flex items-center gap-3 px-3 py-1.5">
+                      <span className={`text-[10px] font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
+                      <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">{entry.name}</span>
+                      {(() => { const r = getRank(entry.score); return (
+                        <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
+                      ); })()}
+                      <span className="text-[#00ff41] text-xs font-mono font-bold glow">{entry.score}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {activeTab === 'xp' && xpLeaderboard.length > 0 && (
+                <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                  {xpLeaderboard.map((row, i) => (
+                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono">
+                      <span className="text-[#003a0e] w-4">{i + 1}.</span>
+                      <span className="text-[#00aa28] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
+                      {row.research_graduated && <span className="text-[#ffaa00] text-[10px]">★</span>}
+                      <span className="text-[#003a0e] text-[10px]">LVL {row.level}</span>
+                      <span className="text-[#00ff41]">{row.xp.toLocaleString()} XP</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {activeTab === 'score' && leaderboard.length === 0 && (
+                <div className="px-3 py-4 text-center text-[#003a0e] text-[10px] font-mono">No scores yet.</div>
+              )}
+              {activeTab === 'xp' && xpLeaderboard.length === 0 && (
+                <div className="px-3 py-4 text-center text-[#003a0e] text-[10px] font-mono">No players yet.</div>
+              )}
             </div>
           )}
         </div>

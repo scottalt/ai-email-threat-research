@@ -30,7 +30,7 @@ export interface RoundResult {
   pointsEarned: number;
 }
 
-export type GameMode = 'freeplay' | 'daily' | 'research' | 'preview';
+export type GameMode = 'freeplay' | 'daily' | 'research' | 'preview' | 'expert';
 
 // Research mode card — extends Card with research metadata from cards_real
 export interface ResearchCard extends Card {
@@ -99,4 +99,19 @@ export interface SessionPayload {
   viewportWidth: number;
   viewportHeight: number;
   referrer: string;
+}
+
+export type PlayerBackground = 'other' | 'technical' | 'infosec' | 'prefer_not_to_say';
+
+export interface PlayerProfile {
+  id: string;
+  authId: string;
+  displayName: string | null;
+  xp: number;
+  level: number;
+  totalSessions: number;
+  researchSessionsCompleted: number;
+  researchGraduated: boolean;
+  personalBestScore: number;
+  background: PlayerBackground | null;
 }

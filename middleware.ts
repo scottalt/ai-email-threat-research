@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
 function redirectToLogin(req: NextRequest) {
   const loginUrl = req.nextUrl.clone();
@@ -48,9 +49,38 @@ export async function middleware(req: NextRequest) {
     if (!valid) return redirectToLogin(req);
   }
 
-  return NextResponse.next();
+  // Refresh Supabase session on every page request so tokens stay valid
+  // across browser closes. This is the standard @supabase/ssr pattern.
+  let response = NextResponse.next({ request: req });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll: () => req.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
+          response = NextResponse.next({ request: req });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Triggers token refresh if the access token is expired but refresh token is valid
+  await supabase.auth.getUser();
+
+  return response;
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/api/admin/:path*',
+    // Run on all page requests, skip Next.js internals and static files
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons|sw.js).*)',
+  ],
 };

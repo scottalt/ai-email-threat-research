@@ -337,6 +337,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (!confidence || answered.current) return;
+    if ((e.target as HTMLElement).closest('button, a')) return;
     cancelAnimationFrame(rafId.current);
     e.currentTarget.setPointerCapture(e.pointerId);
     startX.current = e.clientX;
