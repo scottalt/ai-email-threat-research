@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import { verifyAdminCookie } from '@/lib/adminAuth';
+import { isAdminUser } from '@/lib/adminAuth';
 import { getLevelFromXp } from '@/lib/xp';
 import type { PlayerProfile, PlayerBackground } from '@/lib/types';
 
@@ -21,12 +21,9 @@ async function getAuthId(): Promise<string | null> {
 // Body: { xp?, level?, researchGraduated?, totalSessions?, researchSessionsCompleted?, reset? }
 // reset: true → recalculate level from XP (after applying any XP override)
 export async function PATCH(req: NextRequest) {
-  if (!verifyAdminCookie(req.cookies.get('admin_session')?.value)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
   const authId = await getAuthId();
   if (!authId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  if (!isAdminUser(authId)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await req.json();
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };

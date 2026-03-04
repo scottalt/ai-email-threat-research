@@ -1,7 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminCookie } from '@/lib/adminAuth';
+import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { isAdminUser } from '@/lib/adminAuth';
 
-export async function GET(req: NextRequest) {
-  const cookie = req.cookies.get('admin_session')?.value;
-  return NextResponse.json({ isAdmin: verifyAdminCookie(cookie) });
+export async function GET() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  return NextResponse.json({ isAdmin: isAdminUser(user?.id) });
 }
