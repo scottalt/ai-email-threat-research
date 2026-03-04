@@ -8,7 +8,7 @@ A retro terminal phishing awareness game and anonymised research platform studyi
 
 ## What it is
 
-Retro Phish presents AI-generated phishing and legitimate emails/SMS in a retro terminal interface. Players classify each message, bet confidence on their answer, and earn XP based on accuracy and streak. After each round, forensic signals are highlighted so players can see exactly what they missed.
+Retro Phish presents emails and SMS messages — all AI-generated, both phishing and legitimate — in a retro terminal interface. Players classify each message, bet confidence on their answer, and earn XP based on accuracy and streak. After each round, forensic signals are highlighted so players can see exactly what they missed.
 
 The game doubles as a research platform. **Research Mode** collects anonymised answer data contributing to a published study on which phishing techniques humans miss most when AI eliminates linguistic quality as a detection signal.
 
