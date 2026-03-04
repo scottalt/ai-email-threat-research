@@ -50,7 +50,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   async function signInWithEmail(email: string) {
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
       return { error: error?.message ?? null };
     } catch {
       return { error: 'Failed to send magic link' };
