@@ -46,7 +46,7 @@ export function StartScreen({ onStart }: Props) {
   const [showButton, setShowButton] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const { profile, loading: playerLoading, signedIn, signInWithEmail, signOut, refreshProfile, applyProfile } = usePlayer();
+  const { profile, loading: playerLoading, signedIn, signInWithEmail, verifyOtp, signOut, refreshProfile, applyProfile } = usePlayer();
   const [showAuthFlow, setShowAuthFlow] = useState(false);
   const [callsign, setCallsign] = useState('');
   const [callsignLoading, setCallsignLoading] = useState(false);
@@ -243,7 +243,7 @@ export function StartScreen({ onStart }: Props) {
                   </div>
                 </div>
               ) : showAuthFlow ? (
-                <AuthFlow onSignIn={signInWithEmail} onCancel={() => setShowAuthFlow(false)} />
+                <AuthFlow onSignIn={signInWithEmail} onVerifyCode={verifyOtp} onCancel={() => setShowAuthFlow(false)} />
               ) : (
                 <button
                   onClick={() => setShowAuthFlow(true)}

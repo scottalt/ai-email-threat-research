@@ -52,7 +52,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
   const [dailyLeaderboard, setDailyLeaderboard] = useState<{ name: string; score: number; level?: number }[]>([]);
   const [leaderboardTab, setLeaderboardTab] = useState<'daily' | 'global'>('global');
   const [weakPoints, setWeakPoints] = useState<{ technique: string; missRate: number; missed: number; attempts: number }[]>([]);
-  const { profile, signedIn, refreshProfile, signInWithEmail } = usePlayer();
+  const { profile, signedIn, refreshProfile, signInWithEmail, verifyOtp } = usePlayer();
   const rank = profile ? getRankFromLevel(profile.level) : null;
   const [xpResult, setXpResult] = useState<{
     xpEarned: number; level: number; levelUp: boolean; graduated: boolean;
@@ -306,7 +306,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
             <div className="text-[#003a0e] text-[10px] font-mono">
               SIGN IN TO APPEAR ON FUTURE LEADERBOARDS
             </div>
-            <AuthFlow onSignIn={signInWithEmail} onCancel={() => {}} />
+            <AuthFlow onSignIn={signInWithEmail} onVerifyCode={verifyOtp} onCancel={() => {}} />
           </div>
         </div>
       )}
