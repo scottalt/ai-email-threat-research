@@ -50,30 +50,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   async function signInWithEmail(email: string) {
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-      });
+      const { error } = await supabase.auth.signInWithOtp({ email });
       return { error: error?.message ?? null };
     } catch {
-      return { error: 'Failed to send magic link' };
+      return { error: 'Failed to send code' };
     }
   }
 
-  async function verifyOtp(_email: string, code: string) {
+  async function verifyOtp(email: string, code: string) {
     try {
-      const res = await fetch('/api/auth/handoff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      const data = await res.json();
-      if (!res.ok) return { error: data.error ?? 'Invalid or expired code' };
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-      });
+      const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
       return { error: error?.message ?? null };
     } catch {
       return { error: 'Verification failed' };
