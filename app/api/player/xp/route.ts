@@ -41,16 +41,22 @@ export async function PATCH(req: NextRequest) {
 
   const p = player as Record<string, unknown>;
 
-  // Dedup: reject if this session's XP has already been awarded
-  if (sessionId && p.last_xp_session_id === sessionId) {
-    return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
-  }
   const newXp = (p.xp as number) + xpEarned;
   const newLevel = getLevelFromXp(newXp);
   const levelUp = newLevel > (p.level as number);
   const newTotalSessions = sessionCompleted ? (p.total_sessions as number) + 1 : p.total_sessions as number;
 
-  const isResearchSession = gameMode === 'research' && sessionCompleted;
+  // Research graduation: verify server-side that this session actually has research answers
+  let isResearchSession = gameMode === 'research' && sessionCompleted && !!sessionId;
+  if (isResearchSession) {
+    const { count } = await admin
+      .from('answers')
+      .select('*', { count: 'exact', head: true })
+      .eq('session_id', sessionId!)
+      .eq('game_mode', 'research');
+    if (!count || count === 0) isResearchSession = false;
+  }
+
   const newResearchSessions = isResearchSession
     ? (p.research_sessions_completed as number) + 1
     : p.research_sessions_completed as number;
@@ -59,7 +65,9 @@ export async function PATCH(req: NextRequest) {
 
   const newBest = Math.max(p.personal_best_score as number, score);
 
-  const { error: updateErr } = await admin.from('players').update({
+  // Atomic dedup: the WHERE clause makes the check + write a single DB operation.
+  // If sessionId was already awarded, the condition fails and 0 rows are updated.
+  const updateQuery = admin.from('players').update({
     xp: newXp,
     level: newLevel,
     total_sessions: newTotalSessions,
@@ -68,15 +76,25 @@ export async function PATCH(req: NextRequest) {
     personal_best_score: newBest,
     ...(sessionId ? { last_xp_session_id: sessionId } : {}),
     updated_at: new Date().toISOString(),
-  }).eq('auth_id', authId);
+  }).eq('auth_id', authId).select('id');
+
+  // Only apply the sessionId dedup guard when a sessionId is provided
+  const finalQuery = sessionId
+    ? updateQuery.or(`last_xp_session_id.is.null,last_xp_session_id.neq.${sessionId}`)
+    : updateQuery;
+
+  const { data: updated, error: updateErr } = await finalQuery;
   if (updateErr) return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });
+  if (!updated || updated.length === 0) {
+    return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
+  }
 
   return NextResponse.json({
     xp: newXp,
     level: newLevel,
     xpEarned,
     levelUp,
-    graduated: !wasGraduated && nowGraduated,  // true only on the transition
+    graduated: !wasGraduated && nowGraduated,
     researchSessionsCompleted: newResearchSessions,
   });
 }
