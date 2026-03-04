@@ -139,6 +139,7 @@ export async function GET() {
       medianTimeByTechnique,
     });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    console.error('[/api/intel]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
