@@ -52,7 +52,7 @@ export function StartScreen({ onStart }: Props) {
   const [background, setBackground] = useState<PlayerBackground | null>(null);
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'score' | 'daily' | 'xp'>('score');
-  const [showGuide, setShowGuide] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
 
   const fetchLeaderboard = useCallback(async () => {
     const d = new Date();
@@ -298,13 +298,13 @@ export function StartScreen({ onStart }: Props) {
           </p>
 
           {/* Signal guide */}
-          <div className="term-border bg-[#060c06] border-[rgba(0,255,65,0.2)]">
+          <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
             <button
               onClick={() => setShowGuide((o) => !o)}
-              className="w-full px-3 py-2 flex items-center justify-between text-xs font-mono hover:bg-[rgba(0,255,65,0.03)] transition-colors"
+              className="w-full px-3 py-2 flex items-center justify-between text-xs font-mono hover:bg-[rgba(255,170,0,0.05)] transition-colors"
             >
-              <span className="text-[#003a0e] tracking-widest">[?] SIGNAL GUIDE</span>
-              <span className="text-[#003a0e]">{showGuide ? '▲' : '▼'}</span>
+              <span className="text-[#ffaa00] tracking-widest">[?] SIGNAL GUIDE</span>
+              <span className="text-[#ffaa00]">{showGuide ? '▲' : '▼'}</span>
             </button>
             {showGuide && (
               <div className="border-t border-[rgba(0,255,65,0.15)] px-3 py-3 space-y-3">
