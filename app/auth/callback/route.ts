@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { redis } from '@/lib/redis';
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
@@ -39,5 +40,15 @@ export async function GET(req: NextRequest) {
     console.error('[auth/callback] player upsert failed:', upsertError.message);
   }
 
-  return NextResponse.redirect(new URL(redirectTo, req.url));
+  // Generate a short-lived handoff code so iOS PWA users can sign in
+  // without leaving the app (magic links open in Safari, not the PWA)
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const handoffCode = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  await redis.set(
+    `auth:handoff:${handoffCode}`,
+    JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token }),
+    { ex: 300 } // 5-minute TTL
+  );
+
+  return NextResponse.redirect(new URL(`/auth/handoff?c=${handoffCode}`, req.url));
 }
