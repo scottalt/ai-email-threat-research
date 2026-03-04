@@ -28,7 +28,7 @@ Each technique has 60 cards: 20 easy, 20 medium, 20 hard. Legitimate cards cover
 
 **Research Mode deck structure:**
 
-Each Research Mode round draws a stratified deck: 1 random card per technique (6 cards) plus 4 random legitimate cards, for 10 cards per round. This ensures balanced technique representation regardless of dataset composition at any given time.
+Each Research Mode round draws 10 cards at random from the full dataset. With equal card volume per technique (60 each), technique representation balances naturally at scale. This avoids artificial deck constraints and produces a realistic sampling distribution.
 
 **Data collection:**
 

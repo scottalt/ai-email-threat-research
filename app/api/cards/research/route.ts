@@ -2,21 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import type { ResearchCard } from '@/lib/types';
 
-// Serve a stratified deck: 1 random card per phishing technique + LEGIT_PER_ROUND legit cards.
-// This ensures technique representation is balanced regardless of which cards were approved first.
-const TECHNIQUES = [
-  'urgency',
-  'authority-impersonation',
-  'credential-harvest',
-  'hyper-personalization',
-  'pretexting',
-  'fluent-prose',
-] as const;
-const LEGIT_PER_ROUND = 4;
-
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+const ROUND_SIZE = 10;
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -35,40 +21,7 @@ export async function GET() {
     if (error) throw error;
     if (!data || data.length === 0) return NextResponse.json([]);
 
-    // Group by technique + difficulty (phishing) and into legit pool
-    type Row = typeof data[number];
-    const byTechniqueDiff: Record<string, Record<string, Row[]>> = {};
-    const legitCards: Row[] = [];
-
-    for (const row of data) {
-      if (row.is_phishing && row.technique) {
-        if (!byTechniqueDiff[row.technique]) byTechniqueDiff[row.technique] = {};
-        const diff = (row.difficulty as string) || 'easy';
-        if (!byTechniqueDiff[row.technique][diff]) byTechniqueDiff[row.technique][diff] = [];
-        byTechniqueDiff[row.technique][diff].push(row);
-      } else if (!row.is_phishing) {
-        legitCards.push(row);
-      }
-    }
-
-    // Pick 1 card per technique: randomly select a difficulty tier first, then a random
-    // card from that tier. This guarantees ~uniform difficulty distribution across sessions
-    // rather than pure random sampling which could skew toward whichever difficulty has
-    // more approved cards at any given time.
-    const phishingPicks: Row[] = [];
-    for (const tech of TECHNIQUES) {
-      const tierMap = byTechniqueDiff[tech] ?? {};
-      const availableTiers = Object.keys(tierMap).filter((d) => tierMap[d].length > 0);
-      if (availableTiers.length === 0) continue;
-      const tier = availableTiers[Math.floor(Math.random() * availableTiers.length)];
-      phishingPicks.push(pickRandom(tierMap[tier]));
-    }
-
-    // Pick LEGIT_PER_ROUND random legit cards
-    const legitPicks = shuffle(legitCards).slice(0, LEGIT_PER_ROUND);
-
-    // Shuffle the combined deck so ordering is random each session
-    const deck = shuffle([...phishingPicks, ...legitPicks]);
+    const deck = shuffle(data).slice(0, ROUND_SIZE);
 
     const cards: ResearchCard[] = deck.map((row) => ({
       id: row.card_id,
@@ -85,7 +38,6 @@ export async function GET() {
       replyTo: row.reply_to ?? undefined,
       attachmentName: row.attachment_name ?? undefined,
       sentAt: row.sent_at ?? undefined,
-      // Research metadata
       cardSource: 'real' as const,
       technique: row.technique,
       secondaryTechnique: row.secondary_technique,
