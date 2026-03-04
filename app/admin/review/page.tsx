@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
+import { parseFrom } from '@/lib/parseFrom';
 
 interface StagingCard {
   id: string;
@@ -205,7 +207,8 @@ export default function ReviewPage() {
         {/* Header */}
         <div className="flex items-center justify-between text-xs font-mono">
           <span className="text-[#00aa28] tracking-widest">
-            REVIEW_QUEUE
+            <Link href="/admin" className="text-[#003a0e] hover:text-[#00aa28] transition-colors">← ADMIN</Link>
+            <span className="text-[#001a06]"> · </span>REVIEW_QUEUE
             {pendingCount !== null && (
               <span className="text-[#003a0e]"> · {pendingCount} PENDING</span>
             )}
@@ -247,7 +250,9 @@ export default function ReviewPage() {
               <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.15)] space-y-1">
                 <div className="flex gap-2 text-xs">
                   <span className="text-[#00aa28] w-10 shrink-0">FROM:</span>
-                  <span className="text-[#00ff41] font-mono break-all text-xs">{processedFrom}</span>
+                  <span className="text-[#00ff41] font-mono text-xs">
+                    {(() => { const { displayName, email } = parseFrom(processedFrom); return displayName ? <>{displayName} <span className="text-[#003a0e]">&lt;{email}&gt;</span></> : email; })()}
+                  </span>
                 </div>
                 {processedSubject && (
                   <div className="flex gap-2 text-xs">
