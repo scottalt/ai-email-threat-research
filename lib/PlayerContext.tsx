@@ -9,6 +9,7 @@ interface PlayerContextValue {
   loading: boolean;
   signedIn: boolean;
   signInWithEmail: (email: string) => Promise<{ error: string | null }>;
+  verifyOtp: (email: string, code: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   applyProfile: (p: PlayerProfile) => void;
@@ -59,6 +60,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function verifyOtp(email: string, code: string) {
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+      return { error: error?.message ?? null };
+    } catch {
+      return { error: 'Verification failed' };
+    }
+  }
+
   async function signOut() {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
@@ -71,6 +82,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       loading,
       signedIn: !!profile,
       signInWithEmail,
+      verifyOtp,
       signOut,
       refreshProfile,
       applyProfile: setProfile,

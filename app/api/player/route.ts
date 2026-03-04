@@ -49,7 +49,15 @@ export async function GET(req: NextRequest) {
     .eq('auth_id', authId)
     .single();
 
-  if (error || !data) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+  if (error || !data) {
+    // No player row yet — create one (happens when signing in via OTP, bypassing /auth/callback)
+    await admin.from('players').upsert({ auth_id: authId }, { onConflict: 'auth_id', ignoreDuplicates: true });
+    const { data: created } = await admin.from('players').select('*').eq('auth_id', authId).single();
+    if (!created) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+    return NextResponse.json(toProfile(created as unknown as Record<string, unknown>), {
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  }
   return NextResponse.json(toProfile(data as unknown as Record<string, unknown>), {
     headers: { 'Cache-Control': 'no-store' },
   });
