@@ -19,7 +19,15 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   // Never intercept API routes
   if (new URL(event.request.url).pathname.startsWith('/api/')) return;
-  // Network-first: always try network, fall back to cache only if offline
+  // Navigation requests (HTML pages) — always fetch fresh, never cache
+  // This ensures the PWA always loads the latest version without a hard refresh
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/'))
+    );
+    return;
+  }
+  // Static assets (JS, CSS, images) — network-first, fall back to cache for offline
   event.respondWith(
     fetch(event.request)
       .then((res) => {

@@ -20,7 +20,7 @@ export class AmbientDrone {
       // Master gain — fade in over 2.5s
       this.master = ctx.createGain();
       this.master.gain.setValueAtTime(0, ctx.currentTime);
-      this.master.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 2.5);
+      this.master.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 2.5);
       this.master.connect(ctx.destination);
 
       // Dark low-pass filter
@@ -44,10 +44,10 @@ export class AmbientDrone {
 
       // Drone layers: A1 (sub), A2 (bass), ~E3 (slightly detuned), A3 (top)
       const layers: [number, number][] = [
-        [55,    0.50],
-        [110,   0.35],
-        [164.5, 0.12],
-        [220,   0.06],
+        [55,    0.60],
+        [110,   0.45],
+        [164.5, 0.20],
+        [220,   0.10],
       ];
       for (const [freq, gain] of layers) {
         const osc = ctx.createOscillator();
