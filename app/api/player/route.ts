@@ -18,8 +18,8 @@ async function getAuthId(): Promise<string | null> {
       },
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id ?? null;
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
 }
 
 function toProfile(row: Record<string, unknown>): PlayerProfile {

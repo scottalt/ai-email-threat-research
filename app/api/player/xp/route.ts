@@ -11,8 +11,8 @@ async function getAuthId(): Promise<string | null> {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id ?? null;
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
 }
 
 // PATCH /api/player/xp
@@ -22,9 +22,11 @@ export async function PATCH(req: NextRequest) {
   if (!authId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   const body = await req.json();
-  const xpEarned = Math.max(0, Math.min(1000, Number(body.xpEarned) || 0));
-  const score = Number(body.score) || 0;
   const gameMode = String(body.gameMode ?? 'freeplay');
+  // Cap XP at the server-side maximum for the given mode (expert = 300, others = 150)
+  const maxXp = gameMode === 'expert' ? 300 : 150;
+  const xpEarned = Math.max(0, Math.min(maxXp, Number(body.xpEarned) || 0));
+  const score = Math.max(0, Math.min(3500, Number(body.score) || 0));
   const sessionCompleted = Boolean(body.sessionCompleted);
   const sessionId = typeof body.sessionId === 'string' ? body.sessionId.slice(0, 64) : null;
 

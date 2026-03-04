@@ -1,7 +1,17 @@
 import { createHmac, randomBytes } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { redis } from '@/lib/redis';
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 attempts per IP per 15 minutes
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const rlKey = `ratelimit:admin-login:${ip}`;
+  const attempts = await redis.incr(rlKey);
+  if (attempts === 1) await redis.expire(rlKey, 15 * 60);
+  if (attempts > 5) {
+    return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 });
+  }
+
   const { password } = await req.json();
   const expected = process.env.ADMIN_PASSWORD;
 

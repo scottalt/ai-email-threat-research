@@ -86,7 +86,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Name not allowed.' }, { status: 400 });
     }
 
-    if (typeof score !== 'number' || score < 0 || !Number.isFinite(score)) {
+    const MAX_SCORE = 3500; // above theoretical max of ~3150 (10 CERTAIN correct + 3 streak bonuses)
+    if (typeof score !== 'number' || score < 0 || score > MAX_SCORE || !Number.isFinite(score)) {
       return NextResponse.json({ error: 'Invalid score' }, { status: 400 });
     }
 
