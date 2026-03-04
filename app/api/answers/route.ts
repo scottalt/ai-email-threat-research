@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import type { AnswerEvent, SessionPayload } from '@/lib/types';
+
+async function getPlayerId(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const admin = getSupabaseAdminClient();
+    const { data } = await admin.from('players').select('id').eq('auth_id', user.id).single();
+    return data?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const VALID_ANSWERS = ['phishing', 'legit'] as const;
 const VALID_CONFIDENCES = ['guessing', 'likely', 'certain'] as const;
@@ -28,6 +48,12 @@ export async function POST(req: NextRequest) {
 
     // Preview mode — never write to DB
     if (a.gameMode === 'preview') {
+      return NextResponse.json({ ok: true });
+    }
+
+    // Research and expert modes require authentication — silently skip unauthenticated answers
+    const playerId = await getPlayerId();
+    if ((a.gameMode === 'research' || a.gameMode === 'expert') && !playerId) {
       return NextResponse.json({ ok: true });
     }
 
@@ -66,6 +92,7 @@ export async function POST(req: NextRequest) {
 
     // Insert answer event
     const { error: answerError } = await supabase.from('answers').insert({
+      player_id: playerId ?? null,
       session_id: a.sessionId,
       card_id: a.cardId,
       card_source: a.cardSource,

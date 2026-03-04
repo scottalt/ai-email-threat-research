@@ -110,6 +110,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
         name: profile.displayName,
         score: totalScore,
         level: xpResult.level,
+        sessionId,
         ...(mode === 'daily' ? { date } : {}),
       }),
     })
