@@ -49,17 +49,22 @@ export async function POST(req: NextRequest) {
     const wordCount = reviewedFields.processed_body ? reviewedFields.processed_body.trim().split(/\s+/).length : 0;
     const charCount = reviewedFields.processed_body ? reviewedFields.processed_body.length : 0;
 
+    const isPhishing = Boolean(reviewedFields.is_phishing);
+    const validDifficulties = ['easy', 'medium', 'hard', 'extreme'];
+    const difficulty = validDifficulties.includes(reviewedFields.suggested_difficulty)
+      ? reviewedFields.suggested_difficulty : 'easy';
+
     const authStatus = reviewedFields.auth_status ??
-      (!reviewedFields.is_phishing ? 'verified'
-        : ['easy', 'medium'].includes(reviewedFields.suggested_difficulty) ? 'fail'
+      (!isPhishing ? 'verified'
+        : ['easy', 'medium'].includes(difficulty) ? 'fail'
         : 'unverified');
 
     const { error: realError } = await supabase.from('cards_real').insert({
       staging_id: stagingId,
-      card_id: `real-${reviewedFields.is_phishing ? 'p' : 'l'}-${Date.now()}`,
+      card_id: `real-${isPhishing ? 'p' : 'l'}-${Date.now()}`,
       type: reviewedFields.inferred_type,
-      is_phishing: reviewedFields.is_phishing,
-      difficulty: reviewedFields.suggested_difficulty,
+      is_phishing: isPhishing,
+      difficulty,
       from_address: reviewedFields.processed_from,
       subject: reviewedFields.processed_subject,
       body: reviewedFields.processed_body,

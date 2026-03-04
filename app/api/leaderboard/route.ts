@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
 
 const KEY = 'leaderboard';
@@ -60,8 +60,17 @@ export async function GET(req: Request) {
   return NextResponse.json(entries);
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 submissions per IP per hour
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const rlKey = `ratelimit:leaderboard:${ip}`;
+    const count = await redis.incr(rlKey);
+    if (count === 1) await redis.expire(rlKey, 60 * 60);
+    if (count > 10) {
+      return NextResponse.json({ error: 'Too many submissions.' }, { status: 429 });
+    }
+
     const { name, score, date, level } = await req.json();
     if (date && (typeof date !== 'string' || !DATE_RE.test(date))) {
       return NextResponse.json({ error: 'Invalid date' }, { status: 400 });
