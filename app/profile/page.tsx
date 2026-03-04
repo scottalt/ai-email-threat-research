@@ -44,7 +44,7 @@ export default function ProfilePage() {
   const [adminMsg, setAdminMsg] = useState('');
 
   useEffect(() => {
-    fetch('/api/player/admin-check').then(r => r.json()).then(d => setIsAdmin(!!d.isAdmin));
+    fetch('/api/player/admin-check').then(r => { if (r.ok) setIsAdmin(true); });
   }, []);
 
   useEffect(() => {

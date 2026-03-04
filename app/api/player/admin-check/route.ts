@@ -11,5 +11,6 @@ export async function GET() {
     { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
   );
   const { data: { user } } = await supabase.auth.getUser();
-  return NextResponse.json({ isAdmin: isAdminUser(user?.id) });
+  if (!isAdminUser(user?.id)) return new NextResponse(null, { status: 404 });
+  return NextResponse.json({ ok: true });
 }
