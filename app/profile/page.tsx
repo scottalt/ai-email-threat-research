@@ -326,6 +326,12 @@ export default function ProfilePage() {
                   </button>
                 </div>
                 <div className="text-[#664400] text-[9px] font-mono">RESET LEVEL recalculates level from XP</div>
+                <Link
+                  href="/admin"
+                  className="block w-full py-1.5 border border-[rgba(255,170,0,0.2)] text-[#664400] font-mono text-[10px] tracking-widest hover:text-[#ffaa00] hover:border-[rgba(255,170,0,0.4)] transition-colors text-center"
+                >
+                  [ ADMIN PORTAL ]
+                </Link>
               </div>
             )}
           </div>
