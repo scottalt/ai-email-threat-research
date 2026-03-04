@@ -34,6 +34,8 @@ Each Research Mode round draws 10 cards at random from the full dataset. With eq
 
 Research Mode requires a player account. Answers are linked to a pseudonymous player UUID. Email addresses are held only in Supabase Auth and are never stored in research tables. Our own tables store only UUIDs, game mode, technique, correctness, confidence, and timing signals. No behavioural tracking outside the game session.
 
+Players can optionally self-report their professional background on their profile: `OTHER`, `TECHNICAL / NON-SECURITY`, or `INFOSEC / CYBERSECURITY`. This is used to compare bypass rates across groups — the study tests whether security professionals detect phishing at meaningfully higher rates than technical non-security and general users. Background is optional and can be set to prefer not to say.
+
 **Sample limitation:** Participants are self-selected players who opted into Research Mode and created an account. This is disclosed as a limitation in the published methodology.
 
 - Methodology: [retro-phish.scottaltiparmak.com/methodology](https://retro-phish.scottaltiparmak.com/methodology)
