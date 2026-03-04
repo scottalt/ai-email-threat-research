@@ -52,7 +52,7 @@ export function StartScreen({ onStart }: Props) {
   const [background, setBackground] = useState<PlayerBackground | null>(null);
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'score' | 'daily' | 'xp'>('score');
-  const [showGuide, setShowGuide] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
 
   const fetchLeaderboard = useCallback(async () => {
     const d = new Date();
@@ -222,9 +222,10 @@ export function StartScreen({ onStart }: Props) {
               ) : (
                 <button
                   onClick={() => setShowAuthFlow(true)}
-                  className="w-full px-3 py-2.5 term-border bg-[#060c06] text-left text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28] hover:bg-[rgba(0,255,65,0.03)]"
+                  className="w-full px-3 py-3 term-border bg-[#060c06] border-[rgba(255,170,0,0.5)] text-left font-mono hover:bg-[rgba(255,170,0,0.06)] transition-colors"
                 >
-                  [ SIGN IN ] — new or returning · magic link · no password
+                  <div className="text-[#ffaa00] text-xs tracking-widest font-bold">[ SIGN IN TO SAVE YOUR SCORE ]</div>
+                  <div className="text-[#cc8800] text-[10px] mt-1">Magic link · no password · track XP + rank</div>
                 </button>
               )}
             </div>
@@ -251,51 +252,6 @@ export function StartScreen({ onStart }: Props) {
               ))}
             </div>
           </div>
-
-          <div className="flex gap-2 text-xs font-mono">
-            {(['EASY', 'MEDIUM', 'HARD'] as const).map((d) => (
-              <div
-                key={d}
-                className={`flex-1 text-center py-1.5 term-border ${
-                  d === 'EASY'
-                    ? 'text-[#00ff41] border-[rgba(0,255,65,0.4)]'
-                    : d === 'MEDIUM'
-                    ? 'text-[#ffaa00] border-[rgba(255,170,0,0.4)]'
-                    : 'text-[#ff3333] border-[rgba(255,51,51,0.4)]'
-                }`}
-              >
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Daily challenge button - featured */}
-          <button
-            onClick={() => handleStart('daily')}
-            className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
-          >
-            [ DAILY CHALLENGE — {dateLabel} ]
-          </button>
-
-          <button
-            onClick={() => handleStart('research')}
-            className="w-full py-3 term-border text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
-          >
-            [ PLAY ]
-          </button>
-
-          {signedIn && profile?.researchGraduated && (
-            <button
-              onClick={() => handleStart('expert')}
-              className="w-full py-4 term-border border-[rgba(255,170,0,0.4)] text-center text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.05)]"
-            >
-              [ EXPERT MODE ]
-            </button>
-          )}
-
-          <p className="text-[#003a0e] text-xs text-center font-mono">
-            10 questions per round · email + SMS · randomized
-          </p>
 
           {/* Signal guide */}
           <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
@@ -342,6 +298,34 @@ export function StartScreen({ onStart }: Props) {
               </div>
             )}
           </div>
+
+          {/* Daily challenge button - featured */}
+          <button
+            onClick={() => handleStart('daily')}
+            className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+          >
+            [ DAILY CHALLENGE — {dateLabel} ]
+          </button>
+
+          <button
+            onClick={() => handleStart('research')}
+            className="w-full py-3 term-border text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
+          >
+            [ PLAY ]
+          </button>
+
+          {signedIn && profile?.researchGraduated && (
+            <button
+              onClick={() => handleStart('expert')}
+              className="w-full py-4 term-border border-[rgba(255,170,0,0.4)] text-center text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.05)]"
+            >
+              [ EXPERT MODE ]
+            </button>
+          )}
+
+          <p className="text-[#003a0e] text-xs text-center font-mono">
+            10 questions per round · email + SMS · randomized
+          </p>
 
           {/* Tabbed leaderboard — score or XP */}
           {(leaderboard.length > 0 || dailyLeaderboard.length > 0 || xpLeaderboard.length > 0) && (
