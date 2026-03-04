@@ -307,6 +307,17 @@ Expected finding direction: hyper-personalization and fluent-prose have higher b
 
 Difficulty is balanced equally across techniques (15 easy/15 medium/15 hard/15 extreme per technique). Primary analysis uses all difficulties combined. Difficulty-stratified breakdown reported separately to confirm the technique effect is not an artifact of imbalanced difficulty.
 
+### Secondary Analysis — Background Group Comparison
+
+Players can optionally self-report their professional background: `other` (general users), `technical` (technical, non-security), or `infosec` (security/cybersecurity professionals). Background is set on the player profile and linked to answers via player UUID.
+
+Analysis questions:
+- Do infosec professionals have lower bypass rates than technical non-security users? Than general users?
+- Does the technique ranking hold across background groups, or do certain techniques disproportionately bypass even security-trained individuals?
+- Is the security-aware sample assumption validated by the data (i.e., do infosec players perform measurably better)?
+
+Background is optional and a significant portion of players may not disclose it. This analysis is reported as a supplementary finding, not a primary result.
+
 ### Secondary Analysis — Behavioral Signals
 
 - **Confidence calibration:** CERTAIN vs. LIKELY vs. GUESSING accuracy rate
