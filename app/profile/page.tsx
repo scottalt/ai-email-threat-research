@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePlayer } from '@/lib/usePlayer';
 import { LevelMeter } from '@/components/LevelMeter';
 import { getRankFromLevel } from '@/lib/rank';
@@ -31,6 +31,62 @@ export default function ProfilePage() {
   const { profile, loading, signedIn, applyProfile } = usePlayer();
   const [editingBackground, setEditingBackground] = useState(false);
   const [backgroundSaving, setBackgroundSaving] = useState(false);
+
+  // Admin override panel
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminXp, setAdminXp] = useState('');
+  const [adminLevel, setAdminLevel] = useState('');
+  const [adminGraduated, setAdminGraduated] = useState(false);
+  const [adminSessions, setAdminSessions] = useState('');
+  const [adminResearchSessions, setAdminResearchSessions] = useState('');
+  const [adminSaving, setAdminSaving] = useState(false);
+  const [adminMsg, setAdminMsg] = useState('');
+
+  useEffect(() => {
+    fetch('/api/player/admin-check').then(r => r.json()).then(d => setIsAdmin(!!d.isAdmin));
+  }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+    setAdminXp(String(profile.xp));
+    setAdminLevel(String(profile.level));
+    setAdminGraduated(profile.researchGraduated);
+    setAdminSessions(String(profile.totalSessions));
+    setAdminResearchSessions(String(profile.researchSessionsCompleted));
+  }, [profile]);
+
+  async function handleAdminApply(reset?: boolean) {
+    setAdminSaving(true);
+    setAdminMsg('');
+    try {
+      const body: Record<string, unknown> = {
+        xp: parseInt(adminXp, 10) || 0,
+        researchGraduated: adminGraduated,
+        totalSessions: parseInt(adminSessions, 10) || 0,
+        researchSessionsCompleted: parseInt(adminResearchSessions, 10) || 0,
+      };
+      if (reset) {
+        body.reset = true;
+      } else {
+        body.level = parseInt(adminLevel, 10) || 1;
+      }
+      const res = await fetch('/api/player/admin', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        applyProfile(await res.json());
+        setAdminMsg('APPLIED');
+      } else {
+        const d = await res.json();
+        setAdminMsg(d.error ?? 'FAILED');
+      }
+    } finally {
+      setAdminSaving(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -201,6 +257,79 @@ export default function ProfilePage() {
             })}
           </div>
         </div>
+
+        {/* Admin override panel — only visible to admin */}
+        {isAdmin && (
+          <div className="border border-[rgba(255,170,0,0.3)] bg-[#060c06]">
+            <button
+              onClick={() => setShowAdmin(o => !o)}
+              className="w-full px-3 py-2 flex items-center justify-between text-xs font-mono hover:bg-[rgba(255,170,0,0.04)] transition-colors"
+            >
+              <span className="text-[#ffaa00] tracking-widest">[⚙] DEV_OVERRIDE</span>
+              <span className="text-[#ffaa00]">{showAdmin ? '▲' : '▼'}</span>
+            </button>
+            {showAdmin && (
+              <div className="border-t border-[rgba(255,170,0,0.2)] px-3 py-3 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'XP', value: adminXp, set: setAdminXp },
+                    { label: 'LEVEL (1-30)', value: adminLevel, set: setAdminLevel },
+                    { label: 'SESSIONS', value: adminSessions, set: setAdminSessions },
+                    { label: 'RESEARCH SESSIONS', value: adminResearchSessions, set: setAdminResearchSessions },
+                  ].map(({ label, value, set }) => (
+                    <div key={label} className="space-y-1">
+                      <div className="text-[#ffaa00] text-[9px] font-mono tracking-wider">{label}</div>
+                      <input
+                        type="number"
+                        value={value}
+                        onChange={e => set(e.target.value)}
+                        className="w-full bg-transparent border border-[rgba(255,170,0,0.25)] px-2 py-1 text-[#ffaa00] font-mono text-xs focus:outline-none focus:border-[rgba(255,170,0,0.6)]"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[#ffaa00] text-[9px] font-mono tracking-wider">RESEARCH_GRADUATED</span>
+                  <button
+                    onClick={() => setAdminGraduated(v => !v)}
+                    className={`px-3 py-0.5 font-mono text-[10px] border transition-colors ${
+                      adminGraduated
+                        ? 'text-[#ffaa00] border-[rgba(255,170,0,0.6)] bg-[rgba(255,170,0,0.08)]'
+                        : 'text-[#664400] border-[rgba(255,170,0,0.2)] hover:border-[rgba(255,170,0,0.4)]'
+                    }`}
+                  >
+                    {adminGraduated ? 'TRUE' : 'FALSE'}
+                  </button>
+                </div>
+
+                {adminMsg && (
+                  <div className={`text-[10px] font-mono ${adminMsg === 'APPLIED' ? 'text-[#00ff41]' : 'text-[#ff3333]'}`}>
+                    {adminMsg}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAdminApply(false)}
+                    disabled={adminSaving}
+                    className="flex-1 py-1.5 border border-[rgba(255,170,0,0.4)] text-[#ffaa00] font-mono text-[10px] tracking-widest hover:bg-[rgba(255,170,0,0.06)] disabled:opacity-40 transition-colors"
+                  >
+                    {adminSaving ? '...' : '[ APPLY ]'}
+                  </button>
+                  <button
+                    onClick={() => handleAdminApply(true)}
+                    disabled={adminSaving}
+                    className="flex-1 py-1.5 border border-[rgba(255,170,0,0.2)] text-[#664400] font-mono text-[10px] tracking-widest hover:text-[#ffaa00] hover:border-[rgba(255,170,0,0.4)] disabled:opacity-40 transition-colors"
+                  >
+                    {adminSaving ? '...' : '[ RESET LEVEL ]'}
+                  </button>
+                </div>
+                <div className="text-[#664400] text-[9px] font-mono">RESET LEVEL recalculates level from XP</div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </main>
   );
