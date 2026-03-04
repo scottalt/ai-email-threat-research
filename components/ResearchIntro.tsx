@@ -33,7 +33,7 @@ export function ResearchIntro({ onBegin }: Props) {
           </div>
           <ul className="px-3 py-3 space-y-2">
             {[
-              'Sender domain — compare FROM address against any domain referenced in the body',
+              'Sender domain — tap [↗] next to the sender name to reveal the actual email address, then compare the domain to any domain referenced in the body',
               'Send time — check [SENT] for odd hours or mismatched timezones',
               'Attachment name — check [ATCH] for suspicious filenames or unexpected file types',
               'Authentication headers — tap [HEADERS] for SPF/DKIM/DMARC result',
@@ -48,11 +48,29 @@ export function ResearchIntro({ onBegin }: Props) {
           </ul>
         </div>
 
-        <div className="text-[#003a0e] text-[10px] font-mono text-center">
-          Anonymous · voluntary · aggregate findings at{' '}
-          <Link href="/intel" className="text-[#00aa28] hover:underline">
-            /intel
-          </Link>
+        <div className="term-border bg-[#060c06] border-[rgba(0,255,65,0.15)]">
+          <div className="border-b border-[rgba(0,255,65,0.15)] px-3 py-1.5">
+            <span className="text-[#003a0e] text-[10px] font-mono tracking-widest">DATA_COLLECTION</span>
+          </div>
+          <div className="px-3 py-3 space-y-2">
+            <p className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
+              No account required. No personally identifiable information is collected.
+            </p>
+            <p className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
+              <span className="text-[#00aa28]">Recorded:</span>{' '}
+              your answer, confidence level, response time, whether you opened headers or clicked URLs, and position within the session. A random session ID is generated each round and kept in memory only — never stored on your device or linked to you.
+            </p>
+            <p className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
+              <span className="text-[#00aa28]">Not recorded:</span>{' '}
+              email address, IP address, location, or any identifying information.
+            </p>
+            <p className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
+              Participation is voluntary. Play{' '}
+              <span className="text-[#00aa28]">[ PLAY ]</span>{' '}
+              instead to opt out. Aggregate findings published at{' '}
+              <Link href="/intel" className="text-[#00aa28] hover:underline">/intel</Link>.
+            </p>
+          </div>
         </div>
 
         <button
