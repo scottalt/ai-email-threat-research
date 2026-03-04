@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
+import { getSupabaseAdminClient } from '@/lib/supabase';
 
 const KEY = 'leaderboard';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -71,7 +72,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Too many submissions.' }, { status: 429 });
     }
 
-    const { name, score, date, level } = await req.json();
+    const { name, score, date, level, sessionId } = await req.json();
+
+    // Require a sessionId and verify it against the sessions table
+    if (!sessionId || typeof sessionId !== 'string') {
+      return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+    }
+    const supabase = getSupabaseAdminClient();
+    const { data: session } = await supabase
+      .from('sessions')
+      .select('session_id')
+      .eq('session_id', sessionId)
+      .eq('final_score', score)
+      .single();
+    if (!session) {
+      return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
+    }
+
+    // One leaderboard entry per session — prevent multiple name submissions for same score
+    const dedupKey = `lb:submitted:${sessionId}`;
+    const claimed = await redis.set(dedupKey, '1', { nx: true, ex: 90 * 24 * 60 * 60 });
+    if (!claimed) {
+      return NextResponse.json({ ok: true }); // Already submitted — silently skip
+    }
     if (date && (typeof date !== 'string' || !DATE_RE.test(date))) {
       return NextResponse.json({ error: 'Invalid date' }, { status: 400 });
     }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import { getLevelFromXp, RESEARCH_GRADUATION_SESSIONS } from '@/lib/xp';
+import { getLevelFromXp, getXpForRound, RESEARCH_GRADUATION_SESSIONS } from '@/lib/xp';
 
 async function getAuthId(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -23,9 +23,6 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json();
   const gameMode = String(body.gameMode ?? 'freeplay');
-  // Cap XP at the server-side maximum for the given mode (expert = 300, others = 150)
-  const maxXp = gameMode === 'expert' ? 300 : 150;
-  const xpEarned = Math.max(0, Math.min(maxXp, Number(body.xpEarned) || 0));
   const score = Math.max(0, Math.min(3500, Number(body.score) || 0));
   const sessionCompleted = Boolean(body.sessionCompleted);
   const sessionId = typeof body.sessionId === 'string' ? body.sessionId.slice(0, 64) : null;
@@ -40,6 +37,18 @@ export async function PATCH(req: NextRequest) {
   if (fetchErr || !player) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
 
   const p = player as Record<string, unknown>;
+
+  // Compute XP server-side from answers table — never trust client-supplied xpEarned
+  let xpEarned = 0;
+  if (sessionId) {
+    const [{ count: correctCount }, { count: totalCount }] = await Promise.all([
+      admin.from('answers').select('*', { count: 'exact', head: true })
+        .eq('session_id', sessionId).eq('correct', true),
+      admin.from('answers').select('*', { count: 'exact', head: true })
+        .eq('session_id', sessionId),
+    ]);
+    xpEarned = getXpForRound(correctCount ?? 0, totalCount ?? 10, gameMode);
+  }
 
   const newXp = (p.xp as number) + xpEarned;
   const newLevel = getLevelFromXp(newXp);
