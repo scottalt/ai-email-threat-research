@@ -222,10 +222,10 @@ export function StartScreen({ onStart }: Props) {
               ) : (
                 <button
                   onClick={() => setShowAuthFlow(true)}
-                  className="w-full px-3 py-3 term-border bg-[#060c06] border-[rgba(0,255,65,0.3)] text-left font-mono hover:bg-[rgba(0,255,65,0.05)] transition-colors"
+                  className="w-full px-3 py-3 term-border bg-[#060c06] border-[rgba(255,170,0,0.5)] text-left font-mono hover:bg-[rgba(255,170,0,0.06)] transition-colors"
                 >
-                  <div className="text-[#00ff41] text-xs tracking-widest glow">[ SIGN IN TO SAVE YOUR SCORE ]</div>
-                  <div className="text-[#00aa28] text-[10px] mt-1">Magic link · no password · track XP + rank</div>
+                  <div className="text-[#ffaa00] text-xs tracking-widest font-bold">[ SIGN IN TO SAVE YOUR SCORE ]</div>
+                  <div className="text-[#cc8800] text-[10px] mt-1">Magic link · no password · track XP + rank</div>
                 </button>
               )}
             </div>
