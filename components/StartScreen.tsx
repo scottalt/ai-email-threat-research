@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { GameMode, PlayerBackground } from '@/lib/types';
 import { getRankFromLevel } from '@/lib/rank';
 import Link from 'next/link';
@@ -8,6 +8,8 @@ import { usePlayer } from '@/lib/usePlayer';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
 import { playBootTick } from '@/lib/sounds';
+import { useSoundEnabled } from '@/lib/useSoundEnabled';
+import { AmbientDrone } from '@/lib/drone';
 
 interface LeaderboardEntry {
   name: string;
@@ -53,6 +55,19 @@ export function StartScreen({ onStart }: Props) {
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'score' | 'daily' | 'xp'>('score');
   const [showGuide, setShowGuide] = useState(false);
+  const { soundEnabled, toggleSound } = useSoundEnabled();
+  const droneRef = useRef<AmbientDrone | null>(null);
+
+  useEffect(() => {
+    if (!soundEnabled) return;
+    const drone = new AmbientDrone();
+    droneRef.current = drone;
+    drone.start();
+    return () => {
+      drone.stop(true);
+      droneRef.current = null;
+    };
+  }, [soundEnabled]);
 
   const fetchLeaderboard = useCallback(async () => {
     const d = new Date();
@@ -93,6 +108,8 @@ export function StartScreen({ onStart }: Props) {
   }, [visibleCount]);
 
   function handleStart(mode: GameMode) {
+    droneRef.current?.stop(true);
+    droneRef.current = null;
     playBootTick();
     onStart(mode);
   }
@@ -131,7 +148,15 @@ export function StartScreen({ onStart }: Props) {
       <div className="term-border bg-[#060c06]">
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
           <span className="text-[#00aa28] text-xs tracking-widest">ANALYST_TERMINAL</span>
-          <span className="text-[#00aa28] text-xs">■ □ □</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleSound}
+              className={`text-[10px] font-mono transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}
+            >
+              {soundEnabled ? '[SFX]' : '[SFX OFF]'}
+            </button>
+            <span className="text-[#00aa28] text-xs">■ □ □</span>
+          </div>
         </div>
         <div className="px-3 py-4 min-h-48 space-y-1">
           {BOOT_LINES.slice(0, visibleCount).map((line, i) => (
