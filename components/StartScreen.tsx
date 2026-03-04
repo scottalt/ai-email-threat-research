@@ -32,7 +32,7 @@ const BOOT_LINES: { text: string; bright: boolean }[] = [
   { text: '> RESEARCH PLATFORM v1.0',       bright: false },
   { text: '> \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', bright: true  },
   { text: '> LOADING RESEARCH DATASET.....', bright: false },
-  { text: '> 550 CARDS LOADED',             bright: false },
+  { text: '> DATASET: v1.0',                bright: false },
   { text: '> CONFIDENCE SCORING: ENABLED',  bright: false },
   { text: '> STREAK DETECTION: ONLINE',     bright: false },
   { text: '> \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', bright: true  },
@@ -52,6 +52,7 @@ export function StartScreen({ onStart }: Props) {
   const [background, setBackground] = useState<PlayerBackground | null>(null);
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'score' | 'daily' | 'xp'>('score');
+  const [showGuide, setShowGuide] = useState(false);
 
   const fetchLeaderboard = useCallback(async () => {
     const d = new Date();
@@ -295,6 +296,52 @@ export function StartScreen({ onStart }: Props) {
           <p className="text-[#003a0e] text-xs text-center font-mono">
             10 questions per round · email + SMS · randomized
           </p>
+
+          {/* Signal guide */}
+          <div className="term-border bg-[#060c06] border-[rgba(0,255,65,0.2)]">
+            <button
+              onClick={() => setShowGuide((o) => !o)}
+              className="w-full px-3 py-2 flex items-center justify-between text-xs font-mono hover:bg-[rgba(0,255,65,0.03)] transition-colors"
+            >
+              <span className="text-[#003a0e] tracking-widest">[?] SIGNAL GUIDE</span>
+              <span className="text-[#003a0e]">{showGuide ? '▲' : '▼'}</span>
+            </button>
+            {showGuide && (
+              <div className="border-t border-[rgba(0,255,65,0.15)] px-3 py-3 space-y-3">
+                {[
+                  {
+                    label: 'FROM ADDRESS',
+                    body: 'Display names can be anything — "PayPal Security" means nothing. Click [↗] to reveal the actual email address and check the domain.',
+                  },
+                  {
+                    label: 'AUTH HEADERS',
+                    body: 'Click [HEADERS] on any email. FAIL = sender could not authenticate. NONE = no headers configured. PASS = authenticated — but attackers register lookalike domains that also pass. PASS is not proof of legitimacy.',
+                  },
+                  {
+                    label: 'URL INSPECTOR',
+                    body: 'Click any underlined link to reveal the full URL before acting on it. Check: does the domain match the sender? Watch for typosquatting (paypa1.com), wrong TLDs (.net instead of .com), and subdomain tricks.',
+                  },
+                  {
+                    label: 'REPLY-TO',
+                    body: 'Visible in [HEADERS]. If Reply-To differs from the sender domain — especially a free provider like Gmail or Outlook — your reply goes to the attacker, not the organisation.',
+                  },
+                  {
+                    label: 'SENT TIME',
+                    body: 'Check the SENT row. Phishing often arrives at odd hours (2am, unusual timezones) to avoid scrutiny. Legitimate business emails typically arrive in business hours.',
+                  },
+                  {
+                    label: 'CONFIDENCE',
+                    body: 'GUESSING = 1x points (no penalty if wrong). LIKELY = 2x (−100 if wrong). CERTAIN = 3x (−200 if wrong). Only commit when the evidence is clear.',
+                  },
+                ].map(({ label, body }) => (
+                  <div key={label} className="space-y-0.5">
+                    <div className="text-[#ffaa00] text-[10px] font-mono tracking-widest">{label}</div>
+                    <p className="text-[#00aa28] text-[10px] font-mono leading-relaxed">{body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Tabbed leaderboard — score or XP */}
           {(leaderboard.length > 0 || dailyLeaderboard.length > 0 || xpLeaderboard.length > 0) && (

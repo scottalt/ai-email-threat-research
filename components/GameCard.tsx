@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import type { Card, Answer, Confidence, GameMode } from '@/lib/types';
+import { parseFrom } from '@/lib/parseFrom';
 
 const SWIPE_THRESHOLD = 75;
 const FLY_DISTANCE = 650;
@@ -80,7 +81,9 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
 }) {
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
   const [headersOpen, setHeadersOpen] = useState(false);
+  const [showFromEmail, setShowFromEmail] = useState(false);
   const segments = parseBody(card.body);
+  const { displayName, email } = parseFrom(card.from);
 
   const headers = (() => {
     if (card.authStatus === 'verified') {
@@ -119,7 +122,24 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
       <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.2)] space-y-1">
         <div className="flex gap-2 text-xs">
           <span className="text-[#00aa28] w-10 shrink-0">FROM:</span>
-          <span className="text-[#00ff41] font-mono break-all">{card.from}</span>
+          <span className="text-[#00ff41] font-mono">
+            {displayName ? (
+              <>
+                <span className="break-all">{displayName}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowFromEmail((o) => !o); }}
+                  className="ml-1 text-[9px] text-[#003a0e] hover:text-[#ffaa00] transition-colors"
+                >
+                  {showFromEmail ? '[−]' : '[↗]'}
+                </button>
+                {showFromEmail && (
+                  <span className="block text-[#ffaa00] text-[10px] break-all mt-0.5">&lt;{email}&gt;</span>
+                )}
+              </>
+            ) : (
+              <span className="break-all">{email}</span>
+            )}
+          </span>
         </div>
         {card.subject && (
           <div className="flex gap-2 text-xs">

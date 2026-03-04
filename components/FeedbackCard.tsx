@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { RoundResult } from '@/lib/types';
 import { highlightBody } from '@/lib/highlightBody';
+import { parseFrom } from '@/lib/parseFrom';
 
 interface Props {
   result: RoundResult;
@@ -202,17 +203,29 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           </div>
 
           {/* Header rows */}
+          {(() => {
+            const { displayName, email } = parseFrom(card.from);
+            const hl = (text: string) =>
+              wasPhishing && card.highlights?.length
+                ? highlightBody(text, card.highlights).map((seg, i) =>
+                    seg.highlighted
+                      ? <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
+                      : <span key={i}>{seg.text}</span>
+                  )
+                : text;
+            return (
           <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.2)] space-y-1">
             <div className="flex gap-2 text-xs font-mono">
               <span className="text-[#003a0e] w-10 shrink-0">FROM:</span>
-              <span className="text-[#00aa28] break-all">
-                {wasPhishing && card.highlights?.length
-                  ? highlightBody(card.from, card.highlights).map((seg, i) =>
-                      seg.highlighted
-                        ? <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
-                        : <span key={i}>{seg.text}</span>
-                    )
-                  : card.from}
+              <span className="text-[#00aa28] font-mono">
+                {displayName ? (
+                  <>
+                    <span className="break-all">{hl(displayName)}</span>
+                    <span className="block text-[#ffaa00] text-[10px] break-all mt-0.5">&lt;{hl(email)}&gt;</span>
+                  </>
+                ) : (
+                  <span className="break-all">{hl(email)}</span>
+                )}
               </span>
             </div>
             {card.subject && (
@@ -242,6 +255,8 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
               </div>
             )}
           </div>
+            );
+          })()}
 
           {/* Expandable headers panel */}
           {headersOpen && card.type === 'email' && (
