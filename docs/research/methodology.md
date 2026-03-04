@@ -383,9 +383,18 @@ The same card can be served to multiple distinct sessions. There is no within-se
 
 `fluent-prose` phishing cards are defined by polished natural language with no traditional tells. This technique partially overlaps with the GenAI baseline condition shared by all cards in this dataset — all cards are grammatically fluent by construction. As a result, `fluent-prose` cards may be harder to distinguish from legitimate cards not because of superior technique, but because the technique definition is closest to the baseline condition. This is a design confound that will be disclosed in the publication. The technique is retained in the dataset because it represents a real and distinct category of attack. Readers should interpret elevated bypass rates for `fluent-prose` as an upper bound that includes baseline noise.
 
+### Auth Header Shortcut
+
+Players who open the `[HEADERS]` panel and observe `SPF/DKIM/DMARC: FAIL` have a near-deterministic signal on easy and medium phishing cards, where authentication always fails by design. A player using headers as their primary detection heuristic will produce correct answers that are not attributable to technique recognition — their accuracy reflects forensic hygiene, not response to the technique content.
+
+**How this is controlled for in analysis:**
+- Primary analysis uses all answers combined.
+- A sensitivity analysis segments results by `headers_opened = false` (answers made without opening headers) as the "content-only" detection signal. If the technique ranking is consistent across both cuts, the finding is robust to this confound.
+- For hard/extreme phishing cards where `auth_status` may be `verified` (attacker registered their own domain with passing authentication), header inspection provides no correct-direction signal — the technique effect is cleanest in this difficulty stratum and should be reported separately.
+
 ### Difficulty Distribution During Collection
 
-The research deck is sampled stratified by technique (one card per technique per session), but not stratified by difficulty within techniques. Early sessions may over- or under-represent particular difficulty levels. At scale (600+ answers per technique), difficulty will average out across answers. Difficulty-stratified analysis is a planned secondary analysis that will confirm the technique effect is not an artifact of difficulty imbalance.
+The research deck stratifies by technique (one card per technique per session) and by difficulty within each technique: for each session, a difficulty tier (easy/medium/hard) is selected at random before drawing the card. This guarantees approximately uniform difficulty distribution across sessions regardless of when cards are approved. Difficulty-stratified analysis is a planned secondary analysis that will confirm the technique effect is not an artifact of difficulty imbalance.
 
 ### Answer Pool Scope
 
@@ -409,3 +418,4 @@ The `answers` table records answers from all game modes (`research`, `freeplay`,
 | 1.0 | 2026-03-01 | Pivot to all-generated dataset. New research question locked. 550 cards, 6 techniques. Methodology rewritten. |
 | 1.1 | 2026-03-02 | Added auth_status, reply_to, attachment_name, sent_at card fields. Added behavioral tracking (headers_opened, url_inspected, has_reply_to, has_url, has_attachment). Added tool usage secondary analysis. Added training effect / learning section. Signal count corrected to 6. |
 | 1.2 | 2026-03-02 | Added disclosures: repeated card exposure, fluent-prose confound, difficulty distribution during collection, answer pool scope. Server-side correct/technique verification added to answer collection pipeline. |
+| 1.3 | 2026-03-03 | Added auth header shortcut limitation with sensitivity analysis plan. Updated difficulty distribution section: research deck now stratifies by difficulty tier within technique per session (random tier selection), not pure random sampling. ResearchIntro updated with explicit data collection disclosure. |

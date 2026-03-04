@@ -311,7 +311,7 @@ export function StartScreen({ onStart }: Props) {
                 {[
                   {
                     label: 'FROM ADDRESS',
-                    body: 'Display names can be anything — "PayPal Security" means nothing. Click [↗] to reveal the actual email address and check the domain.',
+                    body: 'The sender name shown is a display name — it can be set to anything and proves nothing. Tap [↗] next to it to reveal the actual email address. Check that the domain matches the organisation claimed in the email. Look for typosquatting (paypa1.com), wrong TLDs (.net instead of .com), and lookalike subdomains.',
                   },
                   {
                     label: 'AUTH HEADERS',

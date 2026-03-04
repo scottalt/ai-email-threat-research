@@ -35,24 +35,33 @@ export async function GET() {
     if (error) throw error;
     if (!data || data.length === 0) return NextResponse.json([]);
 
-    // Group by technique (phishing) and into legit pool
-    const byTechnique: Record<string, typeof data[number][]> = {};
-    const legitCards: typeof data[number][] = [];
+    // Group by technique + difficulty (phishing) and into legit pool
+    type Row = typeof data[number];
+    const byTechniqueDiff: Record<string, Record<string, Row[]>> = {};
+    const legitCards: Row[] = [];
 
     for (const row of data) {
       if (row.is_phishing && row.technique) {
-        if (!byTechnique[row.technique]) byTechnique[row.technique] = [];
-        byTechnique[row.technique].push(row);
+        if (!byTechniqueDiff[row.technique]) byTechniqueDiff[row.technique] = {};
+        const diff = (row.difficulty as string) || 'easy';
+        if (!byTechniqueDiff[row.technique][diff]) byTechniqueDiff[row.technique][diff] = [];
+        byTechniqueDiff[row.technique][diff].push(row);
       } else if (!row.is_phishing) {
         legitCards.push(row);
       }
     }
 
-    // Pick 1 random card per technique (skip techniques with no approved cards yet)
-    const phishingPicks: typeof data[number][] = [];
+    // Pick 1 card per technique: randomly select a difficulty tier first, then a random
+    // card from that tier. This guarantees ~uniform difficulty distribution across sessions
+    // rather than pure random sampling which could skew toward whichever difficulty has
+    // more approved cards at any given time.
+    const phishingPicks: Row[] = [];
     for (const tech of TECHNIQUES) {
-      const pool = byTechnique[tech] ?? [];
-      if (pool.length > 0) phishingPicks.push(pickRandom(pool));
+      const tierMap = byTechniqueDiff[tech] ?? {};
+      const availableTiers = Object.keys(tierMap).filter((d) => tierMap[d].length > 0);
+      if (availableTiers.length === 0) continue;
+      const tier = availableTiers[Math.floor(Math.random() * availableTiers.length)];
+      phishingPicks.push(pickRandom(tierMap[tier]));
     }
 
     // Pick LEGIT_PER_ROUND random legit cards
