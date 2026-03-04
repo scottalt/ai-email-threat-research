@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist_Mono } from 'next/font/google';
 import { ServiceWorker } from '@/components/ServiceWorker';
+import { TerminalSounds } from '@/components/TerminalSounds';
 import { PlayerProvider } from '@/lib/PlayerContext';
 import './globals.css';
 
@@ -45,6 +46,7 @@ export default function RootLayout({
       </head>
       <body className={`${geistMono.variable} antialiased`}>
         <ServiceWorker />
+        <TerminalSounds />
         <PlayerProvider>
           {children}
         </PlayerProvider>

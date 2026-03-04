@@ -1,3 +1,46 @@
+// Shared AudioContext for low-latency UI sounds (click, keypress)
+let _ctx: AudioContext | null = null;
+
+function getCtx(): AudioContext {
+  if (!_ctx || _ctx.state === 'closed') _ctx = new AudioContext();
+  if (_ctx.state === 'suspended') _ctx.resume().catch(() => {});
+  return _ctx;
+}
+
+export function playClick() {
+  try {
+    const ctx = getCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.08, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.035);
+  } catch { /* silently ignore */ }
+}
+
+export function playKeyPress() {
+  try {
+    const ctx = getCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 660;
+    gain.gain.setValueAtTime(0.05, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.02);
+  } catch { /* silently ignore */ }
+}
+
 function createNote(
   ctx: AudioContext,
   freq: number,
