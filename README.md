@@ -8,7 +8,7 @@ A retro terminal phishing awareness game and research platform studying human de
 
 ## What it is
 
-Retro Phish presents emails and SMS messages in a retro terminal interface. All cards are AI-generated, both phishing and legitimate. Players classify each message, bet confidence on their answer, and earn XP based on accuracy and streak. Forensic signals are revealed after each answer so players can see exactly what they missed.
+Retro Phish presents emails in a retro terminal interface. All cards are AI-generated, both phishing and legitimate. Players classify each message, bet confidence on their answer, and earn XP based on accuracy and streak. Forensic signals are revealed after each answer so players can see exactly what they missed.
 
 The game has two modes. **Freeplay** is a standard training mode. **Research Mode** is a structured game mode that collects pseudonymous answer data contributing to a published study on which phishing techniques humans miss most when AI eliminates linguistic quality as a detection signal.
 
@@ -24,7 +24,7 @@ The game has two modes. **Freeplay** is a standard training mode. **Research Mod
 
 `urgency` · `authority-impersonation` · `credential-harvest` · `hyper-personalization` · `pretexting` · `fluent-prose`
 
-Each technique has 60 cards: 20 easy, 20 medium, 20 hard. Legitimate cards cover three categories: transactional (70), marketing (60), workplace (60). The dataset is frozen at v1 once 550 approved cards are reached.
+Each technique has 60 cards: 15 easy, 15 medium, 15 hard, 15 extreme. Legitimate cards cover three categories: transactional (70), marketing (60), workplace (60). The dataset is frozen at v1 once 550 approved cards are reached.
 
 **Research Mode deck structure:**
 
@@ -45,7 +45,7 @@ Research Mode requires a player account. Answers are linked to a pseudonymous pl
 
 **Freeplay:** 10 cards per round drawn randomly from the full dataset. Open to all players, no account required.
 
-**Research Mode:** Stratified deck of 10 cards (see above). Requires an account. Contributes to the study dataset.
+**Research Mode:** 10 cards drawn at random from the full dataset (see above). Requires an account. Contributes to the study dataset.
 
 **Core loop:**
 - Classify each message as phishing or legitimate

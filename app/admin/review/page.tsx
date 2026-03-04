@@ -142,6 +142,7 @@ export default function ReviewPage() {
             processed_subject: processedSubject || null,
             processed_body: processedBody,
             suggested_technique: technique,
+            suggested_secondary_technique: card.suggested_secondary_technique ?? null,
             suggested_difficulty: difficulty,
             suggested_highlights: card.suggested_highlights ?? [],
             suggested_clues: card.suggested_clues ?? [],

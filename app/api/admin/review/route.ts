@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
       word_count: wordCount,
       char_count: charCount,
       technique: reviewedFields.suggested_technique,
+      secondary_technique: reviewedFields.suggested_secondary_technique ?? null,
       source_corpus: reviewedFields.source_corpus,
       highlights: reviewedFields.suggested_highlights,
       clues: reviewedFields.suggested_clues,
