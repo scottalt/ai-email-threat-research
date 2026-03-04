@@ -25,9 +25,9 @@ export function AuthFlow({ onSignIn, onVerifyCode, onCancel }: AuthFlowProps) {
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = code.trim();
-    if (trimmed.length !== 6 || !/^\d+$/.test(trimmed)) {
-      setErrorMsg('Enter the 6-digit code from your email');
+    const trimmed = code.trim().toUpperCase();
+    if (trimmed.length !== 6) {
+      setErrorMsg('Enter the 6-character code shown after clicking the link');
       return;
     }
     setState('verifying');
@@ -44,20 +44,19 @@ export function AuthFlow({ onSignIn, onVerifyCode, onCancel }: AuthFlowProps) {
           <button onClick={onCancel} className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28]">✕</button>
         </div>
         <form onSubmit={handleVerify} className="px-3 py-3 space-y-3">
-          <div className="text-[#00aa28] text-xs font-mono">Link sent to {email}.</div>
+          <div className="text-[#00aa28] text-xs font-mono">Link sent to {email}</div>
           <div className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
-            Check your email for a 6-digit code and enter it below. On iOS, use the code — don&apos;t tap the link.
+            Click the link in your email. A 6-character code will appear — enter it here to sign into the app.
           </div>
           <input
             type="text"
-            inputMode="numeric"
-            pattern="\d{6}"
+            inputMode="text"
             maxLength={6}
             value={code}
-            onChange={(e) => { setCode(e.target.value.replace(/\D/g, '')); setErrorMsg(''); }}
-            placeholder="000000"
+            onChange={(e) => { setCode(e.target.value.toUpperCase()); setErrorMsg(''); }}
+            placeholder="ABC123"
             autoFocus
-            className="w-full bg-transparent border border-[rgba(0,255,65,0.25)] px-2 py-1.5 text-[#00ff41] font-mono text-sm tracking-[0.3em] placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.6)] text-center"
+            className="w-full bg-transparent border border-[rgba(0,255,65,0.25)] px-2 py-1.5 text-[#00ff41] font-mono text-sm tracking-[0.3em] placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.6)] text-center uppercase"
           />
           {errorMsg && <div className="text-[#ff3333] text-[10px] font-mono">{errorMsg}</div>}
           <button
@@ -87,7 +86,7 @@ export function AuthFlow({ onSignIn, onVerifyCode, onCancel }: AuthFlowProps) {
       </div>
       <form onSubmit={handleSubmit} className="px-3 py-3 space-y-3">
         <div className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
-          No password. We&apos;ll send a code to your email. Your XP persists across devices.
+          No password. We&apos;ll email you a sign-in link. Your XP persists across devices.
         </div>
         <input
           type="email"
@@ -104,7 +103,7 @@ export function AuthFlow({ onSignIn, onVerifyCode, onCancel }: AuthFlowProps) {
           disabled={state === 'loading'}
           className="w-full py-2 term-border text-[#00ff41] font-mono font-bold text-xs tracking-widest hover:bg-[rgba(0,255,65,0.05)] disabled:opacity-40"
         >
-          {state === 'loading' ? 'SENDING...' : '[ SEND CODE ]'}
+          {state === 'loading' ? 'SENDING...' : '[ SEND LINK ]'}
         </button>
       </form>
     </div>
