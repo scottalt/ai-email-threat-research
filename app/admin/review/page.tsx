@@ -48,6 +48,13 @@ const TECHNIQUES = [
   'fluent-prose',
 ];
 
+// Rotation pattern: cycles through all 6 techniques, legit slot every 3rd
+// null = legit card
+const AUTO_ROTATION: (string | null)[] = [
+  'urgency', 'authority-impersonation', 'credential-harvest', null,
+  'hyper-personalization', 'pretexting', 'fluent-prose', null,
+];
+
 export default function ReviewPage() {
   const [card, setCard] = useState<StagingCard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +63,7 @@ export default function ReviewPage() {
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [approvedCount, setApprovedCount] = useState<number | null>(null);
   const cardLoadTime = useRef<number>(Date.now());
+  const rotationIdx = useRef(0);
 
   // Queue filters
   const [filterTechnique, setFilterTechnique] = useState('');
@@ -95,11 +103,23 @@ export default function ReviewPage() {
     setLoading(true);
     setDone(false);
     try {
+      const isFiltered = !!(filterTechnique || filterDifficulty || filterPhishing || filterAttachment);
       const params = new URLSearchParams();
-      if (filterTechnique) params.set('technique', filterTechnique);
-      if (filterDifficulty) params.set('difficulty', filterDifficulty);
-      if (filterPhishing) params.set('phishing', filterPhishing);
-      if (filterAttachment) params.set('attachment', filterAttachment);
+      if (isFiltered) {
+        if (filterTechnique) params.set('technique', filterTechnique);
+        if (filterDifficulty) params.set('difficulty', filterDifficulty);
+        if (filterPhishing) params.set('phishing', filterPhishing);
+        if (filterAttachment) params.set('attachment', filterAttachment);
+      } else {
+        // Auto-rotation: cycle through techniques with occasional legit slot
+        const slot = AUTO_ROTATION[rotationIdx.current % AUTO_ROTATION.length];
+        if (slot === null) {
+          params.set('phishing', 'false');
+        } else {
+          params.set('phishing', 'true');
+          params.set('technique', slot);
+        }
+      }
       const qs = params.toString();
       const res = await fetch('/api/admin/review' + (qs ? '?' + qs : ''));
       const { card: next, pendingCount: count, approvedCount: approved } = await res.json();
@@ -148,6 +168,9 @@ export default function ReviewPage() {
     if (!card || submitting) return;
     setSubmitting(true);
     const reviewTimeMs = Date.now() - cardLoadTime.current;
+    // Advance rotation for next card (only when no manual filters active)
+    const isFiltered = !!(filterTechnique || filterDifficulty || filterPhishing || filterAttachment);
+    if (!isFiltered) rotationIdx.current = (rotationIdx.current + 1) % AUTO_ROTATION.length;
 
     try {
       const res = await fetch('/api/admin/review', {
@@ -234,6 +257,9 @@ export default function ReviewPage() {
             <span className="text-[#001a06]"> · </span>REVIEW_QUEUE
             {pendingCount !== null && (
               <span className="text-[#003a0e]"> · {pendingCount}{activeFilters > 0 ? ' MATCHING' : ' PENDING'}</span>
+            )}
+            {activeFilters === 0 && (
+              <span className="text-[#002a0a]"> · {AUTO_ROTATION[rotationIdx.current % AUTO_ROTATION.length] ?? 'LEGIT'}</span>
             )}
             {approvedCount !== null && (
               <span className="text-[#003a0e]"> · {approvedCount}<span className="text-[#002a0a]">/550</span> APPROVED</span>
