@@ -39,6 +39,15 @@ interface StagingCard {
   content_flag_reason: string | null;
 }
 
+const TECHNIQUES = [
+  'urgency',
+  'authority-impersonation',
+  'credential-harvest',
+  'hyper-personalization',
+  'pretexting',
+  'fluent-prose',
+];
+
 export default function ReviewPage() {
   const [card, setCard] = useState<StagingCard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +56,12 @@ export default function ReviewPage() {
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [approvedCount, setApprovedCount] = useState<number | null>(null);
   const cardLoadTime = useRef<number>(Date.now());
+
+  // Queue filters
+  const [filterTechnique, setFilterTechnique] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState('');
+  const [filterPhishing, setFilterPhishing] = useState('');    // '' | 'true' | 'false'
+  const [filterAttachment, setFilterAttachment] = useState(''); // '' | 'true' | 'false'
 
   // Editable fields — pre-filled from AI suggestions
   const [processedFrom, setProcessedFrom] = useState('');
@@ -80,7 +95,13 @@ export default function ReviewPage() {
     setLoading(true);
     setDone(false);
     try {
-      const res = await fetch('/api/admin/review');
+      const params = new URLSearchParams();
+      if (filterTechnique) params.set('technique', filterTechnique);
+      if (filterDifficulty) params.set('difficulty', filterDifficulty);
+      if (filterPhishing) params.set('phishing', filterPhishing);
+      if (filterAttachment) params.set('attachment', filterAttachment);
+      const qs = params.toString();
+      const res = await fetch('/api/admin/review' + (qs ? '?' + qs : ''));
       const { card: next, pendingCount: count, approvedCount: approved } = await res.json();
       setPendingCount(count ?? null);
       setApprovedCount(approved ?? null);
@@ -104,7 +125,7 @@ export default function ReviewPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterTechnique, filterDifficulty, filterPhishing, filterAttachment]);
 
   useEffect(() => { fetchNext(); }, [fetchNext]);
 
@@ -176,14 +197,7 @@ export default function ReviewPage() {
     }
   }
 
-  const TECHNIQUES = [
-    'urgency',
-    'authority-impersonation',
-    'credential-harvest',
-    'hyper-personalization',
-    'pretexting',
-    'fluent-prose',
-  ];
+  const activeFilters = [filterTechnique, filterDifficulty, filterPhishing, filterAttachment].filter(Boolean).length;
 
   if (loading) return (
     <div className="min-h-screen bg-[#060c06] flex items-center justify-center">
@@ -193,9 +207,17 @@ export default function ReviewPage() {
 
   if (done) return (
     <div className="min-h-screen bg-[#060c06] flex items-center justify-center">
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-3">
         <div className="text-[#00ff41] font-mono text-sm glow">QUEUE EMPTY</div>
-        <div className="text-[#00aa28] font-mono text-xs">No pending cards to review.</div>
+        <div className="text-[#00aa28] font-mono text-xs">No pending cards match the current filters.</div>
+        {activeFilters > 0 && (
+          <button
+            onClick={() => { setFilterTechnique(''); setFilterDifficulty(''); setFilterPhishing(''); setFilterAttachment(''); }}
+            className="text-[#ffaa00] font-mono text-xs hover:text-[#ffcc44]"
+          >
+            [ CLEAR FILTERS ]
+          </button>
+        )}
       </div>
     </div>
   );
@@ -211,13 +233,66 @@ export default function ReviewPage() {
             <Link href="/admin" className="text-[#003a0e] hover:text-[#00aa28] transition-colors">← ADMIN</Link>
             <span className="text-[#001a06]"> · </span>REVIEW_QUEUE
             {pendingCount !== null && (
-              <span className="text-[#003a0e]"> · {pendingCount} PENDING</span>
+              <span className="text-[#003a0e]"> · {pendingCount}{activeFilters > 0 ? ' MATCHING' : ' PENDING'}</span>
             )}
             {approvedCount !== null && (
               <span className="text-[#003a0e]"> · {approvedCount}<span className="text-[#002a0a]">/550</span> APPROVED</span>
             )}
           </span>
           <span className="text-[#003a0e]">A=approve · R=reject · N=needs_review</span>
+        </div>
+
+        {/* Filter bar */}
+        <div className="flex flex-wrap gap-2 text-xs font-mono">
+          <select
+            value={filterPhishing}
+            onChange={(e) => setFilterPhishing(e.target.value)}
+            className="bg-[#060c06] border border-[rgba(0,255,65,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none"
+          >
+            <option value="">ALL TYPES</option>
+            <option value="true">PHISHING ONLY</option>
+            <option value="false">LEGIT ONLY</option>
+          </select>
+
+          <select
+            value={filterTechnique}
+            onChange={(e) => setFilterTechnique(e.target.value)}
+            className="bg-[#060c06] border border-[rgba(0,255,65,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none"
+          >
+            <option value="">ALL TECHNIQUES</option>
+            {TECHNIQUES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+
+          <select
+            value={filterDifficulty}
+            onChange={(e) => setFilterDifficulty(e.target.value)}
+            className="bg-[#060c06] border border-[rgba(0,255,65,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none"
+          >
+            <option value="">ALL DIFFICULTIES</option>
+            <option value="easy">EASY</option>
+            <option value="medium">MEDIUM</option>
+            <option value="hard">HARD</option>
+            <option value="extreme">EXTREME</option>
+          </select>
+
+          <select
+            value={filterAttachment}
+            onChange={(e) => setFilterAttachment(e.target.value)}
+            className="bg-[#060c06] border border-[rgba(0,255,65,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none"
+          >
+            <option value="">ALL (ATTACH)</option>
+            <option value="true">HAS ATTACHMENT</option>
+            <option value="false">NO ATTACHMENT</option>
+          </select>
+
+          {activeFilters > 0 && (
+            <button
+              onClick={() => { setFilterTechnique(''); setFilterDifficulty(''); setFilterPhishing(''); setFilterAttachment(''); }}
+              className="px-2 py-1.5 border border-[rgba(255,170,0,0.3)] text-[#ffaa00] hover:bg-[rgba(255,170,0,0.06)] transition-colors"
+            >
+              CLEAR
+            </button>
+          )}
         </div>
 
         {card.content_flagged && (

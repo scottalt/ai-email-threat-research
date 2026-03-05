@@ -1,29 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 
-// GET — fetch next pending card for review (random order) + approved count
-export async function GET() {
+// GET — fetch next pending card for review (random within filtered set) + counts
+// Filters: ?technique=urgency&difficulty=hard&phishing=true&attachment=true
+export async function GET(req: NextRequest) {
   const supabase = getSupabaseAdminClient();
+  const { searchParams } = new URL(req.url);
 
-  const [{ count: pendingCount }, { count: approvedCount }] = await Promise.all([
-    supabase.from('cards_staging').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+  const filterTechnique = searchParams.get('technique');
+  const filterDifficulty = searchParams.get('difficulty');
+  const filterPhishing = searchParams.get('phishing'); // 'true' | 'false' | null
+  const filterAttachment = searchParams.get('attachment'); // 'true' | 'false' | null
+
+  // Build a filtered count query
+  let countQuery = supabase
+    .from('cards_staging')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+  if (filterTechnique) countQuery = countQuery.eq('suggested_technique', filterTechnique);
+  if (filterDifficulty) countQuery = countQuery.eq('suggested_difficulty', filterDifficulty);
+  if (filterPhishing === 'true') countQuery = countQuery.eq('is_phishing', true);
+  if (filterPhishing === 'false') countQuery = countQuery.eq('is_phishing', false);
+  if (filterAttachment === 'true') countQuery = countQuery.not('suggested_attachment_name', 'is', null);
+  if (filterAttachment === 'false') countQuery = countQuery.is('suggested_attachment_name', null);
+
+  const [{ count: filteredCount }, { count: approvedCount }] = await Promise.all([
+    countQuery,
     supabase.from('cards_real').select('*', { count: 'exact', head: true }),
   ]);
 
-  if (!pendingCount) return NextResponse.json({ card: null, pendingCount: 0, approvedCount: approvedCount ?? 0 });
+  if (!filteredCount) return NextResponse.json({ card: null, pendingCount: 0, approvedCount: approvedCount ?? 0 });
 
-  const randomOffset = Math.floor(Math.random() * pendingCount);
+  const randomOffset = Math.floor(Math.random() * filteredCount);
 
-  const { data, error } = await supabase
+  // Fetch a random card from the filtered set
+  let cardQuery = supabase
     .from('cards_staging')
     .select('*')
-    .eq('status', 'pending')
-    .range(randomOffset, randomOffset)
-    .single();
+    .eq('status', 'pending');
+  if (filterTechnique) cardQuery = cardQuery.eq('suggested_technique', filterTechnique);
+  if (filterDifficulty) cardQuery = cardQuery.eq('suggested_difficulty', filterDifficulty);
+  if (filterPhishing === 'true') cardQuery = cardQuery.eq('is_phishing', true);
+  if (filterPhishing === 'false') cardQuery = cardQuery.eq('is_phishing', false);
+  if (filterAttachment === 'true') cardQuery = cardQuery.not('suggested_attachment_name', 'is', null);
+  if (filterAttachment === 'false') cardQuery = cardQuery.is('suggested_attachment_name', null);
+
+  const { data, error } = await cardQuery.range(randomOffset, randomOffset).single();
 
   if (error) return NextResponse.json({ card: null, pendingCount: 0, approvedCount: approvedCount ?? 0 });
 
-  return NextResponse.json({ card: data, pendingCount, approvedCount: approvedCount ?? 0 });
+  return NextResponse.json({ card: data, pendingCount: filteredCount, approvedCount: approvedCount ?? 0 });
 }
 
 // POST — approve, reject, or mark needs_review
