@@ -1,57 +1,46 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getSupabaseAdminClient } from '@/lib/supabase';
 
-const TECHNIQUES = ['urgency', 'authority-impersonation', 'credential-harvest', 'hyper-personalization', 'pretexting', 'fluent-prose'];
-const LEGIT_CATEGORIES = ['transactional', 'marketing', 'workplace'];
-
-async function getStats() {
-  try {
-    const supabase = getSupabaseAdminClient();
-
-    const [pending, approved, rejected, needsReview, real, breakdownResult] = await Promise.all([
-      supabase.from('cards_staging').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('cards_staging').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
-      supabase.from('cards_staging').select('id', { count: 'exact', head: true }).eq('status', 'rejected'),
-      supabase.from('cards_staging').select('id', { count: 'exact', head: true }).eq('status', 'needs_review'),
-      supabase.from('cards_real').select('id', { count: 'exact', head: true }),
-      supabase.from('cards_staging').select('suggested_technique, suggested_difficulty, is_phishing').eq('status', 'pending'),
-    ]);
-
-    const phishingBreakdown: Record<string, Record<string, number>> = {};
-    const legitBreakdown: Record<string, number> = {};
-    for (const t of TECHNIQUES) phishingBreakdown[t] = { easy: 0, medium: 0, hard: 0 };
-    for (const c of LEGIT_CATEGORIES) legitBreakdown[c] = 0;
-
-    for (const row of (breakdownResult.data ?? [])) {
-      if (row.is_phishing && row.suggested_technique && row.suggested_difficulty) {
-        if (phishingBreakdown[row.suggested_technique]?.[row.suggested_difficulty] !== undefined) {
-          phishingBreakdown[row.suggested_technique][row.suggested_difficulty]++;
-        }
-      } else if (!row.is_phishing) {
-        if (row.suggested_technique && row.suggested_technique in legitBreakdown) {
-          legitBreakdown[row.suggested_technique]++;
-        }
-      }
-    }
-
-    const legitTotal = (breakdownResult.data ?? []).filter(r => !r.is_phishing).length;
-
-    return {
-      pending: pending.count ?? 0,
-      approved: approved.count ?? 0,
-      rejected: rejected.count ?? 0,
-      needsReview: needsReview.count ?? 0,
-      liveCards: real.count ?? 0,
-      targetCards: 550,
-      pendingBreakdown: { phishing: phishingBreakdown, legit: legitBreakdown, legitTotal },
-    };
-  } catch {
-    return null;
-  }
+interface Stats {
+  pending: number;
+  approved: number;
+  rejected: number;
+  needsReview: number;
+  liveCards: number;
+  targetCards: number;
+  pendingBreakdown: {
+    phishing: Record<string, Record<string, number>>;
+    legit: Record<string, number>;
+    legitTotal: number;
+  };
 }
 
-export default async function AdminPage() {
-  const stats = await getStats();
+const POLL_INTERVAL = 10000; // 10 seconds
+
+export default function AdminPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  async function fetchStats() {
+    try {
+      const res = await fetch('/api/admin/stats');
+      if (res.ok) {
+        setStats(await res.json());
+        setLastUpdated(new Date());
+      }
+    } catch {
+      // silently fail
+    }
+  }
+
+  useEffect(() => {
+    fetchStats();
+    const interval = setInterval(fetchStats, POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
+
   const progress = stats ? Math.round((stats.liveCards / stats.targetCards) * 100) : 0;
 
   return (
@@ -60,7 +49,14 @@ export default async function AdminPage() {
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
             <span className="text-[#00aa28] text-xs tracking-widest">ADMIN_DASHBOARD</span>
-            <Link href="/" className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28]">← BACK</Link>
+            <div className="flex items-center gap-3">
+              {lastUpdated && (
+                <span className="text-[#002a0a] text-[10px] font-mono">
+                  {lastUpdated.toLocaleTimeString()}
+                </span>
+              )}
+              <Link href="/" className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28]">← BACK</Link>
+            </div>
           </div>
           <div className="px-3 py-4 space-y-4">
             {stats ? (
@@ -143,7 +139,7 @@ export default async function AdminPage() {
               </>
             ) : (
               <div className="text-[#00aa28] text-xs font-mono text-center py-4">
-                SUPABASE NOT CONNECTED — set env vars to enable
+                LOADING...
               </div>
             )}
           </div>

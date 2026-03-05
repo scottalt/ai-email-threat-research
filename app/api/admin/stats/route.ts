@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 
 const TECHNIQUES = ['urgency', 'authority-impersonation', 'credential-harvest', 'hyper-personalization', 'pretexting', 'fluent-prose'];
-const DIFFICULTIES = ['easy', 'medium', 'hard'];
 const LEGIT_CATEGORIES = ['transactional', 'marketing', 'workplace'];
 
 export async function GET() {
@@ -28,7 +27,8 @@ export async function GET() {
       legitBreakdown[c] = 0;
     }
 
-    for (const row of (breakdownResult.data ?? [])) {
+    const rows = breakdownResult.data ?? [];
+    for (const row of rows) {
       if (row.is_phishing && row.suggested_technique && row.suggested_difficulty) {
         if (phishingBreakdown[row.suggested_technique] && row.suggested_difficulty in phishingBreakdown[row.suggested_technique]) {
           phishingBreakdown[row.suggested_technique][row.suggested_difficulty]++;
@@ -40,6 +40,8 @@ export async function GET() {
       }
     }
 
+    const legitTotal = rows.filter(r => !r.is_phishing).length;
+
     return NextResponse.json({
       pending: pending.count ?? 0,
       approved: approved.count ?? 0,
@@ -47,10 +49,7 @@ export async function GET() {
       needsReview: needsReview.count ?? 0,
       liveCards: real.count ?? 0,
       targetCards: 550,
-      pendingBreakdown: {
-        phishing: phishingBreakdown,
-        legit: legitBreakdown,
-      },
+      pendingBreakdown: { phishing: phishingBreakdown, legit: legitBreakdown, legitTotal },
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
