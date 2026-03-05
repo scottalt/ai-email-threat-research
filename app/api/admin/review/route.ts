@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
 
     const isPhishing = Boolean(reviewedFields.is_phishing);
     const validDifficulties = ['easy', 'medium', 'hard', 'extreme'];
-    const difficulty = validDifficulties.includes(reviewedFields.suggested_difficulty)
-      ? reviewedFields.suggested_difficulty : 'easy';
+    const difficulty = isPhishing && validDifficulties.includes(reviewedFields.suggested_difficulty)
+      ? reviewedFields.suggested_difficulty : null;
 
     const authStatus = reviewedFields.auth_status ??
       (!isPhishing ? 'verified'
@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
       reply_to: reviewedFields.reply_to ?? null,
       attachment_name: reviewedFields.attachment_name ?? null,
       sent_at: reviewedFields.suggested_sent_at ?? null,
+      dataset_version: 'v1',
     });
 
     if (realError) return NextResponse.json({ error: realError.message }, { status: 500 });

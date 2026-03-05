@@ -27,10 +27,14 @@ async function getStats() {
         if (phishingBreakdown[row.suggested_technique]?.[row.suggested_difficulty] !== undefined) {
           phishingBreakdown[row.suggested_technique][row.suggested_difficulty]++;
         }
-      } else if (!row.is_phishing && row.suggested_technique && row.suggested_technique in legitBreakdown) {
-        legitBreakdown[row.suggested_technique]++;
+      } else if (!row.is_phishing) {
+        if (row.suggested_technique && row.suggested_technique in legitBreakdown) {
+          legitBreakdown[row.suggested_technique]++;
+        }
       }
     }
+
+    const legitTotal = (breakdownResult.data ?? []).filter(r => !r.is_phishing).length;
 
     return {
       pending: pending.count ?? 0,
@@ -39,7 +43,7 @@ async function getStats() {
       needsReview: needsReview.count ?? 0,
       liveCards: real.count ?? 0,
       targetCards: 550,
-      pendingBreakdown: { phishing: phishingBreakdown, legit: legitBreakdown },
+      pendingBreakdown: { phishing: phishingBreakdown, legit: legitBreakdown, legitTotal },
     };
   } catch {
     return null;
@@ -128,21 +132,11 @@ export default async function AdminPage() {
                 {stats.pendingBreakdown && (
                   <div className="space-y-2">
                     <div className="text-[#003a0e] text-xs font-mono tracking-widest">PENDING QUEUE — LEGIT</div>
-                    <div className="flex gap-3">
-                      {[
-                        { label: 'TRANSACTIONAL', key: 'transactional', target: 70 },
-                        { label: 'MARKETING', key: 'marketing', target: 60 },
-                        { label: 'WORKPLACE', key: 'workplace', target: 60 },
-                      ].map(({ label, key, target }) => {
-                        const count = stats.pendingBreakdown.legit[key] ?? 0;
-                        const color = count === 0 ? 'text-[#003a0e]' : count >= target ? 'text-[#00ff41]' : 'text-[#ffaa00]';
-                        return (
-                          <div key={key} className="term-border px-3 py-2 flex-1 text-center">
-                            <div className={`text-xl font-black font-mono ${color}`}>{count}</div>
-                            <div className="text-[10px] font-mono text-[#003a0e] mt-0.5">{label}</div>
-                          </div>
-                        );
-                      })}
+                    <div className="term-border px-3 py-2 flex items-center justify-between">
+                      <span className="text-[#003a0e] text-xs font-mono">TOTAL PENDING</span>
+                      <span className={`text-xl font-black font-mono ${stats.pendingBreakdown.legitTotal === 0 ? 'text-[#003a0e]' : 'text-[#ffaa00]'}`}>
+                        {stats.pendingBreakdown.legitTotal}
+                      </span>
                     </div>
                   </div>
                 )}
