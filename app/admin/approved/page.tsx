@@ -20,7 +20,7 @@ interface ApprovedCard {
   card_id: string;
   is_phishing: boolean;
   technique: string | null;
-  difficulty: string;
+  difficulty: string | null;
   auth_status: string | null;
   from_address: string;
   subject: string | null;
@@ -75,7 +75,7 @@ export default function ApprovedPage() {
     setEditSubject(card.subject ?? '');
     setEditBody(card.body);
     setEditTechnique(card.technique ?? '');
-    setEditDifficulty(card.difficulty);
+    setEditDifficulty(card.difficulty ?? '');
     setEditIsPhishing(card.is_phishing);
     setEditAuthStatus((card.auth_status ?? 'unverified') as 'verified' | 'unverified' | 'fail');
     setEditExplanation(card.explanation);
@@ -201,8 +201,8 @@ export default function ApprovedPage() {
                   <span className={`shrink-0 font-black ${card.is_phishing ? 'text-[#ff3333]' : 'text-[#00ff41]'}`}>
                     {card.is_phishing ? 'PHISH' : 'LEGIT'}
                   </span>
-                  <span className={`shrink-0 w-16 ${difficultyColor[card.difficulty] ?? 'text-[#00aa28]'}`}>
-                    {card.difficulty.toUpperCase()}
+                  <span className={`shrink-0 w-16 ${difficultyColor[card.difficulty] ?? 'text-[#003a0e]'}`}>
+                    {card.difficulty?.toUpperCase() ?? '—'}
                   </span>
                   <span className="shrink-0 w-36 text-[#00aa28] truncate">
                     {card.technique ?? '—'}
