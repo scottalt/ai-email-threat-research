@@ -62,6 +62,10 @@ export default function ReviewPage() {
   const [done, setDone] = useState(false);
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [approvedCount, setApprovedCount] = useState<number | null>(null);
+  const [approvedBreakdown, setApprovedBreakdown] = useState<{
+    phishing: Record<string, Record<string, number>>;
+    legitCount: number;
+  } | null>(null);
   const cardLoadTime = useRef<number>(Date.now());
   const rotationIdx = useRef(0);
 
@@ -98,6 +102,17 @@ export default function ReviewPage() {
     if (/spreadsheet|\.xlsx/.test(b)) return 'Report.xlsx';
     return 'Document.pdf';
   }
+
+  // Fetch approved breakdown once on mount (refresh after each action)
+  const fetchBreakdown = useCallback(async () => {
+    const res = await fetch('/api/admin/approved-breakdown');
+    if (res.ok) {
+      const data = await res.json();
+      setApprovedBreakdown(data);
+    }
+  }, []);
+
+  useEffect(() => { fetchBreakdown(); }, [fetchBreakdown]);
 
   const fetchNext = useCallback(async () => {
     setLoading(true);
@@ -212,6 +227,7 @@ export default function ReviewPage() {
       }
 
       fetchNext();
+      fetchBreakdown();
     } catch (err) {
       console.error('handleAction threw:', err);
       alert(`Action failed: ${String(err)}`);
@@ -409,7 +425,33 @@ export default function ReviewPage() {
         <div className="grid grid-cols-2 gap-4">
           {/* Classification */}
           <div className="term-border bg-[#060c06] px-3 py-3 space-y-3">
-            <div className="text-[#00aa28] text-xs font-mono tracking-widest">CLASSIFICATION</div>
+            <div className="flex items-center justify-between">
+              <div className="text-[#00aa28] text-xs font-mono tracking-widest">CLASSIFICATION</div>
+              {approvedBreakdown && (() => {
+                const PHISHING_TARGET = 15;
+                const LEGIT_TARGET = 190;
+                let slotCount: number;
+                let slotTarget: number;
+                let slotLabel: string;
+                if (isPhishing && technique && difficulty) {
+                  slotCount = approvedBreakdown.phishing[technique]?.[difficulty] ?? 0;
+                  slotTarget = PHISHING_TARGET;
+                  slotLabel = `${technique}/${difficulty}`;
+                } else if (!isPhishing) {
+                  slotCount = approvedBreakdown.legitCount;
+                  slotTarget = LEGIT_TARGET;
+                  slotLabel = 'legit';
+                } else {
+                  return null;
+                }
+                const color = slotCount >= slotTarget ? 'text-[#00ff41]' : slotCount >= slotTarget * 0.75 ? 'text-[#ffaa00]' : 'text-[#003a0e]';
+                return (
+                  <span className={`text-[10px] font-mono ${color}`}>
+                    {slotLabel}: {slotCount}/{slotTarget}
+                  </span>
+                );
+              })()}
+            </div>
 
             <div className="flex gap-2">
               {['phishing', 'legit'].map((v) => (
