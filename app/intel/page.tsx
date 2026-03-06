@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getSupabaseAdminClient } from '@/lib/supabase';
 
 interface IntelData {
   totalAnswers: number;
@@ -38,13 +39,101 @@ interface IntelData {
   medianTimeByTechnique?: { technique: string; medianMs: number; sample: number }[];
 }
 
+function median(nums: number[]): number {
+  const sorted = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
 async function getIntel(): Promise<IntelData | null> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'}/api/intel`, {
-      next: { revalidate: 300 },
+    const supabase = getSupabaseAdminClient();
+    const { data: answers } = await supabase
+      .from('answers')
+      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url')
+      .eq('game_mode', 'research');
+
+    if (!answers || answers.length === 0) {
+      return { totalAnswers: 0, insufficient: true, overallBypassRate: 0, byTechnique: [], fluency: { highFluencyBypassRate: null, lowFluencyBypassRate: null, highFluencySample: 0, lowFluencySample: 0 }, genai: { genaiBypassRate: null, traditionalBypassRate: null, genaiSample: 0, traditionalSample: 0 }, byConfidence: [] };
+    }
+
+    const total = answers.length;
+    const phishingAnswers = answers.filter((a) => a.is_phishing);
+    const legitAnswers = answers.filter((a) => !a.is_phishing);
+    const overallBypassRate = phishingAnswers.length ? Math.round((phishingAnswers.filter((a) => !a.correct).length / phishingAnswers.length) * 100) : 0;
+    const falsePositiveRate = legitAnswers.length ? Math.round((legitAnswers.filter((a) => !a.correct).length / legitAnswers.length) * 100) : 0;
+
+    const withHeaders = answers.filter((a) => a.headers_opened);
+    const withUrl = answers.filter((a) => a.url_inspected);
+    const headersOpenedAccuracy = withHeaders.length ? Math.round((withHeaders.filter((a) => a.correct).length / withHeaders.length) * 100) : null;
+    const headersNotOpenedAccuracy = (total - withHeaders.length) ? Math.round((answers.filter((a) => !a.headers_opened && a.correct).length / (total - withHeaders.length)) * 100) : null;
+    const urlInspectedAccuracy = withUrl.length ? Math.round((withUrl.filter((a) => a.correct).length / withUrl.length) * 100) : null;
+    const urlNotInspectedAccuracy = (total - withUrl.length) ? Math.round((answers.filter((a) => !a.url_inspected && a.correct).length / (total - withUrl.length)) * 100) : null;
+
+    const authTrapAnswers = answers.filter((a) => a.is_phishing && a.auth_status === 'verified');
+    const authTrapBypassRate = authTrapAnswers.length ? Math.round((authTrapAnswers.filter((a) => !a.correct).length / authTrapAnswers.length) * 100) : null;
+
+    const techniqueTimeMap: Record<string, number[]> = {};
+    for (const a of answers) {
+      if (!a.technique || a.time_from_render_ms == null) continue;
+      if (!techniqueTimeMap[a.technique]) techniqueTimeMap[a.technique] = [];
+      techniqueTimeMap[a.technique].push(a.time_from_render_ms);
+    }
+    const medianTimeByTechnique = Object.entries(techniqueTimeMap)
+      .filter(([, times]) => times.length >= 10)
+      .map(([technique, times]) => ({ technique, medianMs: median(times), sample: times.length }))
+      .sort((a, b) => a.medianMs - b.medianMs);
+
+    const techniqueMap: Record<string, { total: number; bypassed: number }> = {};
+    for (const a of answers) {
+      if (!a.technique || !a.is_phishing) continue;
+      if (!techniqueMap[a.technique]) techniqueMap[a.technique] = { total: 0, bypassed: 0 };
+      techniqueMap[a.technique].total++;
+      if (!a.correct) techniqueMap[a.technique].bypassed++;
+    }
+    const byTechnique = Object.entries(techniqueMap)
+      .filter(([, v]) => v.total >= 10)
+      .map(([technique, v]) => ({ technique, total: v.total, bypassRate: Math.round((v.bypassed / v.total) * 100) }))
+      .sort((a, b) => b.bypassRate - a.bypassRate);
+
+    const highFluency = answers.filter((a) => a.prose_fluency !== null && a.prose_fluency >= 4);
+    const lowFluency = answers.filter((a) => a.prose_fluency !== null && a.prose_fluency <= 2);
+    const highFluencyBypassRate = highFluency.length ? Math.round((highFluency.filter((a) => !a.correct).length / highFluency.length) * 100) : null;
+    const lowFluencyBypassRate = lowFluency.length ? Math.round((lowFluency.filter((a) => !a.correct).length / lowFluency.length) * 100) : null;
+
+    const genaiAnswers = answers.filter((a) => a.is_genai_suspected && ['medium', 'high'].includes(a.genai_confidence ?? ''));
+    const nonGenaiAnswers = answers.filter((a) => a.is_genai_suspected === false);
+    const genaiBypassRate = genaiAnswers.length ? Math.round((genaiAnswers.filter((a) => !a.correct).length / genaiAnswers.length) * 100) : null;
+    const traditionalBypassRate = nonGenaiAnswers.length ? Math.round((nonGenaiAnswers.filter((a) => !a.correct).length / nonGenaiAnswers.length) * 100) : null;
+
+    const byConfidence = (['guessing', 'likely', 'certain'] as const).map((conf) => {
+      const subset = answers.filter((a) => a.confidence === conf);
+      return { confidence: conf, total: subset.length, accuracyRate: subset.length ? Math.round((subset.filter((a) => a.correct).length / subset.length) * 100) : 0 };
     });
-    if (!res.ok) return null;
-    return res.json();
+
+    return {
+      totalAnswers: total,
+      phishingAnswers: phishingAnswers.length,
+      legitAnswers: legitAnswers.length,
+      overallBypassRate,
+      falsePositiveRate,
+      byTechnique,
+      fluency: { highFluencyBypassRate, lowFluencyBypassRate, highFluencySample: highFluency.length, lowFluencySample: lowFluency.length },
+      genai: { genaiBypassRate, traditionalBypassRate, genaiSample: genaiAnswers.length, traditionalSample: nonGenaiAnswers.length },
+      byConfidence,
+      toolUsage: {
+        headersOpenedPct: Math.round((withHeaders.length / total) * 100),
+        urlInspectedPct: Math.round((withUrl.length / total) * 100),
+        headersOpenedAccuracy,
+        headersNotOpenedAccuracy,
+        urlInspectedAccuracy,
+        urlNotInspectedAccuracy,
+        headersOpenedSample: withHeaders.length,
+        urlInspectedSample: withUrl.length,
+      },
+      authTrap: { bypassRate: authTrapBypassRate, sample: authTrapAnswers.length },
+      medianTimeByTechnique,
+    };
   } catch {
     return null;
   }
@@ -80,7 +169,7 @@ export default async function IntelPage() {
           </div>
         </div>
 
-        {!data || data.insufficient ? (
+        {!data || data.totalAnswers === 0 ? (
           <div className="term-border bg-[#060c06] px-3 py-6 text-center">
             <div className="text-[#00aa28] text-xs font-mono">COLLECTING DATA...</div>
             <div className="text-[#003a0e] text-[10px] font-mono mt-1">Insufficient sample size. Check back once Research Mode is live.</div>

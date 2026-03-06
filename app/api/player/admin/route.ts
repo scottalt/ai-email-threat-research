@@ -67,6 +67,7 @@ export async function PATCH(req: NextRequest) {
     level: row.level as number,
     totalSessions: row.total_sessions as number,
     researchSessionsCompleted: row.research_sessions_completed as number,
+    researchAnswersSubmitted: 0,
     researchGraduated: row.research_graduated as boolean,
     personalBestScore: row.personal_best_score as number,
     background: (row.background as PlayerBackground | null) ?? null,
