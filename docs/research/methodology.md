@@ -2,7 +2,7 @@
 
 **Working Title:** State of Phishing in the Rise of GenAI
 **Author:** Scott Altiparmak
-**Status:** Pre-collection — dataset generation in progress
+**Status:** Active collection — dataset frozen at v1
 
 ---
 
@@ -23,7 +23,7 @@
 Prior technique-level phishing detection research was built on datasets where linguistic quality varied across samples. This conflates technique with quality as variables. By holding linguistic quality constant at AI-generation level and using identical difficulty distributions across all techniques, this study isolates technique as the sole variable. No published baseline exists for technique-level human detection rates under this condition. This study establishes that baseline.
 
 **Publication target:** Blog post on scottaltiparmak.com — "Which Phishing Techniques Fool You When AI Writes the Email"
-**Last updated:** 2026-03-01
+**Last updated:** 2026-03-06
 
 ---
 
@@ -213,15 +213,25 @@ Every answer event from research mode:
 | answer_ordinal | SMALLINT | Position in session (1–10) |
 | streak_at_answer_time | SMALLINT | |
 | correct_count_at_time | SMALLINT | |
-| game_mode | TEXT | research / training |
+| game_mode | TEXT | freeplay / daily / research / expert / preview |
 | is_daily_challenge | BOOLEAN | |
+| card_source | TEXT | generated / real |
 | dataset_version | TEXT | v1 |
+| is_genai_suspected | BOOLEAN | Card flagged as likely GenAI-generated |
+| genai_confidence | TEXT | low / medium / high (null if not suspected) |
+| grammar_quality | SMALLINT | 0–5 rating from generation metadata |
+| prose_fluency | SMALLINT | 0–5 rating from generation metadata |
+| personalization_level | SMALLINT | 0–5 rating from generation metadata |
+| contextual_coherence | SMALLINT | 0–5 rating from generation metadata |
+| secondary_technique | TEXT | Secondary phishing technique if applicable |
+| player_id | UUID | FK to players table (pseudonymous) |
 | headers_opened | BOOLEAN | Player opened the [HEADERS] panel |
 | url_inspected | BOOLEAN | Player tapped a URL to inspect it |
 | auth_status | TEXT | Card's SPF/DKIM/DMARC result (verified/unverified/fail) |
 | has_reply_to | BOOLEAN | Card had a mismatched Reply-To address |
 | has_url | BOOLEAN | Card body contained at least one URL |
 | has_attachment | BOOLEAN | Card had an attachment name set |
+| has_sent_at | BOOLEAN | Card had a sent timestamp (odd-hours signal available) |
 | created_at | TIMESTAMPTZ | |
 
 ### `sessions`
@@ -231,7 +241,7 @@ One row per game played:
 | Field | Type | Notes |
 |-------|------|-------|
 | session_id | UUID | Primary key |
-| game_mode | TEXT | research / training |
+| game_mode | TEXT | freeplay / daily / research / expert / preview |
 | is_daily_challenge | BOOLEAN | |
 | started_at | TIMESTAMPTZ | |
 | completed_at | TIMESTAMPTZ | Null if abandoned |
@@ -275,7 +285,9 @@ Version registry:
 
 ## Data Collection (Gameplay)
 
-Research Mode requires a player account. Answers are linked to a pseudonymous player UUID. Email addresses are held only in Supabase Auth and are never stored in research tables — our own tables record only UUIDs, game mode, technique, correctness, confidence, and timing signals. A session UUID is generated at game start for grouping answers within a round; it is held in memory only and not persisted beyond the session.
+Research Mode requires a player account. Answers are linked to a pseudonymous player UUID via the `player_id` foreign key in the `answers` table. Email addresses are held only in Supabase Auth and are never stored in research tables — our own tables record only UUIDs, game mode, technique, correctness, confidence, and timing signals. A session UUID is generated at game start and persisted to the `sessions` table to group answers from the same round.
+
+**Per-player collection cap:** Each player can contribute a maximum of 30 research answers (3 complete sessions of 10 cards each), enforced server-side. After reaching the cap, players are marked as research-graduated and gain access to Expert Mode. This cap prevents any single player from dominating the dataset and creates an incentive structure for completion. Answers beyond the cap are silently discarded at the API layer.
 
 **Timing measurements:**
 - `time_from_render_ms` — card first render to answer submission
@@ -390,7 +402,7 @@ Both limitations are disclosed in the publication.
 
 ### Repeated Card Exposure
 
-The same card can be served to multiple distinct sessions. There is no within-session repetition (each session draws a unique 10-card sample), but across sessions a given card may be seen by many different players. This is by design: repeated exposure across sessions provides the statistical volume needed for per-card and per-technique analysis. Cards are not removed from the pool after being seen, and session IDs are ephemeral (in memory only), so the system cannot identify returning players. This is consistent with the anonymisation model.
+The same card can be served to multiple distinct sessions. There is no within-session repetition (each session draws a unique 10-card sample), but across sessions a given card may be seen by many different players. This is by design: repeated exposure across sessions provides the statistical volume needed for per-card and per-technique analysis. Cards are not removed from the pool after being seen. Answers are linked to a pseudonymous `player_id`, so returning players can be identified for cross-session analysis (e.g., trainability across sessions). The per-player cap of 30 answers (3 sessions) bounds the maximum contribution from any single player.
 
 ### `fluent-prose` Confound
 
@@ -434,3 +446,4 @@ The `answers` table records answers from all game modes (`research`, `freeplay`,
 | 1.3 | 2026-03-03 | Added auth header shortcut limitation with sensitivity analysis plan. Updated difficulty distribution section: research deck now stratifies by difficulty tier within technique per session (random tier selection), not pure random sampling. ResearchIntro updated with explicit data collection disclosure. |
 | 1.4 | 2026-03-04 | Removed SMS from dataset scope (email only). Added Extreme difficulty tier (15/15/15/15 per technique). Switched research deck from stratified to purely random sampling. Updated collection target to ~1,000 (math updated for random sampling). Updated data collection section: pseudonymous UUID model, corrected anonymity claims. Added secondary_technique to cards_real schema and approve pipeline. |
 | 1.5 | 2026-03-04 | Scaled dataset from 550 to 1,000 cards. Phishing: 690 (6 × 35 easy/medium/hard + 6 × 10 extreme). Legit: 310 (110/100/100). Extreme capped at 10 per technique — sufficient for expert mode coverage without over-representing near-indistinguishable attacks. Collection target math updated. |
+| 1.6 | 2026-03-06 | Status updated to active collection (dataset frozen at v1). Corrected session UUID claim — sessions ARE persisted to the sessions table. Corrected returning-player claim — player_id FK enables cross-session analysis. Added per-player collection cap (30 answers / 3 sessions, server-side enforced). Added missing answers table fields: player_id, card_source, is_genai_suspected, genai_confidence, grammar_quality, prose_fluency, personalization_level, contextual_coherence, secondary_technique, has_sent_at. Corrected game_mode values across schema tables. |

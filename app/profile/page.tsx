@@ -145,7 +145,7 @@ export default function ProfilePage() {
     { label: 'TOTAL XP',          value: `${profile.xp.toLocaleString()} XP` },
     { label: 'SESSIONS',          value: profile.totalSessions },
     { label: 'RESEARCH SESSIONS', value: profile.researchSessionsCompleted },
-    { label: 'GRADUATION',        value: profile.researchGraduated ? 'GRADUATED — EXPERT UNLOCKED' : `${profile.researchSessionsCompleted}/10 sessions` },
+    { label: 'GRADUATION',        value: profile.researchGraduated ? 'GRADUATED — EXPERT UNLOCKED' : `${profile.researchSessionsCompleted}/3 sessions` },
     { label: 'PERSONAL BEST',     value: `${profile.personalBestScore.toLocaleString()} pts` },
   ];
 

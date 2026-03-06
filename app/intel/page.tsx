@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 
+export const revalidate = 300; // re-fetch from Supabase every 5 minutes
+
 interface IntelData {
   totalAnswers: number;
   phishingAnswers?: number;
