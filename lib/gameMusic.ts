@@ -175,7 +175,6 @@ export class GameMusic {
     this.master?.gain.rampTo(0, 2);
 
     setTimeout(() => {
-      try { Tone.getTransport().stop(); } catch { /* ignore */ }
       this.arpSeq?.dispose(); this.arpSeq = null;
       this.bassSeq?.dispose(); this.bassSeq = null;
       this.kickSeq?.dispose(); this.kickSeq = null;
