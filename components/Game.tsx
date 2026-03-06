@@ -1,6 +1,39 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Component, type ReactNode } from 'react';
+
+class SummaryErrorBoundary extends Component<
+  { onReset: () => void; children: ReactNode },
+  { error: Error | null }
+> {
+  constructor(props: { onReset: () => void; children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: { componentStack: string }) {
+    console.error('[RoundSummary crash]', error, info.componentStack);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col gap-4">
+          <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)] px-3 py-6 text-center space-y-2">
+            <div className="text-[#ff3333] text-xs font-mono tracking-widest">SUMMARY_ERROR</div>
+            <div className="text-[#003a0e] text-[10px] font-mono">{this.state.error.message}</div>
+          </div>
+          <button
+            onClick={() => { this.setState({ error: null }); this.props.onReset(); }}
+            className="w-full py-4 term-border text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
+          >
+            [ BACK TO TERMINAL ]
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { getShuffledDeck, getDailyDeck } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { FeedbackCard } from './FeedbackCard';
@@ -337,16 +370,18 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
 
   if (phase === 'summary') {
     return (
-      <RoundSummary
-        score={results.filter((r) => r.correct).length}
-        total={ROUND_SIZE}
-        totalScore={totalScore}
-        results={results}
-        mode={mode}
-        date={getToday()}
-        sessionId={sessionId.current}
-        onPlayAgain={() => setPhase('start')}
-      />
+      <SummaryErrorBoundary onReset={() => setPhase('start')}>
+        <RoundSummary
+          score={results.filter((r) => r.correct).length}
+          total={ROUND_SIZE}
+          totalScore={totalScore}
+          results={results}
+          mode={mode}
+          date={getToday()}
+          sessionId={sessionId.current}
+          onPlayAgain={() => setPhase('start')}
+        />
+      </SummaryErrorBoundary>
     );
   }
 
