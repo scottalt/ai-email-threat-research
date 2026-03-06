@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import type { AnswerEvent, SessionPayload } from '@/lib/types';
+import { RESEARCH_GRADUATION_SESSIONS } from '@/lib/xp';
 
 async function getPlayerId(): Promise<string | null> {
   try {
@@ -59,12 +60,24 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdminClient();
 
-    // Research mode: verify correct and technique server-side + session dedup
+    // Research mode: verify correct and technique server-side + session dedup + player cap
     let verifiedCorrect = a.correct;
     let verifiedIsPhishing = a.isPhishing;
     let verifiedTechnique = a.technique;
 
     if (a.gameMode === 'research') {
+      // Player cap: reject if player has already completed their research allocation
+      if (playerId) {
+        const { data: playerData } = await supabase
+          .from('players')
+          .select('research_sessions_completed')
+          .eq('id', playerId)
+          .single();
+        if ((playerData?.research_sessions_completed ?? 0) >= RESEARCH_GRADUATION_SESSIONS) {
+          return NextResponse.json({ ok: true }); // graduated — research contribution complete
+        }
+      }
+
       // Session dedup: reject if session already has MAX_RESEARCH_ANSWERS research answers
       const { count } = await supabase
         .from('answers')

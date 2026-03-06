@@ -333,13 +333,17 @@ export function StartScreen({ onStart }: Props) {
           </button>
 
           <button
-            onClick={() => signedIn ? handleStart('research') : setShowAuthFlow(true)}
+            onClick={() => {
+              if (!signedIn) { setShowAuthFlow(true); return; }
+              const graduated = profile?.researchGraduated ?? false;
+              handleStart(graduated ? 'freeplay' : 'research');
+            }}
             className="w-full py-3 term-border text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
           >
             [ PLAY ]
           </button>
           {!signedIn && (
-            <p className="text-[#003a0e] text-[10px] text-center font-mono">research participation requires a sign-in</p>
+            <p className="text-[#003a0e] text-[10px] text-center font-mono">sign in to contribute to the research study</p>
           )}
 
           {signedIn && profile?.researchGraduated && (
