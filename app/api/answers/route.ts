@@ -66,15 +66,16 @@ export async function POST(req: NextRequest) {
     let verifiedTechnique = a.technique;
 
     if (a.gameMode === 'research') {
-      // Player cap: reject if player has already completed their research allocation
+      // Player cap: reject if player has already contributed 30+ research answers (3 sessions × 10 cards)
+      // This covers both completed sessions and partial sessions to prevent unlimited contributions.
       if (playerId) {
-        const { data: playerData } = await supabase
-          .from('players')
-          .select('research_sessions_completed')
-          .eq('id', playerId)
-          .single();
-        if ((playerData?.research_sessions_completed ?? 0) >= RESEARCH_GRADUATION_SESSIONS) {
-          return NextResponse.json({ ok: true }); // graduated — research contribution complete
+        const { count: playerAnswerCount } = await supabase
+          .from('answers')
+          .select('*', { count: 'exact', head: true })
+          .eq('player_id', playerId)
+          .eq('game_mode', 'research');
+        if ((playerAnswerCount ?? 0) >= RESEARCH_GRADUATION_SESSIONS * 10) {
+          return NextResponse.json({ ok: true }); // cap reached — research contribution complete
         }
       }
 
