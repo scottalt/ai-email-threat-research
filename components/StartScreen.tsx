@@ -143,7 +143,7 @@ export function StartScreen({ onStart }: Props) {
   const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
 
   return (
-    <div className="w-full max-w-sm px-4 flex flex-col gap-6">
+    <div className="w-full max-w-sm px-4 pb-safe flex flex-col gap-6">
       {/* Terminal window */}
       <div className="term-border bg-[#060c06]">
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
@@ -151,7 +151,7 @@ export function StartScreen({ onStart }: Props) {
           <div className="flex items-center gap-3">
             <button
               onClick={toggleSound}
-              className={`text-[10px] font-mono transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}
+              className={`text-[10px] font-mono transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}
             >
               {soundEnabled ? '[SFX]' : '[SFX OFF]'}
             </button>
