@@ -47,6 +47,7 @@ export default function RootLayout({
       <body className={`${geistMono.variable} antialiased`}>
         <ServiceWorker />
         <TerminalSounds />
+        <div className="scanline-sweep" aria-hidden="true" />
         <PlayerProvider>
           {children}
         </PlayerProvider>

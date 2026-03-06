@@ -34,8 +34,8 @@ body::before {
     0deg,
     transparent,
     transparent 2px,
-    rgba(0, 0, 0, 0.05) 2px,
-    rgba(0, 0, 0, 0.05) 4px
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
   );
   pointer-events: none;
   z-index: 9999;
@@ -53,15 +53,15 @@ body::after {
 
 /* Phosphor glow */
 .glow {
-  text-shadow: 0 0 8px rgba(0, 255, 65, 0.9), 0 0 20px rgba(0, 255, 65, 0.5);
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.95), 0 0 16px rgba(0, 255, 65, 0.6), 0 0 40px rgba(0, 255, 65, 0.2);
 }
 
 .glow-red {
-  text-shadow: 0 0 8px rgba(255, 51, 51, 0.9), 0 0 20px rgba(255, 51, 51, 0.5);
+  text-shadow: 0 0 6px rgba(255, 51, 51, 0.95), 0 0 16px rgba(255, 51, 51, 0.6), 0 0 40px rgba(255, 51, 51, 0.2);
 }
 
 .glow-amber {
-  text-shadow: 0 0 8px rgba(255, 170, 0, 0.9), 0 0 20px rgba(255, 170, 0, 0.5);
+  text-shadow: 0 0 6px rgba(255, 170, 0, 0.95), 0 0 16px rgba(255, 170, 0, 0.6), 0 0 40px rgba(255, 170, 0, 0.2);
 }
 
 /* Blinking cursor */
@@ -188,10 +188,12 @@ body::after {
 /* Terminal border */
 .term-border {
   border: 1px solid rgba(0, 255, 65, 0.35);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.05), inset 0 0 10px rgba(0, 255, 65, 0.02);
 }
 
 .term-border-bright {
   border: 1px solid rgba(0, 255, 65, 0.7);
+  box-shadow: 0 0 18px rgba(0, 255, 65, 0.15), inset 0 0 10px rgba(0, 255, 65, 0.04);
 }
 
 /* Glitch animation — wrong answer feedback */
@@ -209,6 +211,31 @@ body::after {
 
 .anim-glitch {
   animation: glitch 0.35s linear forwards;
+}
+
+/* Moving CRT scanline sweep */
+@keyframes scanline-sweep {
+  0%   { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
+}
+
+.scanline-sweep {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 120px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 255, 65, 0.025) 45%,
+    rgba(0, 255, 65, 0.04) 50%,
+    rgba(0, 255, 65, 0.025) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 9997;
+  animation: scanline-sweep 10s linear infinite;
 }
 
 /* Next button pulse glow */
