@@ -17,19 +17,32 @@ interface Stats {
   };
 }
 
+interface ResearchStats {
+  totalAnswers: number;
+  answersToday: number;
+  distinctSessions: number;
+  overallAccuracy: number;
+  playerCount: number;
+  graduatedCount: number;
+  byTechnique: { technique: string; total: number; correct: number; accuracy: number | null }[];
+}
+
 const POLL_INTERVAL = 10000; // 10 seconds
 
 export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [researchStats, setResearchStats] = useState<ResearchStats | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   async function fetchStats() {
     try {
-      const res = await fetch('/api/admin/stats');
-      if (res.ok) {
-        setStats(await res.json());
-        setLastUpdated(new Date());
-      }
+      const [statsRes, researchRes] = await Promise.all([
+        fetch('/api/admin/stats'),
+        fetch('/api/admin/research-stats'),
+      ]);
+      if (statsRes.ok) setStats(await statsRes.json());
+      if (researchRes.ok) setResearchStats(await researchRes.json());
+      setLastUpdated(new Date());
     } catch {
       // silently fail
     }
@@ -143,6 +156,51 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Research data */}
+        <div className="term-border bg-[#060c06]">
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2">
+            <span className="text-[#00aa28] text-xs tracking-widest">RESEARCH_DATA</span>
+          </div>
+          {researchStats ? (
+            <div className="px-3 py-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'TOTAL ANSWERS', value: researchStats.totalAnswers, color: 'text-[#00ff41]' },
+                  { label: 'TODAY', value: researchStats.answersToday, color: 'text-[#00ff41]' },
+                  { label: 'SESSIONS', value: researchStats.distinctSessions, color: 'text-[#00aa28]' },
+                  { label: 'ACCURACY', value: `${researchStats.overallAccuracy}%`, color: researchStats.overallAccuracy >= 70 ? 'text-[#00ff41]' : 'text-[#ffaa00]' },
+                  { label: 'PLAYERS', value: researchStats.playerCount, color: 'text-[#00aa28]' },
+                  { label: 'GRADUATED', value: researchStats.graduatedCount, color: 'text-[#ffaa00]' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="term-border px-2 py-2 text-center">
+                    <div className={`text-xl font-black font-mono ${color}`}>{value}</div>
+                    <div className="text-[10px] font-mono text-[#003a0e] mt-0.5">{label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                <div className="text-[#003a0e] text-[10px] font-mono tracking-widest pb-1">TECHNIQUE ACCURACY</div>
+                {researchStats.byTechnique.map(({ technique, total, accuracy }) => (
+                  <div key={technique} className="flex items-center gap-2 text-xs font-mono">
+                    <span className="text-[#00aa28] flex-1 truncate">{technique}</span>
+                    <span className="text-[#003a0e] text-[10px]">n={total}</span>
+                    <span className={`w-10 text-right font-bold ${
+                      accuracy === null ? 'text-[#003a0e]'
+                      : accuracy >= 80 ? 'text-[#00ff41]'
+                      : accuracy >= 50 ? 'text-[#ffaa00]'
+                      : 'text-[#ff3333]'
+                    }`}>
+                      {accuracy === null ? '—' : `${accuracy}%`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="px-3 py-3 text-[#003a0e] text-xs font-mono">LOADING...</div>
+          )}
         </div>
 
         <div className="space-y-2">
