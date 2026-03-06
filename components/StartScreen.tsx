@@ -265,10 +265,11 @@ export function StartScreen({ onStart }: Props) {
                 ['[1]', 'Read the email or SMS carefully'],
                 ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
                 ['[3]', 'Classify: PHISHING or LEGIT'],
-                ['[4]', 'More confidence + correct = more points'],
-                ['[5]', '3-streak bonus: +50 pts per milestone'],
-                ['[6]', 'Tap [HEADERS] on emails to inspect SPF/DKIM/DMARC and Reply-To'],
-                ['[7]', 'Tap highlighted URLs to inspect the real destination'],
+                ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
+                ['[5]', 'GUESSING 1×, LIKELY 2× (−100 if wrong), CERTAIN 3× (−200 if wrong)'],
+                ['[6]', '3-streak bonus: +50 pts per milestone'],
+                ['[7]', 'Tap [HEADERS] on emails to inspect SPF/DKIM/DMARC and Reply-To'],
+                ['[8]', 'Tap highlighted URLs to inspect the real destination'],
               ].map(([tag, desc]) => (
                 <div key={tag} className="flex gap-3 text-xs">
                   <span className="text-[#00ff41] shrink-0 glow">{tag}</span>
