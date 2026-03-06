@@ -248,6 +248,24 @@ body::after {
   animation: pulse-glow 1.8s ease-in-out infinite;
 }
 
+/* Respect reduced motion — pauses decorative animations on iOS low power / accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .scanline-sweep,
+  .anim-rank-pulse,
+  .crt {
+    animation: none !important;
+  }
+  .anim-pulse-glow {
+    animation: none !important;
+    opacity: 1;
+  }
+  .anim-card-entry,
+  .anim-fade-in,
+  .anim-fade-in-up {
+    animation-duration: 0.01ms !important;
+  }
+}
+
 /* iOS safe area — bottom padding for home indicator */
 .pb-safe {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));

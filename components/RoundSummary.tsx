@@ -140,7 +140,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
   const efficiency = Math.round((totalScore / maxPossible) * 100);
 
   return (
-    <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col gap-4">
+    <div className="anim-fade-in-up w-full max-w-sm px-4 pb-safe flex flex-col gap-4">
       {/* XP award — only shown when signed in and API has responded */}
       {signedIn && xpResult && (
         <div className="term-border bg-[#060c06] px-3 py-3 space-y-2">
@@ -154,7 +154,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
           {xpResult.graduated && (
             <div className="term-border border-[rgba(255,170,0,0.4)] px-2 py-2 text-center">
               <div className="text-[#ffaa00] text-xs font-mono font-bold">RESEARCH GRADUATED</div>
-              <div className="text-[#003a0e] text-[10px] font-mono mt-0.5">Expert Mode unlocked. You&apos;ve completed 10 research sessions.</div>
+              <div className="text-[#003a0e] text-[10px] font-mono mt-0.5">Expert Mode unlocked. You&apos;ve completed your 3 research sessions.</div>
             </div>
           )}
           {profile && <LevelMeter xp={profile.xp} level={profile.level} />}
