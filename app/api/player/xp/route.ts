@@ -74,9 +74,12 @@ export async function PATCH(req: NextRequest) {
 
   const newBest = Math.max(p.personal_best_score as number, score);
 
-  // Atomic dedup: the WHERE clause makes the check + write a single DB operation.
-  // If sessionId was already awarded, the condition fails and 0 rows are updated.
-  const updateQuery = admin.from('players').update({
+  // Dedup: skip if this session was already awarded XP (application-level check)
+  if (sessionId && (p.last_xp_session_id as string | null) === sessionId) {
+    return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
+  }
+
+  const { data: updated, error: updateErr } = await admin.from('players').update({
     xp: newXp,
     level: newLevel,
     total_sessions: newTotalSessions,
@@ -87,15 +90,9 @@ export async function PATCH(req: NextRequest) {
     updated_at: new Date().toISOString(),
   }).eq('auth_id', authId).select('id');
 
-  // Only apply the sessionId dedup guard when a sessionId is provided
-  const finalQuery = sessionId
-    ? updateQuery.or(`last_xp_session_id.is.null,last_xp_session_id.neq.${sessionId}`)
-    : updateQuery;
-
-  const { data: updated, error: updateErr } = await finalQuery;
   if (updateErr) return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });
   if (!updated || updated.length === 0) {
-    return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 
   return NextResponse.json({
