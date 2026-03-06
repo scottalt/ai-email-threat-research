@@ -112,8 +112,17 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   }, [phase, currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    gameMusicRef.current?.setEnabled(soundEnabled);
-  }, [soundEnabled]);
+    if (soundEnabled && !gameMusicRef.current && phase === 'playing' && !previewMode) {
+      const music = new GameMusic();
+      gameMusicRef.current = music;
+      music.start();
+      const currentCard = deck[currentIndex];
+      music.setDifficulty(currentCard?.difficulty ?? null);
+      music.setPhase('playing');
+    } else {
+      gameMusicRef.current?.setEnabled(soundEnabled);
+    }
+  }, [soundEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     return () => {
