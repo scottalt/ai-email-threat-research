@@ -200,15 +200,15 @@ export function StartScreen({ onStart }: Props) {
                       />
                       <button
                         type="submit"
-                        disabled={!callsign.trim() || callsignLoading}
+                        disabled={!callsign.trim() || !background || callsignLoading}
                         className="px-3 py-1.5 term-border text-[#00ff41] font-mono text-xs tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                       >
                         {callsignLoading ? '...' : 'SET'}
                       </button>
                     </form>
                     <div className="space-y-1.5 pt-1">
-                      <div className="text-[#003a0e] text-[10px] font-mono tracking-wider">BACKGROUND</div>
-                      <div className="text-[#003a0e] text-[9px] font-mono leading-relaxed">Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
+                      <div className="text-[#003a0e] text-[10px] font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
+                      <div className="text-[#003a0e] text-[9px] font-mono leading-relaxed">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
                       <div className="grid grid-cols-2 gap-1.5">
                         {BACKGROUND_OPTIONS.map((opt) => (
                           <button
