@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 
-export const revalidate = 300; // re-fetch from Supabase every 5 minutes
+export const dynamic = 'force-dynamic'; // always fetch live from Supabase
 
 interface IntelData {
   totalAnswers: number;
