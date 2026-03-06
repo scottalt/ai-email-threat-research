@@ -54,20 +54,18 @@ export function ResearchIntro({ onBegin }: Props) {
           </div>
           <div className="px-3 py-3 space-y-2">
             <p className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
-              No account required. No personally identifiable information is collected.
+              A sign-in is required to contribute answers to the study. No password — just a 6-digit code to your email.
             </p>
             <p className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
               <span className="text-[#00aa28]">Recorded:</span>{' '}
-              your answer, confidence level, response time, whether you opened headers or clicked URLs, and position within the session. A random session ID is generated each round and kept in memory only — never stored on your device or linked to you.
+              your answer, confidence level, response time, whether you opened headers or clicked URLs, position within the session, and your self-reported background (expertise level).
             </p>
             <p className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
               <span className="text-[#00aa28]">Not recorded:</span>{' '}
-              email address, IP address, location, or any identifying information.
+              email address, IP address, location, or any identifying information. Your email is used only for sign-in and is never associated with your answers.
             </p>
             <p className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
-              Participation is voluntary. Play{' '}
-              <span className="text-[#00aa28]">[ PLAY ]</span>{' '}
-              instead to opt out. Aggregate findings published at{' '}
+              Each player contributes up to 3 rounds (30 cards). After that, expert mode unlocks. Aggregate findings published at{' '}
               <Link href="/intel" className="text-[#00aa28] hover:underline">/intel</Link>.
             </p>
           </div>
