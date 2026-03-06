@@ -43,6 +43,7 @@ import { ResearchIntro } from './ResearchIntro';
 import type { Card, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
+import { GameMusic } from '@/lib/gameMusic';
 import { getRankFromLevel } from '@/lib/rank';
 
 const ROUND_SIZE = 10;
@@ -76,6 +77,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const sessionStartedAt = useRef<string>('');
   const [correctCount, setCorrectCount] = useState(0);
   const hasAutoStarted = useRef(false);
+  const gameMusicRef = useRef<GameMusic | null>(null);
   const [flashClass, setFlashClass] = useState<string | null>(null);
 
   // Auto-start in preview mode — skip the start screen entirely
@@ -85,6 +87,39 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       startRound('preview');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // No music in preview mode
+    if (previewMode) return;
+
+    if (phase === 'playing') {
+      if (!gameMusicRef.current) {
+        if (!soundEnabled) return; // don't start if SFX is off
+        const music = new GameMusic();
+        gameMusicRef.current = music;
+        music.start();
+      }
+      const currentCard = deck[currentIndex];
+      gameMusicRef.current.setDifficulty(currentCard?.difficulty ?? null);
+      gameMusicRef.current.setPhase('playing');
+    } else if (phase === 'feedback') {
+      gameMusicRef.current?.setPhase('feedback');
+    } else if (phase === 'summary' || phase === 'start' || phase === 'daily_complete') {
+      gameMusicRef.current?.stop();
+      gameMusicRef.current = null;
+    }
+  }, [phase, currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    gameMusicRef.current?.setEnabled(soundEnabled);
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    return () => {
+      gameMusicRef.current?.stop();
+      gameMusicRef.current = null;
+    };
   }, []);
 
   function getToday(): string {
