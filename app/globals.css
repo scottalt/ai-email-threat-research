@@ -238,12 +238,29 @@ body::after {
   animation: scanline-sweep 10s linear infinite;
 }
 
-/* Next button pulse glow */
+/* Next button pulse glow — transform-based for iOS GPU compositing */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 4px rgba(0, 255, 65, 0.3); }
-  50%       { box-shadow: 0 0 18px rgba(0, 255, 65, 0.9), 0 0 6px rgba(0, 255, 65, 0.5); }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.82; transform: scale(1.008); }
 }
 
 .anim-pulse-glow {
-  animation: pulse-glow 1.5s ease-in-out infinite;
+  animation: pulse-glow 1.8s ease-in-out infinite;
+}
+
+/* iOS safe area — bottom padding for home indicator */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Scroll fade — indicates more content below */
+.scroll-fade-bottom {
+  -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+}
+
+/* iOS momentum scroll */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
 }

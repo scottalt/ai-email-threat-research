@@ -103,7 +103,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
   })();
 
   return (
-    <div className="w-full max-w-sm px-4 relative">
+    <div className="w-full max-w-sm px-4 pb-safe relative">
       {showFlash && (
         <div
           className={`fixed inset-0 pointer-events-none z-50 ${
@@ -296,7 +296,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           )}
 
           {/* Body */}
-          <pre className="px-3 py-3 text-xs text-[#00aa28] font-mono leading-relaxed whitespace-pre-wrap break-words max-h-52 overflow-y-auto">
+          <pre className="px-3 py-3 text-xs text-[#00aa28] font-mono leading-relaxed whitespace-pre-wrap break-words max-h-52 momentum-scroll scroll-fade-bottom">
             {parseBodySegments(card.body).map((seg, i) =>
               seg.type === 'url' ? (
                 <span
