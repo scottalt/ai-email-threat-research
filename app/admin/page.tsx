@@ -64,7 +64,7 @@ export default function AdminPage() {
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { label: 'PENDING', value: stats.pending, color: 'text-[#ffaa00]' },
-                    { label: 'APPROVED', value: stats.approved, color: 'text-[#00ff41]' },
+                    { label: 'LIVE CARDS', value: stats.liveCards, color: 'text-[#00ff41]' },
                     { label: 'REJECTED', value: stats.rejected, color: 'text-[#ff3333]' },
                     { label: 'NEEDS REVIEW', value: stats.needsReview, color: 'text-[#ffaa00]' },
                   ].map(({ label, value, color }) => (
