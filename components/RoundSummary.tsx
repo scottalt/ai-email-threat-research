@@ -229,7 +229,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
                   {r.card.subject ?? r.card.from}
                 </div>
                 <div className="text-[#003a0e] text-[10px] font-mono">
-                  {r.card.isPhishing ? 'PHISH' : 'LEGIT'} · {r.card.difficulty.toUpperCase()}
+                  {r.card.isPhishing ? 'PHISH' : 'LEGIT'} · {r.card.difficulty?.toUpperCase() ?? '—'}
                 </div>
               </div>
               <div className="flex items-center gap-1.5">

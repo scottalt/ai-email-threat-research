@@ -27,7 +27,7 @@ export async function GET() {
       id: row.card_id,
       type: row.type,
       isPhishing: row.is_phishing,
-      difficulty: row.difficulty,
+      difficulty: row.difficulty ?? 'medium',
       from: row.from_address,
       subject: row.subject ?? undefined,
       body: row.body,
