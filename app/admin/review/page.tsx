@@ -119,27 +119,52 @@ export default function ReviewPage() {
     setDone(false);
     try {
       const isFiltered = !!(filterTechnique || filterDifficulty || filterPhishing || filterAttachment);
-      const params = new URLSearchParams();
+
+      let next = null;
+      let count = 0;
+      let approved = 0;
+
       if (isFiltered) {
+        const params = new URLSearchParams();
         if (filterTechnique) params.set('technique', filterTechnique);
         if (filterDifficulty) params.set('difficulty', filterDifficulty);
         if (filterPhishing) params.set('phishing', filterPhishing);
         if (filterAttachment) params.set('attachment', filterAttachment);
+        const qs = params.toString();
+        const res = await fetch('/api/admin/review' + (qs ? '?' + qs : ''));
+        const data = await res.json();
+        next = data.card;
+        count = data.pendingCount ?? 0;
+        approved = data.approvedCount ?? 0;
       } else {
-        // Auto-rotation: cycle through techniques with occasional legit slot
-        const slot = AUTO_ROTATION[rotationIdx.current % AUTO_ROTATION.length];
-        if (slot === null) {
-          params.set('phishing', 'false');
-        } else {
-          params.set('phishing', 'true');
-          params.set('technique', slot);
+        // Auto-rotation: cycle through techniques with occasional legit slot.
+        // If the current slot has no pending cards, advance until we find one
+        // or exhaust all slots (truly empty).
+        const totalSlots = AUTO_ROTATION.length;
+        for (let attempt = 0; attempt < totalSlots; attempt++) {
+          const slot = AUTO_ROTATION[rotationIdx.current % totalSlots];
+          const params = new URLSearchParams();
+          if (slot === null) {
+            params.set('phishing', 'false');
+          } else {
+            params.set('phishing', 'true');
+            params.set('technique', slot);
+          }
+          const res = await fetch('/api/admin/review?' + params.toString());
+          const data = await res.json();
+          approved = data.approvedCount ?? 0;
+          if (data.card) {
+            next = data.card;
+            count = data.pendingCount ?? 0;
+            break;
+          }
+          // Slot empty — advance rotation and try next
+          rotationIdx.current = (rotationIdx.current + 1) % totalSlots;
         }
       }
-      const qs = params.toString();
-      const res = await fetch('/api/admin/review' + (qs ? '?' + qs : ''));
-      const { card: next, pendingCount: count, approvedCount: approved } = await res.json();
-      setPendingCount(count ?? null);
-      setApprovedCount(approved ?? null);
+
+      setPendingCount(count);
+      setApprovedCount(approved);
       if (!next) { setDone(true); setCard(null); } else {
         setCard(next);
         setProcessedFrom(next.processed_from ?? next.raw_from ?? '');
