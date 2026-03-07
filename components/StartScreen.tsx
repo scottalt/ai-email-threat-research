@@ -9,7 +9,6 @@ import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
 import { playBootTick } from '@/lib/sounds';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
-import { AmbientDrone } from '@/lib/drone';
 
 interface LeaderboardEntry {
   name: string;
@@ -56,18 +55,6 @@ export function StartScreen({ onStart }: Props) {
   const [activeTab, setActiveTab] = useState<'score' | 'daily' | 'xp'>('score');
   const [showGuide, setShowGuide] = useState(false);
   const { soundEnabled, toggleSound } = useSoundEnabled();
-  const droneRef = useRef<AmbientDrone | null>(null);
-
-  useEffect(() => {
-    if (!soundEnabled) return;
-    const drone = new AmbientDrone();
-    droneRef.current = drone;
-    drone.start();
-    return () => {
-      drone.stop(true);
-      droneRef.current = null;
-    };
-  }, [soundEnabled]);
 
   const fetchLeaderboard = useCallback(async () => {
     const d = new Date();
@@ -108,8 +95,6 @@ export function StartScreen({ onStart }: Props) {
   }, [visibleCount]);
 
   function handleStart(mode: GameMode) {
-    droneRef.current?.stop(true);
-    droneRef.current = null;
     playBootTick();
     onStart(mode);
   }
