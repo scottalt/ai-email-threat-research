@@ -43,7 +43,6 @@ import { ResearchIntro } from './ResearchIntro';
 import type { Card, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
-import { GameMusic } from '@/lib/gameMusic';
 import { getRankFromLevel } from '@/lib/rank';
 
 const ROUND_SIZE = 10;
@@ -77,7 +76,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const sessionStartedAt = useRef<string>('');
   const [correctCount, setCorrectCount] = useState(0);
   const hasAutoStarted = useRef(false);
-  const gameMusicRef = useRef<GameMusic | null>(null);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
   const [flashClass, setFlashClass] = useState<string | null>(null);
 
   // Auto-start in preview mode — skip the start screen entirely
@@ -89,45 +88,29 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Background music — single looping track across menu and gameplay
   useEffect(() => {
-    // No music in preview mode
     if (previewMode) return;
-
-    if (phase === 'playing') {
-      if (!gameMusicRef.current) {
-        if (!soundEnabled) return; // don't start if SFX is off
-        const music = new GameMusic();
-        gameMusicRef.current = music;
-        music.start();
+    if (soundEnabled) {
+      if (!musicRef.current) {
+        const audio = new Audio('/audio/joelfazhari-synthetic-deception-loopable-epic-cyberpunk-crime-music-157454.mp3');
+        audio.loop = true;
+        audio.volume = 0.06;
+        audio.play().catch(() => {});
+        musicRef.current = audio;
       }
-      const currentCard = deck[currentIndex];
-      gameMusicRef.current.setDifficulty(currentCard?.difficulty ?? null);
-      gameMusicRef.current.setPhase('playing');
-    } else if (phase === 'feedback') {
-      gameMusicRef.current?.setPhase('feedback');
-    } else if (phase === 'summary' || phase === 'start' || phase === 'daily_complete') {
-      gameMusicRef.current?.stop();
-      gameMusicRef.current = null;
-    }
-  }, [phase, currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (soundEnabled && !gameMusicRef.current && phase === 'playing' && !previewMode) {
-      const music = new GameMusic();
-      gameMusicRef.current = music;
-      music.start();
-      const currentCard = deck[currentIndex];
-      music.setDifficulty(currentCard?.difficulty ?? null);
-      music.setPhase('playing');
     } else {
-      gameMusicRef.current?.setEnabled(soundEnabled);
+      if (musicRef.current) {
+        musicRef.current.pause();
+        musicRef.current = null;
+      }
     }
-  }, [soundEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [soundEnabled, previewMode]);
 
   useEffect(() => {
     return () => {
-      gameMusicRef.current?.stop();
-      gameMusicRef.current = null;
+      musicRef.current?.pause();
+      musicRef.current = null;
     };
   }, []);
 
