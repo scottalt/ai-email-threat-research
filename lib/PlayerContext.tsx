@@ -49,6 +49,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   async function signInWithEmail(email: string) {
     try {
+      // Pre-create the user via admin API so Supabase treats them as existing
+      // and sends a 6-digit OTP code instead of a confirmation link.
+      await fetch('/api/auth/ensure-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.auth.signInWithOtp({ email });
       return { error: error?.message ?? null };
