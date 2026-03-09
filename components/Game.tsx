@@ -76,7 +76,6 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const sessionStartedAt = useRef<string>('');
   const [correctCount, setCorrectCount] = useState(0);
   const hasAutoStarted = useRef(false);
-  const musicRef = useRef<HTMLAudioElement | null>(null);
   const [flashClass, setFlashClass] = useState<string | null>(null);
 
   // Auto-start in preview mode — skip the start screen entirely
@@ -86,53 +85,6 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       startRound('preview');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Background music — single looping track across menu and gameplay
-  useEffect(() => {
-    if (previewMode) return;
-    if (soundEnabled) {
-      if (!musicRef.current) {
-        const audio = new Audio('/audio/joelfazhari-synthetic-deception-loopable-epic-cyberpunk-crime-music-157454.mp3');
-        audio.loop = true;
-        audio.volume = 0.06;
-        audio.play().catch(() => {});
-        musicRef.current = audio;
-      }
-    } else {
-      if (musicRef.current) {
-        musicRef.current.pause();
-        musicRef.current = null;
-      }
-    }
-  }, [soundEnabled, previewMode]);
-
-  // Retry music playback on first user gesture — browsers block autoplay until interaction
-  useEffect(() => {
-    if (previewMode) return;
-    function handleFirstInteraction() {
-      if (musicRef.current && musicRef.current.paused) {
-        musicRef.current.play().catch(() => {});
-      }
-      document.removeEventListener('click', handleFirstInteraction);
-      document.removeEventListener('touchstart', handleFirstInteraction);
-      document.removeEventListener('keydown', handleFirstInteraction);
-    }
-    document.addEventListener('click', handleFirstInteraction);
-    document.addEventListener('touchstart', handleFirstInteraction);
-    document.addEventListener('keydown', handleFirstInteraction);
-    return () => {
-      document.removeEventListener('click', handleFirstInteraction);
-      document.removeEventListener('touchstart', handleFirstInteraction);
-      document.removeEventListener('keydown', handleFirstInteraction);
-    };
-  }, [previewMode]);
-
-  useEffect(() => {
-    return () => {
-      musicRef.current?.pause();
-      musicRef.current = null;
-    };
   }, []);
 
   function getToday(): string {

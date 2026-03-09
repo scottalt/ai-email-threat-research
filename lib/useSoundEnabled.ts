@@ -12,6 +12,7 @@ export function useSoundEnabled() {
     setSoundEnabled((prev) => {
       const next = !prev;
       localStorage.setItem(STORAGE_KEY, String(next));
+      window.dispatchEvent(new CustomEvent('sfx-change', { detail: next }));
       return next;
     });
   }, []);

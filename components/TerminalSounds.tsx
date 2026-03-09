@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { playClick, playKeyPress } from '@/lib/sounds';
+
+const MUSIC_SRC = '/audio/joelfazhari-synthetic-deception-loopable-epic-cyberpunk-crime-music-157454.mp3';
 
 const SKIP_KEYS = new Set([
   'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock',
@@ -15,6 +17,55 @@ function sfxEnabled(): boolean {
 }
 
 export function TerminalSounds() {
+  const musicRef = useRef<HTMLAudioElement | null>(null);
+
+  // Background music — persists across all routes
+  useEffect(() => {
+    function startMusic() {
+      if (!musicRef.current) {
+        const audio = new Audio(MUSIC_SRC);
+        audio.loop = true;
+        audio.volume = 0.06;
+        musicRef.current = audio;
+      }
+      musicRef.current.play().catch(() => {});
+    }
+
+    function stopMusic() {
+      if (musicRef.current) {
+        musicRef.current.pause();
+      }
+    }
+
+    // Retry on first user gesture to bypass autoplay block
+    function handleFirstInteraction() {
+      if (sfxEnabled() && musicRef.current?.paused) {
+        musicRef.current.play().catch(() => {});
+      }
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+    }
+
+    // React to SFX toggle
+    function handleSfxChange(e: Event) {
+      const enabled = (e as CustomEvent<boolean>).detail;
+      if (enabled) startMusic(); else stopMusic();
+    }
+
+    if (sfxEnabled()) startMusic();
+
+    document.addEventListener('click', handleFirstInteraction);
+    document.addEventListener('touchstart', handleFirstInteraction);
+    window.addEventListener('sfx-change', handleSfxChange);
+
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      window.removeEventListener('sfx-change', handleSfxChange);
+      musicRef.current?.pause();
+    };
+  }, []);
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (!sfxEnabled()) return;
