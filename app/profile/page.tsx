@@ -29,6 +29,10 @@ const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
 
 export default function ProfilePage() {
   const { profile, loading, signedIn, applyProfile } = usePlayer();
+  const [editingCallsign, setEditingCallsign] = useState(false);
+  const [callsignValue, setCallsignValue] = useState('');
+  const [callsignSaving, setCallsignSaving] = useState(false);
+  const [callsignError, setCallsignError] = useState('');
   const [editingBackground, setEditingBackground] = useState(false);
   const [backgroundSaving, setBackgroundSaving] = useState(false);
 
@@ -119,6 +123,29 @@ export default function ProfilePage() {
     prefer_not_to_say: '—',
   };
 
+  async function handleSaveCallsign() {
+    const trimmed = callsignValue.trim().slice(0, 20);
+    if (!trimmed) { setCallsignError('CALLSIGN REQUIRED'); return; }
+    setCallsignSaving(true);
+    setCallsignError('');
+    try {
+      const res = await fetch('/api/player', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: trimmed }),
+      });
+      if (res.ok) {
+        applyProfile(await res.json());
+        setEditingCallsign(false);
+      } else {
+        const d = await res.json();
+        setCallsignError(d.error ?? 'SAVE FAILED');
+      }
+    } finally {
+      setCallsignSaving(false);
+    }
+  }
+
   async function handleSetBackground(value: PlayerBackground) {
     setBackgroundSaving(true);
     try {
@@ -136,9 +163,7 @@ export default function ProfilePage() {
     }
   }
 
-  const topRows: { label: string; value: string | number }[] = [
-    { label: 'CALLSIGN', value: profile.displayName ?? '—' },
-  ];
+  const topRows: { label: string; value: string | number }[] = [];
 
   const bottomRows: { label: string; value: string | number }[] = [
     { label: 'LEVEL',             value: profile.level },
@@ -159,12 +184,57 @@ export default function ProfilePage() {
           </div>
 
           <div className="divide-y divide-[rgba(0,255,65,0.08)]">
-            {topRows.map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between px-3 py-2">
-                <span className="text-[#003a0e] text-[10px] font-mono tracking-wider">{label}</span>
-                <span className="text-xs font-mono font-bold text-[#00ff41]">{value}</span>
+            {/* CALLSIGN row — editable */}
+            <div className="px-3 py-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[#003a0e] text-[10px] font-mono tracking-wider">CALLSIGN</span>
+                {!editingCallsign ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold text-[#00ff41]">{profile.displayName ?? '—'}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setCallsignValue(profile.displayName ?? ''); setCallsignError(''); setEditingCallsign(true); }}
+                      className="text-[#003a0e] text-[9px] font-mono hover:text-[#00aa28] transition-colors"
+                    >
+                      [EDIT]
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditingCallsign(false)}
+                    className="text-[#003a0e] text-[9px] font-mono hover:text-[#00aa28] transition-colors"
+                  >
+                    [CANCEL]
+                  </button>
+                )}
               </div>
-            ))}
+              {editingCallsign && (
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    value={callsignValue}
+                    onChange={(e) => setCallsignValue(e.target.value.slice(0, 20))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCallsign(); }}
+                    maxLength={20}
+                    autoFocus
+                    className="w-full bg-transparent border border-[rgba(0,255,65,0.35)] px-2 py-1 text-[#00ff41] font-mono text-xs focus:outline-none focus:border-[rgba(0,255,65,0.7)] placeholder:text-[#003a0e]"
+                    placeholder="UP TO 20 CHARACTERS"
+                  />
+                  {callsignError && (
+                    <div className="text-[#ff3333] text-[9px] font-mono">{callsignError}</div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveCallsign}
+                    disabled={callsignSaving}
+                    className="w-full py-1.5 border border-[rgba(0,255,65,0.5)] text-[#00ff41] font-mono text-[10px] tracking-widest hover:bg-[rgba(0,255,65,0.06)] disabled:opacity-40 transition-colors"
+                  >
+                    {callsignSaving ? '...' : '[ SAVE ]'}
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* BACKGROUND row — editable */}
             <div className="px-3 py-2 space-y-2">
