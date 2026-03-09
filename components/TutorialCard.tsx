@@ -46,7 +46,7 @@ export function TutorialCard({ onComplete }: Props) {
       {/* Confidence block */}
       <div className="term-border bg-[#060c06] px-3 py-3 space-y-2">
         <div className="text-[#00aa28] text-[10px] font-mono tracking-widest">CONFIDENCE BETTING</div>
-        <div className="text-[#003a0e] text-[10px] font-mono leading-relaxed">
+        <div className="text-[#00aa28] text-[10px] font-mono leading-relaxed">
           Before answering each card, set your confidence level:
         </div>
         <div className="space-y-1">
@@ -58,11 +58,11 @@ export function TutorialCard({ onComplete }: Props) {
             <div key={label} className="flex items-center gap-2 text-[10px] font-mono">
               <span className={`w-16 font-bold ${color}`}>{label}</span>
               <span className="text-[#00ff41]">{mult}</span>
-              <span className="text-[#003a0e]">— {note}</span>
+              <span className="text-[#00aa28]">— {note}</span>
             </div>
           ))}
         </div>
-        <div className="text-[#003a0e] text-[10px] font-mono pt-1">
+        <div className="text-[#00aa28] text-[10px] font-mono pt-1">
           Don&apos;t bet CERTAIN unless you&apos;re sure.
         </div>
       </div>
@@ -73,6 +73,7 @@ export function TutorialCard({ onComplete }: Props) {
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
           <span className="text-[#003a0e] text-[10px] font-mono tracking-widest">INCOMING_EMAIL</span>
           <button
+            type="button"
             onClick={() => setShowHeaders((v) => !v)}
             className={`text-[10px] font-mono px-2 py-0.5 border transition-colors ${
               showHeaders
@@ -116,11 +117,12 @@ export function TutorialCard({ onComplete }: Props) {
               <div className="flex items-center gap-1 flex-wrap">
                 <span className="text-[#00ff41]">{TUTORIAL_EMAIL.fromDisplay}</span>
                 <button
+                  type="button"
                   onClick={() => setShowFrom((v) => !v)}
                   className="text-[#003a0e] hover:text-[#00aa28] transition-colors"
                   aria-label="Reveal sender email"
                 >
-                  [↗]
+                  {showFrom ? '[−]' : '[↗]'}
                 </button>
               </div>
               {showFrom && (
@@ -150,6 +152,7 @@ export function TutorialCard({ onComplete }: Props) {
           <div className="text-[#00aa28] text-xs font-mono whitespace-pre-wrap leading-relaxed">
             {TUTORIAL_EMAIL.body.replace(TUTORIAL_EMAIL.url, '')}
             <button
+              type="button"
               onClick={() => setShowUrl((v) => !v)}
               className="text-[#ffaa00] underline underline-offset-2 hover:text-[#ffcc44] transition-colors"
             >
