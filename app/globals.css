@@ -55,13 +55,22 @@ body::after {
 .glow {
   text-shadow: 0 0 6px rgba(0, 255, 65, 0.95), 0 0 16px rgba(0, 255, 65, 0.6), 0 0 40px rgba(0, 255, 65, 0.2);
 }
+.glow-soft {
+  text-shadow: 0 0 4px rgba(0, 255, 65, 0.9), 0 0 10px rgba(0, 255, 65, 0.35);
+}
 
 .glow-red {
   text-shadow: 0 0 6px rgba(255, 51, 51, 0.95), 0 0 16px rgba(255, 51, 51, 0.6), 0 0 40px rgba(255, 51, 51, 0.2);
 }
+.glow-red-soft {
+  text-shadow: 0 0 4px rgba(255, 51, 51, 0.9), 0 0 10px rgba(255, 51, 51, 0.35);
+}
 
 .glow-amber {
   text-shadow: 0 0 6px rgba(255, 170, 0, 0.95), 0 0 16px rgba(255, 170, 0, 0.6), 0 0 40px rgba(255, 170, 0, 0.2);
+}
+.glow-amber-soft {
+  text-shadow: 0 0 4px rgba(255, 170, 0, 0.9), 0 0 10px rgba(255, 170, 0, 0.35);
 }
 
 /* Blinking cursor */
