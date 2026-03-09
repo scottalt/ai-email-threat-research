@@ -1,16 +1,18 @@
 import Link from 'next/link';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 
-export const dynamic = 'force-dynamic'; // always fetch live from Supabase
+export const dynamic = 'force-dynamic';
 
 interface IntelData {
   totalAnswers: number;
+  uniqueParticipants: number;
   phishingAnswers?: number;
   legitAnswers?: number;
   insufficient?: boolean;
   overallBypassRate: number;
   falsePositiveRate?: number;
   byTechnique: { technique: string; total: number; bypassRate: number }[];
+  byDifficulty: { difficulty: string; total: number; bypassRate: number }[];
   fluency: {
     highFluencyBypassRate: number | null;
     lowFluencyBypassRate: number | null;
@@ -39,6 +41,7 @@ interface IntelData {
     sample: number;
   };
   medianTimeByTechnique?: { technique: string; medianMs: number; sample: number }[];
+  refreshedAt: string;
 }
 
 function median(nums: number[]): number {
@@ -52,14 +55,22 @@ async function getIntel(): Promise<IntelData | null> {
     const supabase = getSupabaseAdminClient();
     const { data: answers } = await supabase
       .from('answers')
-      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url')
+      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id')
       .eq('game_mode', 'research');
 
     if (!answers || answers.length === 0) {
-      return { totalAnswers: 0, insufficient: true, overallBypassRate: 0, byTechnique: [], fluency: { highFluencyBypassRate: null, lowFluencyBypassRate: null, highFluencySample: 0, lowFluencySample: 0 }, genai: { genaiBypassRate: null, traditionalBypassRate: null, genaiSample: 0, traditionalSample: 0 }, byConfidence: [] };
+      return {
+        totalAnswers: 0, uniqueParticipants: 0, insufficient: true, overallBypassRate: 0,
+        byTechnique: [], byDifficulty: [],
+        fluency: { highFluencyBypassRate: null, lowFluencyBypassRate: null, highFluencySample: 0, lowFluencySample: 0 },
+        genai: { genaiBypassRate: null, traditionalBypassRate: null, genaiSample: 0, traditionalSample: 0 },
+        byConfidence: [],
+        refreshedAt: new Date().toISOString(),
+      };
     }
 
     const total = answers.length;
+    const uniqueParticipants = new Set(answers.map((a) => a.player_id).filter(Boolean)).size;
     const phishingAnswers = answers.filter((a) => a.is_phishing);
     const legitAnswers = answers.filter((a) => !a.is_phishing);
     const overallBypassRate = phishingAnswers.length ? Math.round((phishingAnswers.filter((a) => !a.correct).length / phishingAnswers.length) * 100) : 0;
@@ -98,6 +109,18 @@ async function getIntel(): Promise<IntelData | null> {
       .map(([technique, v]) => ({ technique, total: v.total, bypassRate: Math.round((v.bypassed / v.total) * 100) }))
       .sort((a, b) => b.bypassRate - a.bypassRate);
 
+    const DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'extreme'];
+    const difficultyMap: Record<string, { total: number; bypassed: number }> = {};
+    for (const a of phishingAnswers) {
+      if (!a.difficulty) continue;
+      if (!difficultyMap[a.difficulty]) difficultyMap[a.difficulty] = { total: 0, bypassed: 0 };
+      difficultyMap[a.difficulty].total++;
+      if (!a.correct) difficultyMap[a.difficulty].bypassed++;
+    }
+    const byDifficulty = DIFFICULTY_ORDER
+      .filter((d) => difficultyMap[d] && difficultyMap[d].total >= 5)
+      .map((d) => ({ difficulty: d, total: difficultyMap[d].total, bypassRate: Math.round((difficultyMap[d].bypassed / difficultyMap[d].total) * 100) }));
+
     const highFluency = phishingAnswers.filter((a) => a.prose_fluency !== null && a.prose_fluency >= 4);
     const lowFluency = phishingAnswers.filter((a) => a.prose_fluency !== null && a.prose_fluency <= 2);
     const highFluencyBypassRate = highFluency.length ? Math.round((highFluency.filter((a) => !a.correct).length / highFluency.length) * 100) : null;
@@ -115,11 +138,13 @@ async function getIntel(): Promise<IntelData | null> {
 
     return {
       totalAnswers: total,
+      uniqueParticipants,
       phishingAnswers: phishingAnswers.length,
       legitAnswers: legitAnswers.length,
       overallBypassRate,
       falsePositiveRate,
       byTechnique,
+      byDifficulty,
       fluency: { highFluencyBypassRate, lowFluencyBypassRate, highFluencySample: highFluency.length, lowFluencySample: lowFluency.length },
       genai: { genaiBypassRate, traditionalBypassRate, genaiSample: genaiAnswers.length, traditionalSample: nonGenaiAnswers.length },
       byConfidence,
@@ -135,20 +160,50 @@ async function getIntel(): Promise<IntelData | null> {
       },
       authTrap: { bypassRate: authTrapBypassRate, sample: authTrapAnswers.length },
       medianTimeByTechnique,
+      refreshedAt: new Date().toISOString(),
     };
   } catch {
     return null;
   }
 }
 
-function StatBlock({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function StatBlock({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: 'red' | 'amber' }) {
+  const valueColor = highlight === 'red' ? 'text-[#ff3333] glow-red' : highlight === 'amber' ? 'text-[#ffaa00]' : 'text-[#00ff41] glow';
   return (
     <div className="term-border bg-[#060c06] px-3 py-3 text-center">
       <div className="text-[#003a0e] text-[10px] font-mono tracking-widest">{label}</div>
-      <div className="text-[#00ff41] text-2xl font-black font-mono glow mt-1">{value}</div>
+      <div className={`text-2xl font-black font-mono mt-1 ${valueColor}`}>{value}</div>
       {sub && <div className="text-[#003a0e] text-[10px] font-mono mt-0.5">{sub}</div>}
     </div>
   );
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+      <span className="text-[#00aa28] text-xs tracking-widest">{title}</span>
+    </div>
+  );
+}
+
+function BarRow({ label, value, pct, color, sub }: { label: string; value: string; pct: number; color: string; sub?: string }) {
+  return (
+    <div className="flex items-center px-3 py-2 gap-3">
+      <div className="flex-1 min-w-0">
+        <span className="text-[#00aa28] text-xs font-mono">{label}</span>
+        {sub && <span className="text-[#003a0e] text-[10px] font-mono ml-1">{sub}</span>}
+      </div>
+      <div className="w-24 h-1 bg-[#003a0e] shrink-0">
+        <div className="h-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+      <span className="text-xs font-mono w-8 text-right shrink-0" style={{ color }}>{value}</span>
+    </div>
+  );
+}
+
+function formatRefreshedAt(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
 }
 
 export default async function IntelPage() {
@@ -156,18 +211,27 @@ export default async function IntelPage() {
 
   return (
     <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center">
-      <div className="w-full max-w-sm space-y-4 mt-8">
+      <div className="w-full max-w-2xl space-y-4 mt-8">
+
+        {/* Header */}
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
             <span className="text-[#00aa28] text-xs tracking-widest">THREAT_INTELLIGENCE</span>
             <Link href="/" className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28]">← TERMINAL</Link>
           </div>
-          <div className="px-3 py-3 space-y-1">
-            <div className="text-[#00ff41] text-xs font-mono">STATE OF PHISHING IN THE GENAI ERA</div>
-            <div className="text-[#003a0e] text-[10px] font-mono">
-              Live aggregate findings from the Retro Phish research dataset.
-              Answers from Research Mode only. Updated every 5 minutes.
+          <div className="px-3 py-3 flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="text-[#00ff41] text-xs font-mono">STATE OF PHISHING IN THE GENAI ERA</div>
+              <div className="text-[#003a0e] text-[10px] font-mono">
+                Live aggregate findings from the Retro Phish research dataset. Research Mode answers only.
+              </div>
             </div>
+            {data?.refreshedAt && (
+              <div className="text-[#003a0e] text-[10px] font-mono shrink-0 text-right">
+                <div>REFRESHED</div>
+                <div className="text-[#00aa28]">{formatRefreshedAt(data.refreshedAt)}</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -178,215 +242,212 @@ export default async function IntelPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3">
+            {/* Hero stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <StatBlock label="TOTAL ANSWERS" value={data.totalAnswers.toLocaleString()} />
-              <StatBlock label="PHISHING BYPASS RATE" value={`${data.overallBypassRate}%`} sub="phishing not detected" />
+              <StatBlock label="PARTICIPANTS" value={data.uniqueParticipants.toLocaleString()} sub="unique analysts" />
+              <StatBlock label="BYPASS RATE" value={`${data.overallBypassRate}%`} sub="phishing missed" highlight={data.overallBypassRate >= 40 ? 'red' : undefined} />
+              {data.falsePositiveRate !== undefined && (
+                <StatBlock label="FALSE POSITIVE" value={`${data.falsePositiveRate}%`} sub="legit flagged" highlight={data.falsePositiveRate >= 20 ? 'amber' : undefined} />
+              )}
             </div>
-            {data.falsePositiveRate !== undefined && (
+
+            {/* Phishing/legit split */}
+            {data.phishingAnswers !== undefined && (
               <div className="grid grid-cols-2 gap-3">
-                <StatBlock
-                  label="FALSE POSITIVE RATE"
-                  value={`${data.falsePositiveRate}%`}
-                  sub="legit flagged as phishing"
-                />
-                <StatBlock
-                  label="PHISHING ANSWERS"
-                  value={(data.phishingAnswers ?? 0).toLocaleString()}
-                  sub={`legit: ${(data.legitAnswers ?? 0).toLocaleString()}`}
-                />
+                <StatBlock label="PHISHING ANSWERS" value={(data.phishingAnswers).toLocaleString()} />
+                <StatBlock label="LEGIT ANSWERS" value={(data.legitAnswers ?? 0).toLocaleString()} />
               </div>
             )}
 
-            {(data.fluency.highFluencyBypassRate !== null || data.fluency.lowFluencyBypassRate !== null) && (
-              <div className="term-border bg-[#060c06]">
-                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-                  <span className="text-[#00aa28] text-xs tracking-widest">PROSE QUALITY vs BYPASS RATE</span>
+            {/* Two-column layout on md+ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Bypass by technique */}
+              {data.byTechnique.length > 0 && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="BYPASS RATE BY TECHNIQUE" />
+                  <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                    {data.byTechnique.map(({ technique, bypassRate, total }) => (
+                      <BarRow
+                        key={technique}
+                        label={technique}
+                        sub={`n=${total}`}
+                        value={`${bypassRate}%`}
+                        pct={bypassRate}
+                        color="#ff3333"
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="px-3 py-3 space-y-2">
-                  {data.fluency.highFluencyBypassRate !== null && (
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-[#00aa28]">HIGH FLUENCY (4–5/5)</span>
-                      <div className="text-right">
-                        <span className="text-[#ff3333] font-bold">{data.fluency.highFluencyBypassRate}%</span>
-                        <span className="text-[#003a0e] text-[10px] ml-1">n={data.fluency.highFluencySample}</span>
-                      </div>
-                    </div>
-                  )}
-                  {data.fluency.lowFluencyBypassRate !== null && (
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-[#00aa28]">LOW FLUENCY (0–2/5)</span>
-                      <div className="text-right">
-                        <span className="text-[#00ff41] font-bold">{data.fluency.lowFluencyBypassRate}%</span>
-                        <span className="text-[#003a0e] text-[10px] ml-1">n={data.fluency.lowFluencySample}</span>
-                      </div>
-                    </div>
-                  )}
-                  <div className="text-[#003a0e] text-[10px] font-mono pt-1">
+              )}
+
+              {/* Bypass by difficulty */}
+              {data.byDifficulty.length > 0 && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="BYPASS RATE BY DIFFICULTY" />
+                  <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                    {data.byDifficulty.map(({ difficulty, bypassRate, total }) => {
+                      const color = difficulty === 'extreme' ? '#ff3333' : difficulty === 'hard' ? '#ffaa00' : difficulty === 'medium' ? '#00aa28' : '#00ff41';
+                      return (
+                        <BarRow
+                          key={difficulty}
+                          label={difficulty.toUpperCase()}
+                          sub={`n=${total}`}
+                          value={`${bypassRate}%`}
+                          pct={bypassRate}
+                          color={color}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* GenAI vs traditional */}
+              {(data.genai.genaiBypassRate !== null || data.genai.traditionalBypassRate !== null) && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="GENAI vs TRADITIONAL PHISHING" />
+                  <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                    {data.genai.genaiBypassRate !== null && (
+                      <BarRow label="GENAI SUSPECTED" sub={`n=${data.genai.genaiSample}`} value={`${data.genai.genaiBypassRate}%`} pct={data.genai.genaiBypassRate} color="#ff3333" />
+                    )}
+                    {data.genai.traditionalBypassRate !== null && (
+                      <BarRow label="TRADITIONAL" sub={`n=${data.genai.traditionalSample}`} value={`${data.genai.traditionalBypassRate}%`} pct={data.genai.traditionalBypassRate} color="#00ff41" />
+                    )}
+                  </div>
+                  <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
                     Higher fluency = harder to detect. GenAI phishing exploits this gap.
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {(data.genai.genaiBypassRate !== null || data.genai.traditionalBypassRate !== null) && (
-              <div className="term-border bg-[#060c06]">
-                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-                  <span className="text-[#00aa28] text-xs tracking-widest">GENAI vs TRADITIONAL PHISHING</span>
-                </div>
-                <div className="px-3 py-3 space-y-2">
-                  {data.genai.genaiBypassRate !== null && (
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-[#ffaa00]">GENAI SUSPECTED</span>
-                      <div className="text-right">
-                        <span className="text-[#ff3333] font-bold">{data.genai.genaiBypassRate}%</span>
-                        <span className="text-[#003a0e] text-[10px] ml-1">n={data.genai.genaiSample}</span>
-                      </div>
-                    </div>
-                  )}
-                  {data.genai.traditionalBypassRate !== null && (
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-[#00aa28]">TRADITIONAL</span>
-                      <div className="text-right">
-                        <span className="text-[#00ff41] font-bold">{data.genai.traditionalBypassRate}%</span>
-                        <span className="text-[#003a0e] text-[10px] ml-1">n={data.genai.traditionalSample}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {data.byTechnique.length > 0 && (
-              <div className="term-border bg-[#060c06]">
-                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-                  <span className="text-[#00aa28] text-xs tracking-widest">BYPASS RATE BY TECHNIQUE</span>
-                </div>
-                <div className="divide-y divide-[rgba(0,255,65,0.08)]">
-                  {data.byTechnique.map(({ technique, bypassRate, total }) => (
-                    <div key={technique} className="flex items-center px-3 py-2 gap-3">
-                      <span className="text-[#00aa28] text-xs font-mono flex-1">{technique}</span>
-                      <div className="w-20 h-1 bg-[#003a0e]">
-                        <div className="h-full bg-[#ff3333]" style={{ width: `${bypassRate}%` }} />
-                      </div>
-                      <span className="text-[#ff3333] text-xs font-mono w-8 text-right">{bypassRate}%</span>
-                      <span className="text-[#003a0e] text-[10px] font-mono">n={total}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {data.byConfidence.some((c) => c.total > 0) && (
-              <div className="term-border bg-[#060c06]">
-                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-                  <span className="text-[#00aa28] text-xs tracking-widest">CONFIDENCE CALIBRATION</span>
-                </div>
-                <div className="divide-y divide-[rgba(0,255,65,0.08)]">
-                  {data.byConfidence.map(({ confidence, accuracyRate, total }) => (
-                    <div key={confidence} className="flex items-center px-3 py-2 gap-3">
-                      <span className="text-[#00aa28] text-xs font-mono flex-1">{confidence.toUpperCase()}</span>
-                      <span className="text-[#00ff41] text-xs font-mono">{accuracyRate}% accurate</span>
-                      <span className="text-[#003a0e] text-[10px] font-mono">n={total}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
-                  Are players who bet CERTAIN actually more accurate?
-                </div>
-              </div>
-            )}
-
-            {data.toolUsage && data.toolUsage.headersOpenedSample >= 10 && (
-              <div className="term-border bg-[#060c06]">
-                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-                  <span className="text-[#00aa28] text-xs tracking-widest">TOOL_USAGE_CORRELATION</span>
-                </div>
-                <div className="px-3 py-3 space-y-2">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="term-border px-2 py-2 text-center">
-                      <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.toolUsage.headersOpenedPct}%</div>
-                      <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">opened [HEADERS]</div>
-                    </div>
-                    <div className="term-border px-2 py-2 text-center">
-                      <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.toolUsage.urlInspectedPct}%</div>
-                      <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">inspected URLs</div>
-                    </div>
+              {/* Prose fluency */}
+              {(data.fluency.highFluencyBypassRate !== null || data.fluency.lowFluencyBypassRate !== null) && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="PROSE QUALITY vs BYPASS RATE" />
+                  <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                    {data.fluency.highFluencyBypassRate !== null && (
+                      <BarRow label="HIGH FLUENCY (4–5/5)" sub={`n=${data.fluency.highFluencySample}`} value={`${data.fluency.highFluencyBypassRate}%`} pct={data.fluency.highFluencyBypassRate} color="#ff3333" />
+                    )}
+                    {data.fluency.lowFluencyBypassRate !== null && (
+                      <BarRow label="LOW FLUENCY (0–2/5)" sub={`n=${data.fluency.lowFluencySample}`} value={`${data.fluency.lowFluencyBypassRate}%`} pct={data.fluency.lowFluencyBypassRate} color="#00ff41" />
+                    )}
                   </div>
-                  {data.toolUsage.headersOpenedAccuracy !== null && data.toolUsage.headersNotOpenedAccuracy !== null && (
-                    <div className="space-y-1 pt-1">
-                      <div className="flex justify-between text-xs font-mono">
-                        <span className="text-[#00aa28]">accuracy w/ headers open</span>
-                        <span className="text-[#00ff41] glow">{data.toolUsage.headersOpenedAccuracy}%</span>
-                      </div>
-                      <div className="flex justify-between text-xs font-mono">
-                        <span className="text-[#00aa28]">accuracy w/o headers open</span>
-                        <span className="text-[#ffaa00]">{data.toolUsage.headersNotOpenedAccuracy}%</span>
-                      </div>
-                      {data.toolUsage.urlInspectedAccuracy !== null && (
-                        <>
-                          <div className="flex justify-between text-xs font-mono">
-                            <span className="text-[#00aa28]">accuracy w/ URL inspected</span>
-                            <span className="text-[#00ff41] glow">{data.toolUsage.urlInspectedAccuracy}%</span>
-                          </div>
-                          <div className="flex justify-between text-xs font-mono">
-                            <span className="text-[#00aa28]">accuracy w/o URL inspected</span>
-                            <span className="text-[#ffaa00]">{data.toolUsage.urlNotInspectedAccuracy}%</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {data.authTrap && data.authTrap.sample >= 10 && data.authTrap.bypassRate !== null && (
-              <div className="term-border bg-[#060c06]">
-                <div className="border-b border-[rgba(255,51,51,0.35)] px-3 py-1.5">
-                  <span className="text-[#ff3333] text-xs tracking-widest glow-red">AUTH_TRAP_FINDING</span>
-                </div>
-                <div className="px-3 py-3">
-                  <div className="text-center mb-2">
-                    <div className="text-[#ff3333] text-2xl font-mono font-bold glow-red">{data.authTrap.bypassRate}%</div>
-                    <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">bypass rate on PASS-headers phishing</div>
-                    <div className="text-[#003a0e] text-[10px] font-mono">n={data.authTrap.sample}</div>
+              {/* Confidence calibration */}
+              {data.byConfidence.some((c) => c.total > 0) && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="CONFIDENCE CALIBRATION" />
+                  <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                    {data.byConfidence.map(({ confidence, accuracyRate, total }) => (
+                      <BarRow
+                        key={confidence}
+                        label={confidence.toUpperCase()}
+                        sub={`n=${total}`}
+                        value={`${accuracyRate}%`}
+                        pct={accuracyRate}
+                        color="#00ff41"
+                      />
+                    ))}
                   </div>
-                  <p className="text-[#00aa28] text-[10px] font-mono leading-relaxed">
-                    Cards where SPF/DKIM/DMARC passed but the email was phishing. Authentication headers alone are insufficient — attackers configure valid auth on lookalike domains.
-                  </p>
+                  <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
+                    Are players who bet CERTAIN actually more accurate?
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {data.medianTimeByTechnique && data.medianTimeByTechnique.length > 0 && (
-              <div className="term-border bg-[#060c06]">
-                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-                  <span className="text-[#00aa28] text-xs tracking-widest">MEDIAN_DECISION_TIME</span>
+              {/* Tool usage */}
+              {data.toolUsage && data.toolUsage.headersOpenedSample >= 10 && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="TOOL USAGE CORRELATION" />
+                  <div className="px-3 py-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="term-border px-2 py-2 text-center">
+                        <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.toolUsage.headersOpenedPct}%</div>
+                        <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">opened [HEADERS]</div>
+                      </div>
+                      <div className="term-border px-2 py-2 text-center">
+                        <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.toolUsage.urlInspectedPct}%</div>
+                        <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">inspected URLs</div>
+                      </div>
+                    </div>
+                    {data.toolUsage.headersOpenedAccuracy !== null && data.toolUsage.headersNotOpenedAccuracy !== null && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs font-mono">
+                          <span className="text-[#00aa28]">accuracy w/ headers open</span>
+                          <span className="text-[#00ff41] glow">{data.toolUsage.headersOpenedAccuracy}%</span>
+                        </div>
+                        <div className="flex justify-between text-xs font-mono">
+                          <span className="text-[#00aa28]">accuracy w/o headers</span>
+                          <span className="text-[#ffaa00]">{data.toolUsage.headersNotOpenedAccuracy}%</span>
+                        </div>
+                        {data.toolUsage.urlInspectedAccuracy !== null && (
+                          <>
+                            <div className="flex justify-between text-xs font-mono">
+                              <span className="text-[#00aa28]">accuracy w/ URL inspected</span>
+                              <span className="text-[#00ff41] glow">{data.toolUsage.urlInspectedAccuracy}%</span>
+                            </div>
+                            <div className="flex justify-between text-xs font-mono">
+                              <span className="text-[#00aa28]">accuracy w/o URL</span>
+                              <span className="text-[#ffaa00]">{data.toolUsage.urlNotInspectedAccuracy}%</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="px-3 py-3 space-y-2">
-                  {(() => {
-                    const maxMs = Math.max(...data.medianTimeByTechnique.map((t) => t.medianMs));
-                    return data.medianTimeByTechnique.map(({ technique, medianMs }) => {
-                      const pct = Math.round((medianMs / maxMs) * 100);
-                      const secs = (medianMs / 1000).toFixed(1);
-                      return (
+              )}
+
+              {/* Auth trap */}
+              {data.authTrap && data.authTrap.sample >= 10 && data.authTrap.bypassRate !== null && (
+                <div className="term-border bg-[#060c06]">
+                  <div className="border-b border-[rgba(255,51,51,0.35)] px-3 py-1.5">
+                    <span className="text-[#ff3333] text-xs tracking-widest glow-red">AUTH_TRAP_FINDING</span>
+                  </div>
+                  <div className="px-3 py-3">
+                    <div className="text-center mb-2">
+                      <div className="text-[#ff3333] text-2xl font-mono font-bold glow-red">{data.authTrap.bypassRate}%</div>
+                      <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">bypass on PASS-headers phishing</div>
+                      <div className="text-[#003a0e] text-[10px] font-mono">n={data.authTrap.sample}</div>
+                    </div>
+                    <p className="text-[#00aa28] text-[10px] font-mono leading-relaxed">
+                      Cards where SPF/DKIM/DMARC passed but the email was phishing. Authentication headers alone are insufficient — attackers configure valid auth on lookalike domains.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Decision time */}
+              {data.medianTimeByTechnique && data.medianTimeByTechnique.length > 0 && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="MEDIAN DECISION TIME" />
+                  <div className="px-3 py-3 space-y-2">
+                    {(() => {
+                      const maxMs = Math.max(...data.medianTimeByTechnique!.map((t) => t.medianMs));
+                      return data.medianTimeByTechnique!.map(({ technique, medianMs, sample }) => (
                         <div key={technique} className="space-y-0.5">
                           <div className="flex justify-between text-[10px] font-mono">
                             <span className="text-[#00aa28] truncate">{technique}</span>
-                            <span className="text-[#00ff41] shrink-0 ml-2">{secs}s</span>
+                            <span className="text-[#00ff41] shrink-0 ml-2">{(medianMs / 1000).toFixed(1)}s <span className="text-[#003a0e]">n={sample}</span></span>
                           </div>
                           <div className="h-1 bg-[#003a0e] w-full">
-                            <div className="h-full bg-[#00aa28]" style={{ width: `${pct}%` }} />
+                            <div className="h-full bg-[#00aa28]" style={{ width: `${Math.round((medianMs / maxMs) * 100)}%` }} />
                           </div>
                         </div>
-                      );
-                    });
-                  })()}
-                  <p className="text-[#003a0e] text-[10px] font-mono pt-1">Faster decisions may indicate higher confidence — or less investigation.</p>
+                      ));
+                    })()}
+                    <p className="text-[#003a0e] text-[10px] font-mono pt-1">Faster decisions may indicate higher confidence — or less investigation.</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
+            </div>
+
+            {/* Methodology */}
             <div className="term-border bg-[#060c06] px-3 py-3 text-[10px] font-mono text-[#003a0e] space-y-1 leading-relaxed">
               <div className="text-[#00aa28]">METHODOLOGY</div>
               <div>Research Mode only. Anonymous, voluntary. Text-based recognition task — visual cues stripped. Self-selected security-aware sample. All cards are AI-generated (Claude Haiku + Sonnet). Sample sizes shown as n=.</div>
