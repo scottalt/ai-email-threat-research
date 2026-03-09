@@ -20,10 +20,10 @@ const TUTORIAL_EMAIL = {
 
 type Confidence = 'GUESSING' | 'LIKELY' | 'CERTAIN';
 
-const CONFIDENCE_OPTIONS: { key: Confidence; mult: string; color: string; penalty: string }[] = [
-  { key: 'GUESSING', mult: '1×', color: 'text-[#00aa28]', penalty: 'no penalty' },
-  { key: 'LIKELY',   mult: '2×', color: 'text-[#ffaa00]', penalty: '−100 if wrong' },
-  { key: 'CERTAIN',  mult: '3×', color: 'text-[#ff3333]', penalty: '−200 if wrong' },
+const CONFIDENCE_OPTIONS: { key: Confidence; mult: string; color: string; border: string; penalty: string }[] = [
+  { key: 'GUESSING', mult: '1×', color: 'text-[#00aa28]', border: 'border-[rgba(0,255,65,0.35)]',   penalty: 'no penalty' },
+  { key: 'LIKELY',   mult: '2×', color: 'text-[#ffaa00]', border: 'border-[rgba(255,170,0,0.6)]',  penalty: '−100 if wrong' },
+  { key: 'CERTAIN',  mult: '3×', color: 'text-[#ff3333]', border: 'border-[rgba(255,51,51,0.6)]',  penalty: '−200 if wrong' },
 ];
 
 export function TutorialCard({ onComplete }: Props) {
@@ -170,22 +170,24 @@ export function TutorialCard({ onComplete }: Props) {
 
       {/* Confidence selector */}
       {!answer && (
-        <div className="term-border bg-[#060c06] px-3 py-3 space-y-2">
-          <div className="text-[#003a0e] text-[10px] font-mono tracking-widest">SET CONFIDENCE</div>
+        <div className="w-full space-y-2">
+          <div className="text-xs text-[#00aa28] font-mono text-center tracking-widest">
+            — SET CONFIDENCE BEFORE ANSWERING —
+          </div>
           <div className="flex gap-2">
-            {CONFIDENCE_OPTIONS.map(({ key, mult, color, penalty }) => (
+            {CONFIDENCE_OPTIONS.map(({ key, mult, color, border, penalty }) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setConfidence(key)}
-                className={`flex-1 py-2 border text-[10px] font-mono font-bold transition-all ${
+                className={`flex-1 py-3 border font-mono text-xs tracking-wider transition-all active:scale-95 flex flex-col items-center gap-0.5 ${color} ${
                   confidence === key
-                    ? `${color} border-current bg-[rgba(0,255,65,0.04)]`
-                    : 'text-[#003a0e] border-[rgba(0,255,65,0.2)] hover:text-[#00aa28]'
+                    ? `${border} bg-[rgba(0,255,65,0.06)]`
+                    : `${border} opacity-60 hover:opacity-100`
                 }`}
               >
-                <div>{key}</div>
-                <div className="text-[8px] font-normal opacity-70 mt-0.5">{mult} · {penalty}</div>
+                <span>{key}</span>
+                <span className="text-[9px] font-normal opacity-70">{mult} · {penalty}</span>
               </button>
             ))}
           </div>
