@@ -107,6 +107,27 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     }
   }, [soundEnabled, previewMode]);
 
+  // Retry music playback on first user gesture — browsers block autoplay until interaction
+  useEffect(() => {
+    if (previewMode) return;
+    function handleFirstInteraction() {
+      if (musicRef.current && musicRef.current.paused) {
+        musicRef.current.play().catch(() => {});
+      }
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+    }
+    document.addEventListener('click', handleFirstInteraction);
+    document.addEventListener('touchstart', handleFirstInteraction);
+    document.addEventListener('keydown', handleFirstInteraction);
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+    };
+  }, [previewMode]);
+
   useEffect(() => {
     return () => {
       musicRef.current?.pause();
@@ -353,7 +374,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   }
 
   if (phase === 'start') {
-    return <StartScreen onStart={startRound} />;
+    return <StartScreen onStart={startRound} soundEnabled={soundEnabled} onToggleSound={toggleSound} />;
   }
 
   if (phase === ('loading' as GamePhase)) {

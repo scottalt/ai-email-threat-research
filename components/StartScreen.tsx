@@ -8,7 +8,6 @@ import { usePlayer } from '@/lib/usePlayer';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
 import { playBootTick } from '@/lib/sounds';
-import { useSoundEnabled } from '@/lib/useSoundEnabled';
 
 interface LeaderboardEntry {
   name: string;
@@ -18,6 +17,8 @@ interface LeaderboardEntry {
 
 interface Props {
   onStart: (mode: GameMode) => void;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
 }
 
 const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
@@ -40,7 +41,7 @@ const BOOT_LINES: { text: string; bright: boolean }[] = [
   { text: '> SYSTEM READY.',                bright: true  },
 ];
 
-export function StartScreen({ onStart }: Props) {
+export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound }: Props) {
   const [visibleCount, setVisibleCount] = useState(0);
   const [showButton, setShowButton] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -54,7 +55,6 @@ export function StartScreen({ onStart }: Props) {
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'score' | 'daily' | 'xp'>('score');
   const [showGuide, setShowGuide] = useState(false);
-  const { soundEnabled, toggleSound } = useSoundEnabled();
 
   const fetchLeaderboard = useCallback(async () => {
     const d = new Date();
