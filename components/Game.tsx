@@ -40,8 +40,10 @@ import { FeedbackCard } from './FeedbackCard';
 import { RoundSummary } from './RoundSummary';
 import { StartScreen } from './StartScreen';
 import { ResearchIntro } from './ResearchIntro';
+import { TutorialCard } from './TutorialCard';
 import type { Card, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
+import { usePlayer } from '@/lib/usePlayer';
 import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
 import { getRankFromLevel } from '@/lib/rank';
 
@@ -59,7 +61,7 @@ const CONFIDENCE_PENALTY: Record<Confidence, number> = {
   certain: -200,
 };
 
-type GamePhase = 'start' | 'playing' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro' | 'research_unavailable';
+type GamePhase = 'start' | 'playing' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro' | 'research_unavailable' | 'tutorial';
 
 export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const [phase, setPhase] = useState<GamePhase>('start');
@@ -72,6 +74,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const [mode, setMode] = useState<GameMode>('freeplay');
   const [dailyResult, setDailyResult] = useState<{ score: number; totalScore: number } | null>(null);
   const { soundEnabled, toggleSound } = useSoundEnabled();
+  const { profile } = usePlayer();
   const sessionId = useRef<string>('');
   const sessionStartedAt = useRef<string>('');
   const [correctCount, setCorrectCount] = useState(0);
@@ -340,7 +343,18 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   }
 
   if (phase === 'research_intro') {
-    return <ResearchIntro onBegin={() => setPhase('playing')} />;
+    return (
+      <ResearchIntro
+        onBegin={() => {
+          const isFirstTime = !profile || (profile.researchAnswersSubmitted ?? 0) === 0;
+          setPhase(isFirstTime ? 'tutorial' : 'playing');
+        }}
+      />
+    );
+  }
+
+  if (phase === 'tutorial') {
+    return <TutorialCard onComplete={() => setPhase('playing')} />;
   }
 
   if (phase === 'research_unavailable') {
