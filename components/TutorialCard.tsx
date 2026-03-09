@@ -172,6 +172,7 @@ export function TutorialCard({ onComplete }: Props) {
 
       {/* CTA */}
       <button
+        type="button"
         onClick={onComplete}
         className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
       >
