@@ -47,15 +47,15 @@ export async function GET() {
     const authTrapBypassRate = authTrapAnswers.length
       ? Math.round((authTrapAnswers.filter((a) => !a.correct).length / authTrapAnswers.length) * 100) : null;
 
-    // Median time-to-answer by technique
     function median(nums: number[]): number {
       const sorted = [...nums].sort((a, b) => a - b);
       const mid = Math.floor(sorted.length / 2);
       return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
     }
 
+    // Median time-to-answer by technique — phishing cards only
     const techniqueTimeMap: Record<string, number[]> = {};
-    for (const a of answers) {
+    for (const a of phishingAnswers) {
       if (!a.technique || a.time_from_render_ms == null) continue;
       if (!techniqueTimeMap[a.technique]) techniqueTimeMap[a.technique] = [];
       techniqueTimeMap[a.technique].push(a.time_from_render_ms);
@@ -86,17 +86,17 @@ export async function GET() {
       }))
       .sort((a, b) => b.bypassRate - a.bypassRate);
 
-    // High fluency (4-5) vs low fluency (0-2) bypass rate
-    const highFluency = answers.filter((a) => a.prose_fluency !== null && a.prose_fluency >= 4);
-    const lowFluency = answers.filter((a) => a.prose_fluency !== null && a.prose_fluency <= 2);
+    // High fluency (4-5) vs low fluency (0-2) bypass rate — phishing cards only
+    const highFluency = phishingAnswers.filter((a) => a.prose_fluency !== null && a.prose_fluency >= 4);
+    const lowFluency = phishingAnswers.filter((a) => a.prose_fluency !== null && a.prose_fluency <= 2);
     const highFluencyBypassRate = highFluency.length
       ? Math.round((highFluency.filter((a) => !a.correct).length / highFluency.length) * 100) : null;
     const lowFluencyBypassRate = lowFluency.length
       ? Math.round((lowFluency.filter((a) => !a.correct).length / lowFluency.length) * 100) : null;
 
-    // GenAI suspected (medium/high confidence) bypass rate
-    const genaiAnswers = answers.filter((a) => a.is_genai_suspected && ['medium', 'high'].includes(a.genai_confidence ?? ''));
-    const nonGenaiAnswers = answers.filter((a) => a.is_genai_suspected === false);
+    // GenAI suspected (medium/high confidence) bypass rate — phishing cards only
+    const genaiAnswers = phishingAnswers.filter((a) => a.is_genai_suspected && ['medium', 'high'].includes(a.genai_confidence ?? ''));
+    const nonGenaiAnswers = phishingAnswers.filter((a) => a.is_genai_suspected === false);
     const genaiBypassRate = genaiAnswers.length
       ? Math.round((genaiAnswers.filter((a) => !a.correct).length / genaiAnswers.length) * 100) : null;
     const traditionalBypassRate = nonGenaiAnswers.length

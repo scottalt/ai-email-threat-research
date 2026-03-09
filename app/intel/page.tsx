@@ -76,7 +76,7 @@ async function getIntel(): Promise<IntelData | null> {
     const authTrapBypassRate = authTrapAnswers.length ? Math.round((authTrapAnswers.filter((a) => !a.correct).length / authTrapAnswers.length) * 100) : null;
 
     const techniqueTimeMap: Record<string, number[]> = {};
-    for (const a of answers) {
+    for (const a of phishingAnswers) {
       if (!a.technique || a.time_from_render_ms == null) continue;
       if (!techniqueTimeMap[a.technique]) techniqueTimeMap[a.technique] = [];
       techniqueTimeMap[a.technique].push(a.time_from_render_ms);
@@ -98,13 +98,13 @@ async function getIntel(): Promise<IntelData | null> {
       .map(([technique, v]) => ({ technique, total: v.total, bypassRate: Math.round((v.bypassed / v.total) * 100) }))
       .sort((a, b) => b.bypassRate - a.bypassRate);
 
-    const highFluency = answers.filter((a) => a.prose_fluency !== null && a.prose_fluency >= 4);
-    const lowFluency = answers.filter((a) => a.prose_fluency !== null && a.prose_fluency <= 2);
+    const highFluency = phishingAnswers.filter((a) => a.prose_fluency !== null && a.prose_fluency >= 4);
+    const lowFluency = phishingAnswers.filter((a) => a.prose_fluency !== null && a.prose_fluency <= 2);
     const highFluencyBypassRate = highFluency.length ? Math.round((highFluency.filter((a) => !a.correct).length / highFluency.length) * 100) : null;
     const lowFluencyBypassRate = lowFluency.length ? Math.round((lowFluency.filter((a) => !a.correct).length / lowFluency.length) * 100) : null;
 
-    const genaiAnswers = answers.filter((a) => a.is_genai_suspected && ['medium', 'high'].includes(a.genai_confidence ?? ''));
-    const nonGenaiAnswers = answers.filter((a) => a.is_genai_suspected === false);
+    const genaiAnswers = phishingAnswers.filter((a) => a.is_genai_suspected && ['medium', 'high'].includes(a.genai_confidence ?? ''));
+    const nonGenaiAnswers = phishingAnswers.filter((a) => a.is_genai_suspected === false);
     const genaiBypassRate = genaiAnswers.length ? Math.round((genaiAnswers.filter((a) => !a.correct).length / genaiAnswers.length) * 100) : null;
     const traditionalBypassRate = nonGenaiAnswers.length ? Math.round((nonGenaiAnswers.filter((a) => !a.correct).length / nonGenaiAnswers.length) * 100) : null;
 
