@@ -313,12 +313,14 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           {(() => {
             const testFlow = typeof window !== 'undefined' && localStorage.getItem('research_flow_test') === '1';
             const graduated = signedIn && (profile?.researchGraduated ?? false) && !testFlow;
-            const isResearch = signedIn && !graduated;
+            const researchCapped = signedIn && !graduated && (profile?.researchAnswersSubmitted ?? 0) >= 30;
+            const isResearch = signedIn && !graduated && !researchCapped;
             return (
               <>
                 <button
                   onClick={() => {
                     if (!signedIn) { setShowAuthFlow(true); return; }
+                    if (researchCapped) { handleStart('freeplay'); return; }
                     handleStart(graduated ? 'freeplay' : 'research');
                   }}
                   className={`w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all ${
@@ -331,6 +333,11 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 </button>
                 {!signedIn && (
                   <p className="text-[#003a0e] text-sm text-center font-mono">sign in to contribute to the research study</p>
+                )}
+                {researchCapped && (
+                  <p className="text-[#ffaa00] text-sm text-center font-mono">
+                    RESEARCH COMPLETE — 30/30 answers submitted. Thank you!
+                  </p>
                 )}
                 {isResearch && profile && (
                   <p className="text-[#cc8800] text-sm text-center font-mono">
