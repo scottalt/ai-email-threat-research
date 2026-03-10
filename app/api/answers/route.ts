@@ -30,6 +30,7 @@ const VALID_ANSWERS = ['phishing', 'legit'] as const;
 const VALID_CONFIDENCES = ['guessing', 'likely', 'certain'] as const;
 const VALID_MODES = ['research', 'freeplay', 'daily', 'preview', 'expert'] as const;
 const MAX_RESEARCH_ANSWERS = 10;
+const MAX_RESEARCH_ANSWERS_PER_PLAYER_TOTAL = 30; // 3 full rounds max
 const MAX_RESEARCH_ANSWERS_PER_PLAYER_PER_DAY = 50; // 5 sessions max per day
 
 export async function POST(req: NextRequest) {
@@ -117,7 +118,20 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 4. Per-player daily rate limit: prevent flooding via many sessions
+      // 4. Per-player total research cap: no more than 30 research answers ever
+      if (playerId) {
+        const { count: totalResearchCount } = await supabase
+          .from('answers')
+          .select('id', { count: 'exact', head: true })
+          .eq('player_id', playerId)
+          .eq('game_mode', 'research');
+
+        if ((totalResearchCount ?? 0) >= MAX_RESEARCH_ANSWERS_PER_PLAYER_TOTAL) {
+          return NextResponse.json({ ok: true }); // silent reject — lifetime cap
+        }
+      }
+
+      // 5. Per-player daily rate limit: prevent flooding via many sessions
       if (playerId) {
         const todayStart = new Date();
         todayStart.setUTCHours(0, 0, 0, 0);
