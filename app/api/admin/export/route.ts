@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/adminAuth';
 
 // Research-relevant columns only — excludes internal/operational fields
 // (id, staging_id, word_count, char_count, review_notes, review_time_ms, source_corpus)
@@ -13,6 +14,9 @@ const EXPORT_SELECT = [
 type ExportRow = Record<string, unknown>;
 
 export async function GET(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const format = req.nextUrl.searchParams.get('format') ?? 'json';
 
   const supabase = getSupabaseAdminClient();

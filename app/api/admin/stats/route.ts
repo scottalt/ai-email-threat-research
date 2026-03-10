@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/adminAuth';
 
 const TECHNIQUES = ['urgency', 'authority-impersonation', 'credential-harvest', 'hyper-personalization', 'pretexting', 'fluent-prose'];
 const LEGIT_CATEGORIES = ['transactional', 'marketing', 'workplace'];
 
 export async function GET() {
   try {
+    const denied = await requireAdmin();
+    if (denied) return denied;
+
     const supabase = getSupabaseAdminClient();
 
     const [pending, approved, rejected, needsReview, real, breakdownResult] = await Promise.all([
