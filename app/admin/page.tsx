@@ -218,25 +218,51 @@ export default function AdminPage() {
           >
             [ APPROVED CARDS ]
           </Link>
-          <div className="flex gap-2">
-            <Link
-              href="/api/admin/export?format=json"
-              className="flex-1 py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
-            >
-              [ JSON ]
-            </Link>
-            <Link
-              href="/api/admin/export?format=csv"
-              className="flex-1 py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
-            >
-              [ CSV ]
-            </Link>
-            <Link
-              href="/api/admin/export?format=jsonl"
-              className="flex-1 py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
-            >
-              [ JSONL ]
-            </Link>
+          <div className="space-y-1">
+            <div className="text-[#003a0e] text-[10px] font-mono tracking-widest px-1">EXPORT CARDS</div>
+            <div className="flex gap-2">
+              <Link
+                href="/api/admin/export?format=json"
+                className="flex-1 py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
+              >
+                [ JSON ]
+              </Link>
+              <Link
+                href="/api/admin/export?format=csv"
+                className="flex-1 py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
+              >
+                [ CSV ]
+              </Link>
+              <Link
+                href="/api/admin/export?format=jsonl"
+                className="flex-1 py-3 term-border text-[#00aa28] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,255,65,0.05)] transition-all"
+              >
+                [ JSONL ]
+              </Link>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-[#003a0e] text-[10px] font-mono tracking-widest px-1">EXPORT ANSWERS</div>
+            <div className="flex gap-2">
+              <Link
+                href="/api/admin/export-answers?format=json"
+                className="flex-1 py-3 term-border text-[#ffaa00] font-mono text-xs tracking-widest text-center hover:bg-[rgba(255,170,0,0.05)] transition-all"
+              >
+                [ JSON ]
+              </Link>
+              <Link
+                href="/api/admin/export-answers?format=csv"
+                className="flex-1 py-3 term-border text-[#ffaa00] font-mono text-xs tracking-widest text-center hover:bg-[rgba(255,170,0,0.05)] transition-all"
+              >
+                [ CSV ]
+              </Link>
+              <Link
+                href="/api/admin/export-answers?format=jsonl"
+                className="flex-1 py-3 term-border text-[#ffaa00] font-mono text-xs tracking-widest text-center hover:bg-[rgba(255,170,0,0.05)] transition-all"
+              >
+                [ JSONL ]
+              </Link>
+            </div>
           </div>
           <Link
             href="/admin/preview"
