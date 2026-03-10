@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import { getLevelFromXp, getXpForRound, RESEARCH_GRADUATION_SESSIONS } from '@/lib/xp';
+import { getLevelFromXp, getXpForRound, RESEARCH_GRADUATION_ANSWERS } from '@/lib/xp';
 
 async function getAuthId(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -55,22 +55,22 @@ export async function PATCH(req: NextRequest) {
   const levelUp = newLevel > (p.level as number);
   const newTotalSessions = sessionCompleted ? (p.total_sessions as number) + 1 : p.total_sessions as number;
 
-  // Research graduation: verify server-side that this session actually has research answers
-  let isResearchSession = gameMode === 'research' && sessionCompleted && !!sessionId;
-  if (isResearchSession) {
-    const { count } = await admin
-      .from('answers')
-      .select('*', { count: 'exact', head: true })
-      .eq('session_id', sessionId!)
-      .eq('game_mode', 'research');
-    if (!count || count === 0) isResearchSession = false;
-  }
-
+  // Research graduation: based on total research answers submitted (not completed sessions)
+  const isResearchSession = gameMode === 'research' && sessionCompleted && !!sessionId;
   const newResearchSessions = isResearchSession
     ? (p.research_sessions_completed as number) + 1
     : p.research_sessions_completed as number;
   const wasGraduated = p.research_graduated as boolean;
-  const nowGraduated = wasGraduated || newResearchSessions >= RESEARCH_GRADUATION_SESSIONS;
+
+  let nowGraduated = wasGraduated;
+  if (!wasGraduated) {
+    const { count: totalResearchAnswers } = await admin
+      .from('answers')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', p.id as string)
+      .eq('game_mode', 'research');
+    nowGraduated = (totalResearchAnswers ?? 0) >= RESEARCH_GRADUATION_ANSWERS;
+  }
 
   const newBest = Math.max(p.personal_best_score as number, score);
 
