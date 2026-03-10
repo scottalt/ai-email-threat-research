@@ -548,7 +548,7 @@ export default async function IntelPage() {
                       {data.readingDepth.deepReadAccuracy !== null && (
                         <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">deep read (≥75%)</span>
-                          <span className="text-[#00ff41] glow">{data.readingDepth.deepReadAccuracy}% <span className="text-[#003a0e] text-sm">n={data.readingDepth.deepReadSample}</span></span>
+                          <span><span className="text-[#00ff41] glow">{data.readingDepth.deepReadAccuracy}%</span> <span className="text-[#003a0e] text-sm">n={data.readingDepth.deepReadSample}</span></span>
                         </div>
                       )}
                       {data.readingDepth.shallowReadAccuracy !== null && (
