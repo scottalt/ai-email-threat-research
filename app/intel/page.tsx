@@ -102,7 +102,7 @@ async function getIntel(): Promise<IntelData | null> {
       techniqueTimeMap[a.technique].push(a.time_from_render_ms);
     }
     const medianTimeByTechnique = Object.entries(techniqueTimeMap)
-      .filter(([, times]) => times.length >= 10)
+      .filter(([, times]) => times.length >= 1)
       .map(([technique, times]) => ({ technique, medianMs: median(times), sample: times.length }))
       .sort((a, b) => a.medianMs - b.medianMs);
 
@@ -114,7 +114,7 @@ async function getIntel(): Promise<IntelData | null> {
       if (!a.correct) techniqueMap[a.technique].bypassed++;
     }
     const byTechnique = Object.entries(techniqueMap)
-      .filter(([, v]) => v.total >= 5)
+      .filter(([, v]) => v.total >= 1)
       .map(([technique, v]) => ({ technique, total: v.total, bypassRate: Math.round((v.bypassed / v.total) * 100) }))
       .sort((a, b) => b.bypassRate - a.bypassRate);
 
