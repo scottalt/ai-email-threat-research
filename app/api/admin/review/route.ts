@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/adminAuth';
 
 // GET — fetch next pending card for review (random within filtered set) + counts
 // Filters: ?technique=urgency&difficulty=hard&phishing=true&attachment=true
 export async function GET(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const supabase = getSupabaseAdminClient();
   const { searchParams } = new URL(req.url);
 
@@ -54,6 +58,9 @@ export async function GET(req: NextRequest) {
 
 // POST — approve, reject, or mark needs_review
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const supabase = getSupabaseAdminClient();
   const body = await req.json();
   const { action, stagingId, reviewedFields } = body;
