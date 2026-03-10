@@ -81,6 +81,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const hasAutoStarted = useRef(false);
   const isTestMode = useRef(false);
   const [flashClass, setFlashClass] = useState<string | null>(null);
+  const sessionFinalized = useRef<Promise<void>>(Promise.resolve());
 
   // Auto-start in preview mode — skip the start screen entirely
   useEffect(() => {
@@ -313,9 +314,9 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           JSON.stringify({ score: correctCount, totalScore })
         );
       }
-      // Record session completion — fire and forget, skip in preview/test mode
+      // Record session completion — must complete before leaderboard submission
       if (typeof window !== 'undefined' && mode !== 'preview' && !isTestMode.current) {
-        fetch('/api/sessions', {
+        sessionFinalized.current = fetch('/api/sessions', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -325,7 +326,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
             completedAt: new Date().toISOString(),
             cardsAnswered: Math.min(deck.length, ROUND_SIZE),
           }),
-        }).catch(() => {});
+        }).then(() => {}).catch(() => {});
       }
       setPhase('summary');
     } else {
@@ -399,6 +400,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           mode={mode}
           date={getToday()}
           sessionId={sessionId.current}
+          sessionReady={sessionFinalized.current}
           onPlayAgain={() => setPhase('start')}
         />
       </SummaryErrorBoundary>

@@ -17,6 +17,7 @@ interface Props {
   mode: GameMode;
   date: string;
   sessionId: string;
+  sessionReady?: Promise<void>;
   onPlayAgain: () => void;
 }
 
@@ -31,7 +32,7 @@ function getTier(score: number, total: number): { label: string; sub: string; co
 
 const CONFIDENCE_LABEL: Record<string, string> = { guessing: 'G', likely: 'L', certain: 'C' };
 
-export function RoundSummary({ score, total, totalScore, results, mode, date, sessionId, onPlayAgain }: Props) {
+export function RoundSummary({ score, total, totalScore, results, mode, date, sessionId, sessionReady, onPlayAgain }: Props) {
   const tier = getTier(score, total);
   const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [displayScore, setDisplayScore] = useState(0);
@@ -102,17 +103,19 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
     if (!signedIn || !profile?.displayName || leaderboardFired.current) return;
     leaderboardFired.current = true;
     setSubmitState('loading');
-    fetch('/api/leaderboard', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: profile.displayName,
-        score: totalScore,
-        level: profile.level ?? 1,
-        sessionId,
-        ...(mode === 'daily' ? { date } : {}),
-      }),
-    })
+    // Wait for session finalization so final_score exists in DB before leaderboard validation
+    (sessionReady ?? Promise.resolve())
+      .then(() => fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profile.displayName,
+          score: totalScore,
+          level: profile.level ?? 1,
+          sessionId,
+          ...(mode === 'daily' ? { date } : {}),
+        }),
+      }))
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data) {
