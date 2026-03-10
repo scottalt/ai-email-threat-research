@@ -114,7 +114,7 @@ async function getIntel(): Promise<IntelData | null> {
       if (!a.correct) techniqueMap[a.technique].bypassed++;
     }
     const byTechnique = Object.entries(techniqueMap)
-      .filter(([, v]) => v.total >= 10)
+      .filter(([, v]) => v.total >= 5)
       .map(([technique, v]) => ({ technique, total: v.total, bypassRate: Math.round((v.bypassed / v.total) * 100) }))
       .sort((a, b) => b.bypassRate - a.bypassRate);
 
