@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
       time_from_render_ms: a.timeFromRenderMs,
       time_from_confidence_ms: a.timeFromConfidenceMs,
       confidence_selection_time_ms: a.confidenceSelectionTimeMs,
-      scroll_depth_pct: a.scrollDepthPct,
+      scroll_depth_pct: Math.min(100, Math.max(0, a.scrollDepthPct ?? 0)),
       answer_method: a.answerMethod,
       answer_ordinal: a.answerOrdinal,
       streak_at_answer_time: a.streakAtAnswerTime,
