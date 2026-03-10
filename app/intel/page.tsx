@@ -102,7 +102,7 @@ async function getIntel(): Promise<IntelData | null> {
       techniqueTimeMap[a.technique].push(a.time_from_render_ms);
     }
     const medianTimeByTechnique = Object.entries(techniqueTimeMap)
-      .filter(([, times]) => times.length >= 10)
+      .filter(([, times]) => times.length >= 5)
       .map(([technique, times]) => ({ technique, medianMs: median(times), sample: times.length }))
       .sort((a, b) => a.medianMs - b.medianMs);
 
