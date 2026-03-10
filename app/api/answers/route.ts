@@ -119,12 +119,14 @@ export async function POST(req: NextRequest) {
       }
 
       // 4. Per-player total research cap: no more than 30 research answers ever
+      //    Exclude the current session so a round in progress can always finish
       if (playerId) {
         const { count: totalResearchCount } = await supabase
           .from('answers')
           .select('id', { count: 'exact', head: true })
           .eq('player_id', playerId)
-          .eq('game_mode', 'research');
+          .eq('game_mode', 'research')
+          .neq('session_id', a.sessionId);
 
         if ((totalResearchCount ?? 0) >= MAX_RESEARCH_ANSWERS_PER_PLAYER_TOTAL) {
           return NextResponse.json({ ok: true }); // silent reject — lifetime cap
