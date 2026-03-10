@@ -30,6 +30,7 @@ const VALID_ANSWERS = ['phishing', 'legit'] as const;
 const VALID_CONFIDENCES = ['guessing', 'likely', 'certain'] as const;
 const VALID_MODES = ['research', 'freeplay', 'daily', 'preview', 'expert'] as const;
 const MAX_RESEARCH_ANSWERS = 10;
+const MAX_RESEARCH_ANSWERS_PER_PLAYER_PER_DAY = 50; // 5 sessions max per day
 
 export async function POST(req: NextRequest) {
   try {
@@ -69,29 +70,62 @@ export async function POST(req: NextRequest) {
     let verifiedTechnique = a.technique;
 
     if (a.gameMode === 'research') {
-      // Session dedup: reject if session already has MAX_RESEARCH_ANSWERS research answers
-      const { count } = await supabase
-        .from('answers')
-        .select('id', { count: 'exact', head: true })
-        .eq('session_id', a.sessionId)
-        .eq('game_mode', 'research');
-
-      if ((count ?? 0) >= MAX_RESEARCH_ANSWERS) {
-        return NextResponse.json({ ok: true }); // silent reject
-      }
-
-      // Look up card in cards_real to recompute correct and technique server-side
+      // 1. Card must exist in cards_real — reject fabricated card IDs
       const { data: card } = await supabase
         .from('cards_real')
         .select('is_phishing, technique')
         .eq('card_id', a.cardId)
         .single();
 
-      if (card) {
-        verifiedIsPhishing = card.is_phishing;
-        verifiedTechnique = card.technique;
-        verifiedCorrect = (a.userAnswer === 'phishing') === card.is_phishing;
+      if (!card) {
+        return NextResponse.json({ ok: true }); // silent reject — card doesn't exist
       }
+
+      // 2. Session dedup: reject if session already has MAX_RESEARCH_ANSWERS research answers
+      const { count: sessionCount } = await supabase
+        .from('answers')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', a.sessionId)
+        .eq('game_mode', 'research');
+
+      if ((sessionCount ?? 0) >= MAX_RESEARCH_ANSWERS) {
+        return NextResponse.json({ ok: true }); // silent reject
+      }
+
+      // 3. Per-player card dedup: reject if this player already answered this card
+      if (playerId) {
+        const { count: dupCount } = await supabase
+          .from('answers')
+          .select('id', { count: 'exact', head: true })
+          .eq('player_id', playerId)
+          .eq('card_id', a.cardId)
+          .eq('game_mode', 'research');
+
+        if ((dupCount ?? 0) > 0) {
+          return NextResponse.json({ ok: true }); // silent reject — already answered
+        }
+      }
+
+      // 4. Per-player daily rate limit: prevent flooding via many sessions
+      if (playerId) {
+        const todayStart = new Date();
+        todayStart.setUTCHours(0, 0, 0, 0);
+        const { count: dailyCount } = await supabase
+          .from('answers')
+          .select('id', { count: 'exact', head: true })
+          .eq('player_id', playerId)
+          .eq('game_mode', 'research')
+          .gte('created_at', todayStart.toISOString());
+
+        if ((dailyCount ?? 0) >= MAX_RESEARCH_ANSWERS_PER_PLAYER_PER_DAY) {
+          return NextResponse.json({ ok: true }); // silent reject — daily limit
+        }
+      }
+
+      // Server-side verification of correct answer and technique
+      verifiedIsPhishing = card.is_phishing;
+      verifiedTechnique = card.technique;
+      verifiedCorrect = (a.userAnswer === 'phishing') === card.is_phishing;
     }
 
     // Insert answer event

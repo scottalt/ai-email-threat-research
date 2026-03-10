@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/adminAuth';
 
 // GET — list all approved cards
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
     .from('cards_real')
@@ -21,6 +25,9 @@ const EDITABLE_FIELDS = new Set([
 
 // PATCH — edit an approved card
 export async function PATCH(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const supabase = getSupabaseAdminClient();
   const { id, fields } = await req.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
@@ -38,6 +45,9 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE — remove an approved card
 export async function DELETE(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const supabase = getSupabaseAdminClient();
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
