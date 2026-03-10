@@ -9,7 +9,7 @@ export async function GET() {
 
     const { data: answers } = await supabase
       .from('answers')
-      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url')
+      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, players!player_id(background)')
       .eq('game_mode', 'research');
 
     if (!answers || answers.length === 0) {
@@ -112,6 +112,26 @@ export async function GET() {
       };
     });
 
+    // Accuracy by player background
+    const bgMap: Record<string, { total: number; correct: number }> = {};
+    for (const a of answers) {
+      const joined = a.players as unknown as { background: string | null } | { background: string | null }[] | null;
+      const player = Array.isArray(joined) ? joined[0] ?? null : joined;
+      const bg = player?.background ?? null;
+      if (!bg) continue;
+      if (!bgMap[bg]) bgMap[bg] = { total: 0, correct: 0 };
+      bgMap[bg].total++;
+      if (a.correct) bgMap[bg].correct++;
+    }
+    const byBackground = Object.entries(bgMap)
+      .filter(([, v]) => v.total >= 5)
+      .map(([bg, v]) => ({
+        background: bg,
+        total: v.total,
+        accuracyRate: Math.round((v.correct / v.total) * 100),
+      }))
+      .sort((a, b) => b.accuracyRate - a.accuracyRate);
+
     return NextResponse.json({
       totalAnswers: total,
       phishingAnswers: phishingAnswers.length,
@@ -122,6 +142,7 @@ export async function GET() {
       fluency: { highFluencyBypassRate, lowFluencyBypassRate, highFluencySample: highFluency.length, lowFluencySample: lowFluency.length },
       genai: { genaiBypassRate, traditionalBypassRate, genaiSample: genaiAnswers.length, traditionalSample: nonGenaiAnswers.length },
       byConfidence,
+      byBackground: byBackground.length > 0 ? byBackground : undefined,
       toolUsage: {
         headersOpenedPct,
         urlInspectedPct,
