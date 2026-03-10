@@ -106,7 +106,7 @@ export default function ProfilePage() {
         <div className="w-full max-w-sm space-y-4">
           <div className="term-border bg-[#060c06] px-4 py-6 text-center space-y-3">
             <div className="text-[#00aa28] text-xs font-mono tracking-widest">NOT_AUTHENTICATED</div>
-            <div className="text-[#003a0e] text-[10px] font-mono">Sign in to view your profile.</div>
+            <div className="text-[#00aa28] text-[10px] font-mono opacity-70">Sign in to view your profile.</div>
             <Link href="/" className="block text-[#00ff41] text-xs font-mono hover:underline">
               ← BACK TO TERMINAL
             </Link>
@@ -180,21 +180,21 @@ export default function ProfilePage() {
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
             <span className="text-[#00aa28] text-xs tracking-widest">OPERATOR_PROFILE</span>
-            <Link href="/" className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">← TERMINAL</Link>
+            <Link href="/" className="text-[#00aa28] text-[10px] font-mono hover:text-[#00ff41]">← TERMINAL</Link>
           </div>
 
           <div className="divide-y divide-[rgba(0,255,65,0.08)]">
             {/* CALLSIGN row — editable */}
             <div className="px-3 py-2 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[#003a0e] text-[10px] font-mono tracking-wider">CALLSIGN</span>
+                <span className="text-[#00aa28] text-[10px] font-mono tracking-wider">CALLSIGN</span>
                 {!editingCallsign ? (
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-bold text-[#00ff41]">{profile.displayName ?? '—'}</span>
                     <button
                       type="button"
                       onClick={() => { setCallsignValue(profile.displayName ?? ''); setCallsignError(''); setEditingCallsign(true); }}
-                      className="text-[#003a0e] text-[9px] font-mono hover:text-[#00aa28] transition-colors"
+                      className="text-[#00aa28] text-[9px] font-mono hover:text-[#00ff41] transition-colors"
                     >
                       [EDIT]
                     </button>
@@ -203,7 +203,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => setEditingCallsign(false)}
-                    className="text-[#003a0e] text-[9px] font-mono hover:text-[#00aa28] transition-colors"
+                    className="text-[#00aa28] text-[9px] font-mono hover:text-[#00ff41] transition-colors"
                   >
                     [CANCEL]
                   </button>
@@ -239,7 +239,7 @@ export default function ProfilePage() {
             {/* BACKGROUND row — editable */}
             <div className="px-3 py-2 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[#003a0e] text-[10px] font-mono tracking-wider">BACKGROUND</span>
+                <span className="text-[#00aa28] text-[10px] font-mono tracking-wider">BACKGROUND</span>
                 {!editingBackground ? (
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-bold text-[#00ff41]">
@@ -247,7 +247,7 @@ export default function ProfilePage() {
                     </span>
                     <button
                       onClick={() => setEditingBackground(true)}
-                      className="text-[#003a0e] text-[9px] font-mono hover:text-[#00aa28] transition-colors"
+                      className="text-[#00aa28] text-[9px] font-mono hover:text-[#00ff41] transition-colors"
                     >
                       [EDIT]
                     </button>
@@ -255,7 +255,7 @@ export default function ProfilePage() {
                 ) : (
                   <button
                     onClick={() => setEditingBackground(false)}
-                    className="text-[#003a0e] text-[9px] font-mono hover:text-[#00aa28] transition-colors"
+                    className="text-[#00aa28] text-[9px] font-mono hover:text-[#00ff41] transition-colors"
                   >
                     [CANCEL]
                   </button>
@@ -272,7 +272,7 @@ export default function ProfilePage() {
                       className={`py-1.5 font-mono text-[9px] tracking-wider transition-all border disabled:opacity-40 ${
                         profile.background === opt.value
                           ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
-                          : 'text-[#003a0e] border-[rgba(0,255,65,0.15)] hover:text-[#00aa28] hover:border-[rgba(0,255,65,0.4)]'
+                          : 'text-[#00aa28] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
                       }`}
                     >
                       {backgroundSaving ? '...' : opt.label}
@@ -284,7 +284,7 @@ export default function ProfilePage() {
 
             {bottomRows.map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between px-3 py-2">
-                <span className="text-[#003a0e] text-[10px] font-mono tracking-wider">{label}</span>
+                <span className="text-[#00aa28] text-[10px] font-mono tracking-wider">{label}</span>
                 <span className={`text-xs font-mono font-bold ${
                   label === 'GRADUATION' && profile.researchGraduated
                     ? 'text-[#ffaa00]'
@@ -321,7 +321,7 @@ export default function ProfilePage() {
                       {rank.label}
                     </span>
                   </div>
-                  <span className="text-[#003a0e] text-[10px] font-mono">LVL {rank.levels}</span>
+                  <span className="text-[#00aa28] text-[10px] font-mono opacity-60">LVL {rank.levels}</span>
                 </div>
               );
             })}
