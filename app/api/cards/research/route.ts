@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import type { ResearchCard } from '@/lib/types';
 
@@ -13,8 +13,10 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const sessionId = req.nextUrl.searchParams.get('sessionId');
+
     const supabase = getSupabaseAdminClient();
     const { data, error } = await supabase.from('cards_real').select('*');
 
@@ -22,6 +24,18 @@ export async function GET() {
     if (!data || data.length === 0) return NextResponse.json([]);
 
     const deck = shuffle(data).slice(0, ROUND_SIZE);
+
+    // Record dealt cards server-side for answer validation
+    if (sessionId && /^[0-9a-f-]{36}$/.test(sessionId)) {
+      const dealtCardIds = deck.map((row) => row.card_id);
+      supabase.from('sessions').upsert({
+        session_id: sessionId,
+        game_mode: 'research',
+        dealt_card_ids: dealtCardIds,
+      }, { onConflict: 'session_id' }).then(({ error: e }) => {
+        if (e) console.error('Failed to record dealt cards:', e);
+      });
+    }
 
     const cards: ResearchCard[] = deck.map((row) => ({
       id: row.card_id,
