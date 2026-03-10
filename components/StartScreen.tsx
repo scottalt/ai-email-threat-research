@@ -310,14 +310,6 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             )}
           </div>
 
-          {/* Daily challenge button - featured */}
-          <button
-            onClick={() => handleStart('daily')}
-            className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
-          >
-            [ DAILY CHALLENGE — {dateLabel} ]
-          </button>
-
           {(() => {
             const testFlow = typeof window !== 'undefined' && localStorage.getItem('research_flow_test') === '1';
             const graduated = signedIn && (profile?.researchGraduated ?? false) && !testFlow;
@@ -348,6 +340,14 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               </>
             );
           })()}
+
+          {/* Daily challenge button */}
+          <button
+            onClick={() => handleStart('daily')}
+            className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+          >
+            [ DAILY CHALLENGE — {dateLabel} ]
+          </button>
 
           {signedIn && profile?.researchGraduated && (
             <button
