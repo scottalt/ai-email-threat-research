@@ -41,6 +41,14 @@ interface IntelData {
     sample: number;
   };
   medianTimeByTechnique?: { technique: string; medianMs: number; sample: number }[];
+  learningCurve?: { ordinal: number; accuracyRate: number; sample: number }[];
+  readingDepth?: {
+    deepReadAccuracy: number | null;
+    shallowReadAccuracy: number | null;
+    deepReadSample: number;
+    shallowReadSample: number;
+    medianScrollDepth: number | null;
+  };
   refreshedAt: string;
 }
 
@@ -55,7 +63,7 @@ async function getIntel(): Promise<IntelData | null> {
     const supabase = getSupabaseAdminClient();
     const { data: answers } = await supabase
       .from('answers')
-      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id')
+      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id, answer_ordinal, scroll_depth_pct')
       .eq('game_mode', 'research');
 
     if (!answers || answers.length === 0) {
@@ -136,6 +144,31 @@ async function getIntel(): Promise<IntelData | null> {
       return { confidence: conf, total: subset.length, accuracyRate: subset.length ? Math.round((subset.filter((a) => a.correct).length / subset.length) * 100) : 0 };
     });
 
+    // Learning curve: accuracy by answer ordinal (Q1–Q10)
+    const ordinalMap: Record<number, { total: number; correct: number }> = {};
+    for (const a of answers) {
+      const ord = a.answer_ordinal;
+      if (ord == null || ord < 1 || ord > 10) continue;
+      if (!ordinalMap[ord]) ordinalMap[ord] = { total: 0, correct: 0 };
+      ordinalMap[ord].total++;
+      if (a.correct) ordinalMap[ord].correct++;
+    }
+    const learningCurve = Array.from({ length: 10 }, (_, i) => i + 1)
+      .filter((ord) => ordinalMap[ord] && ordinalMap[ord].total >= 3)
+      .map((ord) => ({
+        ordinal: ord,
+        accuracyRate: Math.round((ordinalMap[ord].correct / ordinalMap[ord].total) * 100),
+        sample: ordinalMap[ord].total,
+      }));
+
+    // Reading depth: accuracy by scroll depth
+    const deepReads = answers.filter((a) => a.scroll_depth_pct != null && a.scroll_depth_pct >= 75);
+    const shallowReads = answers.filter((a) => a.scroll_depth_pct != null && a.scroll_depth_pct < 50);
+    const deepReadAccuracy = deepReads.length >= 3 ? Math.round((deepReads.filter((a) => a.correct).length / deepReads.length) * 100) : null;
+    const shallowReadAccuracy = shallowReads.length >= 3 ? Math.round((shallowReads.filter((a) => a.correct).length / shallowReads.length) * 100) : null;
+    const scrollDepths = answers.map((a) => a.scroll_depth_pct).filter((v): v is number => v != null);
+    const medianScrollDepth = scrollDepths.length ? median(scrollDepths) : null;
+
     return {
       totalAnswers: total,
       uniqueParticipants,
@@ -160,6 +193,14 @@ async function getIntel(): Promise<IntelData | null> {
       },
       authTrap: { bypassRate: authTrapBypassRate, sample: authTrapAnswers.length },
       medianTimeByTechnique,
+      learningCurve: learningCurve.length > 0 ? learningCurve : undefined,
+      readingDepth: {
+        deepReadAccuracy,
+        shallowReadAccuracy,
+        deepReadSample: deepReads.length,
+        shallowReadSample: shallowReads.length,
+        medianScrollDepth,
+      },
       refreshedAt: new Date().toISOString(),
     };
   } catch {
@@ -417,6 +458,57 @@ export default async function IntelPage() {
                     <p className="text-[#00aa28] text-[10px] font-mono leading-relaxed">
                       Cards where SPF/DKIM/DMARC passed but the email was phishing. Authentication headers alone are insufficient — attackers configure valid auth on lookalike domains.
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Learning curve */}
+              {data.learningCurve && data.learningCurve.length > 0 && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="LEARNING CURVE (Q1 → Q10)" />
+                  <div className="px-3 py-3 space-y-2">
+                    {data.learningCurve.map(({ ordinal, accuracyRate, sample }) => (
+                      <div key={ordinal} className="space-y-0.5">
+                        <div className="flex justify-between text-[10px] font-mono">
+                          <span className="text-[#00aa28]">Q{ordinal}</span>
+                          <span className="text-[#00ff41] shrink-0 ml-2">{accuracyRate}% <span className="text-[#003a0e]">n={sample}</span></span>
+                        </div>
+                        <div className="h-1 bg-[#003a0e] w-full">
+                          <div className="h-full bg-[#00ff41]" style={{ width: `${accuracyRate}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                    <p className="text-[#003a0e] text-[10px] font-mono pt-1">Do players improve within a single 10-card session?</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Reading depth */}
+              {data.readingDepth && (data.readingDepth.deepReadAccuracy !== null || data.readingDepth.shallowReadAccuracy !== null) && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="READING DEPTH vs ACCURACY" />
+                  <div className="px-3 py-3 space-y-3">
+                    {data.readingDepth.medianScrollDepth !== null && (
+                      <div className="term-border px-2 py-2 text-center">
+                        <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.readingDepth.medianScrollDepth}%</div>
+                        <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">median scroll depth</div>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      {data.readingDepth.deepReadAccuracy !== null && (
+                        <div className="flex justify-between text-xs font-mono">
+                          <span className="text-[#00aa28]">deep read (≥75%)</span>
+                          <span className="text-[#00ff41] glow">{data.readingDepth.deepReadAccuracy}% <span className="text-[#003a0e] text-[10px]">n={data.readingDepth.deepReadSample}</span></span>
+                        </div>
+                      )}
+                      {data.readingDepth.shallowReadAccuracy !== null && (
+                        <div className="flex justify-between text-xs font-mono">
+                          <span className="text-[#00aa28]">shallow read (&lt;50%)</span>
+                          <span className="text-[#ffaa00]">{data.readingDepth.shallowReadAccuracy}% <span className="text-[#003a0e] text-[10px]">n={data.readingDepth.shallowReadSample}</span></span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[#003a0e] text-[10px] font-mono">Does scrolling deeper correlate with better accuracy?</p>
                   </div>
                 </div>
               )}
