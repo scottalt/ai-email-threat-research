@@ -450,7 +450,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
   return (
     <div className="flex flex-col items-center gap-4 w-full max-w-sm px-4 pb-safe">
       {/* HUD */}
-      <div className="w-full flex items-center justify-between text-sm font-mono">
+      <div className="w-full flex flex-wrap items-center justify-between gap-y-1 text-sm font-mono">
         <div className="flex items-center gap-2">
           <button
             onClick={onQuit}
@@ -475,7 +475,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
             <span className="text-[#003a0e]">]</span>
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span className={`text-[#00aa28] ${streakAtBonus ? 'glow text-[#00ff41]' : ''}`}>
             STREAK:<span className="text-[#00ff41]">{streak}</span>
           </span>
@@ -486,7 +486,6 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
           >
             {soundEnabled ? '[SFX]' : '[SFX OFF]'}
           </button>
-          <span className="text-[#003a0e] font-mono text-sm">{analystFace(streak)}</span>
         </div>
       </div>
 

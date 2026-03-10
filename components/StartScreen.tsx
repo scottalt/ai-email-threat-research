@@ -143,7 +143,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             <span className="text-[#00aa28] text-sm">■ □ □</span>
           </div>
         </div>
-        <div className="px-3 py-4 min-h-48 space-y-1">
+        <div className="px-3 py-4 min-h-48 space-y-1 overflow-hidden">
           {BOOT_LINES.slice(0, visibleCount).map((line, i) => (
             <div
               key={i}
