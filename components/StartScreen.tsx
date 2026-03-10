@@ -132,22 +132,22 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
       {/* Terminal window */}
       <div className="term-border bg-[#060c06]">
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
-          <span className="text-[#00aa28] text-xs tracking-widest">ANALYST_TERMINAL</span>
+          <span className="text-[#00aa28] text-sm tracking-widest">ANALYST_TERMINAL</span>
           <div className="flex items-center gap-3">
             <button
               onClick={toggleSound}
-              className={`text-[10px] font-mono transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}
+              className={`text-sm font-mono transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}
             >
               {soundEnabled ? '[SFX]' : '[SFX OFF]'}
             </button>
-            <span className="text-[#00aa28] text-xs">■ □ □</span>
+            <span className="text-[#00aa28] text-sm">■ □ □</span>
           </div>
         </div>
         <div className="px-3 py-4 min-h-48 space-y-1">
           {BOOT_LINES.slice(0, visibleCount).map((line, i) => (
             <div
               key={i}
-              className={`anim-fade-in text-xs font-mono leading-relaxed ${
+              className={`anim-fade-in text-sm font-mono leading-relaxed ${
                 line.bright ? 'text-[#00ff41] glow' : 'text-[#00aa28]'
               }`}
             >
@@ -168,11 +168,11 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               {signedIn && profile && !profile.displayName ? (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <span className="text-[#00aa28] text-xs tracking-widest">SET_CALLSIGN</span>
-                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">SIGN OUT</button>
+                    <span className="text-[#00aa28] text-sm tracking-widest">SET_CALLSIGN</span>
+                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28]">SIGN OUT</button>
                   </div>
                   <div className="px-3 py-3 space-y-2">
-                    <div className="text-[#003a0e] text-[10px] font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
+                    <div className="text-[#003a0e] text-sm font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
                     <form onSubmit={handleSetCallsign} className="flex gap-2">
                       <input
                         type="text"
@@ -181,26 +181,26 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                         placeholder="ENTER CALLSIGN"
                         maxLength={20}
                         autoFocus
-                        className="flex-1 bg-transparent border border-[rgba(0,255,65,0.3)] text-[#00ff41] font-mono text-xs px-2 py-1.5 placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.7)]"
+                        className="flex-1 bg-transparent border border-[rgba(0,255,65,0.3)] text-[#00ff41] font-mono text-sm px-2 py-1.5 placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.7)]"
                       />
                       <button
                         type="submit"
                         disabled={!callsign.trim() || !background || callsignLoading}
-                        className="px-3 py-1.5 term-border text-[#00ff41] font-mono text-xs tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        className="px-3 py-1.5 term-border text-[#00ff41] font-mono text-sm tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                       >
                         {callsignLoading ? '...' : 'SET'}
                       </button>
                     </form>
                     <div className="space-y-1.5 pt-1">
-                      <div className="text-[#00aa28] text-[10px] font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
-                      <div className="text-[#00aa28] text-[9px] font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
+                      <div className="text-[#00aa28] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
+                      <div className="text-[#00aa28] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
                       <div className="grid grid-cols-2 gap-1.5">
                         {BACKGROUND_OPTIONS.map((opt) => (
                           <button
                             key={opt.value}
                             type="button"
                             onClick={() => setBackground(background === opt.value ? null : opt.value)}
-                            className={`py-1.5 font-mono text-[9px] tracking-wider transition-all border ${
+                            className={`py-1.5 font-mono text-sm tracking-wider transition-all border ${
                               background === opt.value
                                 ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
                                 : 'text-[#00aa28] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
@@ -211,19 +211,19 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                         ))}
                       </div>
                     </div>
-                    {callsignError && <div className="text-[#ff3333] text-[10px] font-mono">{callsignError}</div>}
+                    {callsignError && <div className="text-[#ff3333] text-sm font-mono">{callsignError}</div>}
                   </div>
                 </div>
               ) : signedIn && profile ? (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <Link href="/profile" className="text-[#00aa28] text-xs tracking-widest hover:text-[#00ff41]">{profile.displayName}</Link>
-                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-[10px] font-mono hover:text-[#00aa28]">SIGN OUT</button>
+                    <Link href="/profile" className="text-[#00aa28] text-sm tracking-widest hover:text-[#00ff41]">{profile.displayName}</Link>
+                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28]">SIGN OUT</button>
                   </div>
                   <div className="px-3 py-2 space-y-2">
                     <LevelMeter xp={profile.xp} level={profile.level} />
                     {profile.researchGraduated && (
-                      <div className="text-[#ffaa00] text-[10px] font-mono">⬡ RESEARCH GRADUATED — EXPERT MODE UNLOCKED</div>
+                      <div className="text-[#ffaa00] text-sm font-mono">⬡ RESEARCH GRADUATED — EXPERT MODE UNLOCKED</div>
                     )}
                   </div>
                 </div>
@@ -234,8 +234,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   onClick={() => setShowAuthFlow(true)}
                   className="w-full px-3 py-3 term-border bg-[#060c06] border-[rgba(255,170,0,0.5)] text-left font-mono hover:bg-[rgba(255,170,0,0.06)] transition-colors"
                 >
-                  <div className="text-[#ffaa00] text-xs tracking-widest font-bold">[ SIGN IN TO SAVE YOUR SCORE ]</div>
-                  <div className="text-[#cc8800] text-[10px] mt-1">Magic link · no password · track XP + rank</div>
+                  <div className="text-[#ffaa00] text-sm tracking-widest font-bold">[ SIGN IN TO SAVE YOUR SCORE ]</div>
+                  <div className="text-[#cc8800] text-sm mt-1">Magic link · no password · track XP + rank</div>
                 </button>
               )}
             </div>
@@ -243,7 +243,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
           <div className="term-border bg-[#060c06]">
             <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-              <span className="text-[#00aa28] text-xs tracking-widest">HOW_TO_PLAY</span>
+              <span className="text-[#00aa28] text-sm tracking-widest">HOW_TO_PLAY</span>
             </div>
             <div className="px-3 py-3 space-y-2.5">
               {[
@@ -256,7 +256,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 ['[7]', 'Tap [HEADERS] on emails to inspect SPF/DKIM/DMARC and Reply-To'],
                 ['[8]', 'Tap highlighted URLs to inspect the real destination'],
               ].map(([tag, desc]) => (
-                <div key={tag} className="flex gap-3 text-xs">
+                <div key={tag} className="flex gap-3 text-sm">
                   <span className="text-[#00ff41] shrink-0 glow">{tag}</span>
                   <span className="text-[#00aa28]">{desc}</span>
                 </div>
@@ -268,7 +268,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
             <button
               onClick={() => setShowGuide((o) => !o)}
-              className="w-full px-3 py-2 flex items-center justify-between text-xs font-mono hover:bg-[rgba(255,170,0,0.05)] transition-colors"
+              className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[rgba(255,170,0,0.05)] transition-colors"
             >
               <span className="text-[#ffaa00] tracking-widest">[?] SIGNAL GUIDE</span>
               <span className="text-[#ffaa00]">{showGuide ? '▲' : '▼'}</span>
@@ -302,8 +302,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   },
                 ].map(({ label, body }) => (
                   <div key={label} className="space-y-0.5">
-                    <div className="text-[#ffaa00] text-[10px] font-mono tracking-widest">{label}</div>
-                    <p className="text-[#00aa28] text-[10px] font-mono leading-relaxed">{body}</p>
+                    <div className="text-[#ffaa00] text-sm font-mono tracking-widest">{label}</div>
+                    <p className="text-[#00aa28] text-sm font-mono leading-relaxed">{body}</p>
                   </div>
                 ))}
               </div>
@@ -330,10 +330,10 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   {isResearch ? '[ RESEARCH MODE ]' : '[ PLAY ]'}
                 </button>
                 {!signedIn && (
-                  <p className="text-[#003a0e] text-[10px] text-center font-mono">sign in to contribute to the research study</p>
+                  <p className="text-[#003a0e] text-sm text-center font-mono">sign in to contribute to the research study</p>
                 )}
                 {isResearch && profile && (
-                  <p className="text-[#cc8800] text-[10px] text-center font-mono">
+                  <p className="text-[#cc8800] text-sm text-center font-mono">
                     {profile.researchAnswersSubmitted} of 30 answers submitted
                   </p>
                 )}
@@ -358,7 +358,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </button>
           )}
 
-          <p className="text-[#003a0e] text-xs text-center font-mono">
+          <p className="text-[#003a0e] text-sm text-center font-mono">
             10 questions per round · email + SMS · randomized
           </p>
 
@@ -368,21 +368,21 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center gap-3">
                 <button
                   onClick={() => setActiveTab('score')}
-                  className={`text-xs font-mono tracking-widest ${activeTab === 'score' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                  className={`text-sm font-mono tracking-widest ${activeTab === 'score' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
                 >
                   SCORE
                 </button>
-                <span className="text-[#003a0e] text-xs">|</span>
+                <span className="text-[#003a0e] text-sm">|</span>
                 <button
                   onClick={() => setActiveTab('daily')}
-                  className={`text-xs font-mono tracking-widest ${activeTab === 'daily' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                  className={`text-sm font-mono tracking-widest ${activeTab === 'daily' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
                 >
                   DAILY
                 </button>
-                <span className="text-[#003a0e] text-xs">|</span>
+                <span className="text-[#003a0e] text-sm">|</span>
                 <button
                   onClick={() => setActiveTab('xp')}
-                  className={`text-xs font-mono tracking-widest ${activeTab === 'xp' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                  className={`text-sm font-mono tracking-widest ${activeTab === 'xp' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
                 >
                   XP
                 </button>
@@ -391,12 +391,12 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 <div key={`score-${leaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
                   {leaderboard.slice(0, 10).map((entry, i) => (
                     <div key={i} className="flex items-center gap-3 px-3 py-1.5 anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
-                      <span className={`text-[10px] font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
-                      <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">{entry.name}</span>
+                      <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
+                      <span className="text-[#00aa28] text-sm font-mono flex-1 truncate">{entry.name}</span>
                       {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
-                        <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
+                        <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
                       ); })()}
-                      <span className="text-[#00ff41] text-xs font-mono font-bold glow">{entry.score}</span>
+                      <span className="text-[#00ff41] text-sm font-mono font-bold glow">{entry.score}</span>
                     </div>
                   ))}
                 </div>
@@ -404,12 +404,12 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               {activeTab === 'xp' && xpLeaderboard.length > 0 && (
                 <div key={`xp-${xpLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
                   {xpLeaderboard.map((row, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-sm font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
                       <span className="text-[#003a0e] w-4">{i + 1}.</span>
                       <span className="text-[#00aa28] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
-                      {row.research_graduated && <span className="text-[#ffaa00] text-[10px]">★</span>}
+                      {row.research_graduated && <span className="text-[#ffaa00] text-sm">★</span>}
                       {(() => { const r = getRankFromLevel(row.level); return (
-                        <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
+                        <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
                           {r.label}
                         </span>
                       ); })()}
@@ -422,24 +422,24 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 <div key={`daily-${dailyLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
                   {dailyLeaderboard.slice(0, 10).map((entry, i) => (
                     <div key={i} className="flex items-center gap-3 px-3 py-1.5 anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
-                      <span className={`text-[10px] font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
-                      <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">{entry.name}</span>
+                      <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
+                      <span className="text-[#00aa28] text-sm font-mono flex-1 truncate">{entry.name}</span>
                       {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
-                        <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
+                        <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
                       ); })()}
-                      <span className="text-[#00ff41] text-xs font-mono font-bold glow">{entry.score}</span>
+                      <span className="text-[#00ff41] text-sm font-mono font-bold glow">{entry.score}</span>
                     </div>
                   ))}
                 </div>
               )}
               {activeTab === 'score' && leaderboard.length === 0 && (
-                <div className="px-3 py-4 text-center text-[#003a0e] text-[10px] font-mono">No scores yet.</div>
+                <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No scores yet.</div>
               )}
               {activeTab === 'daily' && dailyLeaderboard.length === 0 && (
-                <div className="px-3 py-4 text-center text-[#003a0e] text-[10px] font-mono">No scores today yet.</div>
+                <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No scores today yet.</div>
               )}
               {activeTab === 'xp' && xpLeaderboard.length === 0 && (
-                <div className="px-3 py-4 text-center text-[#003a0e] text-[10px] font-mono">No players yet.</div>
+                <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No players yet.</div>
               )}
             </div>
           )}

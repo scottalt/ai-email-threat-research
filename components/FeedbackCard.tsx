@@ -120,10 +120,10 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
         {/* Result header */}
         <div className={`term-border bg-[#060c06] ${correct ? 'border-[rgba(0,255,65,0.6)]' : 'border-[rgba(255,51,51,0.6)]'} ${!correct ? 'anim-glitch' : ''}`}>
           <div className={`border-b px-3 py-2 flex items-center justify-between ${correct ? 'border-[rgba(0,255,65,0.4)]' : 'border-[rgba(255,51,51,0.4)]'}`}>
-            <span className={`text-xs font-mono tracking-widest ${correct ? 'text-[#00aa28]' : 'text-[#aa2222]'}`}>
+            <span className={`text-sm font-mono tracking-widest ${correct ? 'text-[#00aa28]' : 'text-[#aa2222]'}`}>
               ANALYSIS_RESULT
             </span>
-            <span className="text-xs font-mono text-[#003a0e]">Q{questionNumber}/{total}</span>
+            <span className="text-sm font-mono text-[#003a0e]">Q{questionNumber}/{total}</span>
           </div>
           <div className="px-3 py-4 text-center space-y-1">
             <div className="flex items-center justify-center gap-3">
@@ -136,18 +136,18 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                 </span>
               )}
             </div>
-            <div className="text-xs font-mono text-[#00aa28]">
+            <div className="text-sm font-mono text-[#00aa28]">
               {wasPhishing
                 ? `This was a PHISHING attempt. You said: ${userAnswer.toUpperCase()}.`
                 : `This was LEGIT. You said: ${userAnswer.toUpperCase()}.`}
             </div>
           </div>
           <div className={`border-t px-3 py-2 flex items-center justify-between ${correct ? 'border-[rgba(0,255,65,0.25)]' : 'border-[rgba(255,51,51,0.25)]'}`}>
-            <span className="text-xs font-mono text-[#00aa28]">
+            <span className="text-sm font-mono text-[#00aa28]">
               CONFIDENCE: <span className="text-[#00ff41]">{CONFIDENCE_LABEL[confidence]}</span>
               {' '}({CONFIDENCE_MULTI[confidence]})
             </span>
-            <span className="text-xs font-mono">
+            <span className="text-sm font-mono">
               {xpThisAnswer > 0 ? (
                 <span className="text-[#00ff41]">+{xpThisAnswer} XP</span>
               ) : (
@@ -164,7 +164,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           </div>
           {streakMilestone && (
             <div className="border-t border-[rgba(0,255,65,0.25)] px-3 py-1.5 text-center">
-              <span className="text-xs font-mono text-[#ffaa00] glow-amber">
+              <span className="text-sm font-mono text-[#ffaa00] glow-amber">
                 ★ STREAK BONUS x{streak / 3} — +50 PTS INCLUDED ★
               </span>
             </div>
@@ -172,7 +172,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
         </div>
 
         {/* Score bar */}
-        <div className="term-border bg-[#060c06] px-3 py-2 flex items-center justify-between text-xs font-mono">
+        <div className="term-border bg-[#060c06] px-3 py-2 flex items-center justify-between text-sm font-mono">
           <span className="text-[#00aa28]">TOTAL SCORE</span>
           <span className="text-[#00ff41] font-black text-sm glow">{totalScore} PTS</span>
           <span className="text-[#00aa28]">STREAK: <span className="text-[#00ff41]">{streak}</span></span>
@@ -180,7 +180,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
 
         {/* Technique + difficulty banner */}
         {wasPhishing && card.technique && (
-          <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.2)] px-3 py-2 flex items-center justify-between text-xs font-mono">
+          <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.2)] px-3 py-2 flex items-center justify-between text-sm font-mono">
             <span className="text-[#003a0e]">
               TECHNIQUE: <span className="text-[#ff3333]">{card.technique.toUpperCase().replace(/-/g, ' ')}</span>
             </span>
@@ -198,18 +198,18 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
         {/* Interactive card review */}
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-            <span className="text-[#00aa28] text-xs tracking-widest">
+            <span className="text-[#00aa28] text-sm tracking-widest">
               {card.type === 'sms' ? 'INCOMING_SMS' : 'INCOMING_EMAIL'}
             </span>
             {card.type === 'email' ? (
               <button
                 onClick={() => setHeadersOpen((o) => !o)}
-                className="text-[#00aa28] text-xs font-mono hover:text-[#00ff41] transition-colors"
+                className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] transition-colors"
               >
                 [HEADERS]
               </button>
             ) : (
-              <span className="text-[#003a0e] text-xs font-mono">■ □ □</span>
+              <span className="text-[#003a0e] text-sm font-mono">■ □ □</span>
             )}
           </div>
 
@@ -226,13 +226,13 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                 : text;
             return (
           <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.2)] space-y-1">
-            <div className="flex gap-2 text-xs font-mono">
+            <div className="flex gap-2 text-sm font-mono">
               <span className="text-[#003a0e] w-10 shrink-0">FROM:</span>
               <span className="text-[#00aa28] font-mono">
                 {displayName ? (
                   <>
                     <span className="break-all">{hl(displayName)}</span>
-                    <span className="block text-[#ffaa00] text-[10px] break-all mt-0.5">&lt;{hl(email)}&gt;</span>
+                    <span className="block text-[#ffaa00] text-sm break-all mt-0.5">&lt;{hl(email)}&gt;</span>
                   </>
                 ) : (
                   <span className="break-all">{hl(email)}</span>
@@ -240,7 +240,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
               </span>
             </div>
             {card.subject && (
-              <div className="flex gap-2 text-xs font-mono">
+              <div className="flex gap-2 text-sm font-mono">
                 <span className="text-[#003a0e] w-10 shrink-0">SUBJ:</span>
                 <span className="text-[#00aa28]">
                   {wasPhishing && card.highlights?.length
@@ -254,13 +254,13 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
               </div>
             )}
             {card.sentAt && (
-              <div className="flex gap-2 text-xs font-mono">
+              <div className="flex gap-2 text-sm font-mono">
                 <span className="text-[#003a0e] w-10 shrink-0">SENT:</span>
-                <span className="text-[#00aa28] text-[10px]">{card.sentAt}</span>
+                <span className="text-[#00aa28] text-sm">{card.sentAt}</span>
               </div>
             )}
             {card.attachmentName && (
-              <div className="flex gap-2 text-xs font-mono">
+              <div className="flex gap-2 text-sm font-mono">
                 <span className="text-[#003a0e] w-10 shrink-0">ATCH:</span>
                 <span className="text-[#ffaa00] font-mono">📎 {card.attachmentName}</span>
               </div>
@@ -273,15 +273,15 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           {headersOpen && card.type === 'email' && (
             <div className="border-b border-[rgba(0,255,65,0.2)] px-3 py-2 bg-[rgba(0,255,65,0.02)]">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[#ffaa00] text-xs font-mono tracking-widest">HEADERS</span>
+                <span className="text-[#ffaa00] text-sm font-mono tracking-widest">HEADERS</span>
                 <button
                   onClick={() => setHeadersOpen(false)}
-                  className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors"
+                  className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors"
                 >
                   [ × ]
                 </button>
               </div>
-              <div className="space-y-1 text-xs font-mono">
+              <div className="space-y-1 text-sm font-mono">
                 <div className="flex gap-2">
                   <span className="text-[#00aa28] w-14 shrink-0">SPF:</span>
                   <span style={{ color: headers.color.spf }}>{headers.spf}</span>
@@ -307,7 +307,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           )}
 
           {/* Body */}
-          <pre className="px-3 py-3 text-xs text-[#00aa28] font-mono leading-relaxed whitespace-pre-wrap break-words max-h-52 momentum-scroll scroll-fade-bottom">
+          <pre className="px-3 py-3 text-sm text-[#00aa28] font-mono leading-relaxed whitespace-pre-wrap break-words max-h-52 momentum-scroll scroll-fade-bottom">
             {parseBodySegments(card.body).map((seg, i) =>
               seg.type === 'url' ? (
                 <span
@@ -315,7 +315,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                   className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
                   onClick={() => setInspectedUrl(seg.actual === inspectedUrl ? null : seg.actual)}
                 >
-                  {seg.display}<span className="opacity-50 text-[9px] ml-0.5">[↗]</span>
+                  {seg.display}<span className="opacity-50 text-sm ml-0.5">[↗]</span>
                 </span>
               ) : (
                 wasPhishing && card.highlights?.length
@@ -333,15 +333,15 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           {inspectedUrl && (
             <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[#ffaa00] text-xs font-mono tracking-widest">URL_INSPECTOR</span>
+                <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
                 <button
                   onClick={() => setInspectedUrl(null)}
-                  className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors"
+                  className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors"
                 >
                   [ × ]
                 </button>
               </div>
-              <span className="text-[#ffaa00] font-mono text-xs break-all">{inspectedUrl}</span>
+              <span className="text-[#ffaa00] font-mono text-sm break-all">{inspectedUrl}</span>
             </div>
           )}
         </div>
@@ -349,9 +349,9 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
         {/* Explanation */}
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-            <span className="text-[#00aa28] text-xs tracking-widest">ANALYST_NOTES</span>
+            <span className="text-[#00aa28] text-sm tracking-widest">ANALYST_NOTES</span>
           </div>
-          <p className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed font-mono">{card.explanation}</p>
+          <p className="px-3 py-3 text-sm text-[#00aa28] leading-relaxed font-mono">{card.explanation}</p>
         </div>
 
         {/* Forensic signals */}
@@ -405,11 +405,11 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           return (
             <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
               <div className="border-b border-[rgba(255,170,0,0.3)] px-3 py-1.5">
-                <span className="text-[#ffaa00] text-xs tracking-widest">FORENSIC_SIGNALS</span>
+                <span className="text-[#ffaa00] text-sm tracking-widest">FORENSIC_SIGNALS</span>
               </div>
               <ul className="px-3 py-3 space-y-2">
                 {signals.map((signal, i) => (
-                  <li key={i} className="flex gap-2 text-xs text-[#00aa28] font-mono">
+                  <li key={i} className="flex gap-2 text-sm text-[#00aa28] font-mono">
                     <span className="text-[#ffaa00] shrink-0">▸</span>
                     <span>{signal}</span>
                   </li>
@@ -423,11 +423,11 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
         {wasPhishing && card.clues.length > 0 && (
           <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)]">
             <div className="border-b border-[rgba(255,51,51,0.3)] px-3 py-1.5">
-              <span className="text-[#aa2222] text-xs tracking-widest">RED_FLAGS_DETECTED</span>
+              <span className="text-[#aa2222] text-sm tracking-widest">RED_FLAGS_DETECTED</span>
             </div>
             <ul className="px-3 py-3 space-y-2">
               {card.clues.map((clue, i) => (
-                <li key={i} className="flex gap-2 text-xs text-[#00aa28] font-mono">
+                <li key={i} className="flex gap-2 text-sm text-[#00aa28] font-mono">
                   <span className="text-[#ff3333] shrink-0">▸</span>
                   <span>{clue}</span>
                 </li>
@@ -449,17 +449,17 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
             {!showFlag ? (
               <button
                 onClick={() => setShowFlag(true)}
-                className="text-[#003a0e] hover:text-[#00aa28] font-mono text-xs transition-colors"
+                className="text-[#003a0e] hover:text-[#00aa28] font-mono text-sm transition-colors"
               >
                 [ REPORT ISSUE ]
               </button>
             ) : (
               <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.2)] px-3 py-3 space-y-2 text-left">
-                <div className="text-[#aa2222] text-xs font-mono tracking-widest">REPORT_ISSUE</div>
+                <div className="text-[#aa2222] text-sm font-mono tracking-widest">REPORT_ISSUE</div>
                 <select
                   value={flagReason}
                   onChange={(e) => setFlagReason(e.target.value)}
-                  className="w-full bg-[#060c06] border border-[rgba(255,51,51,0.3)] text-[#00aa28] font-mono text-xs px-2 py-1.5 focus:outline-none"
+                  className="w-full bg-[#060c06] border border-[rgba(255,51,51,0.3)] text-[#00aa28] font-mono text-sm px-2 py-1.5 focus:outline-none"
                 >
                   <option value="">-- SELECT REASON --</option>
                   <option value="wrong_answer">Wrong answer (misclassified)</option>
@@ -471,7 +471,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                   value={flagComment}
                   onChange={(e) => setFlagComment(e.target.value)}
                   placeholder="Comment (optional)"
-                  className="w-full bg-transparent border border-[rgba(255,51,51,0.2)] text-[#00aa28] font-mono text-xs px-2 py-1 focus:outline-none placeholder:text-[#003a0e]"
+                  className="w-full bg-transparent border border-[rgba(255,51,51,0.2)] text-[#00aa28] font-mono text-sm px-2 py-1 focus:outline-none placeholder:text-[#003a0e]"
                 />
                 <div className="flex gap-2">
                   <button
@@ -484,13 +484,13 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                       setFlagDone(true);
                     }}
                     disabled={!flagReason}
-                    className="flex-1 py-1.5 border border-[rgba(255,51,51,0.4)] text-[#ff3333] font-mono text-xs hover:bg-[rgba(255,51,51,0.08)] disabled:opacity-30 transition-all"
+                    className="flex-1 py-1.5 border border-[rgba(255,51,51,0.4)] text-[#ff3333] font-mono text-sm hover:bg-[rgba(255,51,51,0.08)] disabled:opacity-30 transition-all"
                   >
                     SUBMIT
                   </button>
                   <button
                     onClick={() => setShowFlag(false)}
-                    className="px-3 py-1.5 border border-[rgba(0,255,65,0.2)] text-[#003a0e] font-mono text-xs hover:text-[#00aa28] transition-all"
+                    className="px-3 py-1.5 border border-[rgba(0,255,65,0.2)] text-[#003a0e] font-mono text-sm hover:text-[#00aa28] transition-all"
                   >
                     CANCEL
                   </button>
@@ -499,7 +499,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
             )}
           </div>
         ) : (
-          <div className="text-center text-[#003a0e] font-mono text-xs">FLAG SUBMITTED</div>
+          <div className="text-center text-[#003a0e] font-mono text-sm">FLAG SUBMITTED</div>
         )}
       </div>
     </div>

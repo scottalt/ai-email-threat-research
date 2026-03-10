@@ -19,8 +19,8 @@ class SummaryErrorBoundary extends Component<
       return (
         <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col gap-4">
           <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)] px-3 py-6 text-center space-y-2">
-            <div className="text-[#ff3333] text-xs font-mono tracking-widest">SUMMARY_ERROR</div>
-            <div className="text-[#003a0e] text-[10px] font-mono">{this.state.error.message}</div>
+            <div className="text-[#ff3333] text-sm font-mono tracking-widest">SUMMARY_ERROR</div>
+            <div className="text-[#003a0e] text-sm font-mono">{this.state.error.message}</div>
           </div>
           <button
             onClick={() => { this.setState({ error: null }); this.props.onReset(); }}
@@ -341,7 +341,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   if (phase === ('loading' as GamePhase)) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <span className="text-[#00aa28] font-mono text-xs tracking-widest">
+        <span className="text-[#00aa28] font-mono text-sm tracking-widest">
           {mode === 'expert' ? 'LOADING EXPERT DECK...' : 'LOADING RESEARCH DATA...'}
         </span>
       </div>
@@ -368,14 +368,14 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col gap-4">
         <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
           <div className="border-b border-[rgba(255,170,0,0.3)] px-3 py-1.5">
-            <span className="text-[#ffaa00] text-xs tracking-widest">RESEARCH_MODE</span>
+            <span className="text-[#ffaa00] text-sm tracking-widest">RESEARCH_MODE</span>
           </div>
           <div className="px-3 py-6 text-center space-y-2">
             <div className="text-[#ffaa00] text-sm font-mono font-black tracking-wide">DATASET UNAVAILABLE</div>
-            <p className="text-[#00aa28] text-xs font-mono leading-relaxed">
+            <p className="text-[#00aa28] text-sm font-mono leading-relaxed">
               The research dataset is still being assembled. No cards are available yet.
             </p>
-            <p className="text-[#003a0e] text-xs font-mono">Check back soon.</p>
+            <p className="text-[#003a0e] text-sm font-mono">Check back soon.</p>
           </div>
         </div>
         <button
@@ -410,15 +410,15 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col gap-4">
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-            <span className="text-[#00aa28] text-xs tracking-widest">DAILY_CHALLENGE</span>
-            <span className="text-[#003a0e] text-xs font-mono">{getToday()}</span>
+            <span className="text-[#00aa28] text-sm tracking-widest">DAILY_CHALLENGE</span>
+            <span className="text-[#003a0e] text-sm font-mono">{getToday()}</span>
           </div>
           <div className="px-3 py-6 text-center space-y-2">
-            <div className="text-xs font-mono text-[#00aa28] tracking-widest">ALREADY_DEPLOYED</div>
+            <div className="text-sm font-mono text-[#00aa28] tracking-widest">ALREADY_DEPLOYED</div>
             <div className="text-4xl font-black font-mono text-[#00ff41] glow">
               {dailyResult?.totalScore ?? 0}
             </div>
-            <div className="text-xs font-mono text-[#00aa28]">Come back tomorrow.</div>
+            <div className="text-sm font-mono text-[#00aa28]">Come back tomorrow.</div>
           </div>
         </div>
         <button

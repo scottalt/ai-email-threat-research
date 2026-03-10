@@ -143,17 +143,17 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       {/* XP award — only shown when signed in and API has responded */}
       {signedIn && xpResult && (
         <div className="term-border bg-[#060c06] px-3 py-3 space-y-2">
-          <div className="flex justify-between text-xs font-mono">
+          <div className="flex justify-between text-sm font-mono">
             <span className="text-[#00aa28]">XP EARNED</span>
             <span className="text-[#00ff41] font-bold glow">+{xpResult.xpEarned} XP</span>
           </div>
           {xpResult.levelUp && (
-            <div className="text-[#ffaa00] text-xs font-mono glow text-center">LEVEL UP → {xpResult.level}</div>
+            <div className="text-[#ffaa00] text-sm font-mono glow text-center">LEVEL UP → {xpResult.level}</div>
           )}
           {xpResult.graduated && (
             <div className="term-border border-[rgba(255,170,0,0.4)] px-2 py-2 text-center">
-              <div className="text-[#ffaa00] text-xs font-mono font-bold">RESEARCH GRADUATED</div>
-              <div className="text-[#003a0e] text-[10px] font-mono mt-0.5">Expert Mode unlocked. You&apos;ve completed your 3 research sessions.</div>
+              <div className="text-[#ffaa00] text-sm font-mono font-bold">RESEARCH GRADUATED</div>
+              <div className="text-[#003a0e] text-sm font-mono mt-0.5">Expert Mode unlocked. You&apos;ve completed your 3 research sessions.</div>
             </div>
           )}
           {profile && <LevelMeter xp={profile.xp} level={profile.level} />}
@@ -162,23 +162,23 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       {/* Score header */}
       <div className="term-border bg-[#060c06]">
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-          <span className="text-[#00aa28] text-xs tracking-widest">
+          <span className="text-[#00aa28] text-sm tracking-widest">
             {mode === 'daily' ? 'DAILY_COMPLETE' : 'SESSION_COMPLETE'}
           </span>
-          <span className="text-[#003a0e] text-xs font-mono">ANALYST_TERMINAL</span>
+          <span className="text-[#003a0e] text-sm font-mono">ANALYST_TERMINAL</span>
         </div>
         <div className="px-3 py-5 text-center space-y-2">
-          <div className="text-xs font-mono text-[#00aa28] tracking-widest">ACCURACY RATING</div>
+          <div className="text-sm font-mono text-[#00aa28] tracking-widest">ACCURACY RATING</div>
           <div className="text-6xl font-black font-mono text-[#00ff41] glow">
             {score}<span className="text-2xl text-[#003a0e]">/{total}</span>
           </div>
           <div className={`text-sm font-black font-mono tracking-widest ${tier.color}`}>
             {tier.label}
           </div>
-          <div className="text-xs font-mono text-[#00aa28]">{tier.sub}</div>
+          <div className="text-sm font-mono text-[#00aa28]">{tier.sub}</div>
           {rank && (
             <div
-              className={`text-xs font-mono font-bold tracking-widest mt-1 ${rank.glowClass}`}
+              className={`text-sm font-mono font-bold tracking-widest mt-1 ${rank.glowClass}`}
               style={{ color: rank.color }}
             >
               [ {rank.label} ]
@@ -188,15 +188,15 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
         <div className="border-t border-[rgba(0,255,65,0.25)] px-3 py-2 flex items-center justify-between">
           <div className="text-center">
             <div className="text-lg font-black font-mono text-[#00ff41] glow">{displayScore}</div>
-            <div className="text-[10px] font-mono text-[#003a0e]">TOTAL PTS</div>
+            <div className="text-sm font-mono text-[#003a0e]">TOTAL PTS</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-black font-mono text-[#ffaa00]">{efficiency}%</div>
-            <div className="text-[10px] font-mono text-[#003a0e]">EFFICIENCY</div>
+            <div className="text-sm font-mono text-[#003a0e]">EFFICIENCY</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-black font-mono text-[#00ff41]">{maxPossible}</div>
-            <div className="text-[10px] font-mono text-[#003a0e]">MAX POSSIBLE</div>
+            <div className="text-sm font-mono text-[#003a0e]">MAX POSSIBLE</div>
           </div>
         </div>
       </div>
@@ -205,42 +205,42 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       <div className="grid grid-cols-2 gap-3">
         <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)] text-center px-3 py-3">
           <div className="text-[#ff3333] text-2xl font-black font-mono">{phishingCaught}/{phishingTotal}</div>
-          <div className="text-[10px] font-mono text-[#00aa28] mt-1 tracking-wider">PHISHING CAUGHT</div>
+          <div className="text-sm font-mono text-[#00aa28] mt-1 tracking-wider">PHISHING CAUGHT</div>
         </div>
         <div className="term-border bg-[#060c06] border-[rgba(0,255,65,0.3)] text-center px-3 py-3">
           <div className="text-[#00ff41] text-2xl font-black font-mono glow">{legitCorrect}/{legitTotal}</div>
-          <div className="text-[10px] font-mono text-[#00aa28] mt-1 tracking-wider">LEGIT CLEARED</div>
+          <div className="text-sm font-mono text-[#00aa28] mt-1 tracking-wider">LEGIT CLEARED</div>
         </div>
       </div>
 
       {/* Round log */}
       <div className="term-border bg-[#060c06]">
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-          <span className="text-[#00aa28] text-xs tracking-widest">ROUND_LOG</span>
+          <span className="text-[#00aa28] text-sm tracking-widest">ROUND_LOG</span>
         </div>
         <div className="divide-y divide-[rgba(0,255,65,0.1)]">
           {results.map((r) => (
             <div key={r.card.id} className="flex items-center gap-2 px-3 py-2">
-              <span className={`text-xs font-mono font-bold w-4 ${r.correct ? 'text-[#00ff41]' : 'text-[#ff3333]'}`}>
+              <span className={`text-sm font-mono font-bold w-4 ${r.correct ? 'text-[#00ff41]' : 'text-[#ff3333]'}`}>
                 {r.correct ? '✓' : '✗'}
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-[#00aa28] text-xs font-mono truncate">
+                <div className="text-[#00aa28] text-sm font-mono truncate">
                   {r.card.subject ?? r.card.from}
                 </div>
-                <div className="text-[#003a0e] text-[10px] font-mono">
+                <div className="text-[#003a0e] text-sm font-mono">
                   {r.card.isPhishing ? 'PHISH' : 'LEGIT'} · {r.card.difficulty?.toUpperCase() ?? '—'}
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className={`text-[10px] font-mono px-1 border ${
+                <span className={`text-sm font-mono px-1 border ${
                   r.confidence === 'certain' ? 'text-[#00ff41] border-[rgba(0,255,65,0.4)]'
                   : r.confidence === 'likely' ? 'text-[#ffaa00] border-[rgba(255,170,0,0.4)]'
                   : 'text-[#00aa28] border-[rgba(0,255,65,0.2)]'
                 }`}>
                   {CONFIDENCE_LABEL[r.confidence]}
                 </span>
-                <span className={`text-xs font-mono font-bold ${
+                <span className={`text-sm font-mono font-bold ${
                   r.pointsEarned > 0 ? 'text-[#00ff41]'
                   : r.pointsEarned < 0 ? 'text-[#ff3333]'
                   : 'text-[#003a0e]'
@@ -257,18 +257,18 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       {mode === 'research' && weakPoints.length > 0 && (
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-            <span className="text-[#00aa28] text-xs tracking-widest">COGNITIVE_BLIND_SPOTS</span>
+            <span className="text-[#00aa28] text-sm tracking-widest">COGNITIVE_BLIND_SPOTS</span>
           </div>
           <div className="divide-y divide-[rgba(0,255,65,0.08)]">
             {weakPoints.map(({ technique, missRate, missed, attempts }) => (
               <div key={technique} className="flex items-center px-3 py-2 gap-3">
-                <span className="text-[#ff3333] text-xs font-mono flex-1">{technique}</span>
-                <span className="text-[#003a0e] text-[10px] font-mono">{missed}/{attempts}</span>
-                <span className="text-[#ff3333] text-xs font-mono font-bold">{missRate}% miss</span>
+                <span className="text-[#ff3333] text-sm font-mono flex-1">{technique}</span>
+                <span className="text-[#003a0e] text-sm font-mono">{missed}/{attempts}</span>
+                <span className="text-[#ff3333] text-sm font-mono font-bold">{missRate}% miss</span>
               </div>
             ))}
           </div>
-          <div className="px-3 py-2 text-[10px] font-mono text-[#003a0e]">
+          <div className="px-3 py-2 text-sm font-mono text-[#003a0e]">
             Based on your session history. Stored locally.
           </div>
         </div>
@@ -278,19 +278,19 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       {signedIn ? (
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-            <span className="text-[#00aa28] text-xs tracking-widest">SUBMIT_TO_LEADERBOARD</span>
+            <span className="text-[#00aa28] text-sm tracking-widest">SUBMIT_TO_LEADERBOARD</span>
           </div>
           <div className="px-3 py-3">
             {submitState === 'done' ? (
-              <div className="text-[#00ff41] text-xs font-mono text-center glow py-1">
+              <div className="text-[#00ff41] text-sm font-mono text-center glow py-1">
                 SCORE LOGGED. GL HF.
               </div>
             ) : submitState === 'error' ? (
-              <div className="text-[#ff3333] text-xs font-mono text-center py-1">
+              <div className="text-[#ff3333] text-sm font-mono text-center py-1">
                 SUBMISSION FAILED.
               </div>
             ) : submitState === 'loading' ? (
-              <div className="text-[#003a0e] text-[10px] font-mono text-center py-1">
+              <div className="text-[#003a0e] text-sm font-mono text-center py-1">
                 SUBMITTING...
               </div>
             ) : null}
@@ -299,10 +299,10 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       ) : (
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-            <span className="text-[#00aa28] text-xs tracking-widest">LEADERBOARD_ACCESS</span>
+            <span className="text-[#00aa28] text-sm tracking-widest">LEADERBOARD_ACCESS</span>
           </div>
           <div className="px-3 py-3 space-y-3">
-            <div className="text-[#003a0e] text-[10px] font-mono">
+            <div className="text-[#003a0e] text-sm font-mono">
               SIGN IN TO APPEAR ON FUTURE LEADERBOARDS
             </div>
             <AuthFlow onSignIn={signInWithEmail} onVerifyCode={verifyOtp} onCancel={() => {}} />
@@ -313,17 +313,17 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       {(globalLeaderboard.length > 0 || dailyLeaderboard.length > 0) && (
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-            <span className="text-[#00aa28] text-xs tracking-widest">LEADERBOARD</span>
+            <span className="text-[#00aa28] text-sm tracking-widest">LEADERBOARD</span>
             <div className="flex gap-2">
               <button
                 onClick={() => setLeaderboardTab('global')}
-                className={`text-[10px] font-mono px-2 py-0.5 transition-colors ${leaderboardTab === 'global' ? 'text-[#00ff41] border border-[rgba(0,255,65,0.4)]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                className={`text-sm font-mono px-2 py-0.5 transition-colors ${leaderboardTab === 'global' ? 'text-[#00ff41] border border-[rgba(0,255,65,0.4)]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
               >
                 GLOBAL
               </button>
               <button
                 onClick={() => setLeaderboardTab('daily')}
-                className={`text-[10px] font-mono px-2 py-0.5 transition-colors ${leaderboardTab === 'daily' ? 'text-[#00ff41] border border-[rgba(0,255,65,0.4)]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                className={`text-sm font-mono px-2 py-0.5 transition-colors ${leaderboardTab === 'daily' ? 'text-[#00ff41] border border-[rgba(0,255,65,0.4)]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
               >
                 DAILY
               </button>
@@ -332,22 +332,22 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
           {(() => {
             const entries = leaderboardTab === 'daily' ? dailyLeaderboard : globalLeaderboard;
             if (entries.length === 0) return (
-              <div className="px-3 py-4 text-center text-[#003a0e] text-[10px] font-mono">NO DATA YET</div>
+              <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">NO DATA YET</div>
             );
             return (
               <div className="divide-y divide-[rgba(0,255,65,0.08)]">
                 {entries.slice(0, 10).map((entry, i) => (
                   <div key={i} className="flex items-center gap-3 px-3 py-1.5">
-                    <span className={`text-[10px] font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>
+                    <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>
                       {i + 1}
                     </span>
-                    <span className="text-[#00aa28] text-xs font-mono flex-1 truncate">{entry.name}</span>
+                    <span className="text-[#00aa28] text-sm font-mono flex-1 truncate">{entry.name}</span>
                     {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
-                      <span className={`text-[9px] font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
+                      <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
                         {r.label}
                       </span>
                     ); })()}
-                    <span className="text-[#00ff41] text-xs font-mono font-bold glow">{entry.score}</span>
+                    <span className="text-[#00ff41] text-sm font-mono font-bold glow">{entry.score}</span>
                   </div>
                 ))}
               </div>

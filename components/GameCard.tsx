@@ -111,16 +111,16 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
   return (
     <div className="term-border bg-[#060c06] select-none scanline">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
-        <span className="text-[#00aa28] text-xs tracking-widest">INCOMING_EMAIL</span>
+        <span className="text-[#00aa28] text-sm tracking-widest">INCOMING_EMAIL</span>
         <button
           onClick={(e) => { e.stopPropagation(); if (!headersOpen) onHeadersOpened?.(); setHeadersOpen((o) => !o); }}
-          className="text-[#00aa28] text-xs font-mono hover:text-[#00ff41] transition-colors p-2 -m-2"
+          className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] transition-colors p-2 -m-2"
         >
           [HEADERS]
         </button>
       </div>
       <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.2)] space-y-1">
-        <div className="flex gap-2 text-xs">
+        <div className="flex gap-2 text-sm">
           <span className="text-[#00aa28] w-10 shrink-0">FROM:</span>
           <span className="text-[#00ff41] font-mono">
             {displayName ? (
@@ -128,12 +128,12 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
                 <span className="break-all">{displayName}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowFromEmail((o) => !o); }}
-                  className="ml-1 text-[9px] text-[#003a0e] hover:text-[#ffaa00] transition-colors"
+                  className="ml-1 text-sm text-[#003a0e] hover:text-[#ffaa00] transition-colors"
                 >
                   {showFromEmail ? '[−]' : '[↗]'}
                 </button>
                 {showFromEmail && (
-                  <span className="block text-[#ffaa00] text-[10px] break-all mt-0.5">&lt;{email}&gt;</span>
+                  <span className="block text-[#ffaa00] text-sm break-all mt-0.5">&lt;{email}&gt;</span>
                 )}
               </>
             ) : (
@@ -142,19 +142,19 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
           </span>
         </div>
         {card.subject && (
-          <div className="flex gap-2 text-xs">
+          <div className="flex gap-2 text-sm">
             <span className="text-[#00aa28] w-10 shrink-0">SUBJ:</span>
             <span className="text-[#00ff41] font-mono">{card.subject}</span>
           </div>
         )}
         {card.sentAt && (
-          <div className="flex gap-2 text-xs">
+          <div className="flex gap-2 text-sm">
             <span className="text-[#00aa28] w-10 shrink-0">SENT:</span>
-            <span className="text-[#00ff41] font-mono text-[10px]">{card.sentAt}</span>
+            <span className="text-[#00ff41] font-mono text-sm">{card.sentAt}</span>
           </div>
         )}
         {card.attachmentName && (
-          <div className="flex gap-2 text-xs">
+          <div className="flex gap-2 text-sm">
             <span className="text-[#00aa28] w-10 shrink-0">ATCH:</span>
             <span className="text-[#ffaa00] font-mono">📎 {card.attachmentName}</span>
           </div>
@@ -163,15 +163,15 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
       {headersOpen && (
         <div className="border-b border-[rgba(0,255,65,0.2)] px-3 py-2 bg-[rgba(0,255,65,0.02)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[#ffaa00] text-xs font-mono tracking-widest">HEADERS</span>
+            <span className="text-[#ffaa00] text-sm font-mono tracking-widest">HEADERS</span>
             <button
               onClick={(e) => { e.stopPropagation(); setHeadersOpen(false); }}
-              className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors"
+              className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors"
             >
               [ × ]
             </button>
           </div>
-          <div className="space-y-1 text-xs font-mono">
+          <div className="space-y-1 text-sm font-mono">
             <div className="flex gap-2">
               <span className="text-[#00aa28] w-14 shrink-0">SPF:</span>
               <span style={{ color: headers.color.spf }}>{headers.spf}</span>
@@ -197,7 +197,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
       )}
       <div className="relative">
         <div
-          className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 momentum-scroll font-mono scroll-fade-bottom"
+          className="px-3 py-3 text-sm text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 momentum-scroll font-mono scroll-fade-bottom"
           onScroll={(e) => {
             const el = e.currentTarget;
             const pct = Math.round(((el.scrollTop + el.clientHeight) / el.scrollHeight) * 100);
@@ -211,7 +211,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
                 className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
                 onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.actual); }}
               >
-                {seg.display}<span className="opacity-50 text-[9px] ml-0.5">[↗]</span>
+                {seg.display}<span className="opacity-50 text-sm ml-0.5">[↗]</span>
               </span>
             ) : (
               <span key={i}>{seg.content}</span>
@@ -222,10 +222,10 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
       {inspectedUrl && (
         <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[#ffaa00] text-xs font-mono tracking-widest">URL_INSPECTOR</span>
-            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors p-2 -m-2">[ × ]</button>
+            <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
+            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors p-2 -m-2">[ × ]</button>
           </div>
-          <span className="text-[#ffaa00] font-mono text-xs break-all">{inspectedUrl}</span>
+          <span className="text-[#ffaa00] font-mono text-sm break-all">{inspectedUrl}</span>
         </div>
       )}
     </div>
@@ -243,18 +243,18 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
   return (
     <div className="term-border bg-[#060c06] select-none scanline">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
-        <span className="text-[#00aa28] text-xs tracking-widest">INCOMING_SMS</span>
-        <span className="text-[#003a0e] text-xs font-mono">■ □ □</span>
+        <span className="text-[#00aa28] text-sm tracking-widest">INCOMING_SMS</span>
+        <span className="text-[#003a0e] text-sm font-mono">■ □ □</span>
       </div>
       <div className="px-3 py-2 border-b border-[rgba(0,255,65,0.2)]">
-        <div className="flex gap-2 text-xs">
+        <div className="flex gap-2 text-sm">
           <span className="text-[#00aa28] w-10 shrink-0">FROM:</span>
           <span className="text-[#00ff41] font-mono">{card.from}</span>
         </div>
       </div>
       <div className="relative">
         <div
-          className="px-3 py-3 text-xs text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 momentum-scroll font-mono scroll-fade-bottom"
+          className="px-3 py-3 text-sm text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 momentum-scroll font-mono scroll-fade-bottom"
           onScroll={(e) => {
             const el = e.currentTarget;
             const pct = Math.round(((el.scrollTop + el.clientHeight) / el.scrollHeight) * 100);
@@ -268,7 +268,7 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
                 className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
                 onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.actual); }}
               >
-                {seg.display}<span className="opacity-50 text-[9px] ml-0.5">[↗]</span>
+                {seg.display}<span className="opacity-50 text-sm ml-0.5">[↗]</span>
               </span>
             ) : (
               <span key={i}>{seg.content}</span>
@@ -279,10 +279,10 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
       {inspectedUrl && (
         <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[#ffaa00] text-xs font-mono tracking-widest">URL_INSPECTOR</span>
-            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28] transition-colors p-2 -m-2">[ × ]</button>
+            <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
+            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors p-2 -m-2">[ × ]</button>
           </div>
-          <span className="text-[#ffaa00] font-mono text-xs break-all">{inspectedUrl}</span>
+          <span className="text-[#ffaa00] font-mono text-sm break-all">{inspectedUrl}</span>
         </div>
       )}
     </div>
@@ -450,18 +450,18 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
   return (
     <div className="flex flex-col items-center gap-4 w-full max-w-sm px-4 pb-safe">
       {/* HUD */}
-      <div className="w-full flex items-center justify-between text-xs font-mono">
+      <div className="w-full flex items-center justify-between text-sm font-mono">
         <div className="flex items-center gap-2">
           <button
             onClick={onQuit}
-            className="text-[#003a0e] text-[10px] font-mono hover:text-[#ff3333] transition-colors p-2 -m-2"
+            className="text-[#003a0e] text-sm font-mono hover:text-[#ff3333] transition-colors p-2 -m-2"
           >
             [QUIT]
           </button>
           {mode === 'research' && (
-            <span className="text-[#ffaa00] text-[10px] font-mono glow-amber">[RES]</span>
+            <span className="text-[#ffaa00] text-sm font-mono glow-amber">[RES]</span>
           )}
-          <span className="font-mono text-[10px]">
+          <span className="font-mono text-sm">
             <span className="text-[#003a0e]">[</span>
             {Array.from({ length: total }, (_, i) => (
               <span
@@ -482,7 +482,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
           <span className="text-[#00aa28]">PTS:<span className="text-[#00ff41] glow">{totalScore}</span></span>
           <button
             onClick={onToggleSound}
-            className={`font-mono text-[10px] transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#00aa28]'}`}
+            className={`font-mono text-sm transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#00aa28]'}`}
           >
             {soundEnabled ? '[SFX]' : '[SFX OFF]'}
           </button>
@@ -492,7 +492,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
 
 
       {confidence && (
-        <div className="flex justify-between w-full text-xs text-[#003a0e] font-mono tracking-wider">
+        <div className="flex justify-between w-full text-sm text-[#003a0e] font-mono tracking-wider">
           <span>← PHISHING</span>
           <span>LEGIT →</span>
         </div>
@@ -557,7 +557,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
       {/* Controls */}
       {!confidence ? (
         <div className="w-full space-y-2">
-          <div className="text-xs text-[#00aa28] font-mono text-center tracking-widest">
+          <div className="text-sm text-[#00aa28] font-mono text-center tracking-widest">
             — SET CONFIDENCE BEFORE ANSWERING —
           </div>
           <div className="flex gap-2">
@@ -565,17 +565,17 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
               <button
                 key={opt.value}
                 onClick={() => { setConfidence(opt.value); confidenceTime.current = Date.now(); }}
-                className={`flex-1 py-3 term-border font-mono text-xs tracking-wider transition-all active:scale-95 hover:bg-[rgba(0,255,65,0.06)] flex flex-col items-center gap-0.5 ${opt.color}`}
+                className={`flex-1 py-3 term-border font-mono text-sm tracking-wider transition-all active:scale-95 hover:bg-[rgba(0,255,65,0.06)] flex flex-col items-center gap-0.5 ${opt.color}`}
               >
                 <span>{opt.label}</span>
-                <span className="text-[10px] opacity-60">{opt.multiplier} PTS</span>
+                <span className="text-sm opacity-60">{opt.multiplier} PTS</span>
               </button>
             ))}
           </div>
         </div>
       ) : (
         <div className="w-full space-y-2">
-          <div className="text-xs text-[#00aa28] font-mono text-center tracking-widest">
+          <div className="text-sm text-[#00aa28] font-mono text-center tracking-widest">
             CONFIDENCE: <span className="text-[#00ff41] glow">{confidence.toUpperCase()}</span>
             {' · '}
             {confidence === 'certain' ? '3x' : confidence === 'likely' ? '2x' : '1x'} PTS

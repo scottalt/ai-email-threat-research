@@ -41,8 +41,8 @@ export function TutorialCard({ onComplete }: Props) {
 
       {/* Annotation strip */}
       <div className="term-border border-[rgba(255,170,0,0.5)] bg-[#060c06] px-3 py-3 space-y-1">
-        <div className="text-[#ffaa00] text-xs font-mono font-bold tracking-widest">TRAINING_SIMULATION</div>
-        <div className="text-[#00aa28] text-[10px] font-mono leading-relaxed">
+        <div className="text-[#ffaa00] text-sm font-mono font-bold tracking-widest">TRAINING_SIMULATION</div>
+        <div className="text-[#00aa28] text-sm font-mono leading-relaxed">
           Explore the forensic tools below, then set your confidence and classify this email.
         </div>
       </div>
@@ -51,14 +51,14 @@ export function TutorialCard({ onComplete }: Props) {
       <div className="term-border bg-[#060c06]">
         {/* Card header with pulsing HEADERS button */}
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-          <span className="text-[#003a0e] text-[10px] font-mono tracking-widest">INCOMING_EMAIL</span>
+          <span className="text-[#003a0e] text-sm font-mono tracking-widest">INCOMING_EMAIL</span>
           <button
             type="button"
             onClick={() => {
               setHeadersInteracted(true);
               setShowHeaders((v) => !v);
             }}
-            className={`text-[10px] font-mono px-2 py-0.5 border transition-colors ${
+            className={`text-sm font-mono px-2 py-0.5 border transition-colors ${
               showHeaders
                 ? 'border-[rgba(0,255,65,0.6)] text-[#00ff41]'
                 : 'border-[rgba(0,255,65,0.25)] text-[#003a0e] hover:text-[#00aa28]'
@@ -71,19 +71,19 @@ export function TutorialCard({ onComplete }: Props) {
         {/* Auth headers panel */}
         {showHeaders && (
           <div className="border-b border-[rgba(0,255,65,0.2)] px-3 py-2 bg-[#03080a] space-y-1">
-            <div className="text-[#003a0e] text-[10px] font-mono tracking-widest mb-1">AUTH_HEADERS</div>
+            <div className="text-[#003a0e] text-sm font-mono tracking-widest mb-1">AUTH_HEADERS</div>
             {[
               { label: 'SPF', status: 'FAIL' },
               { label: 'DKIM', status: 'FAIL' },
               { label: 'DMARC', status: 'FAIL' },
             ].map(({ label, status }) => (
-              <div key={label} className="flex items-center gap-2 text-[10px] font-mono">
+              <div key={label} className="flex items-center gap-2 text-sm font-mono">
                 <span className="text-[#00aa28] w-12">{label}</span>
                 <span className="text-[#ff3333] font-bold">{status}</span>
               </div>
             ))}
             <div className="pt-1 space-y-0.5">
-              <div className="flex gap-2 text-[10px] font-mono">
+              <div className="flex gap-2 text-sm font-mono">
                 <span className="text-[#00aa28] w-16 shrink-0">REPLY-TO</span>
                 <span className="text-[#ffaa00]">{TUTORIAL_EMAIL.replyTo}</span>
               </div>
@@ -94,7 +94,7 @@ export function TutorialCard({ onComplete }: Props) {
         {/* Email metadata */}
         <div className="px-3 py-2 space-y-1 border-b border-[rgba(0,255,65,0.15)]">
           {/* FROM */}
-          <div className="flex items-start gap-2 text-[10px] font-mono">
+          <div className="flex items-start gap-2 text-sm font-mono">
             <span className="text-[#003a0e] w-8 shrink-0 pt-0.5">FROM</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1 flex-wrap">
@@ -121,17 +121,17 @@ export function TutorialCard({ onComplete }: Props) {
             </div>
           </div>
           {/* SUBJ */}
-          <div className="flex items-start gap-2 text-[10px] font-mono">
+          <div className="flex items-start gap-2 text-sm font-mono">
             <span className="text-[#003a0e] w-8 shrink-0 pt-0.5">SUBJ</span>
             <span className="text-[#00ff41] flex-1">{TUTORIAL_EMAIL.subject}</span>
           </div>
           {/* SENT */}
-          <div className="flex items-center gap-2 text-[10px] font-mono">
+          <div className="flex items-center gap-2 text-sm font-mono">
             <span className="text-[#003a0e] w-8 shrink-0">SENT</span>
             <span className="text-[#00aa28]">{TUTORIAL_EMAIL.sentAt}</span>
           </div>
           {/* ATCH */}
-          <div className="flex items-center gap-2 text-[10px] font-mono">
+          <div className="flex items-center gap-2 text-sm font-mono">
             <span className="text-[#003a0e] w-8 shrink-0">ATCH</span>
             <span className="text-[#ffaa00]">📎 {TUTORIAL_EMAIL.attachmentName}</span>
           </div>
@@ -139,7 +139,7 @@ export function TutorialCard({ onComplete }: Props) {
 
         {/* Body */}
         <div className="px-3 py-2 max-h-40 overflow-y-auto">
-          <div className="text-[#00aa28] text-xs font-mono whitespace-pre-wrap leading-relaxed">
+          <div className="text-[#00aa28] text-sm font-mono whitespace-pre-wrap leading-relaxed">
             {TUTORIAL_EMAIL.bodyBefore}
             <button
               type="button"
@@ -162,8 +162,8 @@ export function TutorialCard({ onComplete }: Props) {
         {/* URL inspector */}
         {showUrl && (
           <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[#03080a]">
-            <div className="text-[#003a0e] text-[10px] font-mono tracking-widest mb-1">URL_INSPECTOR</div>
-            <div className="text-[#ffaa00] text-[10px] font-mono break-all">{TUTORIAL_EMAIL.url}</div>
+            <div className="text-[#003a0e] text-sm font-mono tracking-widest mb-1">URL_INSPECTOR</div>
+            <div className="text-[#ffaa00] text-sm font-mono break-all">{TUTORIAL_EMAIL.url}</div>
           </div>
         )}
       </div>
@@ -171,7 +171,7 @@ export function TutorialCard({ onComplete }: Props) {
       {/* Confidence selector */}
       {!answer && (
         <div className="w-full space-y-2">
-          <div className="text-xs text-[#00aa28] font-mono text-center tracking-widest">
+          <div className="text-sm text-[#00aa28] font-mono text-center tracking-widest">
             — SET CONFIDENCE BEFORE ANSWERING —
           </div>
           <div className="flex gap-2">
@@ -180,14 +180,14 @@ export function TutorialCard({ onComplete }: Props) {
                 key={key}
                 type="button"
                 onClick={() => setConfidence(key)}
-                className={`flex-1 py-3 border font-mono text-xs tracking-wider transition-all active:scale-95 flex flex-col items-center gap-0.5 ${color} ${
+                className={`flex-1 py-3 border font-mono text-sm tracking-wider transition-all active:scale-95 flex flex-col items-center gap-0.5 ${color} ${
                   confidence === key
                     ? `${border} bg-[rgba(0,255,65,0.06)]`
                     : `${border} opacity-60 hover:opacity-100`
                 }`}
               >
                 <span>{key}</span>
-                <span className="text-[9px] font-normal opacity-70">{mult} · {penalty}</span>
+                <span className="text-sm font-normal opacity-70">{mult} · {penalty}</span>
               </button>
             ))}
           </div>
@@ -221,12 +221,12 @@ export function TutorialCard({ onComplete }: Props) {
             ? 'border-[rgba(0,255,65,0.5)]'
             : 'border-[rgba(255,51,51,0.5)]'
         } bg-[#060c06]`}>
-          <div className={`text-xs font-mono font-bold tracking-widest ${
+          <div className={`text-sm font-mono font-bold tracking-widest ${
             answer === 'PHISHING' ? 'text-[#00ff41]' : 'text-[#ff3333]'
           }`}>
             {answer === 'PHISHING' ? '✓ PHISHING — CORRECT' : '✗ LEGIT — INCORRECT'}
           </div>
-          <div className="text-[#00aa28] text-[10px] font-mono space-y-0.5">
+          <div className="text-[#00aa28] text-sm font-mono space-y-0.5">
             <div>• <span className="text-[#ffaa00]">FROM:</span> paypa1.com — typosquatted domain</div>
             <div>• <span className="text-[#ffaa00]">HEADERS:</span> SPF / DKIM / DMARC all FAIL</div>
             <div>• <span className="text-[#ffaa00]">SENT:</span> 3:14 AM — unusual send time</div>

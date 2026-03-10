@@ -240,9 +240,9 @@ function StatBlock({ label, value, sub, highlight }: { label: string; value: str
   const valueColor = highlight === 'red' ? 'text-[#ff3333] glow-red-soft' : highlight === 'amber' ? 'text-[#ffaa00] glow-amber-soft' : 'text-[#00ff41] glow-soft';
   return (
     <div className="term-border bg-[#060c06] px-3 py-3 text-center">
-      <div className="text-[#003a0e] text-[10px] font-mono tracking-widest">{label}</div>
+      <div className="text-[#003a0e] text-sm font-mono tracking-widest">{label}</div>
       <div className={`text-2xl font-black font-mono mt-1 ${valueColor}`}>{value}</div>
-      {sub && <div className="text-[#003a0e] text-[10px] font-mono mt-0.5">{sub}</div>}
+      {sub && <div className="text-[#003a0e] text-sm font-mono mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -250,7 +250,7 @@ function StatBlock({ label, value, sub, highlight }: { label: string; value: str
 function SectionHeader({ title }: { title: string }) {
   return (
     <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-      <span className="text-[#00aa28] text-xs tracking-widest">{title}</span>
+      <span className="text-[#00aa28] text-sm tracking-widest">{title}</span>
     </div>
   );
 }
@@ -259,13 +259,13 @@ function BarRow({ label, value, pct, color, sub }: { label: string; value: strin
   return (
     <div className="flex items-center px-3 py-2 gap-3">
       <div className="flex-1 min-w-0">
-        <span className="text-[#00aa28] text-xs font-mono">{label}</span>
-        {sub && <span className="text-[#003a0e] text-[10px] font-mono ml-1">{sub}</span>}
+        <span className="text-[#00aa28] text-sm font-mono">{label}</span>
+        {sub && <span className="text-[#003a0e] text-sm font-mono ml-1">{sub}</span>}
       </div>
       <div className="w-24 h-1 bg-[#003a0e] shrink-0">
         <div className="h-full" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <span className="text-xs font-mono w-8 text-right shrink-0" style={{ color }}>{value}</span>
+      <span className="text-sm font-mono w-8 text-right shrink-0" style={{ color }}>{value}</span>
     </div>
   );
 }
@@ -285,18 +285,18 @@ export default async function IntelPage() {
         {/* Header */}
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
-            <span className="text-[#00aa28] text-xs tracking-widest">THREAT_INTELLIGENCE</span>
-            <Link href="/" className="text-[#003a0e] text-xs font-mono hover:text-[#00aa28]">← TERMINAL</Link>
+            <span className="text-[#00aa28] text-sm tracking-widest">THREAT_INTELLIGENCE</span>
+            <Link href="/" className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28]">← TERMINAL</Link>
           </div>
           <div className="px-3 py-3 flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <div className="text-[#00ff41] text-xs font-mono">STATE OF PHISHING IN THE GENAI ERA</div>
-              <div className="text-[#003a0e] text-[10px] font-mono">
+              <div className="text-[#00ff41] text-sm font-mono">STATE OF PHISHING IN THE GENAI ERA</div>
+              <div className="text-[#003a0e] text-sm font-mono">
                 Live aggregate findings from the Retro Phish research dataset. Research Mode answers only.
               </div>
             </div>
             {data?.refreshedAt && (
-              <div className="text-[#003a0e] text-[10px] font-mono shrink-0 text-right">
+              <div className="text-[#003a0e] text-sm font-mono shrink-0 text-right">
                 <div>REFRESHED</div>
                 <div className="text-[#00aa28]">{formatRefreshedAt(data.refreshedAt)}</div>
               </div>
@@ -306,8 +306,8 @@ export default async function IntelPage() {
 
         {!data || data.totalAnswers === 0 ? (
           <div className="term-border bg-[#060c06] px-3 py-6 text-center">
-            <div className="text-[#00aa28] text-xs font-mono">COLLECTING DATA...</div>
-            <div className="text-[#003a0e] text-[10px] font-mono mt-1">Insufficient sample size. Check back once Research Mode is live.</div>
+            <div className="text-[#00aa28] text-sm font-mono">COLLECTING DATA...</div>
+            <div className="text-[#003a0e] text-sm font-mono mt-1">Insufficient sample size. Check back once Research Mode is live.</div>
           </div>
         ) : (
           <>
@@ -385,7 +385,7 @@ export default async function IntelPage() {
                       <BarRow label="TRADITIONAL" sub={`n=${data.genai.traditionalSample}`} value={`${data.genai.traditionalBypassRate}%`} pct={data.genai.traditionalBypassRate} color="#00ff41" />
                     )}
                   </div>
-                  <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
+                  <div className="px-3 py-2 text-[#003a0e] text-sm font-mono">
                     Higher fluency = harder to detect. GenAI phishing exploits this gap.
                   </div>
                 </div>
@@ -422,7 +422,7 @@ export default async function IntelPage() {
                       />
                     ))}
                   </div>
-                  <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
+                  <div className="px-3 py-2 text-[#003a0e] text-sm font-mono">
                     Are players who bet CERTAIN actually more accurate?
                   </div>
                 </div>
@@ -444,7 +444,7 @@ export default async function IntelPage() {
                       />
                     ))}
                   </div>
-                  <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
+                  <div className="px-3 py-2 text-[#003a0e] text-sm font-mono">
                     Does security background correlate with phishing detection accuracy?
                   </div>
                 </div>
@@ -458,30 +458,30 @@ export default async function IntelPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="term-border px-2 py-2 text-center">
                         <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.toolUsage.headersOpenedPct}%</div>
-                        <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">opened [HEADERS]</div>
+                        <div className="text-[#00aa28] text-sm font-mono mt-0.5">opened [HEADERS]</div>
                       </div>
                       <div className="term-border px-2 py-2 text-center">
                         <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.toolUsage.urlInspectedPct}%</div>
-                        <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">inspected URLs</div>
+                        <div className="text-[#00aa28] text-sm font-mono mt-0.5">inspected URLs</div>
                       </div>
                     </div>
                     {data.toolUsage.headersOpenedAccuracy !== null && data.toolUsage.headersNotOpenedAccuracy !== null && (
                       <div className="space-y-1">
-                        <div className="flex justify-between text-xs font-mono">
+                        <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">accuracy w/ headers open</span>
                           <span className="text-[#00ff41] glow">{data.toolUsage.headersOpenedAccuracy}%</span>
                         </div>
-                        <div className="flex justify-between text-xs font-mono">
+                        <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">accuracy w/o headers</span>
                           <span className="text-[#ffaa00]">{data.toolUsage.headersNotOpenedAccuracy}%</span>
                         </div>
                         {data.toolUsage.urlInspectedAccuracy !== null && (
                           <>
-                            <div className="flex justify-between text-xs font-mono">
+                            <div className="flex justify-between text-sm font-mono">
                               <span className="text-[#00aa28]">accuracy w/ URL inspected</span>
                               <span className="text-[#00ff41] glow">{data.toolUsage.urlInspectedAccuracy}%</span>
                             </div>
-                            <div className="flex justify-between text-xs font-mono">
+                            <div className="flex justify-between text-sm font-mono">
                               <span className="text-[#00aa28]">accuracy w/o URL</span>
                               <span className="text-[#ffaa00]">{data.toolUsage.urlNotInspectedAccuracy}%</span>
                             </div>
@@ -497,15 +497,15 @@ export default async function IntelPage() {
               {data.authTrap && data.authTrap.sample >= 10 && data.authTrap.bypassRate !== null && (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(255,51,51,0.35)] px-3 py-1.5">
-                    <span className="text-[#ff3333] text-xs tracking-widest glow-red">AUTH_TRAP_FINDING</span>
+                    <span className="text-[#ff3333] text-sm tracking-widest glow-red">AUTH_TRAP_FINDING</span>
                   </div>
                   <div className="px-3 py-3">
                     <div className="text-center mb-2">
                       <div className="text-[#ff3333] text-2xl font-mono font-bold glow-red">{data.authTrap.bypassRate}%</div>
-                      <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">bypass on PASS-headers phishing</div>
-                      <div className="text-[#003a0e] text-[10px] font-mono">n={data.authTrap.sample}</div>
+                      <div className="text-[#00aa28] text-sm font-mono mt-0.5">bypass on PASS-headers phishing</div>
+                      <div className="text-[#003a0e] text-sm font-mono">n={data.authTrap.sample}</div>
                     </div>
-                    <p className="text-[#00aa28] text-[10px] font-mono leading-relaxed">
+                    <p className="text-[#00aa28] text-sm font-mono leading-relaxed">
                       Cards where SPF/DKIM/DMARC passed but the email was phishing. Authentication headers alone are insufficient — attackers configure valid auth on lookalike domains.
                     </p>
                   </div>
@@ -519,7 +519,7 @@ export default async function IntelPage() {
                   <div className="px-3 py-3 space-y-2">
                     {data.learningCurve.map(({ ordinal, accuracyRate, sample }) => (
                       <div key={ordinal} className="space-y-0.5">
-                        <div className="flex justify-between text-[10px] font-mono">
+                        <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">Q{ordinal}</span>
                           <span className="text-[#00ff41] shrink-0 ml-2">{accuracyRate}% <span className="text-[#003a0e]">n={sample}</span></span>
                         </div>
@@ -528,7 +528,7 @@ export default async function IntelPage() {
                         </div>
                       </div>
                     ))}
-                    <p className="text-[#003a0e] text-[10px] font-mono pt-1">Do players improve within a single 10-card session?</p>
+                    <p className="text-[#003a0e] text-sm font-mono pt-1">Do players improve within a single 10-card session?</p>
                   </div>
                 </div>
               )}
@@ -541,24 +541,24 @@ export default async function IntelPage() {
                     {data.readingDepth.medianScrollDepth !== null && (
                       <div className="term-border px-2 py-2 text-center">
                         <div className="text-[#00ff41] text-lg font-mono font-bold glow">{data.readingDepth.medianScrollDepth}%</div>
-                        <div className="text-[#00aa28] text-[10px] font-mono mt-0.5">median scroll depth</div>
+                        <div className="text-[#00aa28] text-sm font-mono mt-0.5">median scroll depth</div>
                       </div>
                     )}
                     <div className="space-y-1">
                       {data.readingDepth.deepReadAccuracy !== null && (
-                        <div className="flex justify-between text-xs font-mono">
+                        <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">deep read (≥75%)</span>
-                          <span className="text-[#00ff41] glow">{data.readingDepth.deepReadAccuracy}% <span className="text-[#003a0e] text-[10px]">n={data.readingDepth.deepReadSample}</span></span>
+                          <span className="text-[#00ff41] glow">{data.readingDepth.deepReadAccuracy}% <span className="text-[#003a0e] text-sm">n={data.readingDepth.deepReadSample}</span></span>
                         </div>
                       )}
                       {data.readingDepth.shallowReadAccuracy !== null && (
-                        <div className="flex justify-between text-xs font-mono">
+                        <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">shallow read (&lt;50%)</span>
-                          <span className="text-[#ffaa00]">{data.readingDepth.shallowReadAccuracy}% <span className="text-[#003a0e] text-[10px]">n={data.readingDepth.shallowReadSample}</span></span>
+                          <span className="text-[#ffaa00]">{data.readingDepth.shallowReadAccuracy}% <span className="text-[#003a0e] text-sm">n={data.readingDepth.shallowReadSample}</span></span>
                         </div>
                       )}
                     </div>
-                    <p className="text-[#003a0e] text-[10px] font-mono">Does scrolling deeper correlate with better accuracy?</p>
+                    <p className="text-[#003a0e] text-sm font-mono">Does scrolling deeper correlate with better accuracy?</p>
                   </div>
                 </div>
               )}
@@ -572,7 +572,7 @@ export default async function IntelPage() {
                       const maxMs = Math.max(...data.medianTimeByTechnique!.map((t) => t.medianMs));
                       return data.medianTimeByTechnique!.map(({ technique, medianMs, sample }) => (
                         <div key={technique} className="space-y-0.5">
-                          <div className="flex justify-between text-[10px] font-mono">
+                          <div className="flex justify-between text-sm font-mono">
                             <span className="text-[#00aa28] truncate">{technique}</span>
                             <span className="text-[#00ff41] shrink-0 ml-2">{(medianMs / 1000).toFixed(1)}s <span className="text-[#003a0e]">n={sample}</span></span>
                           </div>
@@ -582,7 +582,7 @@ export default async function IntelPage() {
                         </div>
                       ));
                     })()}
-                    <p className="text-[#003a0e] text-[10px] font-mono pt-1">Faster decisions may indicate higher confidence — or less investigation.</p>
+                    <p className="text-[#003a0e] text-sm font-mono pt-1">Faster decisions may indicate higher confidence — or less investigation.</p>
                   </div>
                 </div>
               )}
@@ -590,7 +590,7 @@ export default async function IntelPage() {
             </div>
 
             {/* Methodology */}
-            <div className="term-border bg-[#060c06] px-3 py-3 text-[10px] font-mono text-[#003a0e] space-y-1 leading-relaxed">
+            <div className="term-border bg-[#060c06] px-3 py-3 text-sm font-mono text-[#003a0e] space-y-1 leading-relaxed">
               <div className="text-[#00aa28]">METHODOLOGY</div>
               <div>Research Mode only. Anonymous, voluntary. Text-based recognition task — visual cues stripped. Self-selected security-aware sample. All cards are AI-generated (Claude Haiku + Sonnet). Sample sizes shown as n=.</div>
               <div className="mt-2">
