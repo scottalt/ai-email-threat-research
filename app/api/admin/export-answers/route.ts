@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/adminAuth';
 
-// All research-relevant columns from the answers table
+// All research-relevant columns from the answers table, plus player background via join
 const ANSWERS_SELECT = [
   'id', 'session_id', 'card_id', 'card_source',
   'is_phishing', 'technique', 'secondary_technique',
@@ -14,6 +14,7 @@ const ANSWERS_SELECT = [
   'streak_at_answer_time', 'correct_count_at_time',
   'headers_opened', 'url_inspected', 'auth_status', 'has_reply_to', 'has_url',
   'player_id', 'game_mode', 'is_daily_challenge', 'dataset_version', 'created_at',
+  'players!player_id(background)',
 ].join(', ');
 
 type ExportRow = Record<string, unknown>;
@@ -43,6 +44,12 @@ export async function GET(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     const rows = (data as unknown as ExportRow[] | null) ?? [];
+    // Flatten the joined players object into a top-level field
+    for (const row of rows) {
+      const player = row.players as { background: string | null } | null;
+      row.player_background = player?.background ?? null;
+      delete row.players;
+    }
     allRows.push(...rows);
 
     if (rows.length < PAGE_SIZE) {
@@ -83,6 +90,14 @@ function buildMetadata(data: ExportRow[]) {
     byDifficulty[d] = (byDifficulty[d] ?? 0) + 1;
   }
 
+  const byBackground: Record<string, { total: number; correct: number }> = {};
+  for (const row of data) {
+    const bg = (row.player_background as string) ?? 'unknown';
+    if (!byBackground[bg]) byBackground[bg] = { total: 0, correct: 0 };
+    byBackground[bg].total += 1;
+    if (row.correct) byBackground[bg].correct += 1;
+  }
+
   return {
     dataset: 'Retro Phish v1 — Research Answers',
     description: 'Per-answer behavioural data from research mode sessions. Includes timing, confidence, tool usage (headers/URL inspection), scroll depth, and denormalised card metadata for direct analysis.',
@@ -93,6 +108,7 @@ function buildMetadata(data: ExportRow[]) {
     unique_players: uniquePlayers,
     technique_breakdown: byTechnique,
     difficulty_breakdown: byDifficulty,
+    background_breakdown: byBackground,
     source: 'https://retro-phish.scottaltiparmak.com',
     author: 'Scott Altiparmak — scottaltiparmak.com',
   };

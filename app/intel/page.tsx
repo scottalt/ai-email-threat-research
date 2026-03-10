@@ -41,6 +41,7 @@ interface IntelData {
     sample: number;
   };
   medianTimeByTechnique?: { technique: string; medianMs: number; sample: number }[];
+  byBackground?: { background: string; total: number; accuracyRate: number }[];
   learningCurve?: { ordinal: number; accuracyRate: number; sample: number }[];
   readingDepth?: {
     deepReadAccuracy: number | null;
@@ -63,7 +64,7 @@ async function getIntel(): Promise<IntelData | null> {
     const supabase = getSupabaseAdminClient();
     const { data: answers } = await supabase
       .from('answers')
-      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id, answer_ordinal, scroll_depth_pct')
+      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id, answer_ordinal, scroll_depth_pct, players!player_id(background)')
       .eq('game_mode', 'research');
 
     if (!answers || answers.length === 0) {
@@ -144,6 +145,32 @@ async function getIntel(): Promise<IntelData | null> {
       return { confidence: conf, total: subset.length, accuracyRate: subset.length ? Math.round((subset.filter((a) => a.correct).length / subset.length) * 100) : 0 };
     });
 
+    // Accuracy by player background
+    const BACKGROUND_LABELS: Record<string, string> = {
+      infosec: 'INFOSEC',
+      technical: 'TECHNICAL',
+      other: 'NON-TECHNICAL',
+      prefer_not_to_say: 'UNDISCLOSED',
+    };
+    const bgMap: Record<string, { total: number; correct: number }> = {};
+    for (const a of answers) {
+      const joined = a.players as unknown as { background: string | null } | { background: string | null }[] | null;
+      const player = Array.isArray(joined) ? joined[0] ?? null : joined;
+      const bg = player?.background ?? null;
+      if (!bg) continue;
+      if (!bgMap[bg]) bgMap[bg] = { total: 0, correct: 0 };
+      bgMap[bg].total++;
+      if (a.correct) bgMap[bg].correct++;
+    }
+    const byBackground = Object.entries(bgMap)
+      .filter(([, v]) => v.total >= 5)
+      .map(([bg, v]) => ({
+        background: BACKGROUND_LABELS[bg] ?? bg,
+        total: v.total,
+        accuracyRate: Math.round((v.correct / v.total) * 100),
+      }))
+      .sort((a, b) => b.accuracyRate - a.accuracyRate);
+
     // Learning curve: accuracy by answer ordinal (Q1–Q10)
     const ordinalMap: Record<number, { total: number; correct: number }> = {};
     for (const a of answers) {
@@ -181,6 +208,7 @@ async function getIntel(): Promise<IntelData | null> {
       fluency: { highFluencyBypassRate, lowFluencyBypassRate, highFluencySample: highFluency.length, lowFluencySample: lowFluency.length },
       genai: { genaiBypassRate, traditionalBypassRate, genaiSample: genaiAnswers.length, traditionalSample: nonGenaiAnswers.length },
       byConfidence,
+      byBackground: byBackground.length > 0 ? byBackground : undefined,
       toolUsage: {
         headersOpenedPct: Math.round((withHeaders.length / total) * 100),
         urlInspectedPct: Math.round((withUrl.length / total) * 100),
@@ -396,6 +424,28 @@ export default async function IntelPage() {
                   </div>
                   <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
                     Are players who bet CERTAIN actually more accurate?
+                  </div>
+                </div>
+              )}
+
+              {/* Accuracy by background */}
+              {data.byBackground && data.byBackground.length > 0 && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="ACCURACY BY BACKGROUND" />
+                  <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+                    {data.byBackground.map(({ background, accuracyRate, total }) => (
+                      <BarRow
+                        key={background}
+                        label={background}
+                        sub={`n=${total}`}
+                        value={`${accuracyRate}%`}
+                        pct={accuracyRate}
+                        color="#00ff41"
+                      />
+                    ))}
+                  </div>
+                  <div className="px-3 py-2 text-[#003a0e] text-[10px] font-mono">
+                    Does security background correlate with phishing detection accuracy?
                   </div>
                 </div>
               )}
