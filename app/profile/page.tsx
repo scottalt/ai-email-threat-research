@@ -95,7 +95,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#020902] flex items-center justify-center px-4">
-        <span className="text-[#00aa28] text-xs font-mono">LOADING...</span>
+        <span className="text-[#00aa28] text-sm font-mono">LOADING...</span>
       </main>
     );
   }
@@ -105,9 +105,9 @@ export default function ProfilePage() {
       <main className="min-h-screen bg-[#020902] flex items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-4">
           <div className="term-border bg-[#060c06] px-4 py-6 text-center space-y-3">
-            <div className="text-[#00aa28] text-xs font-mono tracking-widest">NOT_AUTHENTICATED</div>
-            <div className="text-[#00aa28] text-[10px] font-mono opacity-70">Sign in to view your profile.</div>
-            <Link href="/" className="block text-[#00ff41] text-xs font-mono hover:underline">
+            <div className="text-[#00aa28] text-sm font-mono tracking-widest">NOT_AUTHENTICATED</div>
+            <div className="text-[#00aa28] text-sm font-mono opacity-70">Sign in to view your profile.</div>
+            <Link href="/" className="block text-[#00ff41] text-sm font-mono hover:underline">
               ← BACK TO TERMINAL
             </Link>
           </div>
@@ -179,22 +179,22 @@ export default function ProfilePage() {
       <div className="w-full max-w-sm space-y-4">
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-            <span className="text-[#00aa28] text-xs tracking-widest">OPERATOR_PROFILE</span>
-            <Link href="/" className="text-[#00aa28] text-[10px] font-mono hover:text-[#00ff41]">← TERMINAL</Link>
+            <span className="text-[#00aa28] text-sm tracking-widest">OPERATOR_PROFILE</span>
+            <Link href="/" className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41]">← TERMINAL</Link>
           </div>
 
           <div className="divide-y divide-[rgba(0,255,65,0.08)]">
             {/* CALLSIGN row — editable */}
             <div className="px-3 py-2 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[#00aa28] text-[10px] font-mono tracking-wider">CALLSIGN</span>
+                <span className="text-[#00aa28] text-sm font-mono tracking-wider">CALLSIGN</span>
                 {!editingCallsign ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-[#00ff41]">{profile.displayName ?? '—'}</span>
+                    <span className="text-sm font-mono font-bold text-[#00ff41]">{profile.displayName ?? '—'}</span>
                     <button
                       type="button"
                       onClick={() => { setCallsignValue(profile.displayName ?? ''); setCallsignError(''); setEditingCallsign(true); }}
-                      className="text-[#00aa28] text-[9px] font-mono hover:text-[#00ff41] transition-colors"
+                      className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] transition-colors"
                     >
                       [EDIT]
                     </button>
@@ -203,7 +203,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => setEditingCallsign(false)}
-                    className="text-[#00aa28] text-[9px] font-mono hover:text-[#00ff41] transition-colors"
+                    className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] transition-colors"
                   >
                     [CANCEL]
                   </button>
@@ -218,17 +218,17 @@ export default function ProfilePage() {
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCallsign(); }}
                     maxLength={20}
                     autoFocus
-                    className="w-full bg-transparent border border-[rgba(0,255,65,0.35)] px-2 py-1 text-[#00ff41] font-mono text-xs focus:outline-none focus:border-[rgba(0,255,65,0.7)] placeholder:text-[#003a0e]"
+                    className="w-full bg-transparent border border-[rgba(0,255,65,0.35)] px-2 py-1 text-[#00ff41] font-mono text-sm focus:outline-none focus:border-[rgba(0,255,65,0.7)] placeholder:text-[#003a0e]"
                     placeholder="UP TO 20 CHARACTERS"
                   />
                   {callsignError && (
-                    <div className="text-[#ff3333] text-[9px] font-mono">{callsignError}</div>
+                    <div className="text-[#ff3333] text-sm font-mono">{callsignError}</div>
                   )}
                   <button
                     type="button"
                     onClick={handleSaveCallsign}
                     disabled={callsignSaving}
-                    className="w-full py-1.5 border border-[rgba(0,255,65,0.5)] text-[#00ff41] font-mono text-[10px] tracking-widest hover:bg-[rgba(0,255,65,0.06)] disabled:opacity-40 transition-colors"
+                    className="w-full py-1.5 border border-[rgba(0,255,65,0.5)] text-[#00ff41] font-mono text-sm tracking-widest hover:bg-[rgba(0,255,65,0.06)] disabled:opacity-40 transition-colors"
                   >
                     {callsignSaving ? '...' : '[ SAVE ]'}
                   </button>
@@ -239,15 +239,15 @@ export default function ProfilePage() {
             {/* BACKGROUND row — editable */}
             <div className="px-3 py-2 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[#00aa28] text-[10px] font-mono tracking-wider">BACKGROUND</span>
+                <span className="text-[#00aa28] text-sm font-mono tracking-wider">BACKGROUND</span>
                 {!editingBackground ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-[#00ff41]">
+                    <span className="text-sm font-mono font-bold text-[#00ff41]">
                       {profile.background ? (backgroundLabel[profile.background] ?? '—') : '—'}
                     </span>
                     <button
                       onClick={() => setEditingBackground(true)}
-                      className="text-[#00aa28] text-[9px] font-mono hover:text-[#00ff41] transition-colors"
+                      className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] transition-colors"
                     >
                       [EDIT]
                     </button>
@@ -255,7 +255,7 @@ export default function ProfilePage() {
                 ) : (
                   <button
                     onClick={() => setEditingBackground(false)}
-                    className="text-[#00aa28] text-[9px] font-mono hover:text-[#00ff41] transition-colors"
+                    className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] transition-colors"
                   >
                     [CANCEL]
                   </button>
@@ -269,7 +269,7 @@ export default function ProfilePage() {
                       type="button"
                       disabled={backgroundSaving}
                       onClick={() => handleSetBackground(opt.value)}
-                      className={`py-1.5 font-mono text-[9px] tracking-wider transition-all border disabled:opacity-40 ${
+                      className={`py-1.5 font-mono text-sm tracking-wider transition-all border disabled:opacity-40 ${
                         profile.background === opt.value
                           ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
                           : 'text-[#00aa28] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
@@ -284,8 +284,8 @@ export default function ProfilePage() {
 
             {bottomRows.map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between px-3 py-2">
-                <span className="text-[#00aa28] text-[10px] font-mono tracking-wider">{label}</span>
-                <span className={`text-xs font-mono font-bold ${
+                <span className="text-[#00aa28] text-sm font-mono tracking-wider">{label}</span>
+                <span className={`text-sm font-mono font-bold ${
                   label === 'GRADUATION' && profile.researchGraduated
                     ? 'text-[#ffaa00]'
                     : 'text-[#00ff41]'
@@ -304,7 +304,7 @@ export default function ProfilePage() {
         {/* Rank ladder */}
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-            <span className="text-[#00aa28] text-xs tracking-widest">RANK_PROGRESSION</span>
+            <span className="text-[#00aa28] text-sm tracking-widest">RANK_PROGRESSION</span>
           </div>
           <div className="divide-y divide-[rgba(0,255,65,0.08)]">
             {RANKS.map((rank) => {
@@ -312,16 +312,16 @@ export default function ProfilePage() {
               return (
                 <div key={rank.label} className={`flex items-center justify-between px-3 py-2 ${isCurrent ? 'bg-[rgba(0,255,65,0.04)]' : ''}`}>
                   <div className="flex items-center gap-2">
-                    {isCurrent && <span className="text-[#00ff41] text-[9px] font-mono">▶</span>}
-                    {!isCurrent && <span className="text-[9px] font-mono opacity-0">▶</span>}
+                    {isCurrent && <span className="text-[#00ff41] text-sm font-mono">▶</span>}
+                    {!isCurrent && <span className="text-sm font-mono opacity-0">▶</span>}
                     <span
-                      className={`text-xs font-mono font-bold ${rank.glowClass} ${isCurrent ? 'anim-rank-pulse' : ''}`}
+                      className={`text-sm font-mono font-bold ${rank.glowClass} ${isCurrent ? 'anim-rank-pulse' : ''}`}
                       style={{ color: rank.color }}
                     >
                       {rank.label}
                     </span>
                   </div>
-                  <span className="text-[#00aa28] text-[10px] font-mono opacity-60">LVL {rank.levels}</span>
+                  <span className="text-[#00aa28] text-sm font-mono opacity-60">LVL {rank.levels}</span>
                 </div>
               );
             })}
@@ -333,7 +333,7 @@ export default function ProfilePage() {
           <div className="border border-[rgba(255,170,0,0.3)] bg-[#060c06]">
             <button
               onClick={() => setShowAdmin(o => !o)}
-              className="w-full px-3 py-2 flex items-center justify-between text-xs font-mono hover:bg-[rgba(255,170,0,0.04)] transition-colors"
+              className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[rgba(255,170,0,0.04)] transition-colors"
             >
               <span className="text-[#ffaa00] tracking-widest">[⚙] DEV_OVERRIDE</span>
               <span className="text-[#ffaa00]">{showAdmin ? '▲' : '▼'}</span>
@@ -348,22 +348,22 @@ export default function ProfilePage() {
                     { label: 'RESEARCH SESSIONS', value: adminResearchSessions, set: setAdminResearchSessions },
                   ].map(({ label, value, set }) => (
                     <div key={label} className="space-y-1">
-                      <div className="text-[#ffaa00] text-[9px] font-mono tracking-wider">{label}</div>
+                      <div className="text-[#ffaa00] text-sm font-mono tracking-wider">{label}</div>
                       <input
                         type="number"
                         value={value}
                         onChange={e => set(e.target.value)}
-                        className="w-full bg-transparent border border-[rgba(255,170,0,0.25)] px-2 py-1 text-[#ffaa00] font-mono text-xs focus:outline-none focus:border-[rgba(255,170,0,0.6)]"
+                        className="w-full bg-transparent border border-[rgba(255,170,0,0.25)] px-2 py-1 text-[#ffaa00] font-mono text-sm focus:outline-none focus:border-[rgba(255,170,0,0.6)]"
                       />
                     </div>
                   ))}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-[#ffaa00] text-[9px] font-mono tracking-wider">RESEARCH_GRADUATED</span>
+                  <span className="text-[#ffaa00] text-sm font-mono tracking-wider">RESEARCH_GRADUATED</span>
                   <button
                     onClick={() => setAdminGraduated(v => !v)}
-                    className={`px-3 py-0.5 font-mono text-[10px] border transition-colors ${
+                    className={`px-3 py-0.5 font-mono text-sm border transition-colors ${
                       adminGraduated
                         ? 'text-[#ffaa00] border-[rgba(255,170,0,0.6)] bg-[rgba(255,170,0,0.08)]'
                         : 'text-[#664400] border-[rgba(255,170,0,0.2)] hover:border-[rgba(255,170,0,0.4)]'
@@ -374,7 +374,7 @@ export default function ProfilePage() {
                 </div>
 
                 {adminMsg && (
-                  <div className={`text-[10px] font-mono ${adminMsg === 'APPLIED' ? 'text-[#00ff41]' : 'text-[#ff3333]'}`}>
+                  <div className={`text-sm font-mono ${adminMsg === 'APPLIED' ? 'text-[#00ff41]' : 'text-[#ff3333]'}`}>
                     {adminMsg}
                   </div>
                 )}
@@ -383,22 +383,22 @@ export default function ProfilePage() {
                   <button
                     onClick={() => handleAdminApply(false)}
                     disabled={adminSaving}
-                    className="flex-1 py-1.5 border border-[rgba(255,170,0,0.4)] text-[#ffaa00] font-mono text-[10px] tracking-widest hover:bg-[rgba(255,170,0,0.06)] disabled:opacity-40 transition-colors"
+                    className="flex-1 py-1.5 border border-[rgba(255,170,0,0.4)] text-[#ffaa00] font-mono text-sm tracking-widest hover:bg-[rgba(255,170,0,0.06)] disabled:opacity-40 transition-colors"
                   >
                     {adminSaving ? '...' : '[ APPLY ]'}
                   </button>
                   <button
                     onClick={() => handleAdminApply(true)}
                     disabled={adminSaving}
-                    className="flex-1 py-1.5 border border-[rgba(255,170,0,0.2)] text-[#664400] font-mono text-[10px] tracking-widest hover:text-[#ffaa00] hover:border-[rgba(255,170,0,0.4)] disabled:opacity-40 transition-colors"
+                    className="flex-1 py-1.5 border border-[rgba(255,170,0,0.2)] text-[#664400] font-mono text-sm tracking-widest hover:text-[#ffaa00] hover:border-[rgba(255,170,0,0.4)] disabled:opacity-40 transition-colors"
                   >
                     {adminSaving ? '...' : '[ RESET LEVEL ]'}
                   </button>
                 </div>
-                <div className="text-[#664400] text-[9px] font-mono">RESET LEVEL recalculates level from XP</div>
+                <div className="text-[#664400] text-sm font-mono">RESET LEVEL recalculates level from XP</div>
                 <Link
                   href="/admin"
-                  className="block w-full py-1.5 border border-[rgba(255,170,0,0.2)] text-[#664400] font-mono text-[10px] tracking-widest hover:text-[#ffaa00] hover:border-[rgba(255,170,0,0.4)] transition-colors text-center"
+                  className="block w-full py-1.5 border border-[rgba(255,170,0,0.2)] text-[#664400] font-mono text-sm tracking-widest hover:text-[#ffaa00] hover:border-[rgba(255,170,0,0.4)] transition-colors text-center"
                 >
                   [ ADMIN PORTAL ]
                 </Link>
