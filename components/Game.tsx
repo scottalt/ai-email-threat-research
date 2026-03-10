@@ -144,7 +144,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         if (isTestMode.current) localStorage.removeItem('research_flow_test');
       }
       setPhase('loading' as GamePhase);
-      fetch('/api/cards/research')
+      fetch(`/api/cards/research?sessionId=${encodeURIComponent(sessionId.current)}`)
         .then((r) => r.json())
         .then((cards: Card[]) => {
           if (!cards.length) {

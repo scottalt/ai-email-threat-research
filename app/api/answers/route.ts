@@ -81,6 +81,17 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: true }); // silent reject — card doesn't exist
       }
 
+      // 1b. Validate card was actually dealt to this session (if session has dealt_card_ids)
+      const { data: session } = await supabase
+        .from('sessions')
+        .select('dealt_card_ids')
+        .eq('session_id', a.sessionId)
+        .single();
+
+      if (session?.dealt_card_ids && !session.dealt_card_ids.includes(a.cardId)) {
+        return NextResponse.json({ ok: true }); // silent reject — card not dealt to this session
+      }
+
       // 2. Session dedup: reject if session already has MAX_RESEARCH_ANSWERS research answers
       const { count: sessionCount } = await supabase
         .from('answers')
