@@ -192,8 +192,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       </button>
                     </form>
                     <div className="space-y-1.5 pt-1">
-                      <div className="text-[#003a0e] text-[10px] font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
-                      <div className="text-[#003a0e] text-[9px] font-mono leading-relaxed">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
+                      <div className="text-[#00aa28] text-[10px] font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
+                      <div className="text-[#00aa28] text-[9px] font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
                       <div className="grid grid-cols-2 gap-1.5">
                         {BACKGROUND_OPTIONS.map((opt) => (
                           <button
@@ -203,7 +203,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                             className={`py-1.5 font-mono text-[9px] tracking-wider transition-all border ${
                               background === opt.value
                                 ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
-                                : 'text-[#003a0e] border-[rgba(0,255,65,0.15)] hover:text-[#00aa28] hover:border-[rgba(0,255,65,0.4)]'
+                                : 'text-[#00aa28] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
                             }`}
                           >
                             {opt.label}
