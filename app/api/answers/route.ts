@@ -3,7 +3,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import type { AnswerEvent, SessionPayload } from '@/lib/types';
-import { RESEARCH_GRADUATION_SESSIONS } from '@/lib/xp';
 
 async function getPlayerId(): Promise<string | null> {
   try {
@@ -60,25 +59,12 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdminClient();
 
-    // Research mode: verify correct and technique server-side + session dedup + player cap
+    // Research mode: verify correct and technique server-side + session dedup
     let verifiedCorrect = a.correct;
     let verifiedIsPhishing = a.isPhishing;
     let verifiedTechnique = a.technique;
 
     if (a.gameMode === 'research') {
-      // Player cap: reject if player has already contributed 30+ research answers (3 sessions × 10 cards)
-      // This covers both completed sessions and partial sessions to prevent unlimited contributions.
-      if (playerId) {
-        const { count: playerAnswerCount } = await supabase
-          .from('answers')
-          .select('*', { count: 'exact', head: true })
-          .eq('player_id', playerId)
-          .eq('game_mode', 'research');
-        if ((playerAnswerCount ?? 0) >= RESEARCH_GRADUATION_SESSIONS * 10) {
-          return NextResponse.json({ ok: true }); // cap reached — research contribution complete
-        }
-      }
-
       // Session dedup: reject if session already has MAX_RESEARCH_ANSWERS research answers
       const { count } = await supabase
         .from('answers')
