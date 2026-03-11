@@ -37,7 +37,7 @@ export function AuthFlow({ onSignIn, onVerifyCode, onCancel }: AuthFlowProps) {
       <div className="term-border bg-[#060c06]">
         <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
           <span className="text-[#00aa28] text-sm tracking-widest">ENTER_CODE</span>
-          <button onClick={onCancel} className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] p-1">✕</button>
+          <button onClick={onCancel} aria-label="Close verification" className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] p-1">✕</button>
         </div>
         <form onSubmit={handleVerify} className="px-3 py-4 space-y-3">
           <div className="text-[#00ff41] text-sm font-mono font-bold">Code sent to {email}</div>
@@ -79,7 +79,7 @@ export function AuthFlow({ onSignIn, onVerifyCode, onCancel }: AuthFlowProps) {
     <div className="term-border bg-[#060c06]">
       <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
         <span className="text-[#00aa28] text-sm tracking-widest">CLAIM_PROFILE</span>
-        <button onClick={onCancel} className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] p-1">✕</button>
+        <button onClick={onCancel} aria-label="Close sign-in" className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] p-1">✕</button>
       </div>
       <form onSubmit={handleSubmit} className="px-3 py-3 space-y-3">
         <div className="text-[#00aa28] text-sm font-mono leading-relaxed">

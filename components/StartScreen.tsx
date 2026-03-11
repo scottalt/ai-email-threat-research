@@ -136,6 +136,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           <div className="flex items-center gap-3">
             <button
               onClick={toggleSound}
+              aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
               className={`text-sm font-mono transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}
             >
               {soundEnabled ? '[SFX]' : '[SFX OFF]'}

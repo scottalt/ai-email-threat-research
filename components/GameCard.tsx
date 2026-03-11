@@ -115,6 +115,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
         <button
           onClick={(e) => { e.stopPropagation(); if (!headersOpen) onHeadersOpened?.(); setHeadersOpen((o) => !o); }}
           className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41] transition-colors p-2 -m-2"
+          aria-label={headersOpen ? 'Close email headers' : 'View email headers'}
         >
           [HEADERS]
         </button>
@@ -129,6 +130,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowFromEmail((o) => !o); }}
                   className="ml-1 text-sm text-[#003a0e] hover:text-[#ffaa00] transition-colors"
+                  aria-label={showFromEmail ? 'Hide sender email address' : 'Show sender email address'}
                 >
                   {showFromEmail ? '[−]' : '[↗]'}
                 </button>
@@ -167,6 +169,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
             <button
               onClick={(e) => { e.stopPropagation(); setHeadersOpen(false); }}
               className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors"
+              aria-label="Close headers"
             >
               [ × ]
             </button>
@@ -223,7 +226,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
         <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
-            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors p-2 -m-2">[ × ]</button>
+            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors p-2 -m-2" aria-label="Close URL inspector">[ × ]</button>
           </div>
           <span className="text-[#ffaa00] font-mono text-sm break-all">{inspectedUrl}</span>
         </div>
@@ -280,7 +283,7 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
         <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
-            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors p-2 -m-2">[ × ]</button>
+            <button onClick={() => setInspectedUrl(null)} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors p-2 -m-2" aria-label="Close URL inspector">[ × ]</button>
           </div>
           <span className="text-[#ffaa00] font-mono text-sm break-all">{inspectedUrl}</span>
         </div>
@@ -455,6 +458,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
           <button
             onClick={onQuit}
             className="text-[#003a0e] text-sm font-mono hover:text-[#ff3333] transition-colors p-2 -m-2"
+            aria-label="Quit game"
           >
             [QUIT]
           </button>
@@ -581,6 +585,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
             <button
               onClick={() => { if (!answered.current) { setConfidence(null); setDragX(0); confidenceTime.current = null; } }}
               className="ml-3 text-[#003a0e] hover:text-[#00aa28] transition-colors"
+              aria-label="Change confidence level"
             >
               [change]
             </button>
