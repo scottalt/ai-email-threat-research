@@ -502,11 +502,11 @@ export default async function IntelPage() {
                   <div className="px-3 py-3">
                     <div className="text-center mb-2">
                       <div className="text-[#ff3333] text-2xl font-mono font-bold glow-red-soft">{data.authTrap.bypassRate}%</div>
-                      <div className="text-[#00aa28] text-sm font-mono mt-0.5">bypass on PASS-headers phishing</div>
-                      <div className="text-[#003a0e] text-sm font-mono">n={data.authTrap.sample}</div>
+                      <div className="text-[#00aa28] text-sm font-mono mt-0.5">of players fooled</div>
+                      <div className="text-[#003a0e] text-sm font-mono">n={data.authTrap.sample} answers</div>
                     </div>
                     <p className="text-[#00aa28] text-sm font-mono leading-relaxed">
-                      Cards where SPF/DKIM/DMARC passed but the email was phishing. Authentication headers alone are insufficient — attackers configure valid auth on lookalike domains.
+                      Some phishing emails in the dataset have fully passing authentication headers (SPF, DKIM, DMARC all show PASS) — because the attacker set up valid DNS records on a lookalike domain. {data.authTrap.bypassRate}% of players incorrectly marked these as legitimate, trusting the green checkmarks.
                     </p>
                   </div>
                 </div>
