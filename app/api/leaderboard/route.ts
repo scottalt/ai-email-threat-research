@@ -5,6 +5,12 @@ import { getSupabaseAdminClient } from '@/lib/supabase';
 const KEY = 'leaderboard';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+// Mirror of client scoring constants — used to verify submitted scores
+const BASE_POINTS = 100;
+const CONFIDENCE_MULTIPLIER: Record<string, number> = { guessing: 1, likely: 2, certain: 3 };
+const CONFIDENCE_PENALTY: Record<string, number> = { guessing: 0, likely: -100, certain: -200 };
+const STREAK_BONUS = 50;
+
 const BAD_WORDS = [
   'fuck', 'shit', 'cunt', 'nigger', 'nigga', 'faggot', 'fag', 'retard',
   'bitch', 'ass', 'cock', 'dick', 'pussy', 'whore', 'slut', 'bastard',
@@ -79,7 +85,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
     }
     const supabase = getSupabaseAdminClient();
-    const [{ data: session }, { count: answerCount }] = await Promise.all([
+    const [{ data: session }, { data: answers }] = await Promise.all([
       supabase
         .from('sessions')
         .select('session_id, completed_at')
@@ -88,12 +94,30 @@ export async function POST(req: NextRequest) {
         .single(),
       supabase
         .from('answers')
-        .select('id', { count: 'exact', head: true })
+        .select('correct, confidence, streak_at_answer_time')
         .eq('session_id', sessionId),
     ]);
     // Session must exist with matching score, be completed, and have actual answers
-    if (!session || !session.completed_at || (answerCount ?? 0) < 1) {
+    if (!session || !session.completed_at || !answers || answers.length < 1) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
+    }
+
+    // Recompute score server-side from actual answers to prevent client manipulation
+    let computedScore = 0;
+    for (const a of answers) {
+      if (a.correct) {
+        const mult = CONFIDENCE_MULTIPLIER[a.confidence] ?? 1;
+        computedScore += BASE_POINTS * mult;
+        // Streak bonus every 3 consecutive correct (streak_at_answer_time is the streak BEFORE this answer)
+        const streakAfter = (a.streak_at_answer_time ?? 0) + 1;
+        if (streakAfter > 0 && streakAfter % 3 === 0) computedScore += STREAK_BONUS;
+      } else {
+        computedScore += CONFIDENCE_PENALTY[a.confidence] ?? 0;
+      }
+    }
+    // Allow small tolerance for timing/rounding edge cases, but catch blatant manipulation
+    if (Math.abs(computedScore - score) > 50) {
+      return NextResponse.json({ error: 'Score mismatch' }, { status: 400 });
     }
 
     // One leaderboard entry per session — prevent multiple name submissions for same score

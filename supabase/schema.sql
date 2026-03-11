@@ -148,7 +148,7 @@ CREATE TABLE answers (
   streak_at_answer_time SMALLINT,
   correct_count_at_time SMALLINT,
   -- Context
-  game_mode TEXT NOT NULL CHECK (game_mode IN ('research', 'freeplay', 'daily')),
+  game_mode TEXT NOT NULL CHECK (game_mode IN ('research', 'freeplay', 'daily', 'expert', 'preview')),
   is_daily_challenge BOOLEAN DEFAULT FALSE,
   dataset_version TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -164,7 +164,7 @@ CREATE INDEX idx_answers_correct ON answers(correct);
 -- sessions: one row per game played
 CREATE TABLE sessions (
   session_id UUID PRIMARY KEY,
-  game_mode TEXT NOT NULL CHECK (game_mode IN ('research', 'freeplay', 'daily')),
+  game_mode TEXT NOT NULL CHECK (game_mode IN ('research', 'freeplay', 'daily', 'expert', 'preview')),
   is_daily_challenge BOOLEAN DEFAULT FALSE,
   started_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
