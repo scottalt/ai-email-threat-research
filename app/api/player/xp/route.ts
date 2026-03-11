@@ -23,7 +23,6 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json();
   const gameMode = String(body.gameMode ?? 'freeplay');
-  const score = Math.max(0, Math.min(3500, Number(body.score) || 0));
   const sessionCompleted = Boolean(body.sessionCompleted);
   const sessionId = typeof body.sessionId === 'string' ? body.sessionId.slice(0, 64) : null;
 
@@ -38,6 +37,11 @@ export async function PATCH(req: NextRequest) {
 
   const p = player as Record<string, unknown>;
 
+  // Dedup: skip if this session was already awarded XP — check BEFORE expensive queries
+  if (sessionId && (p.last_xp_session_id as string | null) === sessionId) {
+    return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
+  }
+
   // Compute XP server-side from answers table — never trust client-supplied xpEarned
   let xpEarned = 0;
   if (sessionId) {
@@ -48,6 +52,17 @@ export async function PATCH(req: NextRequest) {
         .eq('session_id', sessionId),
     ]);
     xpEarned = getXpForRound(correctCount ?? 0, totalCount ?? 10, gameMode);
+  }
+
+  // Validate personal_best_score against actual session final_score
+  let verifiedScore = 0;
+  if (sessionId) {
+    const { data: sess } = await admin
+      .from('sessions')
+      .select('final_score')
+      .eq('session_id', sessionId)
+      .single();
+    verifiedScore = sess?.final_score ?? 0;
   }
 
   const newXp = (p.xp as number) + xpEarned;
@@ -72,14 +87,12 @@ export async function PATCH(req: NextRequest) {
     nowGraduated = (totalResearchAnswers ?? 0) >= RESEARCH_GRADUATION_ANSWERS;
   }
 
-  const newBest = Math.max(p.personal_best_score as number, score);
+  const newBest = Math.max(p.personal_best_score as number, verifiedScore);
 
-  // Dedup: skip if this session was already awarded XP (application-level check)
-  if (sessionId && (p.last_xp_session_id as string | null) === sessionId) {
-    return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
-  }
-
-  const { data: updated, error: updateErr } = await admin.from('players').update({
+  // Conditional update: only update if last_xp_session_id hasn't changed since we read it
+  // This prevents the race condition where two concurrent requests both pass the dedup check
+  const currentLastSessionId = p.last_xp_session_id as string | null;
+  let updateQuery = admin.from('players').update({
     xp: newXp,
     level: newLevel,
     total_sessions: newTotalSessions,
@@ -88,11 +101,21 @@ export async function PATCH(req: NextRequest) {
     personal_best_score: newBest,
     ...(sessionId ? { last_xp_session_id: sessionId } : {}),
     updated_at: new Date().toISOString(),
-  }).eq('auth_id', authId).select('id');
+  }).eq('auth_id', authId);
+
+  // Add optimistic concurrency check: only update if last_xp_session_id hasn't changed
+  if (currentLastSessionId) {
+    updateQuery = updateQuery.eq('last_xp_session_id', currentLastSessionId);
+  } else {
+    updateQuery = updateQuery.is('last_xp_session_id', null);
+  }
+
+  const { data: updated, error: updateErr } = await updateQuery.select('id');
 
   if (updateErr) return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });
   if (!updated || updated.length === 0) {
-    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
+    // Conditional update matched no rows — another request already awarded XP
+    return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
   }
 
   return NextResponse.json({

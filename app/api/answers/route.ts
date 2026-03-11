@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { redis } from '@/lib/redis';
 import type { AnswerEvent, SessionPayload } from '@/lib/types';
 
 async function getPlayerId(): Promise<string | null> {
@@ -131,16 +132,11 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 5. Per-player daily rate limit: prevent flooding via many sessions
+      // 5. Per-player daily rate limit: use Redis counter to avoid O(n) DB scan each submission
       if (playerId) {
-        const todayStart = new Date();
-        todayStart.setUTCHours(0, 0, 0, 0);
-        const { count: dailyCount } = await supabase
-          .from('answers')
-          .select('id', { count: 'exact', head: true })
-          .eq('player_id', playerId)
-          .eq('game_mode', 'research')
-          .gte('created_at', todayStart.toISOString());
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const dailyKey = `ratelimit:research:${playerId}:${todayStr}`;
+        const dailyCount = await redis.get<number>(dailyKey);
 
         if ((dailyCount ?? 0) >= MAX_RESEARCH_ANSWERS_PER_PLAYER_PER_DAY) {
           return NextResponse.json({ ok: true }); // silent reject — daily limit
@@ -193,9 +189,20 @@ export async function POST(req: NextRequest) {
       has_sent_at: a.hasSentAt,
     });
 
-    if (answerError) console.error('Answer insert failed:', answerError);
+    if (answerError) {
+      console.error('Answer insert failed:', answerError);
+      return NextResponse.json({ ok: false, error: 'answer_insert_failed' }, { status: 500 });
+    }
 
-    // Upsert session — runs independently regardless of answer insert result
+    // Increment Redis daily counter after successful insert (research mode only)
+    if (a.gameMode === 'research' && playerId) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const dailyKey = `ratelimit:research:${playerId}:${todayStr}`;
+      const newCount = await redis.incr(dailyKey);
+      if (newCount === 1) await redis.expire(dailyKey, 24 * 60 * 60);
+    }
+
+    // Upsert session only after answer insert succeeds
     const s = body.session;
     const { error: sessionError } = await supabase.from('sessions').upsert({
       session_id: s.sessionId,
@@ -212,12 +219,14 @@ export async function POST(req: NextRequest) {
       referrer: s.referrer,
     }, { onConflict: 'session_id' });
 
-    if (sessionError) console.error('Session upsert failed:', sessionError);
+    if (sessionError) {
+      console.error('Session upsert failed:', sessionError);
+      // Answer was saved, so return ok but log the session error
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    // Silently fail — never break the game over analytics
     console.error('Answer logging failed:', err);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: false, error: 'internal_error' }, { status: 500 });
   }
 }

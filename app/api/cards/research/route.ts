@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import type { ResearchCard } from '@/lib/types';
 
@@ -13,28 +15,61 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+async function getPlayerId(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const admin = getSupabaseAdminClient();
+    const { data } = await admin.from('players').select('id').eq('auth_id', user.id).single();
+    return data?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     const sessionId = req.nextUrl.searchParams.get('sessionId');
 
     const supabase = getSupabaseAdminClient();
-    const { data, error } = await supabase.from('cards_real').select('*');
+
+    // Fetch all cards and player's previously answered card IDs in parallel
+    const playerId = await getPlayerId();
+    const [{ data, error }, answeredCards] = await Promise.all([
+      supabase.from('cards_real').select('*'),
+      playerId
+        ? supabase
+            .from('answers')
+            .select('card_id')
+            .eq('player_id', playerId)
+            .eq('game_mode', 'research')
+            .then(({ data: rows }) => new Set((rows ?? []).map((r) => r.card_id)))
+        : Promise.resolve(new Set<string>()),
+    ]);
 
     if (error) throw error;
     if (!data || data.length === 0) return NextResponse.json([]);
 
-    const deck = shuffle(data).slice(0, ROUND_SIZE);
+    // Exclude cards this player already answered in research mode
+    const eligible = data.filter((row) => !answeredCards.has(row.card_id));
+    const pool = eligible.length >= ROUND_SIZE ? eligible : data;
+    const deck = shuffle(pool).slice(0, ROUND_SIZE);
 
     // Record dealt cards server-side for answer validation
     if (sessionId && /^[0-9a-f-]{36}$/.test(sessionId)) {
       const dealtCardIds = deck.map((row) => row.card_id);
-      supabase.from('sessions').upsert({
+      const { error: dealErr } = await supabase.from('sessions').upsert({
         session_id: sessionId,
         game_mode: 'research',
         dealt_card_ids: dealtCardIds,
-      }, { onConflict: 'session_id' }).then(({ error: e }) => {
-        if (e) console.error('Failed to record dealt cards:', e);
-      });
+      }, { onConflict: 'session_id' });
+      if (dealErr) console.error('Failed to record dealt cards:', dealErr);
     }
 
     const cards: ResearchCard[] = deck.map((row) => ({
