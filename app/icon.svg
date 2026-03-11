@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#060c06"/>
+  <rect x="1" y="1" width="30" height="30" rx="5" fill="none" stroke="#00ff41" stroke-opacity="0.5" stroke-width="1"/>
+  <!-- Fish hook shape representing phishing -->
+  <path d="M16 6 L16 18 Q16 23 12 23 Q8 23 8 19" fill="none" stroke="#00ff41" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Hook barb -->
+  <path d="M8 19 L10 17" fill="none" stroke="#00ff41" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Question mark dot -->
+  <circle cx="16" cy="28" r="1.5" fill="#00ff41"/>
+</svg>
