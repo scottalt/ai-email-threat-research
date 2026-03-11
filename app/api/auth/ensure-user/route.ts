@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { redis } from '@/lib/redis';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Pre-creates a user via the admin API so that subsequent signInWithOtp()
@@ -8,9 +11,18 @@ import { getSupabaseAdminClient } from '@/lib/supabase';
  */
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 requests per IP per hour
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const rlKey = `ratelimit:ensure-user:${ip}`;
+    const rlCount = await redis.incr(rlKey);
+    if (rlCount === 1) await redis.expire(rlKey, 60 * 60);
+    if (rlCount > 10) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const { email } = await req.json();
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    if (!email || typeof email !== 'string' || !EMAIL_RE.test(email)) {
+      return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
     }
 
     const supabase = getSupabaseAdminClient();
@@ -24,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     if (error && !error.message.toLowerCase().includes('already been registered')) {
       console.error('[ensure-user] createUser error:', error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
