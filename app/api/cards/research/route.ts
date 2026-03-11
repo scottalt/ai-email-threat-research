@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { redis } from '@/lib/redis';
 import type { ResearchCard } from '@/lib/types';
 
 const ROUND_SIZE = 10;
+const CARDS_LIMIT = 1000;
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -35,14 +37,23 @@ async function getPlayerId(): Promise<string | null> {
 
 export async function GET(req: NextRequest) {
   try {
+    // Rate limit: 10 requests per IP per minute
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const rlKey = `ratelimit:cards-research:${ip}`;
+    const rlCount = await redis.incr(rlKey);
+    if (rlCount === 1) await redis.expire(rlKey, 60);
+    if (rlCount > 10) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const sessionId = req.nextUrl.searchParams.get('sessionId');
 
     const supabase = getSupabaseAdminClient();
 
-    // Fetch all cards and player's previously answered card IDs in parallel
+    // Fetch cards (capped) and player's previously answered card IDs in parallel
     const playerId = await getPlayerId();
     const [{ data, error }, answeredCards] = await Promise.all([
-      supabase.from('cards_real').select('*'),
+      supabase.from('cards_real').select('*').limit(CARDS_LIMIT),
       playerId
         ? supabase
             .from('answers')
@@ -101,6 +112,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(cards);
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    console.error('Cards research error:', err);
+    return NextResponse.json({ error: 'Failed to load cards' }, { status: 500 });
   }
 }

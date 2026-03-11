@@ -9,6 +9,9 @@ export async function GET() {
     .order('xp', { ascending: false })
     .limit(10);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('XP leaderboard error:', error);
+    return NextResponse.json({ error: 'Failed to load leaderboard' }, { status: 500 });
+  }
   return NextResponse.json(data ?? []);
 }

@@ -74,18 +74,25 @@ export async function POST(req: NextRequest) {
 
     const { name, score, date, level, sessionId } = await req.json();
 
-    // Require a sessionId and verify it against the sessions table
+    // Require a sessionId and verify it against the sessions table + answers
     if (!sessionId || typeof sessionId !== 'string') {
       return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
     }
     const supabase = getSupabaseAdminClient();
-    const { data: session } = await supabase
-      .from('sessions')
-      .select('session_id')
-      .eq('session_id', sessionId)
-      .eq('final_score', score)
-      .single();
-    if (!session) {
+    const [{ data: session }, { count: answerCount }] = await Promise.all([
+      supabase
+        .from('sessions')
+        .select('session_id, completed_at')
+        .eq('session_id', sessionId)
+        .eq('final_score', score)
+        .single(),
+      supabase
+        .from('answers')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', sessionId),
+    ]);
+    // Session must exist with matching score, be completed, and have actual answers
+    if (!session || !session.completed_at || (answerCount ?? 0) < 1) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
     }
 
