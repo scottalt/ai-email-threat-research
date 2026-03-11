@@ -15,9 +15,7 @@ interface Props {
   totalScore: number;
   results: RoundResult[];
   mode: GameMode;
-  date: string;
   sessionId: string;
-  sessionReady?: Promise<void>;
   onPlayAgain: () => void;
 }
 
@@ -32,9 +30,8 @@ function getTier(score: number, total: number): { label: string; sub: string; co
 
 const CONFIDENCE_LABEL: Record<string, string> = { guessing: 'G', likely: 'L', certain: 'C' };
 
-export function RoundSummary({ score, total, totalScore, results, mode, date, sessionId, sessionReady, onPlayAgain }: Props) {
+export function RoundSummary({ score, total, totalScore, results, mode, sessionId, onPlayAgain }: Props) {
   const tier = getTier(score, total);
-  const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [displayScore, setDisplayScore] = useState(0);
   useEffect(() => {
     if (totalScore === 0) { setDisplayScore(0); return; }
@@ -49,7 +46,6 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
     }
     requestAnimationFrame(tick);
   }, [totalScore]);
-  const [dailyLeaderboard, setDailyLeaderboard] = useState<{ name: string; score: number; level?: number }[]>([]);
   const [weakPoints, setWeakPoints] = useState<{ technique: string; missRate: number; missed: number; attempts: number }[]>([]);
   const { profile, signedIn, refreshProfile, signInWithEmail, verifyOtp } = usePlayer();
   const rank = profile ? getRankFromLevel(profile.level) : null;
@@ -57,8 +53,6 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
     xpEarned: number; level: number; levelUp: boolean; graduated: boolean;
   } | null>(null);
   const xpFired = useRef(false);
-  const leaderboardFired = useRef(false);
-
   useEffect(() => {
     if (mode !== 'research') return;
     const techniqueResults = results.map((r) => ({
@@ -68,13 +62,6 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
     const updated = updateWeaknessHistory(techniqueResults);
     setWeakPoints(getWeakPoints(updated));
   }, [mode, results]);
-
-  useEffect(() => {
-    fetch(`/api/leaderboard?date=${date}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setDailyLeaderboard)
-      .catch(() => {});
-  }, [date]);
 
   const correctCount = results.filter(r => r.correct).length;
   const xpEarned = getXpForRound(correctCount, total, mode);
@@ -93,46 +80,6 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
       })
       .catch(() => {});
   }, [signedIn]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!signedIn || !profile?.displayName || leaderboardFired.current) return;
-    leaderboardFired.current = true;
-    setSubmitState('loading');
-
-    const payload = {
-      name: profile.displayName,
-      score: totalScore,
-      level: profile.level ?? 1,
-      sessionId,
-      ...(mode === 'daily' ? { date } : {}),
-    };
-
-    const postLeaderboard = () => fetch('/api/leaderboard', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const refreshBoards = () => fetch(`/api/leaderboard?date=${date}`)
-      .then(r => r.ok ? r.json() : [])
-      .then(setDailyLeaderboard)
-      .catch(() => {});
-
-    // Wait for session finalization so final_score exists in DB before leaderboard validation
-    (sessionReady ?? Promise.resolve())
-      .then(() => postLeaderboard())
-      .then(r => {
-        if (r.ok) return r.json();
-        // Retry once after 1.5s — covers slow DB propagation
-        return new Promise<Response>(resolve => setTimeout(() => resolve(postLeaderboard()), 1500))
-          .then(r2 => r2.ok ? r2.json() : null);
-      })
-      .then(data => {
-        if (data) { setSubmitState('done'); refreshBoards(); }
-        else { setSubmitState('error'); }
-      })
-      .catch(() => { setSubmitState('error'); });
-  }, [signedIn, profile?.displayName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const phishingCaught = results.filter((r) => r.card.isPhishing && r.correct).length;
   const legitCorrect = results.filter((r) => !r.card.isPhishing && r.correct).length;
@@ -277,62 +224,17 @@ export function RoundSummary({ score, total, totalScore, results, mode, date, se
         </div>
       )}
 
-      {/* Leaderboard submission */}
-      {signedIn ? (
+      {/* Sign-in prompt for guests */}
+      {!signedIn && (
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-            <span className="text-[#00aa28] text-sm tracking-widest">SUBMIT_TO_LEADERBOARD</span>
-          </div>
-          <div className="px-3 py-3">
-            {submitState === 'done' ? (
-              <div className="text-[#00ff41] text-sm font-mono text-center glow py-1">
-                SCORE LOGGED. GL HF.
-              </div>
-            ) : submitState === 'error' ? (
-              <div className="text-[#ff3333] text-sm font-mono text-center py-1">
-                SUBMISSION FAILED.
-              </div>
-            ) : submitState === 'loading' ? (
-              <div className="text-[#003a0e] text-sm font-mono text-center py-1">
-                SUBMITTING...
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : (
-        <div className="term-border bg-[#060c06]">
-          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-            <span className="text-[#00aa28] text-sm tracking-widest">LEADERBOARD_ACCESS</span>
+            <span className="text-[#00aa28] text-sm tracking-widest">XP_TRACKING</span>
           </div>
           <div className="px-3 py-3 space-y-3">
             <div className="text-[#003a0e] text-sm font-mono">
-              SIGN IN TO APPEAR ON FUTURE LEADERBOARDS
+              SIGN IN TO TRACK XP AND RANK UP
             </div>
             <AuthFlow onSignIn={signInWithEmail} onVerifyCode={verifyOtp} onCancel={() => {}} />
-          </div>
-        </div>
-      )}
-
-      {dailyLeaderboard.length > 0 && (
-        <div className="term-border bg-[#060c06]">
-          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-            <span className="text-[#00aa28] text-sm tracking-widest">DAILY_LEADERBOARD</span>
-          </div>
-          <div className="divide-y divide-[rgba(0,255,65,0.08)]">
-            {dailyLeaderboard.slice(0, 10).map((entry, i) => (
-              <div key={i} className="flex items-center gap-3 px-3 py-1.5">
-                <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>
-                  {i + 1}
-                </span>
-                <span className="text-[#00aa28] text-sm font-mono flex-1 truncate">{entry.name}</span>
-                {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
-                  <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
-                    {r.label}
-                  </span>
-                ); })()}
-                <span className="text-[#00ff41] text-sm font-mono font-bold glow">{entry.score}</span>
-              </div>
-            ))}
           </div>
         </div>
       )}

@@ -392,9 +392,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           totalScore={totalScore}
           results={results}
           mode={mode}
-          date={getToday()}
           sessionId={sessionId.current}
-          sessionReady={sessionFinalized.current}
           onPlayAgain={() => setPhase('start')}
         />
       </SummaryErrorBoundary>
