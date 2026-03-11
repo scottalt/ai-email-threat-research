@@ -346,13 +346,20 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             );
           })()}
 
-          {/* Daily challenge button */}
-          <button
-            onClick={() => handleStart('daily')}
-            className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
-          >
-            [ DAILY CHALLENGE — {dateLabel} ]
-          </button>
+          {/* Daily challenge button — locked until research graduation */}
+          {signedIn && profile?.researchGraduated ? (
+            <button
+              onClick={() => handleStart('daily')}
+              className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+            >
+              [ DAILY CHALLENGE — {dateLabel} ]
+            </button>
+          ) : (
+            <div className="w-full py-4 term-border border-[rgba(0,255,65,0.15)] text-center font-mono text-sm tracking-widest text-[#003a0e] cursor-not-allowed select-none">
+              [ DAILY CHALLENGE — LOCKED ]
+              <div className="text-[#003a0e] text-xs mt-1 tracking-wide">Complete research to unlock</div>
+            </div>
+          )}
 
           {signedIn && profile?.researchGraduated && (
             <button
@@ -367,63 +374,72 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             10 questions per round · email + SMS · randomized
           </p>
 
-          {/* Tabbed leaderboard — XP + Daily */}
-          {(dailyLeaderboard.length > 0 || xpLeaderboard.length > 0) && (
-            <div className="term-border bg-[#060c06]">
-              <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center gap-3">
-                <button
-                  onClick={() => setActiveTab('xp')}
-                  className={`text-sm font-mono tracking-widest ${activeTab === 'xp' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
-                >
-                  XP
-                </button>
-                <span className="text-[#003a0e] text-sm">|</span>
-                <button
-                  onClick={() => setActiveTab('daily')}
-                  className={`text-sm font-mono tracking-widest ${activeTab === 'daily' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
-                >
-                  DAILY
-                </button>
+          {/* Tabbed leaderboard — XP always visible; Daily tab only for graduated players */}
+          {(() => {
+            const canSeeDailyLb = signedIn && profile?.researchGraduated;
+            const showLeaderboard = xpLeaderboard.length > 0 || (canSeeDailyLb && dailyLeaderboard.length > 0);
+            if (!showLeaderboard) return null;
+            return (
+              <div className="term-border bg-[#060c06]">
+                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center gap-3">
+                  <button
+                    onClick={() => setActiveTab('xp')}
+                    className={`text-sm font-mono tracking-widest ${activeTab === 'xp' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                  >
+                    XP
+                  </button>
+                  {canSeeDailyLb && (
+                    <>
+                      <span className="text-[#003a0e] text-sm">|</span>
+                      <button
+                        onClick={() => setActiveTab('daily')}
+                        className={`text-sm font-mono tracking-widest ${activeTab === 'daily' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                      >
+                        DAILY
+                      </button>
+                    </>
+                  )}
+                </div>
+                {activeTab === 'xp' && xpLeaderboard.length > 0 && (
+                  <div key={`xp-${xpLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
+                    {xpLeaderboard.map((row, i) => (
+                      <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-sm font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+                        <span className="text-[#003a0e] w-4">{i + 1}.</span>
+                        <span className="text-[#00aa28] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
+                        {row.research_graduated && <span className="text-[#ffaa00] text-sm">★</span>}
+                        {(() => { const r = getRankFromLevel(row.level); return (
+                          <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
+                            {r.label}
+                          </span>
+                        ); })()}
+                        <span className="text-[#00ff41]">{row.xp.toLocaleString()} XP</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {canSeeDailyLb && activeTab === 'daily' && dailyLeaderboard.length > 0 && (
+                  <div key={`daily-${dailyLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
+                    {dailyLeaderboard.slice(0, 10).map((entry, i) => (
+                      <div key={i} className="flex items-center gap-3 px-3 py-1.5 anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+                        <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
+                        <span className="text-[#00aa28] text-sm font-mono flex-1 truncate">{entry.name}</span>
+                        {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
+                          <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
+                        ); })()}
+                        <span className="text-[#00ff41] text-sm font-mono font-bold glow">{entry.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {canSeeDailyLb && activeTab === 'daily' && dailyLeaderboard.length === 0 && (
+                  <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No scores today yet.</div>
+                )}
+                {activeTab === 'xp' && xpLeaderboard.length === 0 && (
+                  <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No players yet.</div>
+                )}
               </div>
-              {activeTab === 'xp' && xpLeaderboard.length > 0 && (
-                <div key={`xp-${xpLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
-                  {xpLeaderboard.map((row, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-sm font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
-                      <span className="text-[#003a0e] w-4">{i + 1}.</span>
-                      <span className="text-[#00aa28] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
-                      {row.research_graduated && <span className="text-[#ffaa00] text-sm">★</span>}
-                      {(() => { const r = getRankFromLevel(row.level); return (
-                        <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
-                          {r.label}
-                        </span>
-                      ); })()}
-                      <span className="text-[#00ff41]">{row.xp.toLocaleString()} XP</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {activeTab === 'daily' && dailyLeaderboard.length > 0 && (
-                <div key={`daily-${dailyLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
-                  {dailyLeaderboard.slice(0, 10).map((entry, i) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-1.5 anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
-                      <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
-                      <span className="text-[#00aa28] text-sm font-mono flex-1 truncate">{entry.name}</span>
-                      {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
-                        <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
-                      ); })()}
-                      <span className="text-[#00ff41] text-sm font-mono font-bold glow">{entry.score}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {activeTab === 'daily' && dailyLeaderboard.length === 0 && (
-                <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No scores today yet.</div>
-              )}
-              {activeTab === 'xp' && xpLeaderboard.length === 0 && (
-                <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No players yet.</div>
-              )}
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
     </div>
