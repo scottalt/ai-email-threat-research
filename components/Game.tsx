@@ -79,7 +79,6 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const sessionStartedAt = useRef<string>('');
   const [correctCount, setCorrectCount] = useState(0);
   const hasAutoStarted = useRef(false);
-  const isTestMode = useRef(false);
   const [flashClass, setFlashClass] = useState<string | null>(null);
   const sessionFinalized = useRef<Promise<void>>(Promise.resolve());
 
@@ -139,11 +138,6 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     setCorrectCount(0);
 
     if (newMode === 'research' || newMode === 'preview') {
-      // Consume test mode flag — skips answer/session logging and forces tutorial
-      if (typeof window !== 'undefined') {
-        isTestMode.current = localStorage.getItem('research_flow_test') === '1';
-        if (isTestMode.current) localStorage.removeItem('research_flow_test');
-      }
       setPhase('loading' as GamePhase);
       fetch(`/api/cards/research?sessionId=${encodeURIComponent(sessionId.current)}`)
         .then((r) => r.json())
@@ -294,7 +288,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         referrer: document.referrer,
       };
 
-      if (!isTestMode.current) fetch('/api/answers', {
+      fetch('/api/answers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answer: answerEvent, session: sessionPayload }),
@@ -315,7 +309,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         );
       }
       // Record session completion — must complete before leaderboard submission
-      if (typeof window !== 'undefined' && mode !== 'preview' && !isTestMode.current) {
+      if (typeof window !== 'undefined' && mode !== 'preview') {
         sessionFinalized.current = fetch('/api/sessions', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -353,7 +347,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     return (
       <ResearchIntro
         onBegin={() => {
-          const isFirstTime = isTestMode.current || !profile || (profile.researchAnswersSubmitted ?? 0) === 0;
+          const isFirstTime = !profile || (profile.researchAnswersSubmitted ?? 0) === 0;
           setPhase(isFirstTime ? 'tutorial' : 'playing');
         }}
       />
