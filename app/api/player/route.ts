@@ -6,6 +6,16 @@ import type { PlayerBackground, PlayerProfile } from '@/lib/types';
 
 const VALID_BACKGROUNDS: PlayerBackground[] = ['other', 'technical', 'infosec', 'prefer_not_to_say'];
 
+const BAD_WORDS = [
+  'fuck', 'shit', 'cunt', 'nigger', 'nigga', 'faggot', 'fag', 'retard',
+  'bitch', 'ass', 'cock', 'dick', 'pussy', 'whore', 'slut', 'bastard',
+];
+
+function isClean(name: string): boolean {
+  const lower = name.toLowerCase().replace(/\s+/g, '');
+  return !BAD_WORDS.some((w) => lower.includes(w));
+}
+
 async function getAuthId(): Promise<string | null> {
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -85,6 +95,7 @@ export async function POST(req: NextRequest) {
       ? body.displayName.trim().slice(0, 20)
       : null;
     if (!displayName) return NextResponse.json({ error: 'Invalid display_name' }, { status: 400 });
+    if (!isClean(displayName)) return NextResponse.json({ error: 'Keep it clean.' }, { status: 400 });
     updates.display_name = displayName;
   }
 
