@@ -69,7 +69,7 @@ export interface AnswerEvent {
   timeFromConfidenceMs: number | null;
   confidenceSelectionTimeMs: number | null;
   scrollDepthPct: number;
-  answerMethod: 'swipe' | 'button';
+  answerMethod: 'button';
   answerOrdinal: number;
   streakAtAnswerTime: number;
   correctCountAtTime: number;
