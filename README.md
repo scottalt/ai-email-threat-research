@@ -45,9 +45,13 @@ Players can optionally self-report their professional background on their profil
 
 ## Game
 
+**Research Mode:** 10 cards drawn at random from the full dataset (see above). Requires an account. Contributes to the study dataset.
+
 **Freeplay:** 10 cards per round drawn randomly from the full dataset. Open to all players, no account required.
 
-**Research Mode:** 10 cards drawn at random from the full dataset (see above). Requires an account. Contributes to the study dataset.
+**Daily Challenge:** A shared deterministic deck that changes each UTC day. All players see the same cards in the same order. Open to all.
+
+**Expert Mode:** Unlocked after submitting 30 research answers (3 completed sessions). Draws exclusively from extreme difficulty cards. Double XP.
 
 **Core loop:**
 - Classify each message as phishing or legitimate
@@ -63,9 +67,8 @@ Players can optionally self-report their professional background on their profil
 - Attachment name analysis
 
 **Leaderboards:**
-- Global all-time (score-based)
-- Daily challenge (shared deterministic deck, one attempt per day)
-- XP leaderboard (account holders only)
+- XP leaderboard (default, account holders only)
+- Daily challenge (score-based, resets each UTC day)
 
 **Sound:**
 - Ambient terminal drone on the start screen (Web Audio API, synthesised, no audio files)
@@ -84,7 +87,7 @@ Accounts use email OTP, no password. Enter your email, get a 6-digit code, enter
 - Personal best score, session history, and background tracked per account
 
 **Expert Mode:**
-- Unlocked after completing 10 Research Mode sessions
+- Unlocked after submitting 30 research answers (3 completed sessions)
 - Draws exclusively from extreme difficulty cards
 - Double XP
 
