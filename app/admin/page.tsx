@@ -28,22 +28,31 @@ interface ResearchStats {
   byTechnique: { technique: string; total: number; correct: number; accuracy: number | null }[];
 }
 
+interface FlagStats {
+  totalFlags: number;
+  flaggedCards: number;
+  cards: { card_id: string; count: number; reasons: Record<string, number> }[];
+}
+
 const POLL_INTERVAL = 10000; // 10 seconds
 
 export default function AdminPage() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [researchStats, setResearchStats] = useState<ResearchStats | null>(null);
+  const [flagStats, setFlagStats] = useState<FlagStats | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   async function fetchStats() {
     try {
-      const [statsRes, researchRes] = await Promise.all([
+      const [statsRes, researchRes, flagsRes] = await Promise.all([
         fetch('/api/admin/stats'),
         fetch('/api/admin/research-stats'),
+        fetch('/api/admin/flags'),
       ]);
       if (statsRes.ok) setStats(await statsRes.json());
       if (researchRes.ok) setResearchStats(await researchRes.json());
+      if (flagsRes.ok) setFlagStats(await flagsRes.json());
       setLastUpdated(new Date());
     } catch {
       // silently fail
@@ -204,6 +213,39 @@ export default function AdminPage() {
             <div className="px-3 py-3 text-[#003a0e] text-xs font-mono">LOADING...</div>
           )}
         </div>
+
+        {/* Player-reported flags */}
+        {flagStats && flagStats.totalFlags > 0 && (
+          <div className="term-border bg-[#060c06]">
+            <div className="border-b border-[rgba(255,51,51,0.35)] px-3 py-2 flex items-center justify-between">
+              <span className="text-[#ff3333] text-xs tracking-widest">PLAYER_FLAGS</span>
+              <Link href="/admin/flags" className="text-[#003a0e] text-xs font-mono hover:text-[#ff3333] transition-colors">
+                VIEW ALL →
+              </Link>
+            </div>
+            <div className="px-3 py-3 space-y-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="term-border border-[rgba(255,51,51,0.2)] px-2 py-2 text-center">
+                  <div className="text-xl font-black font-mono text-[#ff3333]">{flagStats.totalFlags}</div>
+                  <div className="text-[10px] font-mono text-[#003a0e] mt-0.5">TOTAL FLAGS</div>
+                </div>
+                <div className="term-border border-[rgba(255,51,51,0.2)] px-2 py-2 text-center">
+                  <div className="text-xl font-black font-mono text-[#ffaa00]">{flagStats.flaggedCards}</div>
+                  <div className="text-[10px] font-mono text-[#003a0e] mt-0.5">CARDS FLAGGED</div>
+                </div>
+              </div>
+              {flagStats.cards.slice(0, 3).map((c) => (
+                <div key={c.card_id} className="flex items-center gap-2 text-xs font-mono">
+                  <span className="text-[#ff3333] font-black w-6 text-right">{c.count}x</span>
+                  <span className="text-[#00aa28] truncate flex-1">{c.card_id}</span>
+                  <span className="text-[#003a0e] text-[10px]">
+                    {Object.entries(c.reasons).map(([r, n]) => `${r}(${n})`).join(' ')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Link
