@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import filter from 'leo-profanity';
 
 const KEY = 'leaderboard';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -11,17 +12,7 @@ const CONFIDENCE_MULTIPLIER: Record<string, number> = { guessing: 1, likely: 2, 
 const CONFIDENCE_PENALTY: Record<string, number> = { guessing: 0, likely: -100, certain: -200 };
 const STREAK_BONUS = 50;
 
-const BAD_WORDS = [
-  'fuck', 'shit', 'cunt', 'nigger', 'nigga', 'faggot', 'fag', 'retard',
-  'bitch', 'ass', 'cock', 'dick', 'pussy', 'whore', 'slut', 'bastard',
-];
-
 const BLOCKED_NAMES = ['dailytester', 'testuser', 'test'];
-
-function isClean(name: string): boolean {
-  const lower = name.toLowerCase().replace(/\s+/g, '');
-  return !BAD_WORDS.some((w) => lower.includes(w));
-}
 
 function isAllowed(name: string): boolean {
   const lower = name.toLowerCase().trim();
@@ -141,7 +132,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Name required' }, { status: 400 });
     }
 
-    if (!isClean(trimmed)) {
+    if (filter.check(trimmed)) {
       return NextResponse.json({ error: 'Keep it clean.' }, { status: 400 });
     }
 

@@ -6,6 +6,7 @@ export async function GET() {
   const { data, error } = await admin
     .from('players')
     .select('display_name, xp, level, research_graduated')
+    .gt('xp', 0)
     .order('xp', { ascending: false })
     .limit(10);
 
