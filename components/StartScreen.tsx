@@ -311,8 +311,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           </div>
 
           {(() => {
-            const testFlow = typeof window !== 'undefined' && localStorage.getItem('research_flow_test') === '1';
-            const graduated = signedIn && (profile?.researchGraduated ?? false) && !testFlow;
+            const graduated = signedIn && (profile?.researchGraduated ?? false);
             const researchCapped = signedIn && !graduated && (profile?.researchAnswersSubmitted ?? 0) >= 30;
             const isResearch = signedIn && !graduated && !researchCapped;
             return (

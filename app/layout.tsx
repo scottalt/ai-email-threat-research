@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     description: 'Can you spot a phishing attempt? A retro security awareness game.',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Retro Phish',
+    description: 'Can you spot a phishing attempt? A retro security awareness game.',
+  },
 };
 
 export const viewport: Viewport = {

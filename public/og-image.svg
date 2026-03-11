@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#060c06" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.7"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow-strong">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="scanlines" patternUnits="userSpaceOnUse" width="4" height="4">
+      <rect width="4" height="2" fill="transparent"/>
+      <rect y="2" width="4" height="2" fill="rgba(0,0,0,0.08)"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#060c06"/>
+
+  <!-- Scanlines -->
+  <rect width="1200" height="630" fill="url(#scanlines)"/>
+
+  <!-- Terminal border -->
+  <rect x="40" y="30" width="1120" height="570" rx="4" fill="none" stroke="#00ff41" stroke-opacity="0.35" stroke-width="1.5"/>
+  <rect x="42" y="32" width="1116" height="566" rx="3" fill="none" stroke="#00ff41" stroke-opacity="0.08" stroke-width="1"/>
+
+  <!-- Header bar -->
+  <line x1="40" y1="80" x2="1160" y2="80" stroke="#00ff41" stroke-opacity="0.35" stroke-width="1"/>
+  <text x="65" y="64" font-family="monospace" font-size="14" fill="#00aa28" letter-spacing="3">ANALYST_TERMINAL v2.1</text>
+  <text x="1040" y="64" font-family="monospace" font-size="14" fill="#003a0e" letter-spacing="2">LIVE</text>
+  <circle cx="1025" cy="59" r="4" fill="#00ff41" opacity="0.8" filter="url(#glow)"/>
+
+  <!-- Main title -->
+  <text x="600" y="200" font-family="monospace" font-size="72" font-weight="900" fill="#00ff41" text-anchor="middle" filter="url(#glow-strong)" letter-spacing="6">RETRO PHISH</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="260" font-family="monospace" font-size="22" fill="#00aa28" text-anchor="middle" letter-spacing="4">CAN YOU SPOT THE THREAT?</text>
+
+  <!-- Divider -->
+  <line x1="350" y1="290" x2="850" y2="290" stroke="#00ff41" stroke-opacity="0.25" stroke-width="1"/>
+
+  <!-- Fake email preview -->
+  <rect x="300" y="320" width="600" height="130" rx="3" fill="#0a140a" stroke="#00ff41" stroke-opacity="0.2" stroke-width="1"/>
+  <text x="325" y="352" font-family="monospace" font-size="13" fill="#003a0e">FROM:</text>
+  <text x="395" y="352" font-family="monospace" font-size="13" fill="#00aa28">security@paypa1.com</text>
+  <text x="680" y="352" font-family="monospace" font-size="11" fill="#ff3333" filter="url(#glow)">SPF: FAIL</text>
+  <line x1="300" y1="365" x2="900" y2="365" stroke="#00ff41" stroke-opacity="0.1" stroke-width="1"/>
+  <text x="325" y="390" font-family="monospace" font-size="13" fill="#003a0e">SUBJ:</text>
+  <text x="395" y="390" font-family="monospace" font-size="13" fill="#00aa28">Urgent: Your Account Has Been Suspended</text>
+  <line x1="300" y1="405" x2="900" y2="405" stroke="#00ff41" stroke-opacity="0.1" stroke-width="1"/>
+  <text x="325" y="428" font-family="monospace" font-size="12" fill="#003a0e">Dear Valued Customer, We have detected unusual</text>
+  <text x="325" y="443" font-family="monospace" font-size="12" fill="#003a0e">activity on your account...</text>
+
+  <!-- Action buttons -->
+  <rect x="340" y="480" width="220" height="45" rx="3" fill="none" stroke="#ff3333" stroke-opacity="0.6" stroke-width="1.5"/>
+  <text x="450" y="508" font-family="monospace" font-size="16" font-weight="bold" fill="#ff3333" text-anchor="middle" filter="url(#glow)" letter-spacing="3">PHISHING</text>
+
+  <rect x="640" y="480" width="220" height="45" rx="3" fill="none" stroke="#00ff41" stroke-opacity="0.6" stroke-width="1.5"/>
+  <text x="750" y="508" font-family="monospace" font-size="16" font-weight="bold" fill="#00ff41" text-anchor="middle" filter="url(#glow)" letter-spacing="3">LEGIT</text>
+
+  <!-- Footer -->
+  <text x="600" y="575" font-family="monospace" font-size="13" fill="#003a0e" text-anchor="middle" letter-spacing="2">A CYBERSECURITY RESEARCH GAME</text>
+
+  <!-- Vignette overlay -->
+  <rect width="1200" height="630" fill="url(#vignette)"/>
+</svg>
