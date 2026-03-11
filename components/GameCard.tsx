@@ -1,13 +1,8 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import type { Card, Answer, Confidence, GameMode } from '@/lib/types';
 import { parseFrom } from '@/lib/parseFrom';
-
-const SWIPE_THRESHOLD = 75;
-const FLY_DISTANCE = 650;
-const SPRING_STIFFNESS = 320;
-const SPRING_DAMPING = 24;
 
 interface Props {
   card: Card;
@@ -16,7 +11,7 @@ interface Props {
     timeFromConfidenceMs: number | null;
     confidenceSelectionTimeMs: number | null;
     scrollDepthPct: number;
-    answerMethod: 'swipe' | 'button';
+    answerMethod: 'button';
     headersOpened: boolean;
     urlInspected: boolean;
   }) => void;
@@ -35,10 +30,6 @@ const CONFIDENCE_OPTIONS: { value: Confidence; label: string; multiplier: string
   { value: 'likely',   label: 'LIKELY',   multiplier: '2x', color: 'text-[#ffaa00] border-[rgba(255,170,0,0.5)]' },
   { value: 'certain',  label: 'CERTAIN',  multiplier: '3x', color: 'text-[#00ff41] border-[rgba(0,255,65,0.8)]'  },
 ];
-
-function clamp(val: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, val));
-}
 
 function analystFace(streak: number): string {
   if (streak >= 6) return '[^_^]';
@@ -294,8 +285,6 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
 
 export function GameCard({ card, onAnswer, questionNumber, total, streak, totalScore, soundEnabled, onToggleSound, onQuit, mode }: Props) {
   const [confidence, setConfidence] = useState<Confidence | null>(null);
-  // dragX drives stamp opacity — updated during drag via React state
-  const [dragX, setDragX] = useState(0);
   const [flying, setFlying] = useState(false);
 
   const renderTime          = useRef<number>(Date.now());
@@ -303,152 +292,32 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
   const maxScrollDepth      = useRef<number>(0);
   const headersEverOpened   = useRef(false);
   const urlEverInspected    = useRef(false);
+  const answered            = useRef(false);
 
-  const answered   = useRef(false);
-  const dragging   = useRef(false);
-  const startX     = useRef(0);
-  const posX       = useRef(0);          // current position (mirrors dragX but as a ref)
-  const rafId      = useRef<number>(0);
-  const cardRef    = useRef<HTMLDivElement>(null);
-  const phishRef   = useRef<HTMLDivElement>(null);
-  const legitRef   = useRef<HTMLDivElement>(null);
-
-  // Rolling velocity window (last N pointer samples)
-  const velSamples = useRef<{ dx: number; dt: number }[]>([]);
-  const lastPtr    = useRef<{ x: number; t: number }>({ x: 0, t: 0 });
-
-  // Apply transform + stamp opacities directly to the DOM (no React re-render per frame)
-  function applyTransform(x: number) {
-    if (!cardRef.current) return;
-    cardRef.current.style.transform = `translateX(${x}px) rotate(${x / 22}deg)`;
-    const po = clamp(-x / SWIPE_THRESHOLD, 0, 1);
-    const lo = clamp(x  / SWIPE_THRESHOLD, 0, 1);
-    if (phishRef.current) phishRef.current.style.opacity = String(po);
-    if (legitRef.current) legitRef.current.style.opacity = String(lo);
-  }
-
-  // Spring snap-back using rAF — no React re-renders during animation
-  const springBack = useCallback((fromX: number) => {
-    cancelAnimationFrame(rafId.current);
-    let pos = fromX;
-    let vel = 0;
-    const dt = 1 / 60;
-
-    function step() {
-      const acc = -SPRING_STIFFNESS * pos - SPRING_DAMPING * vel;
-      vel += acc * dt;
-      pos += vel * dt;
-      applyTransform(pos);
-
-      if (Math.abs(pos) < 0.4 && Math.abs(vel) < 0.4) {
-        applyTransform(0);
-        setDragX(0);  // sync React state once animation settles
-      } else {
-        rafId.current = requestAnimationFrame(step);
-      }
-    }
-
-    rafId.current = requestAnimationFrame(step);
-  }, []);
-
-  function fly(direction: 'left' | 'right', conf: Confidence, method: 'swipe' | 'button' = 'button') {
-    if (answered.current) return;
+  function handleButton(answer: Answer) {
+    if (!confidence || answered.current) return;
     answered.current = true;
-    cancelAnimationFrame(rafId.current);
     setFlying(true);
     const now = Date.now();
     const timeFromRender = now - renderTime.current;
     const timeFromConfidence = confidenceTime.current !== null ? now - confidenceTime.current : null;
     const confidenceSelectionTime = confidenceTime.current !== null ? confidenceTime.current - renderTime.current : null;
     setTimeout(() => onAnswer(
-      direction === 'left' ? 'phishing' : 'legit',
-      conf,
+      answer,
+      confidence,
       {
         timeFromRenderMs: timeFromRender,
         timeFromConfidenceMs: timeFromConfidence,
         confidenceSelectionTimeMs: confidenceSelectionTime,
         scrollDepthPct: maxScrollDepth.current,
-        answerMethod: method,
+        answerMethod: 'button',
         headersOpened: headersEverOpened.current,
         urlInspected: urlEverInspected.current,
       }
     ), 230);
   }
 
-  function getVelocity(): number {
-    const samples = velSamples.current;
-    if (samples.length === 0) return 0;
-    const totalDt = samples.reduce((s, v) => s + v.dt, 0);
-    const totalDx = samples.reduce((s, v) => s + v.dx, 0);
-    return totalDt > 0 ? totalDx / totalDt : 0;
-  }
-
-  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (!confidence || answered.current) return;
-    if ((e.target as HTMLElement).closest('button, a')) return;
-    cancelAnimationFrame(rafId.current);
-    e.currentTarget.setPointerCapture(e.pointerId);
-    startX.current = e.clientX;
-    posX.current = 0;
-    dragging.current = true;
-    velSamples.current = [];
-    lastPtr.current = { x: e.clientX, t: e.timeStamp };
-    if (cardRef.current) cardRef.current.style.transition = 'none';
-  }
-
-  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!dragging.current || !confidence || answered.current) return;
-
-    // Rolling velocity — keep last ~80ms of samples
-    const dt = e.timeStamp - lastPtr.current.t;
-    const dx = e.clientX - lastPtr.current.x;
-    velSamples.current.push({ dx, dt });
-    const cutoff = e.timeStamp - 80;
-    // trim old samples inline
-    let i = 0;
-    let elapsed = 0;
-    for (let j = velSamples.current.length - 1; j >= 0; j--) {
-      elapsed += velSamples.current[j].dt;
-      if (elapsed > 80) { i = j + 1; break; }
-    }
-    velSamples.current = velSamples.current.slice(i);
-    lastPtr.current = { x: e.clientX, t: e.timeStamp };
-
-    const x = e.clientX - startX.current;
-    posX.current = x;
-    applyTransform(x);
-    setDragX(x);  // keep React state in sync for stamp re-renders
-  }
-
-  function handlePointerUp() {
-    if (!dragging.current || !confidence || answered.current) return;
-    dragging.current = false;
-
-    const x = posX.current;
-    const vx = getVelocity();  // px/ms
-    velSamples.current = [];
-
-    const shouldFly = Math.abs(x) > SWIPE_THRESHOLD || Math.abs(vx) > 0.4;
-
-    if (shouldFly) {
-      fly(x > 0 || vx > 0 ? 'right' : 'left', confidence, 'swipe');
-    } else {
-      // Restore transition then spring back
-      if (cardRef.current) cardRef.current.style.transition = '';
-      springBack(x);
-    }
-  }
-
-  function handleButton(answer: Answer) {
-    if (!confidence || answered.current) return;
-    fly(answer === 'phishing' ? 'left' : 'right', confidence, 'button');
-  }
-
   const streakAtBonus = streak > 0 && streak % 3 === 0;
-
-  // Stamp opacity driven by React dragX state (updated during drag and reset after spring)
-  const phishingOpacity = clamp(-dragX / SWIPE_THRESHOLD, 0, 1);
-  const legitOpacity    = clamp(dragX  / SWIPE_THRESHOLD, 0, 1);
 
   return (
     <div className="flex flex-col items-center gap-4 w-full max-w-sm px-4 pb-safe">
@@ -493,68 +362,27 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
         </div>
       </div>
 
-
-      {confidence && (
-        <div className="flex justify-between w-full text-sm text-[#003a0e] font-mono tracking-wider">
-          <span>← PHISHING</span>
-          <span>LEGIT →</span>
-        </div>
-      )}
-
       {/* Card */}
-      <div className="relative w-full">
-        {/* Stamp overlays — driven by dragX React state */}
-        {confidence && (
-          <>
-            <div
-              ref={phishRef}
-              className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center"
-              style={{ opacity: phishingOpacity }}
-            >
-              <div className="border-2 border-[#ff3333] px-3 py-1 -rotate-12 bg-[rgba(255,51,51,0.08)]">
-                <span className="text-[#ff3333] text-lg font-black tracking-widest glow-red">PHISHING</span>
-              </div>
-            </div>
-            <div
-              ref={legitRef}
-              className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center"
-              style={{ opacity: legitOpacity }}
-            >
-              <div className="border-2 border-[#00ff41] px-3 py-1 rotate-12 bg-[rgba(0,255,65,0.08)]">
-                <span className="text-[#00ff41] text-lg font-black tracking-widest glow">LEGIT</span>
-              </div>
-            </div>
-          </>
-        )}
-
-        <div
-          ref={cardRef}
-          onPointerDown={confidence ? handlePointerDown : undefined}
-          onPointerMove={confidence ? handlePointerMove : undefined}
-          onPointerUp={confidence ? handlePointerUp : undefined}
-          onPointerCancel={confidence ? handlePointerUp : undefined}
-          className={`anim-card-entry touch-none ${confidence ? 'cursor-grab active:cursor-grabbing' : ''}`}
-          style={{
-            transform: 'translateX(0px) rotate(0deg)',
-            opacity: flying ? 0 : 1,
-            transition: flying ? 'transform 0.23s ease-in, opacity 0.23s ease-in' : '',
-            willChange: 'transform',
-          }}
-        >
-          {card.type === 'email'
-            ? <EmailDisplay
-                card={card}
-                onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }}
-                onHeadersOpened={() => { headersEverOpened.current = true; }}
-                onUrlInspected={() => { urlEverInspected.current = true; }}
-              />
-            : <SMSDisplay
-                card={card}
-                onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }}
-                onUrlInspected={() => { urlEverInspected.current = true; }}
-              />
-          }
-        </div>
+      <div
+        className="w-full anim-card-entry"
+        style={{
+          opacity: flying ? 0 : 1,
+          transition: flying ? 'opacity 0.23s ease-in' : '',
+        }}
+      >
+        {card.type === 'email'
+          ? <EmailDisplay
+              card={card}
+              onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }}
+              onHeadersOpened={() => { headersEverOpened.current = true; }}
+              onUrlInspected={() => { urlEverInspected.current = true; }}
+            />
+          : <SMSDisplay
+              card={card}
+              onScroll={(pct) => { maxScrollDepth.current = Math.max(maxScrollDepth.current, pct); }}
+              onUrlInspected={() => { urlEverInspected.current = true; }}
+            />
+        }
       </div>
 
       {/* Controls */}
@@ -583,7 +411,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
             {' · '}
             {confidence === 'certain' ? '3x' : confidence === 'likely' ? '2x' : '1x'} PTS
             <button
-              onClick={() => { if (!answered.current) { setConfidence(null); setDragX(0); confidenceTime.current = null; } }}
+              onClick={() => { if (!answered.current) { setConfidence(null); confidenceTime.current = null; } }}
               className="ml-3 text-[#003a0e] hover:text-[#00aa28] transition-colors"
               aria-label="Change confidence level"
             >

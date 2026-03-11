@@ -201,7 +201,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     timeFromConfidenceMs: number | null;
     confidenceSelectionTimeMs: number | null;
     scrollDepthPct: number;
-    answerMethod: 'swipe' | 'button';
+    answerMethod: 'button';
     headersOpened: boolean;
     urlInspected: boolean;
   }) {
