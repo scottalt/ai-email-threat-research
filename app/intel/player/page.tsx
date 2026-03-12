@@ -66,7 +66,7 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
           </div>
           <div className="px-3 py-6 space-y-4 text-center">
             <div className="text-[#00aa28] text-4xl font-mono">&#128274;</div>
-            <div className="text-[#00ff41] text-sm font-mono font-bold tracking-wide glow">
+            <div className="text-[#00ff41] text-sm font-mono font-bold tracking-wide">
               CLASSIFIED: INTEL BRIEFING
             </div>
             <div className="text-[#00aa28] text-sm font-mono leading-relaxed max-w-md mx-auto">
@@ -77,14 +77,14 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
               <div className="space-y-3 max-w-xs mx-auto">
                 <div className="text-[#003a0e] text-sm font-mono">YOUR CLEARANCE PROGRESS</div>
                 <div className="h-2 bg-[#003a0e] w-full">
-                  <div className="h-full bg-[#00ff41] transition-all duration-500" style={{ width: `${pct}%` }} />
+                  <div className="h-full bg-[#00aa28] transition-all duration-500" style={{ width: `${pct}%` }} />
                 </div>
                 <div className="text-[#00aa28] text-sm font-mono">
                   {answersSubmitted}/{RESEARCH_GRADUATION_ANSWERS} answers
                 </div>
                 <Link
                   href="/"
-                  className="block w-full py-3 mt-2 term-border-bright text-center text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] transition-all glow"
+                  className="block w-full py-3 mt-2 term-border text-center text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
                 >
                   [ CONTINUE RESEARCH ]
                 </Link>
@@ -94,7 +94,7 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
                 <div className="text-[#003a0e] text-sm font-mono">Sign in and play Research Mode to earn access.</div>
                 <Link
                   href="/"
-                  className="inline-block px-6 py-3 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] transition-all glow"
+                  className="inline-block px-6 py-3 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
                 >
                   [ GO TO TERMINAL ]
                 </Link>
