@@ -13,7 +13,7 @@ export async function GET() {
       .from('cards_real')
       .select('is_phishing, technique, difficulty');
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: 'Failed to fetch breakdown' }, { status: 500 });
 
     const rows = data ?? [];
 
@@ -34,6 +34,6 @@ export async function GET() {
 
     return NextResponse.json({ phishing, legitCount });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

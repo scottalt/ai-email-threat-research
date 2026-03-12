@@ -13,7 +13,7 @@ export async function GET() {
     .select('id, card_id, is_phishing, technique, difficulty, from_address, subject, body, explanation, highlights, clues, review_notes, ai_model, approved_at, auth_status')
     .order('approved_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Failed to fetch cards' }, { status: 500 });
   return NextResponse.json({ cards: data ?? [] });
 }
 
@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest) {
   if (Object.keys(safeFields).length === 0) return NextResponse.json({ error: 'No valid fields' }, { status: 400 });
 
   const { error } = await supabase.from('cards_real').update(safeFields).eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
@@ -54,6 +54,6 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
   const { error } = await supabase.from('cards_real').delete().eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

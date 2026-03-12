@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { redis } from '@/lib/redis';
 import type { PlayerBackground, PlayerProfile } from '@/lib/types';
 import filter from 'leo-profanity';
 
@@ -77,6 +78,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const authId = await getAuthId();
   if (!authId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+  // Rate limit: 10 updates per hour per user
+  const rlKey = `ratelimit:player-update:${authId}`;
+  const rlCount = await redis.incr(rlKey);
+  if (rlCount === 1) await redis.expire(rlKey, 60 * 60);
+  if (rlCount > 10) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
 
   const body = await req.json();
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };

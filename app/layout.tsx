@@ -3,6 +3,7 @@ import { Geist_Mono } from 'next/font/google';
 import { ServiceWorker } from '@/components/ServiceWorker';
 import { TerminalSounds } from '@/components/TerminalSounds';
 import { PlayerProvider } from '@/lib/PlayerContext';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const geistMono = Geist_Mono({
@@ -56,6 +57,7 @@ export default function RootLayout({
         <PlayerProvider>
           {children}
         </PlayerProvider>
+        <Analytics />
       </body>
     </html>
   );

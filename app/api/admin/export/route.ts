@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     .select(EXPORT_SELECT)
     .order('approved_at', { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Failed to fetch cards' }, { status: 500 });
 
   // Double cast required — Supabase can't infer column types from a dynamic select string
   const rows = (data as unknown as ExportRow[] | null) ?? [];

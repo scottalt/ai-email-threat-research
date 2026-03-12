@@ -56,6 +56,6 @@ export async function GET() {
       pendingBreakdown: { phishing: phishingBreakdown, legit: legitBreakdown, legitTotal },
     });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
