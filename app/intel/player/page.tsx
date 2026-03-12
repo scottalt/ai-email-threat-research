@@ -138,7 +138,7 @@ function IntelContent({ data, isAdmin }: { data: IntelData; isAdmin: boolean }) 
         {/* Accuracy by background */}
         {data.byBackground && data.byBackground.length > 0 && (
           <div className="term-border bg-[#060c06]">
-            <SectionHeader title="BYPASS RATE BY BACKGROUND" />
+            <SectionHeader title="DETECTION ACCURACY BY BACKGROUND" />
             <div className="divide-y divide-[rgba(0,255,65,0.08)]">
               {data.byBackground.map(({ background, accuracyRate, total }) => (
                 <BarRow key={background} label={BACKGROUND_LABELS[background] ?? background} sub={`n=${total}`} value={`${accuracyRate}%`} pct={accuracyRate} color="#00ff41" />

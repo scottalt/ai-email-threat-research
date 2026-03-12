@@ -52,6 +52,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
   const [xpResult, setXpResult] = useState<{
     xpEarned: number; level: number; levelUp: boolean; graduated: boolean;
   } | null>(null);
+  const [rateLimited, setRateLimited] = useState(false);
   const xpFired = useRef(false);
   useEffect(() => {
     if (mode !== 'research') return;
@@ -74,7 +75,10 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ xpEarned, score: totalScore, gameMode: mode, sessionCompleted: true, sessionId }),
     })
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (r.status === 429) { setRateLimited(true); return null; }
+        return r.ok ? r.json() : null;
+      })
       .then(data => {
         if (data) { setXpResult(data); refreshProfile(); }
       })
@@ -107,6 +111,15 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
             </div>
           )}
           {profile && <LevelMeter xp={profile.xp} level={profile.level} />}
+        </div>
+      )}
+      {/* Rate limit notice */}
+      {signedIn && rateLimited && (
+        <div className="term-border border-[rgba(255,170,0,0.4)] bg-[#060c06] px-3 py-3 space-y-1">
+          <div className="text-[#ffaa00] text-sm font-mono font-bold tracking-widest">COOLDOWN_ACTIVE</div>
+          <div className="text-[#003a0e] text-sm font-mono">
+            You&apos;ve been grinding hard, agent. XP earning is paused — take a break and come back later to keep ranking up.
+          </div>
         </div>
       )}
       {/* Score header */}
