@@ -152,7 +152,7 @@ function IntelContent({ data, isAdmin }: { data: IntelData; isAdmin: boolean }) 
 
         <Link
           href="/"
-          className="block w-full py-4 term-border-bright text-center text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+          className="block w-full py-4 term-border text-center text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:bg-[rgba(0,255,65,0.1)] transition-all"
         >
           [ BACK TO TERMINAL ]
         </Link>
