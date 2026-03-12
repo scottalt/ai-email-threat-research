@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePlayer } from '@/lib/PlayerContext';
-import { RESEARCH_GRADUATION_SESSIONS, RESEARCH_GRADUATION_ANSWERS } from '@/lib/xp';
+import { RESEARCH_GRADUATION_ANSWERS } from '@/lib/xp';
 import { useEffect, useState } from 'react';
 
 interface IntelData {
@@ -53,11 +53,8 @@ const BACKGROUND_LABELS: Record<string, string> = {
   prefer_not_to_say: 'UNDISCLOSED',
 };
 
-function LockedState({ signedIn, sessionsCompleted, answersSubmitted }: { signedIn: boolean; sessionsCompleted: number; answersSubmitted: number }) {
-  const sessionProgress = Math.min(sessionsCompleted / RESEARCH_GRADUATION_SESSIONS, 1);
-  const answerProgress = Math.min(answersSubmitted / RESEARCH_GRADUATION_ANSWERS, 1);
-  const overallProgress = Math.min(sessionProgress, answerProgress);
-  const pct = Math.round(overallProgress * 100);
+function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answersSubmitted: number }) {
+  const pct = Math.round(Math.min(answersSubmitted / RESEARCH_GRADUATION_ANSWERS, 1) * 100);
 
   return (
     <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center">
@@ -73,7 +70,7 @@ function LockedState({ signedIn, sessionsCompleted, answersSubmitted }: { signed
               CLASSIFIED: INTEL BRIEFING
             </div>
             <div className="text-[#00aa28] text-sm font-mono leading-relaxed max-w-md mx-auto">
-              Complete {RESEARCH_GRADUATION_SESSIONS} research sessions ({RESEARCH_GRADUATION_ANSWERS} answers) to unlock live aggregate findings from all participants.
+              Submit {RESEARCH_GRADUATION_ANSWERS} research answers to unlock live aggregate findings from all participants.
             </div>
 
             {signedIn ? (
@@ -82,9 +79,8 @@ function LockedState({ signedIn, sessionsCompleted, answersSubmitted }: { signed
                 <div className="h-2 bg-[#003a0e] w-full">
                   <div className="h-full bg-[#00ff41] transition-all duration-500" style={{ width: `${pct}%` }} />
                 </div>
-                <div className="flex justify-between text-sm font-mono">
-                  <span className="text-[#00aa28]">{sessionsCompleted}/{RESEARCH_GRADUATION_SESSIONS} sessions</span>
-                  <span className="text-[#00aa28]">{answersSubmitted}/{RESEARCH_GRADUATION_ANSWERS} answers</span>
+                <div className="text-[#00aa28] text-sm font-mono">
+                  {answersSubmitted}/{RESEARCH_GRADUATION_ANSWERS} answers
                 </div>
                 <Link
                   href="/"
@@ -205,7 +201,6 @@ export default function PlayerIntelPage() {
     return (
       <LockedState
         signedIn={signedIn}
-        sessionsCompleted={profile?.researchSessionsCompleted ?? 0}
         answersSubmitted={profile?.researchAnswersSubmitted ?? 0}
       />
     );
