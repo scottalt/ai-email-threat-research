@@ -65,7 +65,7 @@ export function ResearchIntro({ onBegin }: Props) {
               email address, IP address, location, or any identifying information. Your email is used only for sign-in and is never associated with your answers.
             </p>
             <p className="text-[#003a0e] text-sm font-mono leading-relaxed">
-              Each player contributes up to 3 rounds (30 cards). After that, expert mode and the Intel Briefing unlock.{' '}
+              Each player contributes 30 research answers. After that, Expert Mode and the Intel Briefing unlock.{' '}
               <Link href="/intel/player" className="text-[#00aa28] hover:underline">Preview</Link>.
             </p>
           </div>
