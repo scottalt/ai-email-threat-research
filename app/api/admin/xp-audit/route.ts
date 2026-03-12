@@ -12,14 +12,15 @@ import { getLevelFromXp, getXpForRound } from '@/lib/xp';
  * configurable minimum (default: 3 minutes).
  *
  * Query params:
- *   minGap - minimum minutes between sessions to be considered legit (default: 3)
- *   since  - ISO date to look back from (default: 7 days ago)
+ *   minGap   - minimum minutes between sessions to be considered legit (default: 3)
+ *   dailyCap - max legit freeplay/expert sessions per day (default: 10)
+ *   since    - ISO date to look back from (default: 7 days ago)
  *
  * DELETE /api/admin/xp-audit
  *
- * Recalculates XP for flagged players, dropping rapid-fire sessions.
+ * Recalculates XP for flagged players, dropping spam sessions.
  *
- * Body: { playerIds: string[], minGap?: number }
+ * Body: { playerIds: string[], minGap?: number, dailyCap?: number }
  *
  * POST /api/admin/xp-audit
  *
@@ -30,24 +31,42 @@ import { getLevelFromXp, getXpForRound } from '@/lib/xp';
 // Supabase caps at 1000 rows per request — need explicit pagination
 const PAGE_SIZE = 1000;
 
-/** Given sorted sessions, mark each as legitimate or suspicious based on time gap */
+/**
+ * Classify sorted sessions as legitimate or suspicious.
+ * Two filters combined — a session must pass BOTH:
+ *   1. Velocity: gap from previous legit session >= minGapMs
+ *   2. Daily cap: no more than dailyCap legit sessions per calendar day
+ */
 function classifySessions<T extends { createdAt: string }>(
   sessions: T[],
   minGapMs: number,
-): { session: T; suspicious: boolean }[] {
-  const result: { session: T; suspicious: boolean }[] = [];
+  dailyCap: number,
+): { session: T; suspicious: boolean; reason: 'ok' | 'too_fast' | 'daily_cap' }[] {
+  const result: { session: T; suspicious: boolean; reason: 'ok' | 'too_fast' | 'daily_cap' }[] = [];
   let lastLegitTime: number | null = null;
+  const dailyCounts = new Map<string, number>();
 
   for (const sess of sessions) {
     const t = new Date(sess.createdAt).getTime();
-    if (lastLegitTime === null || (t - lastLegitTime) >= minGapMs) {
-      // Legitimate — sufficient gap from last legit session
-      result.push({ session: sess, suspicious: false });
-      lastLegitTime = t;
-    } else {
-      // Too fast — suspicious
-      result.push({ session: sess, suspicious: true });
+    const day = sess.createdAt.slice(0, 10);
+
+    // Check velocity
+    if (lastLegitTime !== null && (t - lastLegitTime) < minGapMs) {
+      result.push({ session: sess, suspicious: true, reason: 'too_fast' });
+      continue;
     }
+
+    // Check daily cap
+    const dayCount = dailyCounts.get(day) ?? 0;
+    if (dayCount >= dailyCap) {
+      result.push({ session: sess, suspicious: true, reason: 'daily_cap' });
+      continue;
+    }
+
+    // Passed both checks
+    result.push({ session: sess, suspicious: false, reason: 'ok' });
+    lastLegitTime = t;
+    dailyCounts.set(day, dayCount + 1);
   }
   return result;
 }
@@ -60,6 +79,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const minGap = Math.max(1, parseInt(url.searchParams.get('minGap') ?? '3', 10));
     const minGapMs = minGap * 60 * 1000;
+    const dailyCap = Math.max(1, parseInt(url.searchParams.get('dailyCap') ?? '10', 10));
     const sinceParam = url.searchParams.get('since');
     const since = sinceParam
       ? new Date(sinceParam)
@@ -89,7 +109,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (answers.length === 0) {
-      return NextResponse.json({ flaggedPlayers: [], totalSessions: 0, since: since.toISOString(), minGap });
+      return NextResponse.json({ flaggedPlayers: [], totalSessions: 0, since: since.toISOString(), minGap, dailyCap });
     }
 
     // Group answers by session
@@ -143,7 +163,7 @@ export async function GET(req: NextRequest) {
       totalSessionsInWindow: number;
       suspiciousSessionCount: number;
       fastestGapSeconds: number;
-      sessions: { time: string; gapSeconds: number | null; xp: number; suspicious: boolean }[];
+      sessions: { time: string; gapSeconds: number | null; xp: number; suspicious: boolean; reason: string }[];
     };
 
     const flaggedPlayerIds: string[] = [];
@@ -153,16 +173,16 @@ export async function GET(req: NextRequest) {
       // Sort chronologically
       sessions.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-      const classified = classifySessions(sessions, minGapMs);
+      const classified = classifySessions(sessions, minGapMs, dailyCap);
 
       let legitimateXp = 0;
       let suspiciousXp = 0;
       let suspiciousCount = 0;
       let fastestGap = Infinity;
-      const sessionDetails: { time: string; gapSeconds: number | null; xp: number; suspicious: boolean }[] = [];
+      const sessionDetails: { time: string; gapSeconds: number | null; xp: number; suspicious: boolean; reason: string }[] = [];
 
       for (let i = 0; i < classified.length; i++) {
-        const { session: sess, suspicious } = classified[i];
+        const { session: sess, suspicious, reason } = classified[i];
         const xp = getXpForRound(sess.correctCount, sess.totalCount || 10, sess.gameMode);
 
         let gapSeconds: number | null = null;
@@ -185,6 +205,7 @@ export async function GET(req: NextRequest) {
           gapSeconds,
           xp,
           suspicious,
+          reason,
         });
       }
 
@@ -277,6 +298,7 @@ export async function GET(req: NextRequest) {
         const projClassified = classifySessions(
           fpExpAll.map(s => ({ ...s, createdAt: s.earliestAt })),
           minGapMs,
+          dailyCap,
         );
         for (let i = 0; i < projClassified.length; i++) {
           if (!projClassified[i].suspicious) {
@@ -300,6 +322,7 @@ export async function GET(req: NextRequest) {
       totalSessions,
       since: since.toISOString(),
       minGap,
+      dailyCap,
     });
   } catch (err) {
     console.error('XP audit scan failed:', err);
@@ -325,6 +348,7 @@ export async function DELETE(req: NextRequest) {
   const playerIds: string[] = Array.isArray(body.playerIds) ? body.playerIds : [];
   const minGap = Math.max(1, parseInt(body.minGap ?? '3', 10));
   const minGapMs = minGap * 60 * 1000;
+  const dailyCap = Math.max(1, parseInt(body.dailyCap ?? '10', 10));
 
   if (playerIds.length === 0) {
     return NextResponse.json({ error: 'playerIds required' }, { status: 400 });
@@ -397,6 +421,7 @@ export async function DELETE(req: NextRequest) {
     const classified = classifySessions(
       fpExpertSessions.map(s => ({ ...s, createdAt: s.earliestAt })),
       minGapMs,
+      dailyCap,
     );
 
     for (let i = 0; i < classified.length; i++) {

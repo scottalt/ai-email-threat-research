@@ -10,6 +10,7 @@ interface SessionDetail {
   gapSeconds: number | null;
   xp: number;
   suspicious: boolean;
+  reason: string;
 }
 
 interface FlaggedPlayer {
@@ -33,6 +34,7 @@ interface AuditData {
   totalSessions: number;
   since: string;
   minGap: number;
+  dailyCap: number;
 }
 
 interface RecalcResult {
@@ -60,6 +62,7 @@ function formatGap(seconds: number | null): string {
 export default function XpAuditPage() {
   // Scan controls
   const [minGap, setMinGap] = useState('3');
+  const [dailyCap, setDailyCap] = useState('10');
   const [since, setSince] = useState(() => {
     const d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     return d.toISOString().slice(0, 10);
@@ -96,7 +99,7 @@ export default function XpAuditPage() {
     setUndoComplete(false);
     try {
       const res = await fetch(
-        `/api/admin/xp-audit?minGap=${encodeURIComponent(minGap)}&since=${encodeURIComponent(since)}`
+        `/api/admin/xp-audit?minGap=${encodeURIComponent(minGap)}&dailyCap=${encodeURIComponent(dailyCap)}&since=${encodeURIComponent(since)}`
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
@@ -106,7 +109,7 @@ export default function XpAuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [minGap, since]);
+  }, [minGap, dailyCap, since]);
 
   // ── Selection helpers ──────────────────────────────────────────
 
@@ -152,7 +155,7 @@ export default function XpAuditPage() {
       const res = await fetch('/api/admin/xp-audit', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerIds: [...selected], minGap }),
+        body: JSON.stringify({ playerIds: [...selected], minGap, dailyCap }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { results } = await res.json();
@@ -162,7 +165,7 @@ export default function XpAuditPage() {
 
       // Refresh the scan data to show updated XP
       const scanRes = await fetch(
-        `/api/admin/xp-audit?minGap=${encodeURIComponent(minGap)}&since=${encodeURIComponent(since)}`
+        `/api/admin/xp-audit?minGap=${encodeURIComponent(minGap)}&dailyCap=${encodeURIComponent(dailyCap)}&since=${encodeURIComponent(since)}`
       );
       if (scanRes.ok) setData(await scanRes.json());
     } catch (e) {
@@ -197,7 +200,7 @@ export default function XpAuditPage() {
 
       // Refresh scan
       const scanRes = await fetch(
-        `/api/admin/xp-audit?minGap=${encodeURIComponent(minGap)}&since=${encodeURIComponent(since)}`
+        `/api/admin/xp-audit?minGap=${encodeURIComponent(minGap)}&dailyCap=${encodeURIComponent(dailyCap)}&since=${encodeURIComponent(since)}`
       );
       if (scanRes.ok) setData(await scanRes.json());
     } catch (e) {
@@ -229,7 +232,7 @@ export default function XpAuditPage() {
             <span className="text-[#00aa28] text-xs tracking-widest">SCAN_PARAMETERS</span>
           </div>
           <div className="px-3 py-3 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="text-[#003a0e] text-[10px] font-mono tracking-widest block mb-1">
                   MIN GAP (MINUTES)
@@ -243,7 +246,23 @@ export default function XpAuditPage() {
                   className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.2)] text-[#00ff41] font-mono text-sm px-2 py-1.5 focus:outline-none focus:border-[#00ff41]"
                 />
                 <span className="text-[#003a0e] text-[9px] font-mono mt-0.5 block">
-                  Sessions faster than this gap are flagged
+                  Min gap between sessions
+                </span>
+              </div>
+              <div>
+                <label className="text-[#003a0e] text-[10px] font-mono tracking-widest block mb-1">
+                  DAILY CAP
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={dailyCap}
+                  onChange={e => setDailyCap(e.target.value)}
+                  className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.2)] text-[#00ff41] font-mono text-sm px-2 py-1.5 focus:outline-none focus:border-[#00ff41]"
+                />
+                <span className="text-[#003a0e] text-[9px] font-mono mt-0.5 block">
+                  Max legit sessions per day
                 </span>
               </div>
               <div>
@@ -279,18 +298,22 @@ export default function XpAuditPage() {
         {data && (
           <>
             {/* Summary stats */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <div className="term-border px-2 py-2 text-center">
                 <div className="text-xl font-black font-mono text-[#00ff41]">{data.totalSessions}</div>
-                <div className="text-[10px] font-mono text-[#003a0e]">SESSIONS SCANNED</div>
+                <div className="text-[10px] font-mono text-[#003a0e]">SESSIONS</div>
               </div>
               <div className="term-border border-[rgba(255,51,51,0.2)] px-2 py-2 text-center">
                 <div className="text-xl font-black font-mono text-[#ff3333]">{data.flaggedPlayers.length}</div>
-                <div className="text-[10px] font-mono text-[#003a0e]">PLAYERS FLAGGED</div>
+                <div className="text-[10px] font-mono text-[#003a0e]">FLAGGED</div>
               </div>
               <div className="term-border px-2 py-2 text-center">
                 <div className="text-xl font-black font-mono text-[#ffaa00]">{data.minGap}m</div>
                 <div className="text-[10px] font-mono text-[#003a0e]">MIN GAP</div>
+              </div>
+              <div className="term-border px-2 py-2 text-center">
+                <div className="text-xl font-black font-mono text-[#ffaa00]">{data.dailyCap}/d</div>
+                <div className="text-[10px] font-mono text-[#003a0e]">DAILY CAP</div>
               </div>
             </div>
 
@@ -346,7 +369,7 @@ export default function XpAuditPage() {
                             </span>
                           )}
                           <span className="text-[#003a0e] shrink-0">
-                            {player.suspiciousSessionCount} rapid
+                            {player.suspiciousSessionCount} sus
                           </span>
                           <span className="text-[#003a0e] text-[10px] shrink-0">
                             {expanded.has(player.playerId) ? '\u25B2' : '\u25BC'}
@@ -433,7 +456,9 @@ export default function XpAuditPage() {
                                     {sess.xp} XP
                                   </span>
                                   {sess.suspicious && (
-                                    <span className="text-[#ff3333] text-[9px] shrink-0">SPAM</span>
+                                    <span className="text-[#ff3333] text-[9px] shrink-0">
+                                      {sess.reason === 'too_fast' ? 'FAST' : sess.reason === 'daily_cap' ? 'CAP' : 'SPAM'}
+                                    </span>
                                   )}
                                 </div>
                               ))}
@@ -474,7 +499,7 @@ export default function XpAuditPage() {
                 {uncorrectedPlayers.length < selectedPlayers.length && (
                   <p className="text-[#ffaa00]">{selectedPlayers.length - uncorrectedPlayers.length} player{selectedPlayers.length - uncorrectedPlayers.length > 1 ? 's' : ''} previously corrected — will recalculate fresh.</p>
                 )}
-                <p className="text-[#003a0e] mt-2">XP is rebuilt from scratch using all answer records. Sessions with gaps under {minGap} minutes are dropped. Research sessions are never affected.</p>
+                <p className="text-[#003a0e] mt-2">XP is rebuilt from scratch using all answer records. Sessions with gaps under {minGap}m or exceeding {dailyCap}/day are dropped. Research sessions are never affected.</p>
               </div>
               <div className="space-y-1.5 max-h-60 overflow-y-auto">
                 {selectedPlayers.map(p => {
@@ -601,7 +626,7 @@ export default function XpAuditPage() {
                       <div className="flex items-center gap-2 text-[10px] font-mono pl-2">
                         <span className="text-[#00aa28]">{r.sessionsKept} sessions kept</span>
                         {r.sessionsDropped > 0 && (
-                          <span className="text-[#ff3333]">{r.sessionsDropped} dropped (rapid-fire)</span>
+                          <span className="text-[#ff3333]">{r.sessionsDropped} dropped</span>
                         )}
                       </div>
                     </div>
