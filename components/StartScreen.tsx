@@ -426,7 +426,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                         <span className="text-[#00aa28] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
                         {row.research_graduated && <span className="text-[#ffaa00] text-sm">★</span>}
                         {(() => { const r = getRankFromLevel(row.level); return (
-                          <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>
+                          <span className={`text-sm font-mono shrink-0`} style={{ color: r.color }}>
                             {r.label}
                           </span>
                         ); })()}
@@ -442,7 +442,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                         <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
                         <span className="text-[#00aa28] text-sm font-mono flex-1 truncate">{entry.name}</span>
                         {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
-                          <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
+                          <span className={`text-sm font-mono shrink-0`} style={{ color: r.color }}>{r.label}</span>
                         ); })()}
                         <span className="text-[#00ff41] text-sm font-mono font-bold">{entry.score}</span>
                       </div>

@@ -8,16 +8,16 @@ import Link from 'next/link';
 import type { PlayerBackground } from '@/lib/types';
 
 const RANKS = [
-  { label: 'ZERO_DAY',         levels: '28–30', color: '#ff3333', glowClass: 'glow-red',   minLevel: 28 },
-  { label: 'APT_ANALYST',      levels: '25–27', color: '#ff4400', glowClass: '',           minLevel: 25 },
-  { label: 'RED_TEAMER',       levels: '22–24', color: '#ffaa00', glowClass: 'glow-amber', minLevel: 22 },
-  { label: 'INCIDENT_HANDLER', levels: '19–21', color: '#ffaa00', glowClass: '',           minLevel: 19 },
-  { label: 'THREAT_HUNTER',    levels: '16–18', color: '#ffcc00', glowClass: '',           minLevel: 16 },
-  { label: 'SOC_ANALYST',      levels: '13–15', color: '#00ff41', glowClass: 'glow',       minLevel: 13 },
-  { label: 'HEADER_READER',    levels: '10–12', color: '#00ff41', glowClass: '',           minLevel: 10 },
-  { label: 'LINK_CHECKER',     levels: '7–9',   color: '#00aa28', glowClass: '',           minLevel: 7  },
-  { label: 'PHISH_BAIT',       levels: '4–6',   color: '#447744', glowClass: '',           minLevel: 4  },
-  { label: 'CLICK_HAPPY',      levels: '1–3',   color: '#2a4a2a', glowClass: '',           minLevel: 1  },
+  { label: 'ZERO_DAY',         levels: '28–30', color: '#ff3333', minLevel: 28 },
+  { label: 'APT_ANALYST',      levels: '25–27', color: '#ff4400', minLevel: 25 },
+  { label: 'RED_TEAMER',       levels: '22–24', color: '#ffaa00', minLevel: 22 },
+  { label: 'INCIDENT_HANDLER', levels: '19–21', color: '#ffaa00', minLevel: 19 },
+  { label: 'THREAT_HUNTER',    levels: '16–18', color: '#ffcc00', minLevel: 16 },
+  { label: 'SOC_ANALYST',      levels: '13–15', color: '#00ff41', minLevel: 13 },
+  { label: 'HEADER_READER',    levels: '10–12', color: '#00ff41', minLevel: 10 },
+  { label: 'LINK_CHECKER',     levels: '7–9',   color: '#00aa28', minLevel: 7  },
+  { label: 'PHISH_BAIT',       levels: '4–6',   color: '#447744', minLevel: 4  },
+  { label: 'CLICK_HAPPY',      levels: '1–3',   color: '#2a4a2a', minLevel: 1  },
 ];
 
 const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
@@ -315,7 +315,7 @@ export default function ProfilePage() {
                     {isCurrent && <span className="text-[#00ff41] text-sm font-mono">▶</span>}
                     {!isCurrent && <span className="text-sm font-mono opacity-0">▶</span>}
                     <span
-                      className={`text-sm font-mono font-bold ${rank.glowClass} ${isCurrent ? 'anim-rank-pulse' : ''}`}
+                      className={`text-sm font-mono font-bold ${isCurrent ? 'anim-rank-pulse' : ''}`}
                       style={{ color: rank.color }}
                     >
                       {rank.label}

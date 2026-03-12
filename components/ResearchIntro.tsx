@@ -15,7 +15,7 @@ export function ResearchIntro({ onBegin }: Props) {
             <span className="text-[#00aa28] text-sm tracking-widest">RESEARCH_MODE</span>
           </div>
           <div className="px-3 py-4 space-y-3">
-            <div className="text-[#00ff41] text-sm font-black font-mono tracking-wide glow">
+            <div className="text-[#00ff41] text-sm font-black font-mono tracking-wide">
               STATE OF PHISHING IN THE GENAI ERA
             </div>
             <p className="text-[#00aa28] text-sm font-mono leading-relaxed">
@@ -73,7 +73,7 @@ export function ResearchIntro({ onBegin }: Props) {
 
         <button
           onClick={() => { localStorage.setItem('research_intro_seen', '1'); onBegin(); }}
-          className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+          className="w-full py-4 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:bg-[rgba(0,255,65,0.1)] transition-all"
         >
           [ BEGIN RESEARCH ]
         </button>

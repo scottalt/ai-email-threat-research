@@ -241,7 +241,7 @@ export function TutorialCard({ onComplete }: Props) {
         <button
           type="button"
           onClick={onComplete}
-          className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+          className="w-full py-4 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:bg-[rgba(0,255,65,0.1)] transition-all"
         >
           [ GOT IT — START RESEARCH ]
         </button>

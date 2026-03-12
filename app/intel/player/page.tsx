@@ -13,7 +13,7 @@ interface IntelData {
 }
 
 function StatBlock({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: 'red' | 'amber' }) {
-  const valueColor = highlight === 'red' ? 'text-[#ff3333] glow-red-soft' : highlight === 'amber' ? 'text-[#ffaa00] glow-amber-soft' : 'text-[#00ff41] glow-soft';
+  const valueColor = highlight === 'red' ? 'text-[#ff3333]' : highlight === 'amber' ? 'text-[#ffaa00]' : 'text-[#00ff41]';
   return (
     <div className="term-border bg-[#060c06] px-3 py-3 text-center">
       <div className="text-[#003a0e] text-sm font-mono tracking-widest">{label}</div>

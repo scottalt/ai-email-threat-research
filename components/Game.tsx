@@ -409,7 +409,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           </div>
           <div className="px-3 py-6 text-center space-y-2">
             <div className="text-sm font-mono text-[#00aa28] tracking-widest">ALREADY_DEPLOYED</div>
-            <div className="text-4xl font-black font-mono text-[#00ff41] glow">
+            <div className="text-4xl font-black font-mono text-[#00ff41]">
               {dailyResult?.totalScore ?? 0}
             </div>
             <div className="text-sm font-mono text-[#00aa28]">Come back tomorrow.</div>

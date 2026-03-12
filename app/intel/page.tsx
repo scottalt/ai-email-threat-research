@@ -239,7 +239,7 @@ async function getIntel(): Promise<IntelData | null> {
 }
 
 function StatBlock({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: 'red' | 'amber' }) {
-  const valueColor = highlight === 'red' ? 'text-[#ff3333] glow-red-soft' : highlight === 'amber' ? 'text-[#ffaa00] glow-amber-soft' : 'text-[#00ff41] glow-soft';
+  const valueColor = highlight === 'red' ? 'text-[#ff3333]' : highlight === 'amber' ? 'text-[#ffaa00]' : 'text-[#00ff41]';
   return (
     <div className="term-border bg-[#060c06] px-3 py-3 text-center">
       <div className="text-[#003a0e] text-sm font-mono tracking-widest">{label}</div>
@@ -465,11 +465,11 @@ export default async function IntelPage() {
                   <div className="px-3 py-3 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="term-border px-2 py-2 text-center">
-                        <div className="text-[#00ff41] text-lg font-mono font-bold glow-soft">{data.toolUsage.headersOpenedPct}%</div>
+                        <div className="text-[#00ff41] text-lg font-mono font-bold">{data.toolUsage.headersOpenedPct}%</div>
                         <div className="text-[#00aa28] text-sm font-mono mt-0.5">opened [HEADERS]</div>
                       </div>
                       <div className="term-border px-2 py-2 text-center">
-                        <div className="text-[#00ff41] text-lg font-mono font-bold glow-soft">{data.toolUsage.urlInspectedPct}%</div>
+                        <div className="text-[#00ff41] text-lg font-mono font-bold">{data.toolUsage.urlInspectedPct}%</div>
                         <div className="text-[#00aa28] text-sm font-mono mt-0.5">inspected URLs</div>
                       </div>
                     </div>
@@ -477,7 +477,7 @@ export default async function IntelPage() {
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">accuracy w/ headers open</span>
-                          <span className="text-[#00ff41] glow-soft">{data.toolUsage.headersOpenedAccuracy}%</span>
+                          <span className="text-[#00ff41]">{data.toolUsage.headersOpenedAccuracy}%</span>
                         </div>
                         <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">accuracy w/o headers</span>
@@ -487,7 +487,7 @@ export default async function IntelPage() {
                           <>
                             <div className="flex justify-between text-sm font-mono">
                               <span className="text-[#00aa28]">accuracy w/ URL inspected</span>
-                              <span className="text-[#00ff41] glow-soft">{data.toolUsage.urlInspectedAccuracy}%</span>
+                              <span className="text-[#00ff41]">{data.toolUsage.urlInspectedAccuracy}%</span>
                             </div>
                             <div className="flex justify-between text-sm font-mono">
                               <span className="text-[#00aa28]">accuracy w/o URL</span>
@@ -505,11 +505,11 @@ export default async function IntelPage() {
               {data.authTrap && data.authTrap.sample >= 10 && data.authTrap.bypassRate !== null && (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(255,51,51,0.35)] px-3 py-1.5">
-                    <span className="text-[#ff3333] text-sm tracking-widest glow-red-soft">AUTH_TRAP_FINDING</span>
+                    <span className="text-[#ff3333] text-sm tracking-widest">AUTH_TRAP_FINDING</span>
                   </div>
                   <div className="px-3 py-3">
                     <div className="text-center mb-2">
-                      <div className="text-[#ff3333] text-2xl font-mono font-bold glow-red-soft">{data.authTrap.bypassRate}%</div>
+                      <div className="text-[#ff3333] text-2xl font-mono font-bold">{data.authTrap.bypassRate}%</div>
                       <div className="text-[#00aa28] text-sm font-mono mt-0.5">of players fooled</div>
                       <div className="text-[#003a0e] text-sm font-mono">n={data.authTrap.sample} answers</div>
                     </div>
@@ -548,7 +548,7 @@ export default async function IntelPage() {
                   <div className="px-3 py-3 space-y-3">
                     {data.readingDepth.medianScrollDepth !== null && (
                       <div className="term-border px-2 py-2 text-center">
-                        <div className="text-[#00ff41] text-lg font-mono font-bold glow-soft">{data.readingDepth.medianScrollDepth}%</div>
+                        <div className="text-[#00ff41] text-lg font-mono font-bold">{data.readingDepth.medianScrollDepth}%</div>
                         <div className="text-[#00aa28] text-sm font-mono mt-0.5">median scroll depth</div>
                       </div>
                     )}
@@ -556,7 +556,7 @@ export default async function IntelPage() {
                       {data.readingDepth.deepReadAccuracy !== null && (
                         <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">deep read (≥75%)</span>
-                          <span><span className="text-[#00ff41] glow-soft">{data.readingDepth.deepReadAccuracy}%</span> <span className="text-[#003a0e] text-sm">n={data.readingDepth.deepReadSample}</span></span>
+                          <span><span className="text-[#00ff41]">{data.readingDepth.deepReadAccuracy}%</span> <span className="text-[#003a0e] text-sm">n={data.readingDepth.deepReadSample}</span></span>
                         </div>
                       )}
                       {data.readingDepth.shallowReadAccuracy !== null && (
@@ -611,7 +611,7 @@ export default async function IntelPage() {
 
             <Link
               href="/"
-              className="block w-full py-4 term-border-bright text-center text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+              className="block w-full py-4 term-border text-center text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:bg-[rgba(0,255,65,0.1)] transition-all"
             >
               [ JOIN THE RESEARCH ]
             </Link>

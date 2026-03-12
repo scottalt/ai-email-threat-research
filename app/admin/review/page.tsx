@@ -272,7 +272,7 @@ export default function ReviewPage() {
   if (done) return (
     <div className="min-h-screen bg-[#060c06] flex items-center justify-center">
       <div className="text-center space-y-3">
-        <div className="text-[#00ff41] font-mono text-sm glow">QUEUE EMPTY</div>
+        <div className="text-[#00ff41] font-mono text-sm">QUEUE EMPTY</div>
         <div className="text-[#00aa28] font-mono text-xs">No pending cards match the current filters.</div>
         {activeFilters > 0 && (
           <button

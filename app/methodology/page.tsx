@@ -11,7 +11,7 @@ export const metadata = {
 
 const components: Components = {
   h1: ({ children }) => (
-    <h1 className="text-[#00ff41] text-sm font-black font-mono tracking-widest mt-6 mb-3 glow">{children}</h1>
+    <h1 className="text-[#00ff41] text-sm font-black font-mono tracking-widest mt-6 mb-3">{children}</h1>
   ),
   h2: ({ children }) => (
     <h2 className="text-[#00aa28] text-sm font-bold font-mono tracking-widest mt-5 mb-2 border-b border-[rgba(0,255,65,0.2)] pb-1">{children}</h2>

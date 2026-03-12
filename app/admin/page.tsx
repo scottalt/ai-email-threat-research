@@ -250,7 +250,7 @@ export default function AdminPage() {
         <div className="space-y-2">
           <Link
             href="/admin/review"
-            className="block w-full py-3 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm text-center hover:bg-[rgba(0,255,65,0.08)] transition-all glow"
+            className="block w-full py-3 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm text-center hover:bg-[rgba(0,255,65,0.08)] transition-all"
           >
             [ REVIEW QUEUE ]
           </Link>

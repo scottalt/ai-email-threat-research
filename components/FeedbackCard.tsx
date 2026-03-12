@@ -82,7 +82,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
   }, [headline]);
 
   const headlineColor = correct ? 'text-[#00ff41]' : 'text-[#ff3333]';
-  const headlineGlow = correct ? 'glow' : 'glow-red';
+  const headlineGlow = '';
 
   const headers = (() => {
     if (card.authStatus === 'verified') {
@@ -155,7 +155,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
               )}
             </span>
             <span className={`text-sm font-black font-mono ${
-              pointsEarned > 0 ? 'text-[#00ff41] glow'
+              pointsEarned > 0 ? 'text-[#00ff41]'
               : pointsEarned < 0 ? 'text-[#ff3333]'
               : 'text-[#003a0e]'
             }`}>
@@ -164,7 +164,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           </div>
           {streakMilestone && (
             <div className="border-t border-[rgba(0,255,65,0.25)] px-3 py-1.5 text-center">
-              <span className="text-sm font-mono text-[#ffaa00] glow-amber">
+              <span className="text-sm font-mono text-[#ffaa00]">
                 ★ STREAK BONUS x{streak / 3} — +50 PTS INCLUDED ★
               </span>
             </div>
@@ -174,7 +174,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
         {/* Score bar */}
         <div className="term-border bg-[#060c06] px-3 py-2 flex items-center justify-between text-sm font-mono">
           <span className="text-[#00aa28]">TOTAL SCORE</span>
-          <span className="text-[#00ff41] font-black text-sm glow">{totalScore} PTS</span>
+          <span className="text-[#00ff41] font-black text-sm">{totalScore} PTS</span>
           <span className="text-[#00aa28]">STREAK: <span className="text-[#00ff41]">{streak}</span></span>
         </div>
 
@@ -438,7 +438,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
 
         <button
           onClick={onNext}
-          className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow anim-pulse-glow"
+          className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all anim-pulse-glow"
         >
           {questionNumber === total ? '[ VIEW RESULTS ]' : '[ NEXT TRANSMISSION ]'}
         </button>

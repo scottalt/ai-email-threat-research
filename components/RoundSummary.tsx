@@ -99,10 +99,10 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
         <div className="term-border bg-[#060c06] px-3 py-3 space-y-2">
           <div className="flex justify-between text-sm font-mono">
             <span className="text-[#00aa28]">XP EARNED</span>
-            <span className="text-[#00ff41] font-bold glow">+{xpResult.xpEarned} XP</span>
+            <span className="text-[#00ff41] font-bold">+{xpResult.xpEarned} XP</span>
           </div>
           {xpResult.levelUp && (
-            <div className="text-[#ffaa00] text-sm font-mono glow text-center">LEVEL UP → {xpResult.level}</div>
+            <div className="text-[#ffaa00] text-sm font-mono text-center">LEVEL UP → {xpResult.level}</div>
           )}
           {xpResult.graduated && (
             <div className="term-border border-[rgba(255,170,0,0.4)] px-2 py-2 text-center">
@@ -132,7 +132,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
         </div>
         <div className="px-3 py-5 text-center space-y-2">
           <div className="text-sm font-mono text-[#00aa28] tracking-widest">ACCURACY RATING</div>
-          <div className="text-6xl font-black font-mono text-[#00ff41] glow">
+          <div className="text-6xl font-black font-mono text-[#00ff41]">
             {score}<span className="text-2xl text-[#003a0e]">/{total}</span>
           </div>
           <div className={`text-sm font-black font-mono tracking-widest ${tier.color}`}>
@@ -141,7 +141,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
           <div className="text-sm font-mono text-[#00aa28]">{tier.sub}</div>
           {rank && (
             <div
-              className={`text-sm font-mono font-bold tracking-widest mt-1 ${rank.glowClass}`}
+              className="text-sm font-mono font-bold tracking-widest mt-1"
               style={{ color: rank.color }}
             >
               [ {rank.label} ]
@@ -150,7 +150,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
         </div>
         <div className="border-t border-[rgba(0,255,65,0.25)] px-3 py-2 flex items-center justify-between">
           <div className="text-center">
-            <div className="text-lg font-black font-mono text-[#00ff41] glow">{displayScore}</div>
+            <div className="text-lg font-black font-mono text-[#00ff41]">{displayScore}</div>
             <div className="text-sm font-mono text-[#003a0e]">TOTAL PTS</div>
           </div>
           <div className="text-center">
@@ -171,7 +171,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
           <div className="text-sm font-mono text-[#00aa28] mt-1 tracking-wider">PHISHING CAUGHT</div>
         </div>
         <div className="term-border bg-[#060c06] border-[rgba(0,255,65,0.3)] text-center px-3 py-3">
-          <div className="text-[#00ff41] text-2xl font-black font-mono glow">{legitCorrect}/{legitTotal}</div>
+          <div className="text-[#00ff41] text-2xl font-black font-mono">{legitCorrect}/{legitTotal}</div>
           <div className="text-sm font-mono text-[#00aa28] mt-1 tracking-wider">LEGIT CLEARED</div>
         </div>
       </div>
@@ -254,7 +254,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
 
       <button
         onClick={onPlayAgain}
-        className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:scale-95 transition-all glow"
+        className="w-full py-4 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
       >
         [ BACK TO TERMINAL ]
       </button>

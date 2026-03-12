@@ -332,7 +332,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
             [QUIT]
           </button>
           {mode === 'research' && (
-            <span className="text-[#ffaa00] text-sm font-mono glow-amber">[RES]</span>
+            <span className="text-[#ffaa00] text-sm font-mono">[RES]</span>
           )}
           <span className="font-mono text-sm">
             <span className="text-[#003a0e]">[</span>
@@ -341,7 +341,6 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
                 key={i}
                 style={{
                   color: i < questionNumber - 1 ? '#00ff41' : '#003a0e',
-                  textShadow: i < questionNumber - 1 ? '0 0 4px rgba(0,255,65,0.8)' : 'none',
                 }}
               >▓</span>
             ))}
@@ -349,10 +348,10 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-[#00aa28] ${streakAtBonus ? 'glow text-[#00ff41]' : ''}`}>
+          <span className={`text-[#00aa28] ${streakAtBonus ? 'text-[#00ff41]' : ''}`}>
             STREAK:<span className="text-[#00ff41]">{streak}</span>
           </span>
-          <span className="text-[#00aa28]">PTS:<span className="text-[#00ff41] glow">{totalScore}</span></span>
+          <span className="text-[#00aa28]">PTS:<span className="text-[#00ff41]">{totalScore}</span></span>
           <button
             onClick={onToggleSound}
             className={`font-mono text-sm transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#00aa28]'}`}
@@ -407,7 +406,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
       ) : (
         <div className="w-full space-y-2">
           <div className="text-sm text-[#00aa28] font-mono text-center tracking-widest">
-            CONFIDENCE: <span className="text-[#00ff41] glow">{confidence.toUpperCase()}</span>
+            CONFIDENCE: <span className="text-[#00ff41]">{confidence.toUpperCase()}</span>
             {' · '}
             {confidence === 'certain' ? '3x' : confidence === 'likely' ? '2x' : '1x'} PTS
             <button
@@ -421,13 +420,13 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
           <div className="flex gap-3">
             <button
               onClick={() => handleButton('phishing')}
-              className="flex-1 py-4 border border-[rgba(255,51,51,0.5)] text-[#ff3333] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,51,51,0.1)] active:scale-95 transition-all glow-red"
+              className="flex-1 py-4 border border-[rgba(255,51,51,0.5)] text-[#ff3333] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,51,51,0.1)] active:scale-95 transition-all"
             >
               PHISHING
             </button>
             <button
               onClick={() => handleButton('legit')}
-              className="flex-1 py-4 border border-[rgba(0,255,65,0.5)] text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.1)] active:scale-95 transition-all glow"
+              className="flex-1 py-4 border border-[rgba(0,255,65,0.5)] text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.1)] active:scale-95 transition-all"
             >
               LEGIT
             </button>
