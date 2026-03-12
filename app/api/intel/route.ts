@@ -1,10 +1,48 @@
 import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { isAdminUser } from '@/lib/adminAuth';
+import { redis } from '@/lib/redis';
 
-export const revalidate = 300; // cache for 5 minutes
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    // Require authentication
+    const cookieStore = await cookies();
+    const authClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+    );
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const admin = isAdminUser(user.id);
+
+    // Non-admins must be research-graduated
+    if (!admin) {
+      const supabaseAdmin = getSupabaseAdminClient();
+      const { data: player } = await supabaseAdmin
+        .from('players')
+        .select('research_graduated')
+        .eq('auth_id', user.id)
+        .single();
+
+      if (!player?.research_graduated) {
+        return NextResponse.json({ error: 'Complete research to unlock intel' }, { status: 403 });
+      }
+    }
+
+    // Rate limit: 10 requests per minute per user
+    const rlKey = `ratelimit:intel:${user.id}`;
+    const rlCount = await redis.incr(rlKey);
+    if (rlCount === 1) await redis.expire(rlKey, 60);
+    if (rlCount > 10) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const supabase = getSupabaseAdminClient();
 
     const { data: answers } = await supabase
