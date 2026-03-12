@@ -71,7 +71,7 @@ Players can optionally self-report their professional background on their profil
 - Daily challenge (score-based, resets each UTC day)
 
 **Sound:**
-- Ambient terminal drone on the start screen (Web Audio API, synthesised, no audio files)
+- Ambient cyberpunk background music (loopable MP3, low volume)
 - Terminal click and keypress sounds throughout
 - Toggled via SFX button, off by default
 
@@ -104,6 +104,7 @@ Accounts use email OTP, no password. Enter your email, get a 6-digit code, enter
 | Hosting | Vercel, auto-deploys from master |
 | Card generation | Claude Haiku + Sonnet (3 Haiku + 1 Sonnet per 20-card batch) |
 | Email | Resend (SMTP via scottaltiparmak.com) |
+| Analytics | Vercel Analytics |
 | PWA | Service worker with auto-update broadcast, no HTML caching |
 
 ---
