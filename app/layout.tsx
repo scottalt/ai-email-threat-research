@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import { ServiceWorker } from '@/components/ServiceWorker';
 import { TerminalSounds } from '@/components/TerminalSounds';
 import { PlayerProvider } from '@/lib/PlayerContext';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: './fonts/GeistMono-Latin.woff2',
   variable: '--font-geist-mono',
-  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {

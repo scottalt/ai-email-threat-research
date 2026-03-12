@@ -23,7 +23,20 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  // If the refresh token was already consumed by a concurrent request, clear the
+  // stale auth cookies so the browser client picks up the newer tokens from its
+  // own in-memory state on the next request instead of retrying the dead token.
+  if (error?.code === 'refresh_token_already_used') {
+    const authCookiePrefix = 'sb-';
+    req.cookies.getAll().forEach(({ name }) => {
+      if (name.startsWith(authCookiePrefix)) {
+        response.cookies.delete(name);
+      }
+    });
+    // Non-admin routes can proceed anonymously; admin routes redirect below.
+  }
 
   // Protect admin routes — must be the designated admin Supabase user
   const isAdminRoute =

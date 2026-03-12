@@ -35,12 +35,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabaseBrowserClient();
     // getUser() validates against the server and triggers token refresh if needed,
     // unlike getSession() which can return a stale cached session.
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) refreshProfile().finally(() => setLoading(false));
+    supabase.auth.getUser().then(({ data }: { data: { user: unknown } }) => {
+      if (data.user) refreshProfile().finally(() => setLoading(false));
       else setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: unknown) => {
       if (session) refreshProfile();
       else setProfile(null);
     });
