@@ -6,24 +6,51 @@ import { getLevelFromXp, getXpForRound } from '@/lib/xp';
 /**
  * GET /api/admin/xp-audit
  *
- * Identifies suspected XP spam by finding players with abnormally high session
- * frequency in freeplay/expert modes. Returns per-player breakdown with
- * legitimate vs suspicious XP so you can review before taking action.
+ * Identifies suspected XP spam by finding players whose sessions are completed
+ * in rapid succession (velocity-based detection). Instead of a flat daily cap,
+ * this flags sessions where the gap from the previous session is below a
+ * configurable minimum (default: 3 minutes).
  *
  * Query params:
- *   threshold - min sessions per day to flag (default: 10)
- *   since     - ISO date to look back from (default: 7 days ago)
+ *   minGap - minimum minutes between sessions to be considered legit (default: 3)
+ *   since  - ISO date to look back from (default: 7 days ago)
  *
  * DELETE /api/admin/xp-audit
  *
- * Recalculates XP from scratch for flagged players by summing actual answers.
- * Removes XP from any sessions that have zero answers in the DB (phantom sessions).
+ * Recalculates XP for flagged players, dropping rapid-fire sessions.
  *
- * Body: { playerIds: string[] }  — player UUIDs (from the GET response)
+ * Body: { playerIds: string[], minGap?: number }
+ *
+ * POST /api/admin/xp-audit
+ *
+ * Undo: restores previous XP/level values.
+ * Body: { restorations: { playerId: string; xp: number; level: number }[] }
  */
 
 // Supabase caps at 1000 rows per request — need explicit pagination
 const PAGE_SIZE = 1000;
+
+/** Given sorted sessions, mark each as legitimate or suspicious based on time gap */
+function classifySessions<T extends { createdAt: string }>(
+  sessions: T[],
+  minGapMs: number,
+): { session: T; suspicious: boolean }[] {
+  const result: { session: T; suspicious: boolean }[] = [];
+  let lastLegitTime: number | null = null;
+
+  for (const sess of sessions) {
+    const t = new Date(sess.createdAt).getTime();
+    if (lastLegitTime === null || (t - lastLegitTime) >= minGapMs) {
+      // Legitimate — sufficient gap from last legit session
+      result.push({ session: sess, suspicious: false });
+      lastLegitTime = t;
+    } else {
+      // Too fast — suspicious
+      result.push({ session: sess, suspicious: true });
+    }
+  }
+  return result;
+}
 
 export async function GET(req: NextRequest) {
   const denied = await requireAdmin();
@@ -31,7 +58,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const url = new URL(req.url);
-    const threshold = Math.max(1, parseInt(url.searchParams.get('threshold') ?? '10', 10));
+    const minGap = Math.max(1, parseInt(url.searchParams.get('minGap') ?? '3', 10));
+    const minGapMs = minGap * 60 * 1000;
     const sinceParam = url.searchParams.get('since');
     const since = sinceParam
       ? new Date(sinceParam)
@@ -40,7 +68,6 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseAdminClient();
 
     // Query answers directly for freeplay/expert modes since the cutoff.
-    // This avoids the massive .in(session_ids) that was causing 500s.
     // Paginate to avoid the default 1000-row Supabase limit.
     type AnswerRow = { session_id: string; player_id: string; correct: boolean; game_mode: string; created_at: string };
     const answers: AnswerRow[] = [];
@@ -62,7 +89,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (answers.length === 0) {
-      return NextResponse.json({ flaggedPlayers: [], totalSessions: 0, since: since.toISOString(), threshold });
+      return NextResponse.json({ flaggedPlayers: [], totalSessions: 0, since: since.toISOString(), minGap });
     }
 
     // Group answers by session
@@ -95,23 +122,14 @@ export async function GET(req: NextRequest) {
 
     const totalSessions = sessionMap.size;
 
-    // Group by player and count sessions per day
-    type PlayerDay = { date: string; sessions: SessionInfo[] };
-    const playerDays = new Map<string, PlayerDay[]>();
-
+    // Group sessions by player, sorted chronologically
+    const playerSessions = new Map<string, SessionInfo[]>();
     for (const info of sessionMap.values()) {
-      const day = info.createdAt.slice(0, 10);
-      if (!playerDays.has(info.playerId)) playerDays.set(info.playerId, []);
-      const days = playerDays.get(info.playerId)!;
-      let dayEntry = days.find(d => d.date === day);
-      if (!dayEntry) {
-        dayEntry = { date: day, sessions: [] };
-        days.push(dayEntry);
-      }
-      dayEntry.sessions.push(info);
+      if (!playerSessions.has(info.playerId)) playerSessions.set(info.playerId, []);
+      playerSessions.get(info.playerId)!.push(info);
     }
 
-    // Flag players who exceed threshold on any day
+    // Classify each player's sessions by velocity
     type FlaggedPlayer = {
       playerId: string;
       displayName: string | null;
@@ -120,55 +138,55 @@ export async function GET(req: NextRequest) {
       legitimateXp: number;
       suspiciousXp: number;
       totalSessionsInWindow: number;
-      peakSessionsPerDay: number;
-      peakDate: string;
-      days: { date: string; sessionCount: number; xpEarned: number }[];
+      suspiciousSessionCount: number;
+      fastestGapSeconds: number;
+      sessions: { time: string; gapSeconds: number | null; xp: number; suspicious: boolean }[];
     };
 
     const flaggedPlayerIds: string[] = [];
     const flaggedDetails = new Map<string, FlaggedPlayer>();
 
-    for (const [playerId, days] of playerDays) {
-      let peakCount = 0;
-      let peakDate = '';
-      let totalPlayerSessions = 0;
-      let suspiciousXp = 0;
+    for (const [playerId, sessions] of playerSessions) {
+      // Sort chronologically
+      sessions.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+      const classified = classifySessions(sessions, minGapMs);
+
       let legitimateXp = 0;
-      const dayDetails: { date: string; sessionCount: number; xpEarned: number }[] = [];
+      let suspiciousXp = 0;
+      let suspiciousCount = 0;
+      let fastestGap = Infinity;
+      const sessionDetails: { time: string; gapSeconds: number | null; xp: number; suspicious: boolean }[] = [];
 
-      for (const day of days) {
-        const count = day.sessions.length;
-        totalPlayerSessions += count;
-        if (count > peakCount) {
-          peakCount = count;
-          peakDate = day.date;
+      for (let i = 0; i < classified.length; i++) {
+        const { session: sess, suspicious } = classified[i];
+        const xp = getXpForRound(sess.correctCount, sess.totalCount || 10, sess.gameMode);
+
+        let gapSeconds: number | null = null;
+        if (i > 0) {
+          const prevTime = new Date(classified[i - 1].session.createdAt).getTime();
+          const thisTime = new Date(sess.createdAt).getTime();
+          gapSeconds = Math.round((thisTime - prevTime) / 1000);
+          if (gapSeconds < fastestGap) fastestGap = gapSeconds;
         }
 
-        let dayXp = 0;
-        for (const sess of day.sessions) {
-          dayXp += getXpForRound(sess.correctCount, sess.totalCount || 10, sess.gameMode);
-        }
-        dayDetails.push({ date: day.date, sessionCount: count, xpEarned: dayXp });
-
-        // Sessions beyond threshold in a day are suspicious
-        if (count > threshold) {
-          const sorted = [...day.sessions].sort((a, b) =>
-            a.createdAt.localeCompare(b.createdAt)
-          );
-          for (let i = 0; i < sorted.length; i++) {
-            const xp = getXpForRound(sorted[i].correctCount, sorted[i].totalCount || 10, sorted[i].gameMode);
-            if (i < threshold) {
-              legitimateXp += xp;
-            } else {
-              suspiciousXp += xp;
-            }
-          }
+        if (suspicious) {
+          suspiciousXp += xp;
+          suspiciousCount++;
         } else {
-          legitimateXp += dayXp;
+          legitimateXp += xp;
         }
+
+        sessionDetails.push({
+          time: sess.createdAt,
+          gapSeconds,
+          xp,
+          suspicious,
+        });
       }
 
-      if (peakCount > threshold) {
+      // Flag if any sessions were suspicious
+      if (suspiciousCount > 0) {
         flaggedPlayerIds.push(playerId);
         flaggedDetails.set(playerId, {
           playerId,
@@ -177,10 +195,10 @@ export async function GET(req: NextRequest) {
           currentLevel: 0,
           legitimateXp,
           suspiciousXp,
-          totalSessionsInWindow: totalPlayerSessions,
-          peakSessionsPerDay: peakCount,
-          peakDate,
-          days: dayDetails.sort((a, b) => b.sessionCount - a.sessionCount),
+          totalSessionsInWindow: sessions.length,
+          suspiciousSessionCount: suspiciousCount,
+          fastestGapSeconds: fastestGap === Infinity ? 0 : fastestGap,
+          sessions: sessionDetails,
         });
       }
     }
@@ -210,7 +228,7 @@ export async function GET(req: NextRequest) {
       flaggedPlayers: flagged,
       totalSessions,
       since: since.toISOString(),
-      threshold,
+      minGap,
     });
   } catch (err) {
     console.error('XP audit scan failed:', err);
@@ -225,8 +243,8 @@ export async function GET(req: NextRequest) {
  * DELETE /api/admin/xp-audit
  *
  * Recalculates a player's XP from scratch based on actual answer records.
- * This is the nuclear option — it recomputes XP as if every valid session
- * was played once, ignoring any phantom/duplicate awards.
+ * Drops rapid-fire freeplay/expert sessions (gap < minGap minutes).
+ * Research sessions are always kept.
  */
 export async function DELETE(req: NextRequest) {
   const denied = await requireAdmin();
@@ -234,6 +252,9 @@ export async function DELETE(req: NextRequest) {
 
   const body = await req.json();
   const playerIds: string[] = Array.isArray(body.playerIds) ? body.playerIds : [];
+  const minGap = Math.max(1, parseInt(body.minGap ?? '3', 10));
+  const minGapMs = minGap * 60 * 1000;
+
   if (playerIds.length === 0) {
     return NextResponse.json({ error: 'playerIds required' }, { status: 400 });
   }
@@ -242,7 +263,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   const supabase = getSupabaseAdminClient();
-  const results: { playerId: string; oldXp: number; newXp: number; oldLevel: number; newLevel: number }[] = [];
+  const results: { playerId: string; oldXp: number; newXp: number; oldLevel: number; newLevel: number; sessionsKept: number; sessionsDropped: number }[] = [];
 
   for (const playerId of playerIds) {
     // Get current player
@@ -254,14 +275,14 @@ export async function DELETE(req: NextRequest) {
 
     if (!player) continue;
 
-    // Get all sessions this player participated in (via answers) — paginated
-    type PlayerAnswerRow = { session_id: string; correct: boolean; game_mode: string };
+    // Get all answers with timestamps — paginated
+    type PlayerAnswerRow = { session_id: string; correct: boolean; game_mode: string; created_at: string };
     const playerAnswers: PlayerAnswerRow[] = [];
     let paOffset = 0;
     while (true) {
       const { data, error: paErr } = await supabase
         .from('answers')
-        .select('session_id, correct, game_mode')
+        .select('session_id, correct, game_mode, created_at')
         .eq('player_id', playerId)
         .in('game_mode', ['freeplay', 'expert', 'research'])
         .range(paOffset, paOffset + PAGE_SIZE - 1);
@@ -272,21 +293,50 @@ export async function DELETE(req: NextRequest) {
       paOffset += PAGE_SIZE;
     }
 
-    // Group by session
-    const sessionGroups = new Map<string, { correct: number; total: number; mode: string }>();
+    // Group by session, tracking earliest answer time
+    type SessionGroup = { correct: number; total: number; mode: string; earliestAt: string };
+    const sessionGroups = new Map<string, SessionGroup>();
     for (const a of playerAnswers) {
       if (!sessionGroups.has(a.session_id)) {
-        sessionGroups.set(a.session_id, { correct: 0, total: 0, mode: a.game_mode });
+        sessionGroups.set(a.session_id, { correct: 0, total: 0, mode: a.game_mode, earliestAt: a.created_at });
       }
       const g = sessionGroups.get(a.session_id)!;
       g.total++;
       if (a.correct) g.correct++;
+      if (a.created_at < g.earliestAt) g.earliestAt = a.created_at;
     }
 
-    // Recalculate total XP from all legitimate sessions
+    // Research sessions: always count all XP
     let recalculatedXp = 0;
+    let sessionsKept = 0;
+    let sessionsDropped = 0;
+
     for (const [, group] of sessionGroups) {
-      recalculatedXp += getXpForRound(group.correct, group.total || 10, group.mode);
+      if (group.mode === 'research') {
+        recalculatedXp += getXpForRound(group.correct, group.total || 10, group.mode);
+        sessionsKept++;
+      }
+    }
+
+    // Freeplay/expert: classify by velocity, drop rapid-fire sessions
+    const fpExpertSessions = [...sessionGroups.values()]
+      .filter(g => g.mode !== 'research')
+      .sort((a, b) => a.earliestAt.localeCompare(b.earliestAt));
+
+    const classified = classifySessions(
+      fpExpertSessions.map(s => ({ ...s, createdAt: s.earliestAt })),
+      minGapMs,
+    );
+
+    for (let i = 0; i < classified.length; i++) {
+      const { suspicious } = classified[i];
+      const sess = fpExpertSessions[i];
+      if (!suspicious) {
+        recalculatedXp += getXpForRound(sess.correct, sess.total || 10, sess.mode);
+        sessionsKept++;
+      } else {
+        sessionsDropped++;
+      }
     }
 
     const newLevel = getLevelFromXp(recalculatedXp);
@@ -307,6 +357,8 @@ export async function DELETE(req: NextRequest) {
       newXp: recalculatedXp,
       oldLevel: player.level,
       newLevel,
+      sessionsKept,
+      sessionsDropped,
     });
   }
 
