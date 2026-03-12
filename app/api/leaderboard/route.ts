@@ -25,9 +25,11 @@ export async function GET(req: Request) {
   if (date && !DATE_RE.test(date)) {
     return NextResponse.json({ error: 'Invalid date' }, { status: 400 });
   }
+  const expand = searchParams.get('expand') === '1';
+  const limit = expand ? 49 : 19; // 0-indexed: 19 = top 20, 49 = top 50
   const key = date ? `leaderboard:daily:${date}` : KEY;
 
-  const results = await redis.zrange(key, 0, 19, {
+  const results = await redis.zrange(key, 0, limit, {
     rev: true,
     withScores: true,
   }) as (string | number)[];

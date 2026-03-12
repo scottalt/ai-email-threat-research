@@ -54,6 +54,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'daily' | 'xp'>('xp');
   const [showGuide, setShowGuide] = useState(false);
+  const [lbExpanded, setLbExpanded] = useState(false);
+  const [lbExpandLoading, setLbExpandLoading] = useState(false);
 
   const fetchLeaderboard = useCallback(async () => {
     const d = new Date();
@@ -120,6 +122,26 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
       setCallsignError('Network error.');
     } finally {
       setCallsignLoading(false);
+    }
+  }
+
+  async function handleExpandLeaderboard() {
+    if (lbExpanded || lbExpandLoading) return;
+    setLbExpandLoading(true);
+    try {
+      const d = new Date();
+      const today = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+      const [dailyRes, xpRes] = await Promise.all([
+        fetch(`/api/leaderboard?date=${today}&expand=1`),
+        fetch('/api/leaderboard/xp?expand=1'),
+      ]);
+      if (dailyRes.ok) setDailyLeaderboard(await dailyRes.json());
+      if (xpRes.ok) setXpLeaderboard(await xpRes.json());
+      setLbExpanded(true);
+    } catch {
+      // silently fail
+    } finally {
+      setLbExpandLoading(false);
     }
   }
 
@@ -437,8 +459,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 )}
                 {canSeeDailyLb && activeTab === 'daily' && dailyLeaderboard.length > 0 && (
                   <div key={`daily-${dailyLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
-                    {dailyLeaderboard.slice(0, 10).map((entry, i) => (
-                      <div key={i} className="flex items-center gap-3 px-3 py-1.5 anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+                    {dailyLeaderboard.map((entry, i) => (
+                      <div key={i} className="flex items-center gap-3 px-3 py-1.5 anim-fade-in-up" style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
                         <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
                         <span className="text-[#00aa28] text-sm font-mono flex-1 truncate">{entry.name}</span>
                         {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
@@ -454,6 +476,15 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 )}
                 {activeTab === 'xp' && xpLeaderboard.length === 0 && (
                   <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No players yet.</div>
+                )}
+                {!lbExpanded && (xpLeaderboard.length >= 10 || dailyLeaderboard.length >= 10) && (
+                  <button
+                    onClick={handleExpandLeaderboard}
+                    disabled={lbExpandLoading}
+                    className="w-full py-2 border-t border-[rgba(0,255,65,0.15)] text-[#003a0e] hover:text-[#00aa28] text-sm font-mono tracking-widest transition-colors disabled:opacity-50"
+                  >
+                    {lbExpandLoading ? '...' : '[ SHOW MORE ]'}
+                  </button>
                 )}
               </div>
             );
