@@ -307,6 +307,12 @@ export default function AdminPage() {
             </div>
           </div>
           <Link
+            href="/admin/xp-audit"
+            className="block w-full py-3 term-border border-[rgba(255,51,51,0.4)] text-[#ff3333] font-mono text-xs tracking-widest text-center hover:bg-[rgba(255,51,51,0.05)] transition-all"
+          >
+            [ XP AUDIT — SPAM DETECTION ]
+          </Link>
+          <Link
             href="/admin/preview"
             className="block w-full py-3 term-border text-[#ffaa00] font-mono text-xs tracking-widest text-center hover:bg-[rgba(255,170,0,0.05)] transition-all"
           >

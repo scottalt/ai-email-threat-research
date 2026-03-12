@@ -3,6 +3,11 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { getLevelFromXp, getXpForRound, RESEARCH_GRADUATION_ANSWERS } from '@/lib/xp';
+import { redis } from '@/lib/redis';
+
+// Rate limits for freeplay/expert XP awards (research has its own caps in answers route)
+const MAX_XP_SESSIONS_PER_HOUR = 6;   // ~1 session per 10 min is generous
+const MAX_XP_SESSIONS_PER_DAY = 30;   // ~3 sessions per waking hour
 
 async function getAuthId(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -40,6 +45,26 @@ export async function PATCH(req: NextRequest) {
   // Dedup: skip if this session was already awarded XP — check BEFORE expensive queries
   if (sessionId && (p.last_xp_session_id as string | null) === sessionId) {
     return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
+  }
+
+  // Rate limit XP awards for freeplay/expert modes (research has its own caps)
+  if (gameMode !== 'research') {
+    const nowHour = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
+    const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const hourlyKey = `ratelimit:xp:${authId}:h:${nowHour}`;
+    const dailyKey = `ratelimit:xp:${authId}:d:${todayStr}`;
+
+    const [hourlyCount, dailyCount] = await Promise.all([
+      redis.get<number>(hourlyKey),
+      redis.get<number>(dailyKey),
+    ]);
+
+    if ((hourlyCount ?? 0) >= MAX_XP_SESSIONS_PER_HOUR) {
+      return NextResponse.json({ error: 'XP rate limit exceeded — try again later' }, { status: 429 });
+    }
+    if ((dailyCount ?? 0) >= MAX_XP_SESSIONS_PER_DAY) {
+      return NextResponse.json({ error: 'Daily XP limit reached' }, { status: 429 });
+    }
   }
 
   // Compute XP server-side from answers table — never trust client-supplied xpEarned
@@ -116,6 +141,22 @@ export async function PATCH(req: NextRequest) {
   if (!updated || updated.length === 0) {
     // Conditional update matched no rows — another request already awarded XP
     return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
+  }
+
+  // Increment rate limit counters after successful XP award (freeplay/expert only)
+  if (gameMode !== 'research') {
+    const nowHour = new Date().toISOString().slice(0, 13);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const hourlyKey = `ratelimit:xp:${authId}:h:${nowHour}`;
+    const dailyKey = `ratelimit:xp:${authId}:d:${todayStr}`;
+
+    const [hCount, dCount] = await Promise.all([
+      redis.incr(hourlyKey),
+      redis.incr(dailyKey),
+    ]);
+    // Set TTLs only on first increment to avoid resetting them
+    if (hCount === 1) await redis.expire(hourlyKey, 3600);
+    if (dCount === 1) await redis.expire(dailyKey, 86400);
   }
 
   return NextResponse.json({
