@@ -8,6 +8,7 @@ import { redis } from '@/lib/redis';
 // Rate limits for freeplay/expert XP awards (research has its own caps in answers route)
 const MAX_XP_SESSIONS_PER_HOUR = 6;   // ~1 session per 10 min is generous
 const MAX_XP_SESSIONS_PER_DAY = 30;   // ~3 sessions per waking hour
+const MIN_SESSION_DURATION_MS = 15_000; // 15s — no human reads 10 emails faster than this
 
 async function getAuthId(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -79,15 +80,22 @@ export async function PATCH(req: NextRequest) {
     xpEarned = getXpForRound(correctCount ?? 0, totalCount ?? 10, gameMode);
   }
 
-  // Validate personal_best_score against actual session final_score
+  // Validate session: check score and minimum duration to reject bot-speed completions
   let verifiedScore = 0;
   if (sessionId) {
     const { data: sess } = await admin
       .from('sessions')
-      .select('final_score')
+      .select('final_score, started_at, completed_at')
       .eq('session_id', sessionId)
       .single();
     verifiedScore = sess?.final_score ?? 0;
+
+    if (sess?.started_at && sess?.completed_at) {
+      const duration = new Date(sess.completed_at).getTime() - new Date(sess.started_at).getTime();
+      if (duration < MIN_SESSION_DURATION_MS) {
+        return NextResponse.json({ error: 'Session completed too quickly' }, { status: 400 });
+      }
+    }
   }
 
   const newXp = (p.xp as number) + xpEarned;
