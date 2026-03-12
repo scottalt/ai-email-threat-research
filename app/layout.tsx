@@ -21,14 +21,14 @@ export const metadata: Metadata = {
     title: 'Retro Phish',
   },
   openGraph: {
-    title: 'Retro Phish',
+    title: 'Can You Spot the Threat?',
     description: 'Can you spot a malicious email? A retro terminal game and live research study on AI-generated email detection.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Retro Phish',
-    description: 'Can you spot a malicious email? A retro terminal game and live research study on AI-generated email detection.',
+    title: 'Can You Spot the Threat?',
+    description: 'A retro terminal game and live research study on AI-generated email detection.',
   },
 };
 
