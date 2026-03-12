@@ -147,7 +147,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             <div
               key={i}
               className={`anim-fade-in text-sm font-mono leading-relaxed ${
-                line.bright ? 'text-[#00ff41] glow' : 'text-[#00aa28]'
+                line.bright ? 'text-[#00ff41]' : 'text-[#00aa28]'
               }`}
             >
               {line.text}
@@ -256,7 +256,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 ['[8]', 'Tap highlighted URLs to inspect the real destination'],
               ].map(([tag, desc]) => (
                 <div key={tag} className="flex gap-3 text-sm">
-                  <span className="text-[#00ff41] shrink-0 glow">{tag}</span>
+                  <span className="text-[#00ff41] shrink-0">{tag}</span>
                   <span className="text-[#00aa28]">{desc}</span>
                 </div>
               ))}
@@ -350,7 +350,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           {signedIn && profile?.researchGraduated ? (
             <button
               onClick={() => handleStart('daily')}
-              className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all glow"
+              className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all"
             >
               [ DAILY CHALLENGE — {dateLabel} ]
             </button>
@@ -402,7 +402,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center gap-3">
                   <button
                     onClick={() => setActiveTab('xp')}
-                    className={`text-sm font-mono tracking-widest ${activeTab === 'xp' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                    className={`text-sm font-mono tracking-widest ${activeTab === 'xp' ? 'text-[#00ff41]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
                   >
                     XP
                   </button>
@@ -411,7 +411,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       <span className="text-[#003a0e] text-sm">|</span>
                       <button
                         onClick={() => setActiveTab('daily')}
-                        className={`text-sm font-mono tracking-widest ${activeTab === 'daily' ? 'text-[#00ff41] glow' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                        className={`text-sm font-mono tracking-widest ${activeTab === 'daily' ? 'text-[#00ff41]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
                       >
                         DAILY
                       </button>
@@ -444,7 +444,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                         {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
                           <span className={`text-sm font-mono shrink-0 ${r.glowClass}`} style={{ color: r.color }}>{r.label}</span>
                         ); })()}
-                        <span className="text-[#00ff41] text-sm font-mono font-bold glow">{entry.score}</span>
+                        <span className="text-[#00ff41] text-sm font-mono font-bold">{entry.score}</span>
                       </div>
                     ))}
                   </div>
