@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { getLevelFromXp } from '@/lib/xp';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -454,14 +455,26 @@ export default function XpAuditPage() {
                 <p>Estimated suspicious XP to remove: <span className="text-[#ff3333] font-bold">{totalSuspiciousXp} XP</span></p>
                 <p className="text-[#003a0e] mt-2">Sessions with gaps under {minGap} minutes from the previous session will be dropped. Research sessions are never affected.</p>
               </div>
-              <div className="space-y-1 max-h-40 overflow-y-auto">
-                {selectedPlayers.map(p => (
-                  <div key={p.playerId} className="flex items-center gap-2 text-xs font-mono">
-                    <span className="text-[#00ff41] truncate flex-1">{p.displayName ?? p.playerId.slice(0, 8)}</span>
-                    <span className="text-[#ffaa00]">{p.currentXp} XP</span>
-                    <span className="text-[#ff3333]">-{p.suspiciousXp} est.</span>
-                  </div>
-                ))}
+              <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                {selectedPlayers.map(p => {
+                  const estNewXp = Math.max(0, p.currentXp - p.suspiciousXp);
+                  const estNewLevel = getLevelFromXp(estNewXp);
+                  return (
+                    <div key={p.playerId} className="space-y-0.5">
+                      <div className="flex items-center gap-2 text-xs font-mono">
+                        <span className="text-[#00ff41] truncate flex-1">{p.displayName ?? p.playerId.slice(0, 8)}</span>
+                        <span className="text-[#003a0e]">Lv{p.currentLevel}</span>
+                        <span className="text-[#ffaa00]">{p.currentXp} XP</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs font-mono pl-2">
+                        <span className="text-[#003a0e]">&rarr;</span>
+                        <span className="text-[#ff3333] font-bold">Lv{estNewLevel}</span>
+                        <span className="text-[#ff3333] font-bold">{estNewXp} XP</span>
+                        <span className="text-[#ff3333] text-[10px]">(-{p.suspiciousXp})</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex gap-2">
                 <button
