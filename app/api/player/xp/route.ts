@@ -48,8 +48,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
   }
 
-  // Rate limit XP awards for freeplay/expert modes (research has its own caps)
-  if (gameMode !== 'research') {
+  // Rate limit XP awards for freeplay/expert/daily modes (research has its own caps)
+  if (gameMode !== 'research' && gameMode !== 'preview') {
     const nowHour = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
     const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     const hourlyKey = `ratelimit:xp:${authId}:h:${nowHour}`;
@@ -68,27 +68,21 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  // Compute XP server-side from answers table — never trust client-supplied xpEarned
-  let xpEarned = 0;
-  if (sessionId) {
-    const [{ count: correctCount }, { count: totalCount }] = await Promise.all([
-      admin.from('answers').select('*', { count: 'exact', head: true })
-        .eq('session_id', sessionId).eq('correct', true),
-      admin.from('answers').select('*', { count: 'exact', head: true })
-        .eq('session_id', sessionId),
-    ]);
-    xpEarned = getXpForRound(correctCount ?? 0, totalCount ?? 10, gameMode);
-  }
-
-  // Validate session: check score and minimum duration to reject bot-speed completions
+  // Validate session: check score, duration, and game_mode match
   let verifiedScore = 0;
+  let verifiedGameMode = gameMode;
   if (sessionId) {
     const { data: sess } = await admin
       .from('sessions')
-      .select('final_score, started_at, completed_at')
+      .select('final_score, started_at, completed_at, game_mode')
       .eq('session_id', sessionId)
       .single();
     verifiedScore = sess?.final_score ?? 0;
+
+    // Use the session's actual game_mode — never trust client-supplied mode
+    if (sess?.game_mode) {
+      verifiedGameMode = sess.game_mode;
+    }
 
     if (sess?.started_at && sess?.completed_at) {
       const duration = new Date(sess.completed_at).getTime() - new Date(sess.started_at).getTime();
@@ -98,13 +92,29 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  // Compute XP server-side from answers table — never trust client-supplied xpEarned
+  // Cap answer counts to ROUND_SIZE to prevent inflated XP from extra answer submissions
+  const ROUND_SIZE = 10;
+  let xpEarned = 0;
+  if (sessionId) {
+    const [{ count: rawCorrectCount }, { count: rawTotalCount }] = await Promise.all([
+      admin.from('answers').select('*', { count: 'exact', head: true })
+        .eq('session_id', sessionId).eq('correct', true),
+      admin.from('answers').select('*', { count: 'exact', head: true })
+        .eq('session_id', sessionId),
+    ]);
+    const correctCount = Math.min(rawCorrectCount ?? 0, ROUND_SIZE);
+    const totalCount = Math.min(rawTotalCount ?? 0, ROUND_SIZE);
+    xpEarned = getXpForRound(correctCount, totalCount, verifiedGameMode);
+  }
+
   const newXp = (p.xp as number) + xpEarned;
   const newLevel = getLevelFromXp(newXp);
   const levelUp = newLevel > (p.level as number);
   const newTotalSessions = sessionCompleted ? (p.total_sessions as number) + 1 : p.total_sessions as number;
 
   // Research graduation: based on total research answers submitted (not completed sessions)
-  const isResearchSession = gameMode === 'research' && sessionCompleted && !!sessionId;
+  const isResearchSession = verifiedGameMode === 'research' && sessionCompleted && !!sessionId;
   const newResearchSessions = isResearchSession
     ? (p.research_sessions_completed as number) + 1
     : p.research_sessions_completed as number;
@@ -151,8 +161,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
   }
 
-  // Increment rate limit counters after successful XP award (freeplay/expert only)
-  if (gameMode !== 'research') {
+  // Increment rate limit counters after successful XP award (freeplay/expert/daily only)
+  if (verifiedGameMode !== 'research') {
     const nowHour = new Date().toISOString().slice(0, 13);
     const todayStr = new Date().toISOString().slice(0, 10);
     const hourlyKey = `ratelimit:xp:${authId}:h:${nowHour}`;
