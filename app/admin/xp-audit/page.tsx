@@ -84,8 +84,9 @@ export default function XpAuditPage() {
       const res = await fetch(
         `/api/admin/xp-audit?threshold=${encodeURIComponent(threshold)}&since=${encodeURIComponent(since)}`
       );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setData(await res.json());
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      setData(json);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Scan failed');
     } finally {
