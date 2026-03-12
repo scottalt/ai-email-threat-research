@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -276,6 +278,9 @@ function formatRefreshedAt(iso: string): string {
 }
 
 export default async function IntelPage() {
+  const denied = await requireAdmin();
+  if (denied) redirect('/intel/player');
+
   const data = await getIntel();
 
   return (
@@ -286,7 +291,10 @@ export default async function IntelPage() {
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
             <span className="text-[#00aa28] text-sm tracking-widest">THREAT_INTELLIGENCE</span>
-            <Link href="/" className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28]">← TERMINAL</Link>
+            <div className="flex items-center gap-3">
+              <Link href="/intel/player" className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28]">PLAYER VIEW</Link>
+              <Link href="/" className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28]">← TERMINAL</Link>
+            </div>
           </div>
           <div className="px-3 py-3 flex items-start justify-between gap-4">
             <div className="space-y-1">

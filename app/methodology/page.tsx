@@ -88,7 +88,7 @@ export default function MethodologyPage() {
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
             <span className="text-[#00aa28] text-sm tracking-widest">RESEARCH_METHODOLOGY</span>
-            <Link href="/intel" className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors">
+            <Link href="/intel/player" className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors">
               ← INTEL
             </Link>
           </div>
@@ -98,7 +98,7 @@ export default function MethodologyPage() {
         </div>
 
         <div className="flex gap-3 text-sm font-mono">
-          <Link href="/intel" className="text-[#003a0e] hover:text-[#00aa28] transition-colors">← INTEL</Link>
+          <Link href="/intel/player" className="text-[#003a0e] hover:text-[#00aa28] transition-colors">← INTEL</Link>
           <Link href="/" className="text-[#003a0e] hover:text-[#00aa28] transition-colors">← TERMINAL</Link>
         </div>
       </div>

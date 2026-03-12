@@ -370,6 +370,24 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </button>
           )}
 
+          {/* Intel briefing — locked until research graduation */}
+          {signedIn && profile?.researchGraduated ? (
+            <Link
+              href="/intel/player"
+              className="block w-full py-3 term-border text-center text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
+            >
+              [ INTEL BRIEFING ]
+            </Link>
+          ) : (
+            <Link
+              href="/intel/player"
+              className="block w-full py-3 term-border border-[rgba(0,255,65,0.15)] text-center font-mono text-sm tracking-widest text-[#003a0e] select-none hover:bg-[rgba(0,255,65,0.02)] transition-all"
+            >
+              [ INTEL BRIEFING — LOCKED ]
+              <span className="block text-xs mt-1 tracking-wide">Complete research to unlock</span>
+            </Link>
+          )}
+
           <p className="text-[#003a0e] text-sm text-center font-mono">
             10 questions per round · email · randomized
           </p>
