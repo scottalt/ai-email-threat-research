@@ -468,15 +468,13 @@ export default function XpAuditPage() {
             <div className="px-3 py-3 space-y-3">
               <div className="text-xs font-mono text-[#00aa28] space-y-1">
                 <p>You are about to recalculate XP for <span className="text-[#ffaa00] font-bold">{selected.size}</span> player{selected.size > 1 ? 's' : ''}.</p>
-                {totalXpToRemove > 0 ? (
+                {totalXpToRemove > 0 && (
                   <p>Total XP to remove: <span className="text-[#ff3333] font-bold">{totalXpToRemove} XP</span></p>
-                ) : (
-                  <p className="text-[#00ff41]">All selected players are already at or below projected XP.</p>
                 )}
                 {uncorrectedPlayers.length < selectedPlayers.length && (
-                  <p className="text-[#ffaa00]">{selectedPlayers.length - uncorrectedPlayers.length} player{selectedPlayers.length - uncorrectedPlayers.length > 1 ? 's' : ''} already corrected (no change).</p>
+                  <p className="text-[#ffaa00]">{selectedPlayers.length - uncorrectedPlayers.length} player{selectedPlayers.length - uncorrectedPlayers.length > 1 ? 's' : ''} previously corrected — will recalculate fresh.</p>
                 )}
-                <p className="text-[#003a0e] mt-2">Sessions with gaps under {minGap} minutes from the previous session will be dropped. Research sessions are never affected.</p>
+                <p className="text-[#003a0e] mt-2">XP is rebuilt from scratch using all answer records. Sessions with gaps under {minGap} minutes are dropped. Research sessions are never affected.</p>
               </div>
               <div className="space-y-1.5 max-h-60 overflow-y-auto">
                 {selectedPlayers.map(p => {
@@ -488,18 +486,17 @@ export default function XpAuditPage() {
                         <span className="text-[#003a0e]">Lv{p.currentLevel}</span>
                         <span className="text-[#ffaa00]">{p.currentXp} XP</span>
                       </div>
-                      {p.alreadyCorrected ? (
-                        <div className="flex items-center gap-2 text-xs font-mono pl-2">
-                          <span className="text-[#00ff41] text-[10px]">ALREADY CORRECTED — no change</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-xs font-mono pl-2">
-                          <span className="text-[#003a0e]">&rarr;</span>
-                          <span className="text-[#ff3333] font-bold">Lv{p.projectedLevel}</span>
-                          <span className="text-[#ff3333] font-bold">{p.projectedXp} XP</span>
-                          <span className="text-[#ff3333] text-[10px]">({diff >= 0 ? '+' : ''}{diff})</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 text-xs font-mono pl-2">
+                        <span className="text-[#003a0e]">&rarr;</span>
+                        <span className={`font-bold ${diff < 0 ? 'text-[#ff3333]' : 'text-[#00ff41]'}`}>Lv{p.projectedLevel}</span>
+                        <span className={`font-bold ${diff < 0 ? 'text-[#ff3333]' : 'text-[#00ff41]'}`}>{p.projectedXp} XP</span>
+                        {diff !== 0 && (
+                          <span className={`text-[10px] ${diff < 0 ? 'text-[#ff3333]' : 'text-[#00ff41]'}`}>({diff >= 0 ? '+' : ''}{diff})</span>
+                        )}
+                        {p.alreadyCorrected && (
+                          <span className="text-[#00ff41] text-[9px]">PREV CORRECTED</span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
