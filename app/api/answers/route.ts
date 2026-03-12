@@ -30,6 +30,7 @@ async function getPlayerId(): Promise<string | null> {
 const VALID_ANSWERS = ['phishing', 'legit'] as const;
 const VALID_CONFIDENCES = ['guessing', 'likely', 'certain'] as const;
 const VALID_MODES = ['research', 'freeplay', 'daily', 'preview', 'expert'] as const;
+const MAX_ANSWERS_PER_SESSION = 10; // universal cap — no session should have more than 10 answers
 const MAX_RESEARCH_ANSWERS = 10;
 const MAX_RESEARCH_ANSWERS_PER_PLAYER_TOTAL = 30; // 3 full rounds max
 const MAX_RESEARCH_ANSWERS_PER_PLAYER_PER_DAY = 50; // 5 sessions max per day
@@ -58,6 +59,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // Rate limit: 30 answer submissions per IP per minute (across all modes)
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const answerRlKey = `ratelimit:answers:${ip}`;
+    const answerRlCount = await redis.incr(answerRlKey);
+    if (answerRlCount === 1) await redis.expire(answerRlKey, 60);
+    if (answerRlCount > 30) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     // Research and expert modes require authentication — silently skip unauthenticated answers
     const playerId = await getPlayerId();
     if ((a.gameMode === 'research' || a.gameMode === 'expert') && !playerId) {
@@ -65,6 +75,18 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getSupabaseAdminClient();
+
+    // Universal per-session answer cap — prevents inflating answer counts for XP manipulation
+    {
+      const { count: sessionAnswerCount } = await supabase
+        .from('answers')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', a.sessionId);
+
+      if ((sessionAnswerCount ?? 0) >= MAX_ANSWERS_PER_SESSION) {
+        return NextResponse.json({ ok: true }); // silent reject — session full
+      }
+    }
 
     // Research mode: verify correct and technique server-side + session dedup
     let verifiedCorrect = a.correct;

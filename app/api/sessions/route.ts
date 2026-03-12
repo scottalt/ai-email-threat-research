@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { redis } from '@/lib/redis';
 
 const VALID_RANKS = new Set([
   'CLICK_HAPPY', 'PHISH_BAIT', 'LINK_CHECKER', 'HEADER_READER', 'SOC_ANALYST',
@@ -13,6 +14,15 @@ const MAX_CARDS = 10;
 // Fired once when the round ends, before the summary screen appears.
 export async function PATCH(req: NextRequest) {
   try {
+    // Rate limit: 20 session finalizations per IP per minute
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const rlKey = `ratelimit:sessions:${ip}`;
+    const rlCount = await redis.incr(rlKey);
+    if (rlCount === 1) await redis.expire(rlKey, 60);
+    if (rlCount > 20) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const { sessionId, finalScore, finalRank, completedAt, cardsAnswered } = await req.json();
     if (!sessionId || typeof sessionId !== 'string') return NextResponse.json({ ok: true });
 
