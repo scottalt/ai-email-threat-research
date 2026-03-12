@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'Retro Phish — Can you spot the malicious email?';
+export const alt = 'Can You Spot the Threat? A live research study on AI-generated email detection.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -87,7 +87,7 @@ export default function OGImage() {
               textShadow: '0 0 20px rgba(0, 255, 65, 0.6), 0 0 40px rgba(0, 255, 65, 0.2)',
             }}
           >
-            RETRO PHISH
+            CAN YOU SPOT THE THREAT?
           </div>
 
           {/* Subtitle */}
@@ -99,7 +99,7 @@ export default function OGImage() {
               marginTop: 12,
             }}
           >
-            CAN YOU SPOT THE THREAT?
+            A LIVE RESEARCH STUDY
           </div>
 
           {/* Divider */}
