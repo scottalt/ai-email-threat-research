@@ -22,23 +22,8 @@ import { getLevelFromXp, getXpForRound } from '@/lib/xp';
  * Body: { playerIds: string[] }  — player UUIDs (from the GET response)
  */
 
-// Paginated fetch — Supabase caps at 1000 rows per request
-async function fetchAll<T>(
-  query: { range: (from: number, to: number) => { data: T[] | null; error: { message: string } | null } },
-  pageSize = 1000,
-): Promise<T[]> {
-  const all: T[] = [];
-  let offset = 0;
-  while (true) {
-    const { data, error } = await query.range(offset, offset + pageSize - 1);
-    if (error) throw new Error(error.message);
-    if (!data || data.length === 0) break;
-    all.push(...data);
-    if (data.length < pageSize) break;
-    offset += pageSize;
-  }
-  return all;
-}
+// Supabase caps at 1000 rows per request — need explicit pagination
+const PAGE_SIZE = 1000;
 
 export async function GET(req: NextRequest) {
   const denied = await requireAdmin();
@@ -56,15 +41,25 @@ export async function GET(req: NextRequest) {
 
     // Query answers directly for freeplay/expert modes since the cutoff.
     // This avoids the massive .in(session_ids) that was causing 500s.
-    const answers = await fetchAll(
-      supabase
+    // Paginate to avoid the default 1000-row Supabase limit.
+    type AnswerRow = { session_id: string; player_id: string; correct: boolean; game_mode: string; created_at: string };
+    const answers: AnswerRow[] = [];
+    let offset = 0;
+    while (true) {
+      const { data, error: ansErr } = await supabase
         .from('answers')
         .select('session_id, player_id, correct, game_mode, created_at')
         .in('game_mode', ['freeplay', 'expert'])
         .not('player_id', 'is', null)
         .gte('created_at', since.toISOString())
-        .order('created_at', { ascending: true }) as never,
-    );
+        .order('created_at', { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1);
+      if (ansErr) throw new Error(ansErr.message);
+      if (!data || data.length === 0) break;
+      answers.push(...(data as AnswerRow[]));
+      if (data.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
+    }
 
     if (answers.length === 0) {
       return NextResponse.json({ flaggedPlayers: [], totalSessions: 0, since: since.toISOString(), threshold });
@@ -82,15 +77,15 @@ export async function GET(req: NextRequest) {
 
     const sessionMap = new Map<string, SessionInfo>();
     for (const a of answers) {
-      const key = a.session_id as string;
+      const key = a.session_id;
       if (!sessionMap.has(key)) {
         sessionMap.set(key, {
           sessionId: key,
-          playerId: a.player_id as string,
-          gameMode: a.game_mode as string,
+          playerId: a.player_id,
+          gameMode: a.game_mode,
           correctCount: 0,
           totalCount: 0,
-          createdAt: a.created_at as string,
+          createdAt: a.created_at,
         });
       }
       const info = sessionMap.get(key)!;
@@ -260,17 +255,26 @@ export async function DELETE(req: NextRequest) {
     if (!player) continue;
 
     // Get all sessions this player participated in (via answers) — paginated
-    const playerAnswers = await fetchAll(
-      supabase
+    type PlayerAnswerRow = { session_id: string; correct: boolean; game_mode: string };
+    const playerAnswers: PlayerAnswerRow[] = [];
+    let paOffset = 0;
+    while (true) {
+      const { data, error: paErr } = await supabase
         .from('answers')
         .select('session_id, correct, game_mode')
         .eq('player_id', playerId)
-        .in('game_mode', ['freeplay', 'expert', 'research']) as never,
-    );
+        .in('game_mode', ['freeplay', 'expert', 'research'])
+        .range(paOffset, paOffset + PAGE_SIZE - 1);
+      if (paErr) break;
+      if (!data || data.length === 0) break;
+      playerAnswers.push(...(data as PlayerAnswerRow[]));
+      if (data.length < PAGE_SIZE) break;
+      paOffset += PAGE_SIZE;
+    }
 
     // Group by session
     const sessionGroups = new Map<string, { correct: number; total: number; mode: string }>();
-    for (const a of (playerAnswers ?? [])) {
+    for (const a of playerAnswers) {
       if (!sessionGroups.has(a.session_id)) {
         sessionGroups.set(a.session_id, { correct: 0, total: 0, mode: a.game_mode });
       }
