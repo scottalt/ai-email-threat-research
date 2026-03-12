@@ -15,7 +15,7 @@ export async function GET() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to fetch flags' }, { status: 500 });
     }
 
     // Group by card_id for summary
@@ -81,6 +81,6 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

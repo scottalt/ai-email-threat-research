@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: 'Failed to fetch answers' }, { status: 500 });
 
     const rows = (data as unknown as ExportRow[] | null) ?? [];
     // Flatten the joined players object into a top-level field
