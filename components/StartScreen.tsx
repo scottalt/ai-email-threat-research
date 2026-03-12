@@ -246,7 +246,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </div>
             <div className="px-3 py-3 space-y-2.5">
               {[
-                ['[1]', 'Read the email or SMS carefully'],
+                ['[1]', 'Read the email carefully'],
                 ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
                 ['[3]', 'Classify: PHISHING or LEGIT'],
                 ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
@@ -371,7 +371,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           )}
 
           <p className="text-[#003a0e] text-sm text-center font-mono">
-            10 questions per round · email + SMS · randomized
+            10 questions per round · email · randomized
           </p>
 
           {/* Tabbed leaderboard — XP always visible; Daily tab only for graduated players */}
