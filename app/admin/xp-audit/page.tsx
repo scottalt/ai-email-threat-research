@@ -5,10 +5,11 @@ import Link from 'next/link';
 
 // ── Types ──────────────────────────────────────────────────────────
 
-interface DayDetail {
-  date: string;
-  sessionCount: number;
-  xpEarned: number;
+interface SessionDetail {
+  time: string;
+  gapSeconds: number | null;
+  xp: number;
+  suspicious: boolean;
 }
 
 interface FlaggedPlayer {
@@ -19,16 +20,16 @@ interface FlaggedPlayer {
   legitimateXp: number;
   suspiciousXp: number;
   totalSessionsInWindow: number;
-  peakSessionsPerDay: number;
-  peakDate: string;
-  days: DayDetail[];
+  suspiciousSessionCount: number;
+  fastestGapSeconds: number;
+  sessions: SessionDetail[];
 }
 
 interface AuditData {
   flaggedPlayers: FlaggedPlayer[];
   totalSessions: number;
   since: string;
-  threshold: number;
+  minGap: number;
 }
 
 interface RecalcResult {
@@ -37,15 +38,25 @@ interface RecalcResult {
   newXp: number;
   oldLevel: number;
   newLevel: number;
+  sessionsKept: number;
+  sessionsDropped: number;
 }
 
 type ConfirmStage = 'idle' | 'review' | 'confirm' | 'executing' | 'done';
+
+function formatGap(seconds: number | null): string {
+  if (seconds === null) return '—';
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+}
 
 // ── Component ──────────────────────────────────────────────────────
 
 export default function XpAuditPage() {
   // Scan controls
-  const [threshold, setThreshold] = useState('10');
+  const [minGap, setMinGap] = useState('3');
   const [since, setSince] = useState(() => {
     const d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     return d.toISOString().slice(0, 10);
@@ -82,7 +93,7 @@ export default function XpAuditPage() {
     setUndoComplete(false);
     try {
       const res = await fetch(
-        `/api/admin/xp-audit?threshold=${encodeURIComponent(threshold)}&since=${encodeURIComponent(since)}`
+        `/api/admin/xp-audit?minGap=${encodeURIComponent(minGap)}&since=${encodeURIComponent(since)}`
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
@@ -92,7 +103,7 @@ export default function XpAuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [threshold, since]);
+  }, [minGap, since]);
 
   // ── Selection helpers ──────────────────────────────────────────
 
@@ -138,7 +149,7 @@ export default function XpAuditPage() {
       const res = await fetch('/api/admin/xp-audit', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerIds: [...selected] }),
+        body: JSON.stringify({ playerIds: [...selected], minGap }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { results } = await res.json();
@@ -148,7 +159,7 @@ export default function XpAuditPage() {
 
       // Refresh the scan data to show updated XP
       const scanRes = await fetch(
-        `/api/admin/xp-audit?threshold=${encodeURIComponent(threshold)}&since=${encodeURIComponent(since)}`
+        `/api/admin/xp-audit?minGap=${encodeURIComponent(minGap)}&since=${encodeURIComponent(since)}`
       );
       if (scanRes.ok) setData(await scanRes.json());
     } catch (e) {
@@ -183,7 +194,7 @@ export default function XpAuditPage() {
 
       // Refresh scan
       const scanRes = await fetch(
-        `/api/admin/xp-audit?threshold=${encodeURIComponent(threshold)}&since=${encodeURIComponent(since)}`
+        `/api/admin/xp-audit?minGap=${encodeURIComponent(minGap)}&since=${encodeURIComponent(since)}`
       );
       if (scanRes.ok) setData(await scanRes.json());
     } catch (e) {
@@ -217,16 +228,19 @@ export default function XpAuditPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[#003a0e] text-[10px] font-mono tracking-widest block mb-1">
-                  SESSIONS/DAY THRESHOLD
+                  MIN GAP (MINUTES)
                 </label>
                 <input
                   type="number"
                   min="1"
-                  max="100"
-                  value={threshold}
-                  onChange={e => setThreshold(e.target.value)}
+                  max="60"
+                  value={minGap}
+                  onChange={e => setMinGap(e.target.value)}
                   className="w-full bg-[#060c06] border border-[rgba(0,255,65,0.2)] text-[#00ff41] font-mono text-sm px-2 py-1.5 focus:outline-none focus:border-[#00ff41]"
                 />
+                <span className="text-[#003a0e] text-[9px] font-mono mt-0.5 block">
+                  Sessions faster than this gap are flagged
+                </span>
               </div>
               <div>
                 <label className="text-[#003a0e] text-[10px] font-mono tracking-widest block mb-1">
@@ -271,8 +285,8 @@ export default function XpAuditPage() {
                 <div className="text-[10px] font-mono text-[#003a0e]">PLAYERS FLAGGED</div>
               </div>
               <div className="term-border px-2 py-2 text-center">
-                <div className="text-xl font-black font-mono text-[#ffaa00]">{data.threshold}</div>
-                <div className="text-[10px] font-mono text-[#003a0e]">THRESHOLD</div>
+                <div className="text-xl font-black font-mono text-[#ffaa00]">{data.minGap}m</div>
+                <div className="text-[10px] font-mono text-[#003a0e]">MIN GAP</div>
               </div>
             </div>
 
@@ -322,7 +336,7 @@ export default function XpAuditPage() {
                             ~{player.suspiciousXp} sus
                           </span>
                           <span className="text-[#003a0e] shrink-0">
-                            {player.peakSessionsPerDay}x peak
+                            {player.suspiciousSessionCount} rapid
                           </span>
                           <span className="text-[#003a0e] text-[10px] shrink-0">
                             {expanded.has(player.playerId) ? '\u25B2' : '\u25BC'}
@@ -364,41 +378,48 @@ export default function XpAuditPage() {
                               <span className="text-[#00aa28]">{player.totalSessionsInWindow}</span>
                             </div>
                             <div>
-                              <span className="text-[#003a0e]">PEAK DAY: </span>
+                              <span className="text-[#003a0e]">FASTEST GAP: </span>
                               <span className="text-[#ff3333] font-bold">
-                                {player.peakSessionsPerDay} sessions on {player.peakDate}
+                                {formatGap(player.fastestGapSeconds)}
                               </span>
                             </div>
                           </div>
 
-                          {/* Day breakdown */}
+                          {/* Session timeline */}
                           <div className="space-y-1">
                             <div className="text-[#003a0e] text-[10px] font-mono tracking-widest">
-                              DAILY BREAKDOWN
+                              SESSION TIMELINE ({player.suspiciousSessionCount} suspicious of {player.totalSessionsInWindow})
                             </div>
-                            <div className="space-y-0.5">
-                              {player.days.map(day => {
-                                const overThreshold = day.sessionCount > data.threshold;
-                                return (
-                                  <div key={day.date} className="flex items-center gap-2 text-xs font-mono">
-                                    <span className="text-[#003a0e] w-20 shrink-0">{day.date}</span>
-                                    <div className="flex-1 h-1.5 bg-[#003a0e]">
-                                      <div
-                                        className={`h-full ${overThreshold ? 'bg-[#ff3333]' : 'bg-[#00ff41]'}`}
-                                        style={{
-                                          width: `${Math.min(100, (day.sessionCount / player.peakSessionsPerDay) * 100)}%`,
-                                        }}
-                                      />
-                                    </div>
-                                    <span className={`w-8 text-right font-black shrink-0 ${overThreshold ? 'text-[#ff3333]' : 'text-[#00aa28]'}`}>
-                                      {day.sessionCount}
-                                    </span>
-                                    <span className="text-[#003a0e] text-[10px] w-16 text-right shrink-0">
-                                      {day.xpEarned} XP
-                                    </span>
+                            <div className="space-y-0.5 max-h-60 overflow-y-auto">
+                              {player.sessions.map((sess, i) => (
+                                <div key={i} className="flex items-center gap-2 text-xs font-mono">
+                                  <span className={`w-3 h-3 rounded-full shrink-0 ${sess.suspicious ? 'bg-[#ff3333]' : 'bg-[#00ff41]'}`} />
+                                  <span className="text-[#003a0e] w-36 shrink-0">
+                                    {new Date(sess.time).toLocaleString()}
+                                  </span>
+                                  <span className={`w-16 text-right shrink-0 font-bold ${
+                                    sess.gapSeconds !== null && sess.gapSeconds < data.minGap * 60
+                                      ? 'text-[#ff3333]'
+                                      : 'text-[#003a0e]'
+                                  }`}>
+                                    {formatGap(sess.gapSeconds)}
+                                  </span>
+                                  <div className="flex-1 h-1.5 bg-[#003a0e]">
+                                    <div
+                                      className={`h-full ${sess.suspicious ? 'bg-[#ff3333]' : 'bg-[#00ff41]'}`}
+                                      style={{
+                                        width: `${Math.min(100, (sess.xp / Math.max(...player.sessions.map(s => s.xp), 1)) * 100)}%`,
+                                      }}
+                                    />
                                   </div>
-                                );
-                              })}
+                                  <span className={`w-12 text-right shrink-0 ${sess.suspicious ? 'text-[#ff3333]' : 'text-[#00aa28]'}`}>
+                                    {sess.xp} XP
+                                  </span>
+                                  {sess.suspicious && (
+                                    <span className="text-[#ff3333] text-[9px] shrink-0">SPAM</span>
+                                  )}
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </div>
@@ -431,7 +452,7 @@ export default function XpAuditPage() {
               <div className="text-xs font-mono text-[#00aa28] space-y-1">
                 <p>You are about to recalculate XP for <span className="text-[#ffaa00] font-bold">{selected.size}</span> player{selected.size > 1 ? 's' : ''}.</p>
                 <p>Estimated suspicious XP to remove: <span className="text-[#ff3333] font-bold">{totalSuspiciousXp} XP</span></p>
-                <p className="text-[#003a0e] mt-2">This will recompute each player&apos;s total XP from their actual answer records. Any XP not backed by real answers will be removed.</p>
+                <p className="text-[#003a0e] mt-2">Sessions with gaps under {minGap} minutes from the previous session will be dropped. Research sessions are never affected.</p>
               </div>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {selectedPlayers.map(p => (
@@ -524,19 +545,27 @@ export default function XpAuditPage() {
                   const diff = r.newXp - r.oldXp;
                   const player = data?.flaggedPlayers.find(p => p.playerId === r.playerId);
                   return (
-                    <div key={r.playerId} className="flex items-center gap-2 text-xs font-mono">
-                      <span className="text-[#00ff41] truncate flex-1">
-                        {player?.displayName ?? r.playerId.slice(0, 8)}
-                      </span>
-                      <span className="text-[#003a0e]">{r.oldXp}</span>
-                      <span className="text-[#003a0e]">&rarr;</span>
-                      <span className="text-[#ffaa00] font-bold">{r.newXp}</span>
-                      <span className={`font-black ${diff < 0 ? 'text-[#ff3333]' : diff > 0 ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}>
-                        ({diff >= 0 ? '+' : ''}{diff})
-                      </span>
-                      <span className="text-[#003a0e] text-[10px]">
-                        Lv{r.oldLevel}&rarr;{r.newLevel}
-                      </span>
+                    <div key={r.playerId} className="space-y-0.5">
+                      <div className="flex items-center gap-2 text-xs font-mono">
+                        <span className="text-[#00ff41] truncate flex-1">
+                          {player?.displayName ?? r.playerId.slice(0, 8)}
+                        </span>
+                        <span className="text-[#003a0e]">{r.oldXp}</span>
+                        <span className="text-[#003a0e]">&rarr;</span>
+                        <span className="text-[#ffaa00] font-bold">{r.newXp}</span>
+                        <span className={`font-black ${diff < 0 ? 'text-[#ff3333]' : diff > 0 ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}>
+                          ({diff >= 0 ? '+' : ''}{diff})
+                        </span>
+                        <span className="text-[#003a0e] text-[10px]">
+                          Lv{r.oldLevel}&rarr;{r.newLevel}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] font-mono pl-2">
+                        <span className="text-[#00aa28]">{r.sessionsKept} sessions kept</span>
+                        {r.sessionsDropped > 0 && (
+                          <span className="text-[#ff3333]">{r.sessionsDropped} dropped (rapid-fire)</span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
