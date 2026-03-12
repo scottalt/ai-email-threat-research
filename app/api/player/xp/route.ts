@@ -8,7 +8,7 @@ import { redis } from '@/lib/redis';
 // Rate limits for freeplay/expert XP awards (research has its own caps in answers route)
 const MAX_XP_SESSIONS_PER_HOUR = 6;   // ~1 session per 10 min is generous
 const MAX_XP_SESSIONS_PER_DAY = 30;   // ~3 sessions per waking hour
-const MIN_SESSION_DURATION_MS = 30_000; // 30s — no human finishes 10 cards faster than this
+const MIN_SESSION_DURATION_MS = 15_000; // 15s — no human reads 10 emails faster than this
 
 async function getAuthId(): Promise<string | null> {
   const cookieStore = await cookies();
