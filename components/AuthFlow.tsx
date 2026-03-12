@@ -44,6 +44,9 @@ export function AuthFlow({ onSignIn, onVerifyCode, onCancel }: AuthFlowProps) {
           <div className="text-[#00aa28] text-sm font-mono leading-relaxed">
             Check your email for a 6-digit code and enter it below.
           </div>
+          <div className="text-[#00aa28]/60 text-xs font-mono leading-relaxed">
+            Don&apos;t see it? Check your Junk/Spam folder.
+          </div>
           <input
             type="text"
             inputMode="numeric"
