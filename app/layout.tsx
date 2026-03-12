@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Retro Phish',
-  description: 'Can you spot a phishing attempt? A retro security awareness game.',
+  description: 'A retro terminal game and live research study on AI-generated email detection in 2026.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -22,13 +22,13 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Retro Phish',
-    description: 'Can you spot a phishing attempt? A retro security awareness game.',
+    description: 'Can you spot a malicious email? A retro terminal game and live research study on AI-generated email detection.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Retro Phish',
-    description: 'Can you spot a phishing attempt? A retro security awareness game.',
+    description: 'Can you spot a malicious email? A retro terminal game and live research study on AI-generated email detection.',
   },
 };
 

@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'Retro Phish — Can you spot the threat?';
+export const alt = 'Retro Phish — Can you spot the malicious email?';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -113,86 +113,64 @@ export default function OGImage() {
             }}
           />
 
-          {/* Fake email preview */}
+          {/* Stats display */}
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
-              width: 600,
-              border: '1px solid rgba(0, 255, 65, 0.2)',
-              borderRadius: 3,
-              backgroundColor: '#0a140a',
-              padding: 16,
-              gap: 8,
+              gap: 30,
+              marginTop: 10,
             }}
           >
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <span style={{ color: '#003a0e', fontSize: 13 }}>FROM:</span>
-              <span style={{ color: '#00aa28', fontSize: 13 }}>security@paypa1.com</span>
-              <span
-                style={{
-                  color: '#ff3333',
-                  fontSize: 11,
-                  marginLeft: 'auto',
-                  textShadow: '0 0 6px rgba(255, 51, 51, 0.6)',
-                }}
-              >
-                SPF: FAIL
-              </span>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                border: '1px solid rgba(0, 255, 65, 0.2)',
+                borderRadius: 3,
+                backgroundColor: '#0a140a',
+                padding: '16px 32px',
+                gap: 4,
+              }}
+            >
+              <span style={{ color: '#003a0e', fontSize: 12, letterSpacing: 2 }}>EMAILS ANALYZED</span>
+              <span style={{ color: '#00ff41', fontSize: 36, fontWeight: 900 }}>10,000+</span>
             </div>
             <div
               style={{
-                width: '100%',
-                height: 1,
-                backgroundColor: 'rgba(0, 255, 65, 0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                border: '1px solid rgba(0, 255, 65, 0.2)',
+                borderRadius: 3,
+                backgroundColor: '#0a140a',
+                padding: '16px 32px',
+                gap: 4,
               }}
-            />
-            <div style={{ display: 'flex', gap: 12 }}>
-              <span style={{ color: '#003a0e', fontSize: 13 }}>SUBJ:</span>
-              <span style={{ color: '#00aa28', fontSize: 13 }}>
-                Urgent: Your Account Has Been Suspended
-              </span>
+            >
+              <span style={{ color: '#003a0e', fontSize: 12, letterSpacing: 2 }}>AVG ACCURACY</span>
+              <span style={{ color: '#ffaa00', fontSize: 36, fontWeight: 900 }}>??%</span>
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div style={{ display: 'flex', gap: 40, marginTop: 30 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 220,
-                height: 45,
-                border: '1.5px solid rgba(255, 51, 51, 0.6)',
-                borderRadius: 3,
-                color: '#ff3333',
-                fontSize: 16,
-                fontWeight: 'bold',
-                letterSpacing: 3,
-                textShadow: '0 0 8px rgba(255, 51, 51, 0.5)',
-              }}
-            >
-              PHISHING
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 220,
-                height: 45,
-                border: '1.5px solid rgba(0, 255, 65, 0.6)',
-                borderRadius: 3,
-                color: '#00ff41',
-                fontSize: 16,
-                fontWeight: 'bold',
-                letterSpacing: 3,
-                textShadow: '0 0 8px rgba(0, 255, 65, 0.5)',
-              }}
-            >
-              LEGIT
-            </div>
+          {/* CTA */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 320,
+              height: 50,
+              border: '1.5px solid rgba(0, 255, 65, 0.6)',
+              borderRadius: 3,
+              color: '#00ff41',
+              fontSize: 18,
+              fontWeight: 'bold',
+              letterSpacing: 4,
+              marginTop: 30,
+            }}
+          >
+            PLAY NOW
           </div>
         </div>
 
