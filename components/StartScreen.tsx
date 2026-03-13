@@ -44,6 +44,8 @@ const BOOT_LINES: { text: string; bright: boolean }[] = [
 export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound }: Props) {
   const [visibleCount, setVisibleCount] = useState(0);
   const [showButton, setShowButton] = useState(false);
+  const [bootDone, setBootDone] = useState(false);
+  const [bootHidden, setBootHidden] = useState(false);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
   const { profile, loading: playerLoading, signedIn, signInWithEmail, verifyOtp, signOut, refreshProfile, applyProfile } = usePlayer();
   const [showAuthFlow, setShowAuthFlow] = useState(false);
@@ -89,10 +91,21 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
   useEffect(() => {
     if (visibleCount === BOOT_LINES.length) {
-      const t = setTimeout(() => setShowButton(true), 300);
+      const t = setTimeout(() => {
+        setBootDone(true);
+        setShowButton(true);
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [visibleCount]);
+
+  // Fallback: if onTransitionEnd doesn't fire, hide boot after 600ms
+  useEffect(() => {
+    if (bootDone && !bootHidden) {
+      const fallback = setTimeout(() => setBootHidden(true), 600);
+      return () => clearTimeout(fallback);
+    }
+  }, [bootDone, bootHidden]);
 
   function handleStart(mode: GameMode) {
     playBootTick();
@@ -149,37 +162,42 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
   return (
     <div className="w-full max-w-sm px-4 pb-safe flex flex-col gap-6">
-      {/* Terminal window */}
-      <div className="term-border bg-[#060c06]">
-        <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
-          <span className="text-[#33bb55] text-sm tracking-widest">ANALYST_TERMINAL</span>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleSound}
-              aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
-              className={`text-sm font-mono transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a]'}`}
-            >
-              {soundEnabled ? '[SFX]' : '[SFX OFF]'}
-            </button>
-            <span className="text-[#33bb55] text-sm">■ □ □</span>
+      {/* Terminal boot animation — fades out after loading */}
+      {!bootHidden && (
+        <div
+          className={`term-border bg-[#060c06] transition-opacity duration-300 ${bootDone ? 'opacity-0' : 'opacity-100'}`}
+          onTransitionEnd={() => { if (bootDone) setBootHidden(true); }}
+        >
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
+            <span className="text-[#33bb55] text-sm tracking-widest">ANALYST_TERMINAL</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleSound}
+                aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
+                className={`text-sm font-mono transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a]'}`}
+              >
+                {soundEnabled ? '[SFX]' : '[SFX OFF]'}
+              </button>
+              <span className="text-[#33bb55] text-sm">■ □ □</span>
+            </div>
+          </div>
+          <div className="px-3 py-4 min-h-48 space-y-1 overflow-hidden">
+            {BOOT_LINES.slice(0, visibleCount).map((line, i) => (
+              <div
+                key={i}
+                className={`anim-fade-in text-sm font-mono leading-relaxed ${
+                  line.bright ? 'text-[#00ff41]' : 'text-[#33bb55]'
+                }`}
+              >
+                {line.text}
+              </div>
+            ))}
+            {!showButton && visibleCount < BOOT_LINES.length && (
+              <span className="cursor" />
+            )}
           </div>
         </div>
-        <div className="px-3 py-4 min-h-48 space-y-1 overflow-hidden">
-          {BOOT_LINES.slice(0, visibleCount).map((line, i) => (
-            <div
-              key={i}
-              className={`anim-fade-in text-sm font-mono leading-relaxed ${
-                line.bright ? 'text-[#00ff41]' : 'text-[#33bb55]'
-              }`}
-            >
-              {line.text}
-            </div>
-          ))}
-          {!showButton && visibleCount < BOOT_LINES.length && (
-            <span className="cursor" />
-          )}
-        </div>
-      </div>
+      )}
 
       {showButton && (
         <div className="anim-fade-in-up space-y-4">
