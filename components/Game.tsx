@@ -219,7 +219,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     urlInspected: boolean;
   }) {
     const card = deck[currentIndex];
-    const isServerChecked = mode !== 'research' && mode !== 'preview';
+    const isServerChecked = true;
 
     if (isServerChecked) {
       // Server-side answer verification for freeplay/daily/expert
@@ -236,8 +236,16 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         }),
       })
         .then(r => r.json())
-        .then((data: { correct: boolean; isPhishing: boolean; pointsEarned: number; streak: number; clues: string[]; explanation: string; highlights: string[]; technique: string | null }) => {
-          // Hydrate the card with server-provided answer data
+        .then((data: {
+          correct: boolean; isPhishing: boolean; pointsEarned: number; streak: number;
+          clues: string[]; explanation: string; highlights: string[]; technique: string | null;
+          cardSource?: string; secondaryTechnique?: string | null;
+          isGenaiSuspected?: boolean | null; genaiConfidence?: string | null;
+          grammarQuality?: number | null; proseFluency?: number | null;
+          personalizationLevel?: number | null; contextualCoherence?: number | null;
+          datasetVersion?: string | null;
+        }) => {
+          // Hydrate the card with server-provided answer data (+ research metadata if present)
           const fullCard: Card = {
             ...card,
             isPhishing: data.isPhishing,
@@ -245,7 +253,18 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
             explanation: data.explanation,
             highlights: data.highlights,
             technique: data.technique,
-          };
+            ...(data.cardSource ? {
+              cardSource: data.cardSource,
+              secondaryTechnique: data.secondaryTechnique,
+              isGenaiSuspected: data.isGenaiSuspected,
+              genaiConfidence: data.genaiConfidence,
+              grammarQuality: data.grammarQuality,
+              proseFluency: data.proseFluency,
+              personalizationLevel: data.personalizationLevel,
+              contextualCoherence: data.contextualCoherence,
+              datasetVersion: data.datasetVersion,
+            } : {}),
+          } as Card;
 
           const fc = data.correct ? 'anim-clear-flash' : 'anim-breach-flash';
           setFlashClass(fc);
@@ -268,8 +287,8 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
             else playWrong();
           }
 
-          // Log answer event (fire and forget)
-          if (typeof window !== 'undefined') {
+          // Log answer event (fire and forget — skip in preview mode)
+          if (typeof window !== 'undefined' && mode !== 'preview') {
             logAnswerEvent(fullCard, answer, data.correct, confidence, data.streak, newCorrectCount, timing);
           }
 
@@ -282,8 +301,8 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       return;
     }
 
-    // Research/preview mode — client-side check (research answers are verified server-side in /api/answers)
-    const fullCard = card as Card; // Research/preview cards always have full data
+    // Preview mode only — client-side check (preview cards have full data, never recorded)
+    const fullCard = card as Card;
     const correct = (answer === 'phishing') === fullCard.isPhishing;
 
     const fc = correct ? 'anim-clear-flash' : 'anim-breach-flash';
