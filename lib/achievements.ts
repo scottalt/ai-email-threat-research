@@ -1,7 +1,7 @@
 // Achievement definitions — static registry, no DB needed for definitions.
 // Rarity determines badge color: common=dim green, uncommon=green, rare=amber, legendary=red
 
-export type AchievementCategory = 'progression' | 'skill' | 'streak' | 'speed' | 'investigation' | 'xp';
+export type AchievementCategory = 'progression' | 'skill' | 'streak' | 'speed' | 'investigation' | 'xp' | 'daily';
 export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
 export interface AchievementDef {
@@ -45,6 +45,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'xp_5000',        name: 'ENCRYPTED',           description: 'Earn 5,000 total XP',              category: 'xp', rarity: 'uncommon',  icon: '◈' },
   { id: 'xp_20000',       name: 'CLASSIFIED',          description: 'Earn 20,000 total XP',             category: 'xp', rarity: 'rare',      icon: '◈' },
   { id: 'pb_2500',        name: 'HIGH_SCORE',          description: 'Score 2,500+ pts in a single round', category: 'xp', rarity: 'rare',      icon: '◈' },
+
+  // Daily streak
+  { id: 'streak_3d',  name: 'CONSISTENT',      description: 'Play 3 days in a row',   category: 'daily', rarity: 'common',   icon: '▶' },
+  { id: 'streak_7d',  name: 'DEDICATED',        description: 'Play 7 days in a row',   category: 'daily', rarity: 'uncommon', icon: '▶' },
+  { id: 'streak_30d', name: 'RELENTLESS',       description: 'Play 30 days in a row',  category: 'daily', rarity: 'rare',     icon: '▶' },
 ];
 
 export const ACHIEVEMENT_MAP = new Map(ACHIEVEMENTS.map(a => [a.id, a]));
@@ -63,4 +68,5 @@ export const CATEGORY_LABELS: Record<AchievementCategory, string> = {
   speed:         'SPEED',
   investigation: 'INVESTIGATION',
   xp:            'XP / RANK',
+  daily:         'DAILY',
 };
