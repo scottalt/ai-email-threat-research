@@ -147,15 +147,107 @@ Pre-migration backup               →  catches schema mistakes
 Supabase PITR (Pro plan)           →  catches everything else
 ```
 
+## E2E Testing on Preview Deploys
+
+### Overview
+
+Playwright E2E tests run against the Vercel preview URL for every PR. Tests must pass before the PR can be merged (enforced via GitHub branch protection, with admin bypass for rare exceptions).
+
+### Test Infrastructure
+
+- **Framework:** Playwright (runs in GitHub Actions)
+- **Target:** Vercel preview URL (extracted from the Vercel deployment status via GitHub API)
+- **Auth:** Two seeded test accounts in dev Supabase, authenticated via Supabase service role (bypass OTP)
+
+### Test Accounts (seeded in dev DB)
+
+| Account | State | Tests |
+|---------|-------|-------|
+| `test-fresh@phish-or-not.dev` | New user, 0 answers | Research mode full flow |
+| `test-graduated@phish-or-not.dev` | 30+ research answers, graduated | Daily, Expert, Stats, Intel, Profile |
+
+These accounts and their progression state are part of `supabase/seed.sql`.
+
+### Test Suites
+
+#### Critical: Research Mode (fresh account)
+1. Land on `/` — see "RESEARCH MODE" button
+2. Click Research Mode — see research intro screen
+3. Progress through tutorial
+4. Answer a card — verify server-side answer check fires (response includes correctness + explanation)
+5. Verify streak tracking updates
+6. Complete a round — verify summary screen with XP
+7. Verify answer was written to dev DB (API call or DB check)
+
+#### Core: Freeplay (no auth required)
+1. Land on `/` — see "PLAY" button
+2. Start freeplay — card loads with phish/legit options
+3. Answer a card — see feedback screen
+4. Complete a round — see summary
+
+#### Graduation-Gated Modes (graduated account)
+1. **Daily Challenge** — start daily, answer card, see feedback, verify "already played" lock after
+2. **Expert Mode** — start expert, answer card, see feedback
+3. **Stats** — `/stats` loads, charts render without errors
+4. **Intel** — `/intel/player` loads, aggregate data renders
+5. **Profile** — `/profile` loads, callsign displayed, fields editable
+
+#### Navigation & UI
+1. **Signal Guide** — expandable section opens and closes on `/`
+2. **Leaderboard** — XP tab loads; Daily tab loads for graduated user
+3. **Methodology** — `/methodology` loads markdown content
+4. **All nav links** — back buttons and cross-page links resolve correctly
+
+### GitHub Actions Workflow
+
+```yaml
+# .github/workflows/e2e.yml
+name: E2E Tests
+on:
+  deployment_status:  # Triggers when Vercel deployment completes
+
+jobs:
+  e2e:
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+        env:
+          BASE_URL: ${{ github.event.deployment_status.target_url }}
+          TEST_SUPABASE_SERVICE_KEY: ${{ secrets.DEV_SUPABASE_SERVICE_ROLE_KEY }}
+          TEST_SUPABASE_URL: ${{ secrets.DEV_SUPABASE_URL }}
+```
+
+### Branch Protection
+
+- **Required status check:** `E2E Tests` must pass before merge
+- **Admin bypass:** Repo admins can force-merge in rare cases
+- Configured in GitHub repo settings → Branches → Branch protection rules for `master`
+
+### Test Account Auth Strategy
+
+Playwright tests authenticate via Supabase Admin API (service role key) to generate a session for the test accounts — no OTP flow needed. This is safe because:
+- Service role key is only the **dev** key (stored as a GitHub Actions secret)
+- Test accounts only exist in the dev database
+- No prod credentials are ever in CI
+
 ## Deployment Workflow (End to End)
 
 ```
 feature branch → PR opens
   ├── Vercel: preview deploy → dev Supabase + dev Upstash
-  ├── (future) GitHub Actions: lint + typecheck + test + build
-  └── Manual testing on preview URL
+  ├── GitHub Actions: E2E tests run against preview URL
+  │     ├── Research mode (fresh account) — CRITICAL
+  │     ├── Freeplay (no auth)
+  │     ├── Daily + Expert + Stats + Intel (graduated account)
+  │     └── Navigation & UI checks
+  ├── Status check: must pass to merge (admin bypass available)
+  └── Manual review
        ↓
-  PR approved
+  PR approved, all checks green
        ↓
   If additive migration: npm run db:migrate:prod (before merge)
        ↓
