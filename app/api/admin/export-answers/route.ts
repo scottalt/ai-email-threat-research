@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
   }
 
   const date = new Date().toISOString().slice(0, 10);
-  const filename = `retro-phish-answers-${date}`;
+  const filename = `threat-terminal-answers-${date}`;
 
   if (format === 'csv') return exportCsv(allRows, filename);
   if (format === 'jsonl') return exportJsonl(allRows, filename);
@@ -99,7 +99,7 @@ function buildMetadata(data: ExportRow[]) {
   }
 
   return {
-    dataset: 'Retro Phish v1 — Research Answers',
+    dataset: 'Threat Terminal v1 - Research Answers',
     description: 'Per-answer behavioural data from research mode sessions. Includes timing, confidence, tool usage (headers/URL inspection), scroll depth, and denormalised card metadata for direct analysis.',
     exported_at: new Date().toISOString(),
     total_answers: data.length,

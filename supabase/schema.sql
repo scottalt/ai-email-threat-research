@@ -1,5 +1,5 @@
 -- ============================================================
--- Retro Phish — Research Platform Schema
+-- Threat Terminal - Research Platform Schema
 -- Run this in the Supabase SQL editor to initialise the DB.
 -- ============================================================
 

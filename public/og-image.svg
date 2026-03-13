@@ -41,7 +41,7 @@
   <circle cx="1025" cy="59" r="4" fill="#00ff41" opacity="0.8" filter="url(#glow)"/>
 
   <!-- Main title -->
-  <text x="600" y="200" font-family="monospace" font-size="72" font-weight="900" fill="#00ff41" text-anchor="middle" filter="url(#glow-strong)" letter-spacing="6">RETRO PHISH</text>
+  <text x="600" y="200" font-family="monospace" font-size="72" font-weight="900" fill="#00ff41" text-anchor="middle" filter="url(#glow-strong)" letter-spacing="6">THREAT TERMINAL</text>
 
   <!-- Subtitle -->
   <text x="600" y="260" font-family="monospace" font-size="22" fill="#00aa28" text-anchor="middle" letter-spacing="4">CAN YOU SPOT THE THREAT?</text>
