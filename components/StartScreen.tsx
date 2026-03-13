@@ -91,18 +91,18 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
   useEffect(() => {
     if (visibleCount === BOOT_LINES.length) {
-      const t = setTimeout(() => {
-        setBootDone(true);
-        setShowButton(true);
-      }, 300);
+      const t = setTimeout(() => setBootDone(true), 300);
       return () => clearTimeout(t);
     }
   }, [visibleCount]);
 
-  // Fallback: if onTransitionEnd doesn't fire, hide boot after 600ms
+  // After boot fades out, show main content
   useEffect(() => {
     if (bootDone && !bootHidden) {
-      const fallback = setTimeout(() => setBootHidden(true), 600);
+      const fallback = setTimeout(() => {
+        setBootHidden(true);
+        setShowButton(true);
+      }, 400); // slightly longer than the 300ms transition
       return () => clearTimeout(fallback);
     }
   }, [bootDone, bootHidden]);
@@ -166,7 +166,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
       {!bootHidden && (
         <div
           className={`term-border bg-[#060c06] transition-opacity duration-300 ${bootDone ? 'opacity-0' : 'opacity-100'}`}
-          onTransitionEnd={() => { if (bootDone) setBootHidden(true); }}
+          onTransitionEnd={() => { if (bootDone) { setBootHidden(true); setShowButton(true); } }}
         >
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
             <span className="text-[#33bb55] text-sm tracking-widest">ANALYST_TERMINAL</span>
