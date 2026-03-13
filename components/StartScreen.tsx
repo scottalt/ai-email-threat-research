@@ -161,7 +161,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
 
   return (
-    <div className={`w-full px-4 pb-safe flex flex-col gap-6 lg:gap-8 ${showButton ? 'max-w-sm lg:max-w-4xl' : 'max-w-sm'}`}>
+    <div className={`w-full px-4 pb-safe flex flex-col gap-6 lg:gap-8 ${showButton ? 'max-w-sm lg:max-w-4xl' : 'max-w-md'}`}>
       {/* Terminal boot animation — fades out after loading */}
       {!bootHidden && (
         <div
