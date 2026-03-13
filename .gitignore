@@ -44,3 +44,12 @@ next-env.d.ts
 # corpus pipeline
 downloads/
 corpus/
+
+# claude code local settings
+.claude/
+
+# playwright screenshots
+.playwright-mcp/
+
+# script logs
+migration-url-display.log
