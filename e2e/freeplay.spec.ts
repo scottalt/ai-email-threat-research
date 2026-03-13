@@ -19,28 +19,7 @@ test.describe('Freeplay Mode', () => {
     // Graduated user sees [ PLAY ] for freeplay
     const playButton = page.getByRole('button', { name: /play/i }).first();
     await expect(playButton).toBeVisible({ timeout: 15_000 });
-
-    // Log all API responses for debugging
-    page.on('response', (resp) => {
-      if (resp.url().includes('/api/')) {
-        console.log(`API response: ${resp.status()} ${resp.url()}`);
-      }
-    });
-
-    // Set up response listener BEFORE clicking — match freeplay specifically
-    const cardsResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/api/cards/freeplay'),
-      { timeout: 30_000 },
-    );
     await playButton.click();
-    const resp = await cardsResponse;
-    console.log(`Freeplay response status: ${resp.status()}`);
-    console.log(`Freeplay response body: ${await resp.text().catch(() => 'FAILED TO READ')}`);
-
-    // Debug: log what the page shows after clicking play
-    await page.waitForTimeout(3_000);
-    console.log('Page URL after play:', page.url());
-    console.log('Page content excerpt:', await page.locator('body').innerText().then(t => t.slice(0, 500)));
 
     // Answer 10 cards to complete a round
     for (let i = 0; i < 10; i++) {
