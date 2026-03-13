@@ -238,7 +238,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               ) : signedIn && profile ? (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <Link href="/profile" className="text-[#00aa28] text-sm tracking-widest hover:text-[#00ff41]">{profile.displayName}</Link>
+                    <Link href="/profile" className="text-[#00ff41] text-sm tracking-widest font-bold hover:text-[#00ff41] border border-[rgba(0,255,65,0.3)] px-2 py-0.5 hover:bg-[rgba(0,255,65,0.06)] transition-colors">[ {profile.displayName} ]</Link>
                     <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28]">SIGN OUT</button>
                   </div>
                   <div className="px-3 py-2 space-y-2">
