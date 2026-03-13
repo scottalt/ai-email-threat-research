@@ -161,7 +161,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
 
   return (
-    <div className="w-full max-w-sm px-4 pb-safe flex flex-col gap-6">
+    <div className="w-full max-w-sm lg:max-w-4xl px-4 pb-safe flex flex-col gap-6 lg:gap-8">
       {/* Terminal boot animation — fades out after loading */}
       {!bootHidden && (
         <div
@@ -256,12 +256,25 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               ) : signedIn && profile ? (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <Link href="/profile" className="text-[#00ff41] text-sm tracking-widest font-bold hover:text-[#00ff41] border border-[rgba(0,255,65,0.3)] px-2 py-0.5 hover:bg-[rgba(0,255,65,0.06)] transition-colors">[ {profile.displayName} ]</Link>
-                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">SIGN OUT</button>
+                    <div className="flex items-center gap-3">
+                      <Link href="/profile" className="text-[#00ff41] text-sm tracking-widest font-bold hover:text-[#00ff41] border border-[rgba(0,255,65,0.3)] px-2 py-0.5 hover:bg-[rgba(0,255,65,0.06)] transition-colors">[ {profile.displayName} ]</Link>
+                      {profile.researchGraduated && (
+                        <span className="text-[#ffaa00] text-sm font-mono hidden lg:inline">⬡ GRADUATED</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {(profile.achievements?.length ?? 0) > 0 && (
+                        <Link href="/profile#achievements" className="text-[#33bb55] text-sm font-mono hover:text-[#00ff41] hidden lg:inline">
+                          ★ {profile.achievements?.length ?? 0}/20
+                        </Link>
+                      )}
+                      <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">SIGN OUT</button>
+                    </div>
                   </div>
                   <div className="px-3 py-2 space-y-2">
                     <LevelMeter xp={profile.xp} level={profile.level} />
-                    <div className="flex items-center justify-between">
+                    {/* Mobile-only: show graduation + achievements below XP bar */}
+                    <div className="flex items-center justify-between lg:hidden">
                       {profile.researchGraduated && (
                         <div className="text-[#ffaa00] text-sm font-mono">⬡ RESEARCH GRADUATED</div>
                       )}
