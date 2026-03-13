@@ -42,10 +42,11 @@ const BOOT_LINES: { text: string; bright: boolean }[] = [
 ];
 
 export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound }: Props) {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [showButton, setShowButton] = useState(false);
-  const [bootDone, setBootDone] = useState(false);
-  const [bootHidden, setBootHidden] = useState(false);
+  const bootSeen = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bootSeen') === '1';
+  const [visibleCount, setVisibleCount] = useState(bootSeen ? BOOT_LINES.length : 0);
+  const [showButton, setShowButton] = useState(bootSeen);
+  const [bootDone, setBootDone] = useState(bootSeen);
+  const [bootHidden, setBootHidden] = useState(bootSeen);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
   const { profile, loading: playerLoading, signedIn, signInWithEmail, verifyOtp, signOut, refreshProfile, applyProfile } = usePlayer();
   const [showAuthFlow, setShowAuthFlow] = useState(false);
@@ -91,7 +92,10 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
   useEffect(() => {
     if (visibleCount === BOOT_LINES.length) {
-      const t = setTimeout(() => setBootDone(true), 300);
+      const t = setTimeout(() => {
+        setBootDone(true);
+        try { sessionStorage.setItem('bootSeen', '1'); } catch {}
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [visibleCount]);
