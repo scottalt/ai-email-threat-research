@@ -26,11 +26,23 @@ test.describe('Navigation & UI', () => {
     await expect(dailyTab).toBeVisible({ timeout: 15_000 });
   });
 
-  test('back navigation from methodology works', async ({ page }) => {
+  test('nav bar is visible on homepage', async ({ page }) => {
+    await page.goto('/');
+    const nav = page.locator('nav');
+    await expect(nav.first()).toBeVisible({ timeout: 10_000 });
+    await expect(nav.first().locator('a[aria-current="page"]')).toContainText('PLAY');
+  });
+
+  test('can navigate via nav bar', async ({ page }) => {
     await page.goto('/methodology');
-    const backLink = page.getByText(/intel|back/i).first();
-    await expect(backLink).toBeVisible({ timeout: 10_000 });
-    await backLink.click();
-    await expect(page).toHaveURL(/intel|\//, { timeout: 10_000 });
+    const nav = page.locator('nav');
+    await expect(nav.first()).toBeVisible({ timeout: 10_000 });
+    await nav.first().locator('a', { hasText: 'PLAY' }).click();
+    await expect(page).toHaveURL('/');
+  });
+
+  test('methodology page is accessible', async ({ page }) => {
+    await page.goto('/methodology');
+    await expect(page.locator('body')).not.toContainText('Application error');
   });
 });
