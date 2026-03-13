@@ -25,7 +25,7 @@ type CheckFn = (
   player: PlayerStats,
   answers: AnswerRow[],
   gameMode: string,
-  extra: { dailySessionCount: number },
+  extra: { dailySessionCount: number; currentStreak?: number },
 ) => boolean;
 
 const CHECKS: Record<string, CheckFn> = {
@@ -45,6 +45,11 @@ const CHECKS: Record<string, CheckFn> = {
   streak_5:        (_p, a) => a.some(r => r.streak_at_answer_time >= 5),
   streak_10:       (_p, a) => a.some(r => r.streak_at_answer_time >= 10),
   daily_3:         (_p, _a, _gm, extra) => extra.dailySessionCount >= 3,
+
+  // Daily streak
+  streak_3d:       (_p, _a, _gm, extra) => (extra.currentStreak ?? 0) >= 3,
+  streak_7d:       (_p, _a, _gm, extra) => (extra.currentStreak ?? 0) >= 7,
+  streak_30d:      (_p, _a, _gm, extra) => (extra.currentStreak ?? 0) >= 30,
 
   // Speed
   speed_demon:     (_p, a) => a.some(r => r.correct && r.confidence === 'certain' && r.time_from_render_ms !== null && r.time_from_render_ms < 5000),
@@ -77,6 +82,7 @@ export async function checkAchievements(
   sessionId: string,
   sessionAnswers: AnswerRow[],
   gameMode: string,
+  currentStreak: number = 0,
 ): Promise<string[]> {
   // 1. Fetch already-unlocked achievement IDs
   const { data: existing } = await admin
@@ -107,7 +113,7 @@ export async function checkAchievements(
   for (const achievement of unearned) {
     const check = CHECKS[achievement.id];
     if (!check) continue;
-    if (check(player, sessionAnswers, gameMode, { dailySessionCount })) {
+    if (check(player, sessionAnswers, gameMode, { dailySessionCount, currentStreak })) {
       newlyEarned.push(achievement.id);
     }
   }
