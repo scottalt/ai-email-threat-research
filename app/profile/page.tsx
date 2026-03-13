@@ -178,7 +178,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-[#020902] flex items-start justify-center px-4 py-8 lg:pt-16 pb-20 lg:pb-8">
       <div className="w-full max-w-sm lg:max-w-4xl space-y-4 lg:space-y-6">
         <div className="term-border bg-[#060c06]">
-          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
             <span className="text-[#33bb55] text-sm lg:text-base tracking-widest">OPERATOR_PROFILE</span>
           </div>
 

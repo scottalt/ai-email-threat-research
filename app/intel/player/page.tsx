@@ -115,9 +115,7 @@ function IntelContent({ data, isAdmin }: { data: IntelData; isAdmin: boolean }) 
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
             <span className="text-[#33bb55] text-sm tracking-widest">INTEL_BRIEFING</span>
-            <div className="flex items-center gap-3">
-              {isAdmin && <Link href="/intel" className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">ADMIN VIEW</Link>}
-            </div>
+            {isAdmin && <Link href="/intel" className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">ADMIN VIEW</Link>}
           </div>
           <div className="px-3 py-3">
             <div className="text-[#00ff41] text-sm font-mono">STATE OF PHISHING IN THE GENAI ERA</div>
