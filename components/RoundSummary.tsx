@@ -52,6 +52,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
   const rank = profile ? getRankFromLevel(profile.level) : null;
   const [xpResult, setXpResult] = useState<{
     xpEarned: number; level: number; levelUp: boolean; graduated: boolean; newAchievements?: string[];
+    streakDay?: number; streakBonusXp?: number;
   } | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
   const xpFired = useRef(false);
@@ -112,6 +113,19 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
             </div>
           )}
           {profile && <LevelMeter xp={profile.xp} level={profile.level} />}
+          {/* Daily streak */}
+          {(xpResult.streakDay ?? 0) > 0 && (
+            <div className="flex justify-between text-sm font-mono">
+              <span className="text-[#00aa28]">
+                {(xpResult.streakBonusXp ?? 0) > 0 ? 'STREAK BONUS' : 'STREAK'}
+              </span>
+              <span className="text-[#00ff41]">
+                {(xpResult.streakBonusXp ?? 0) > 0
+                  ? `+${xpResult.streakBonusXp} XP · Day ${xpResult.streakDay}`
+                  : `Day ${xpResult.streakDay} (bonus already earned today)`}
+              </span>
+            </div>
+          )}
         </div>
       )}
       {/* Achievement unlocks */}
