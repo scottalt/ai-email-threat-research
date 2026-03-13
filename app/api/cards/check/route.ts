@@ -68,6 +68,9 @@ export async function POST(req: NextRequest) {
     ? BASE_POINTS * (CONFIDENCE_MULTIPLIER[confidence] ?? 1) + streakBonus
     : CONFIDENCE_PENALTY[confidence] ?? 0;
 
+  // Include research metadata if present (for research card answer logging)
+  const researchFields = card as unknown as Record<string, unknown>;
+
   return NextResponse.json({
     correct,
     isPhishing: card.isPhishing,
@@ -77,5 +80,17 @@ export async function POST(req: NextRequest) {
     explanation: card.explanation,
     highlights: card.highlights ?? [],
     technique: card.technique ?? null,
+    // Research card metadata — only present for research mode cards
+    ...(researchFields.cardSource ? {
+      cardSource: researchFields.cardSource,
+      secondaryTechnique: researchFields.secondaryTechnique ?? null,
+      isGenaiSuspected: researchFields.isGenaiSuspected ?? null,
+      genaiConfidence: researchFields.genaiConfidence ?? null,
+      grammarQuality: researchFields.grammarQuality ?? null,
+      proseFluency: researchFields.proseFluency ?? null,
+      personalizationLevel: researchFields.personalizationLevel ?? null,
+      contextualCoherence: researchFields.contextualCoherence ?? null,
+      datasetVersion: researchFields.datasetVersion ?? null,
+    } : {}),
   });
 }
