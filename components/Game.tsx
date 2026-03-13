@@ -287,8 +287,8 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
             else playWrong();
           }
 
-          // Log answer event (fire and forget)
-          if (typeof window !== 'undefined') {
+          // Log answer event (fire and forget — skip in preview mode)
+          if (typeof window !== 'undefined' && mode !== 'preview') {
             logAnswerEvent(fullCard, answer, data.correct, confidence, data.streak, newCorrectCount, timing);
           }
 
