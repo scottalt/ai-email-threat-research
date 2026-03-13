@@ -44,3 +44,8 @@ export function xpToNextLevel(xp: number): { current: number; needed: number; le
   const ceilXp = LEVEL_THRESHOLDS[level];
   return { current: xp - floorXp, needed: ceilXp - floorXp, level };
 }
+
+/** Daily streak XP bonus: 5 XP per streak day, capped at 35 (day 7+) */
+export function getStreakBonusXp(currentStreak: number): number {
+  return Math.min(currentStreak * 5, 35);
+}
