@@ -179,10 +179,10 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-[#020902] flex items-start justify-center px-4 py-8">
-      <div className="w-full max-w-sm space-y-4">
+      <div className="w-full max-w-sm lg:max-w-4xl space-y-4 lg:space-y-6">
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-            <span className="text-[#33bb55] text-sm tracking-widest">OPERATOR_PROFILE</span>
+            <span className="text-[#33bb55] text-sm lg:text-base tracking-widest">OPERATOR_PROFILE</span>
             <Link href="/" className="text-[#33bb55] text-sm font-mono hover:text-[#00ff41]">← TERMINAL</Link>
           </div>
 
@@ -285,18 +285,21 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {bottomRows.map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between px-3 py-2">
-                <span className="text-[#33bb55] text-sm font-mono tracking-wider">{label}</span>
-                <span className={`text-sm font-mono font-bold ${
-                  label === 'GRADUATION' && profile.researchGraduated
-                    ? 'text-[#ffaa00]'
-                    : 'text-[#00ff41]'
-                }`}>
-                  {value}
-                </span>
-              </div>
-            ))}
+            {/* Stat rows — grid on desktop, stacked on mobile */}
+            <div className="divide-y divide-[rgba(0,255,65,0.08)] lg:divide-y-0 lg:grid lg:grid-cols-4 lg:gap-px lg:bg-[rgba(0,255,65,0.08)]">
+              {bottomRows.map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between lg:flex-col lg:items-center lg:text-center px-3 py-2 lg:py-3 bg-[#060c06]">
+                  <span className="text-[#33bb55] text-sm lg:text-xs font-mono tracking-wider">{label}</span>
+                  <span className={`text-sm font-mono font-bold ${
+                    label === 'GRADUATION' && profile.researchGraduated
+                      ? 'text-[#ffaa00]'
+                      : 'text-[#00ff41]'
+                  }`}>
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="px-3 pb-3 pt-2">
@@ -304,27 +307,29 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Two-column on desktop: rank ladder + achievements */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-4 lg:space-y-0">
         {/* Rank ladder */}
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-            <span className="text-[#33bb55] text-sm tracking-widest">RANK_PROGRESSION</span>
+            <span className="text-[#33bb55] text-sm lg:text-base tracking-widest">RANK_PROGRESSION</span>
           </div>
           <div className="divide-y divide-[rgba(0,255,65,0.08)]">
             {RANKS.map((rank) => {
               const isCurrent = getRankFromLevel(profile.level).label === rank.label;
               return (
-                <div key={rank.label} className={`flex items-center justify-between px-3 py-2 ${isCurrent ? 'bg-[rgba(0,255,65,0.04)]' : ''}`}>
+                <div key={rank.label} className={`flex items-center justify-between px-3 py-2 lg:py-2.5 ${isCurrent ? 'bg-[rgba(0,255,65,0.04)]' : ''}`}>
                   <div className="flex items-center gap-2">
-                    {isCurrent && <span className="text-[#00ff41] text-sm font-mono">▶</span>}
-                    {!isCurrent && <span className="text-sm font-mono opacity-0">▶</span>}
+                    {isCurrent && <span className="text-[#00ff41] text-sm lg:text-base font-mono">▶</span>}
+                    {!isCurrent && <span className="text-sm lg:text-base font-mono opacity-0">▶</span>}
                     <span
-                      className={`text-sm font-mono font-bold ${isCurrent ? 'anim-rank-pulse' : ''}`}
+                      className={`text-sm lg:text-base font-mono font-bold ${isCurrent ? 'anim-rank-pulse' : ''}`}
                       style={{ color: rank.color }}
                     >
                       {rank.label}
                     </span>
                   </div>
-                  <span className="text-[#33bb55] text-sm font-mono opacity-60">LVL {rank.levels}</span>
+                  <span className="text-[#33bb55] text-sm lg:text-base font-mono opacity-60">LVL {rank.levels}</span>
                 </div>
               );
             })}
@@ -334,7 +339,7 @@ export default function ProfilePage() {
         {/* Achievements */}
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-            <span className="text-[#33bb55] text-sm tracking-widest">ACHIEVEMENTS</span>
+            <span className="text-[#33bb55] text-sm lg:text-base tracking-widest">ACHIEVEMENTS</span>
             <span className="text-[#33bb55] text-sm font-mono">
               {profile.achievements?.length ?? 0}/{ACHIEVEMENTS.length}
             </span>
@@ -373,6 +378,7 @@ export default function ProfilePage() {
               );
             })}
           </div>
+        </div>
         </div>
 
         {/* Admin override panel — only visible to admin */}
