@@ -22,17 +22,13 @@ export function TerminalSounds() {
   // Background music — persists across all routes
   useEffect(() => {
     function startMusic() {
-      console.log('[TerminalSounds] startMusic called');
       if (!musicRef.current) {
         const audio = new Audio(MUSIC_SRC);
         audio.loop = true;
-        audio.volume = 0.15;
+        audio.volume = 0.06;
         musicRef.current = audio;
-        console.log('[TerminalSounds] Audio element created');
       }
-      musicRef.current.play()
-        .then(() => console.log('[TerminalSounds] Music playing'))
-        .catch((err) => console.warn('[TerminalSounds] Play blocked:', err.message));
+      musicRef.current.play().catch(() => {});
     }
 
     function stopMusic() {
@@ -47,7 +43,7 @@ export function TerminalSounds() {
         if (!musicRef.current) {
           const audio = new Audio(MUSIC_SRC);
           audio.loop = true;
-          audio.volume = 0.15;
+          audio.volume = 0.06;
           musicRef.current = audio;
         }
         if (musicRef.current.paused) {
@@ -65,7 +61,6 @@ export function TerminalSounds() {
     // React to SFX toggle
     function handleSfxChange(e: Event) {
       const enabled = (e as CustomEvent<boolean>).detail;
-      console.log('[TerminalSounds] sfx-change event, enabled:', enabled);
       if (enabled) startMusic(); else stopMusic();
     }
 
