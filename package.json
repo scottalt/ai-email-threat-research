@@ -9,10 +9,10 @@
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "db:push:dev": "supabase db push --project-ref iougkmkkbtotanifpezg",
-    "db:migrate:prod": "npm run db:dump:prod && supabase db push --project-ref wocnlclteoeeynmwylki",
-    "db:dump:prod": "supabase db dump --project-ref wocnlclteoeeynmwylki -f backups/pre-migration-$(date +%Y%m%d-%H%M%S).sql",
-    "db:reset:dev": "supabase db reset --project-ref iougkmkkbtotanifpezg"
+    "db:push:dev": "supabase db push --project-ref $SUPABASE_DEV_REF",
+    "db:migrate:prod": "npm run db:dump:prod && supabase db push --project-ref $SUPABASE_PROD_REF",
+    "db:dump:prod": "supabase db dump --project-ref $SUPABASE_PROD_REF -f backups/pre-migration-$(date +%Y%m%d-%H%M%S).sql",
+    "db:reset:dev": "supabase db reset --project-ref $SUPABASE_DEV_REF"
   },
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
