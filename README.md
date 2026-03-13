@@ -28,7 +28,7 @@ No security background needed. If you use email, you're a valid research partici
 
 | Mode | Description | Access |
 |------|-------------|--------|
-| **Research Mode** | 10 cards per round from the research dataset. Every answer contributes to the live study. | Requires sign-in |
+| **Research Mode** | 10 cards per round from the research dataset. Each player contributes exactly 30 answers to the study, then graduates to unlock the other modes. | Requires sign-in |
 | **Freeplay** | 10 random cards per round. Unlimited replays. | Open to all |
 | **Daily Challenge** | Same 10 cards for all players each day. Resets at UTC midnight. One attempt per day. | Unlocked after 30 research answers |
 | **Expert Mode** | Extreme difficulty only. Double XP. | Unlocked after 30 research answers |
