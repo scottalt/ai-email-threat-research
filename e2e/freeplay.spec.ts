@@ -28,6 +28,11 @@ test.describe('Freeplay Mode', () => {
     await playButton.click();
     await cardsResponse;
 
+    // Debug: log what the page shows after clicking play
+    await page.waitForTimeout(3_000);
+    console.log('Page URL after play:', page.url());
+    console.log('Page content excerpt:', await page.locator('body').innerText().then(t => t.slice(0, 500)));
+
     // Answer 10 cards to complete a round
     for (let i = 0; i < 10; i++) {
       const phishingButton = page.getByRole('button', { name: /phishing/i });
