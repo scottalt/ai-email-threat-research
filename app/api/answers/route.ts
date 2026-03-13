@@ -88,10 +88,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Research mode: verify correct and technique server-side + session dedup
+    // Server-side verification of correct answer for all modes
     let verifiedCorrect = a.correct;
     let verifiedIsPhishing = a.isPhishing;
     let verifiedTechnique = a.technique;
+
+    // For all modes: cross-check against Redis session card store (same store /api/cards/check uses)
+    if (a.gameMode !== 'research') {
+      const cardsJson = await redis.get<string>(`session-cards:${a.sessionId}`);
+      if (cardsJson) {
+        const cards = typeof cardsJson === 'string' ? JSON.parse(cardsJson) : cardsJson;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const card = cards.find((c: any) => c.id === a.cardId);
+        if (card) {
+          verifiedIsPhishing = card.isPhishing;
+          verifiedCorrect = (a.userAnswer === 'phishing') === card.isPhishing;
+          verifiedTechnique = card.technique ?? a.technique;
+        }
+      }
+      // If Redis key expired, fall through with client values — check endpoint already verified
+    }
 
     if (a.gameMode === 'research') {
       // 1. Card must exist in cards_real — reject fabricated card IDs
