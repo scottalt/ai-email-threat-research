@@ -58,12 +58,11 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
   const pct = Math.round(Math.min(answersSubmitted / RESEARCH_GRADUATION_ANSWERS, 1) * 100);
 
   return (
-    <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center">
+    <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center lg:pt-16 pb-20 lg:pb-4">
       <div className="w-full max-w-2xl space-y-4 mt-8">
         <div className="term-border bg-[#060c06]">
-          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2">
             <span className="text-[#33bb55] text-sm tracking-widest">INTEL_BRIEFING</span>
-            <Link href="/" className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">&larr; TERMINAL</Link>
           </div>
           <div className="px-3 py-6 space-y-4 text-center">
             <div className="text-[#33bb55] text-4xl font-mono">&#128274;</div>
@@ -110,7 +109,7 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
 
 function IntelContent({ data, isAdmin }: { data: IntelData; isAdmin: boolean }) {
   return (
-    <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center">
+    <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center lg:pt-16 pb-20 lg:pb-4">
       <div className="w-full max-w-2xl lg:max-w-3xl space-y-4 mt-8">
         {/* Header */}
         <div className="term-border bg-[#060c06]">
@@ -118,7 +117,6 @@ function IntelContent({ data, isAdmin }: { data: IntelData; isAdmin: boolean }) 
             <span className="text-[#33bb55] text-sm tracking-widest">INTEL_BRIEFING</span>
             <div className="flex items-center gap-3">
               {isAdmin && <Link href="/intel" className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">ADMIN VIEW</Link>}
-              <Link href="/" className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">&larr; TERMINAL</Link>
             </div>
           </div>
           <div className="px-3 py-3">
@@ -151,12 +149,6 @@ function IntelContent({ data, isAdmin }: { data: IntelData; isAdmin: boolean }) 
           </div>
         )}
 
-        <Link
-          href="/"
-          className="block w-full py-4 term-border text-center text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:bg-[rgba(0,255,65,0.1)] transition-all"
-        >
-          [ BACK TO TERMINAL ]
-        </Link>
       </div>
     </div>
   );
@@ -192,7 +184,7 @@ export default function PlayerIntelPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#060c06] flex items-center justify-center">
+      <div className="min-h-screen bg-[#060c06] flex items-center justify-center lg:pt-16 pb-20 lg:pb-4">
         <div className="text-[#33bb55] text-sm font-mono tracking-widest animate-pulse">LOADING...</div>
       </div>
     );
@@ -209,7 +201,7 @@ export default function PlayerIntelPage() {
 
   if (fetching || !data) {
     return (
-      <div className="min-h-screen bg-[#060c06] flex items-center justify-center">
+      <div className="min-h-screen bg-[#060c06] flex items-center justify-center lg:pt-16 pb-20 lg:pb-4">
         <div className="text-[#33bb55] text-sm font-mono tracking-widest animate-pulse">DECRYPTING INTEL...</div>
       </div>
     );
