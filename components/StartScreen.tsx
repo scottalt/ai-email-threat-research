@@ -30,7 +30,7 @@ const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
 
 // bright=true → phosphor green + glow (separators, READY line)
 const BOOT_LINES: { text: string; bright: boolean }[] = [
-  { text: '> RETRO_PHISH THREAT ANALYZER',  bright: false },
+  { text: '> THREAT_TERMINAL ANALYZER',  bright: false },
   { text: '> RESEARCH PLATFORM v1.0',       bright: false },
   { text: '> \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', bright: true  },
   { text: '> LOADING RESEARCH DATASET.....', bright: false },

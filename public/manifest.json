@@ -1,7 +1,7 @@
 {
-  "name": "Retro Phish",
-  "short_name": "Retro Phish",
-  "description": "Can you spot a phishing attempt? A retro security awareness game.",
+  "name": "Threat Terminal",
+  "short_name": "Threat Terminal",
+  "description": "A cybersecurity research game measuring how humans detect AI-generated email threats.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#060c06",

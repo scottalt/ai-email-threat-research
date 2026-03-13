@@ -1,4 +1,4 @@
-const CACHE = 'retro-phish-v3';
+const CACHE = 'threat-terminal-v4';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

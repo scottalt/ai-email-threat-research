@@ -1,4 +1,4 @@
-# Retro Phish
+# Threat Terminal
 
 A cybersecurity research game measuring how humans detect AI-generated phishing emails. Built as a retro terminal experience.
 
@@ -18,7 +18,7 @@ AI can now generate phishing emails with perfect grammar, flawless spelling, and
 
 ## What This Is
 
-Retro Phish is a game and live research platform. Players read AI-generated emails in a retro terminal interface, decide if each one is phishing or legitimate, and bet their confidence. Every answer contributes to a live dataset measuring which phishing techniques humans miss most when linguistic quality is no longer a reliable signal.
+Threat Terminal is a game and live research platform. Players read AI-generated emails in a retro terminal interface, decide if each one is phishing or legitimate, and bet their confidence. Every answer contributes to a live dataset measuring which phishing techniques humans miss most when linguistic quality is no longer a reliable signal.
 
 No security background needed. If you use email, you're a valid research participant.
 

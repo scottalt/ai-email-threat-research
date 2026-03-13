@@ -1,4 +1,4 @@
-# Retro Phish — Research Methodology
+# Threat Terminal - Research Methodology
 
 **Working Title:** State of Phishing in the Rise of GenAI
 **Author:** Scott Altiparmak
@@ -27,7 +27,7 @@ Prior technique-level phishing detection research was built on datasets where li
 
 ---
 
-## Dataset: Retro Phish v1
+## Dataset: Threat Terminal v1
 
 ### Overview
 
@@ -374,7 +374,7 @@ Active tool interactions are logged per answer. Analysis questions:
 
 ### Self-Selected Sample
 
-Players who seek out a retro phishing awareness game are likely more security-aware than the general population. Results should be interpreted as reflecting a **security-aware population**, not general users. This is a limitation but also produces conservative bypass rates — if even security-aware individuals miss certain techniques at elevated rates, the finding is stronger for the general population.
+Players who seek out an email threat detection game are likely more security-aware than the general population. Results should be interpreted as reflecting a **security-aware population**, not general users. This is a limitation but also produces conservative bypass rates — if even security-aware individuals miss certain techniques at elevated rates, the finding is stronger for the general population.
 
 ### Text-Based Presentation
 

@@ -300,7 +300,7 @@ export default async function IntelPage() {
             <div className="space-y-1">
               <div className="text-[#00ff41] text-sm font-mono">STATE OF PHISHING IN THE GENAI ERA</div>
               <div className="text-[#003a0e] text-sm font-mono">
-                Live aggregate findings from the Retro Phish research dataset. Research Mode answers only.
+                Live aggregate findings from the Threat Terminal research dataset. Research Mode answers only.
               </div>
             </div>
             {data?.refreshedAt && (

@@ -12,13 +12,13 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Retro Phish',
+  title: 'Threat Terminal',
   description: 'A retro terminal game and live research study on AI-generated email detection in 2026.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Retro Phish',
+    title: 'Threat Terminal',
   },
   openGraph: {
     title: 'Can You Spot the Threat?',
