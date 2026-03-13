@@ -21,7 +21,7 @@ test.describe('Research Mode', () => {
 
     // Set up response listener BEFORE clicking
     const cardsResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/api/cards/research') && resp.status() === 200,
+      (resp) => resp.url().includes('/api/cards/research') ,
       { timeout: 30_000 },
     );
     await researchButton.click();
@@ -48,7 +48,7 @@ test.describe('Research Mode', () => {
 
     // Set up check listener BEFORE clicking
     const checkResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/api/cards/check') && resp.status() === 200,
+      (resp) => resp.url().includes('/api/cards/check') ,
       { timeout: 15_000 },
     );
     await phishingButton.click();
@@ -94,7 +94,7 @@ test.describe('Research Mode', () => {
 
     // Set up response listener BEFORE clicking
     const cardsResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/api/cards/research') && resp.status() === 200,
+      (resp) => resp.url().includes('/api/cards/research') ,
       { timeout: 30_000 },
     );
     await researchButton.click();

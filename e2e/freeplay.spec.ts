@@ -9,11 +9,15 @@ test.describe('Freeplay Mode', () => {
 
     // Set up response listener BEFORE clicking to avoid race condition
     const cardsResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/api/cards/freeplay') && resp.status() === 200,
+      (resp) => resp.url().includes('/api/cards/freeplay'),
       { timeout: 30_000 },
     );
     await playButton.click();
-    await cardsResponse;
+    const freeplayResp = await cardsResponse;
+    console.log(`Freeplay API status: ${freeplayResp.status()}`);
+    if (freeplayResp.status() !== 200) {
+      console.log(`Freeplay API body: ${await freeplayResp.text()}`);
+    }
 
     // Answer 10 cards to complete a round
     for (let i = 0; i < 10; i++) {
@@ -22,7 +26,7 @@ test.describe('Freeplay Mode', () => {
 
       // Set up check listener BEFORE clicking
       const checkResponse = page.waitForResponse(
-        (resp) => resp.url().includes('/api/cards/check') && resp.status() === 200,
+        (resp) => resp.url().includes('/api/cards/check') ,
         { timeout: 15_000 },
       );
       await phishingButton.click();

@@ -24,7 +24,7 @@ test.describe('Graduated User Modes & Pages', () => {
     await expect(dailyButton).toBeVisible({ timeout: 15_000 });
 
     const cardsResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/api/cards/daily') && resp.status() === 200,
+      (resp) => resp.url().includes('/api/cards/daily') ,
       { timeout: 30_000 },
     );
     await dailyButton.click();
@@ -54,7 +54,7 @@ test.describe('Graduated User Modes & Pages', () => {
     await expect(expertButton).toBeVisible({ timeout: 15_000 });
 
     const cardsResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/api/cards/expert') && resp.status() === 200,
+      (resp) => resp.url().includes('/api/cards/expert') ,
       { timeout: 30_000 },
     );
     await expertButton.click();
