@@ -51,17 +51,17 @@ test.describe('Research Mode', () => {
     );
     await researchButton.click();
 
+    // Wait for API to return cards FIRST — intro/tutorial only render after cards load
+    await cardsResponse;
+
     // Research intro screen — click "BEGIN RESEARCH"
     const beginButton = page.getByRole('button', { name: /begin/i });
-    if (await beginButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    if (await beginButton.isVisible({ timeout: 10_000 }).catch(() => false)) {
       await beginButton.click();
     }
 
     // Complete tutorial if shown (first-time user)
     await completeTutorialIfShown(page);
-
-    // Wait for cards response
-    await cardsResponse;
 
     // Now on the actual game card — select confidence first
     const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
@@ -121,16 +121,17 @@ test.describe('Research Mode', () => {
     );
     await researchButton.click();
 
+    // Wait for API to return cards FIRST
+    await cardsResponse;
+
     // Dismiss intro if shown
     const beginButton = page.getByRole('button', { name: /begin/i });
-    if (await beginButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    if (await beginButton.isVisible({ timeout: 10_000 }).catch(() => false)) {
       await beginButton.click();
     }
 
     // Complete tutorial if shown
     await completeTutorialIfShown(page);
-
-    await cardsResponse;
 
     // Select confidence first, then answer
     const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
