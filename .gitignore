@@ -53,3 +53,6 @@ corpus/
 
 # script logs
 migration-url-display.log
+
+# card generation prompts
+docs/prompts/
