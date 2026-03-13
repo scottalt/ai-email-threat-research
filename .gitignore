@@ -56,3 +56,10 @@ migration-url-display.log
 
 # card generation prompts
 docs/prompts/
+
+# database backups
+backups/
+
+# playwright
+/test-results/
+/playwright-report/
