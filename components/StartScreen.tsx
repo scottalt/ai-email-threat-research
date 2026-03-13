@@ -200,7 +200,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
       )}
 
       {showButton && (
-        <div className="anim-fade-in-up space-y-4">
+        <div className="anim-fade-in-up space-y-4 lg:space-y-6">
           {/* Player Profile Card */}
           {!playerLoading && (
             <div className="anim-fade-in-up">
@@ -300,31 +300,35 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </div>
           )}
 
-          <div className="term-border bg-[#060c06]">
-            <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-              <span className="text-[#33bb55] text-sm tracking-widest">HOW_TO_PLAY</span>
-            </div>
-            <div className="px-3 py-3 space-y-2.5">
-              {[
-                ['[1]', 'Read the email carefully'],
-                ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
-                ['[3]', 'Classify: PHISHING or LEGIT'],
-                ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
-                ['[5]', 'GUESSING 1×, LIKELY 2× (−100 if wrong), CERTAIN 3× (−200 if wrong)'],
-                ['[6]', '3-streak bonus: +50 pts per milestone'],
-                ['[7]', 'Tap [HEADERS] on emails to inspect SPF/DKIM/DMARC and Reply-To'],
-                ['[8]', 'Tap highlighted URLs to inspect the real destination'],
-              ].map(([tag, desc]) => (
-                <div key={tag} className="flex gap-3 text-sm">
-                  <span className="text-[#00ff41] shrink-0">{tag}</span>
-                  <span className="text-[#33bb55]">{desc}</span>
+          {/* Two-column layout wrapper: sidebar + main on desktop */}
+          <div className="flex flex-col lg:flex-row lg:gap-0">
+            {/* Sidebar: reference content */}
+            <div className="contents lg:block lg:w-80 lg:shrink-0 lg:border-r lg:border-[rgba(0,255,65,0.15)] lg:pr-6 lg:space-y-4">
+              <div className="term-border bg-[#060c06]">
+                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+                  <span className="text-[#33bb55] text-sm lg:text-base tracking-widest">HOW_TO_PLAY</span>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="px-3 py-3 space-y-2.5">
+                  {[
+                    ['[1]', 'Read the email carefully'],
+                    ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
+                    ['[3]', 'Classify: PHISHING or LEGIT'],
+                    ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
+                    ['[5]', 'GUESSING 1×, LIKELY 2× (−100 if wrong), CERTAIN 3× (−200 if wrong)'],
+                    ['[6]', '3-streak bonus: +50 pts per milestone'],
+                    ['[7]', 'Tap [HEADERS] on emails to inspect SPF/DKIM/DMARC and Reply-To'],
+                    ['[8]', 'Tap highlighted URLs to inspect the real destination'],
+                  ].map(([tag, desc]) => (
+                    <div key={tag} className="flex gap-3 text-sm lg:text-base">
+                      <span className="text-[#00ff41] shrink-0">{tag}</span>
+                      <span className="text-[#33bb55] lg:leading-relaxed">{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          {/* Signal guide */}
-          <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
+              {/* Signal guide */}
+              <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
             <button
               onClick={() => setShowGuide((o) => !o)}
               className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[rgba(255,170,0,0.05)] transition-colors"
@@ -362,12 +366,15 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 ].map(({ label, body }) => (
                   <div key={label} className="space-y-0.5">
                     <div className="text-[#ffaa00] text-sm font-mono tracking-widest">{label}</div>
-                    <p className="text-[#33bb55] text-sm font-mono leading-relaxed">{body}</p>
+                    <p className="text-[#33bb55] text-sm lg:text-base font-mono leading-relaxed">{body}</p>
                   </div>
                 ))}
               </div>
             )}
           </div>
+            </div>
+            {/* Main column: actions + leaderboard */}
+            <div className="contents lg:block lg:flex-1 lg:pl-6 lg:space-y-4">
 
           {(() => {
             const graduated = signedIn && (profile?.researchGraduated ?? false);
@@ -410,7 +417,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           {signedIn && profile?.researchGraduated ? (
             <button
               onClick={() => handleStart('daily')}
-              className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all"
+              className="w-full py-4 lg:py-5 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all"
             >
               [ DAILY CHALLENGE — {dateLabel} ]
             </button>
@@ -421,23 +428,20 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </div>
           )}
 
-          {signedIn && profile?.researchGraduated && (
-            <button
-              onClick={() => handleStart('expert')}
-              className="w-full py-4 term-border border-[rgba(255,170,0,0.4)] text-center text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.05)]"
-            >
-              [ EXPERT MODE ]
-            </button>
-          )}
-
-          {/* Post-graduation features */}
+          {/* Post-graduation features: Expert + Stats + Intel */}
           {signedIn && profile?.researchGraduated ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <button
+                onClick={() => handleStart('expert')}
+                className="col-span-2 lg:col-span-1 py-3 term-border border-[rgba(255,170,0,0.4)] text-center text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.05)] transition-all"
+              >
+                [ EXPERT ]
+              </button>
               <Link
                 href="/stats"
                 className="block w-full py-3 term-border text-center text-[#33bb55] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
               >
-                [ MY STATS ]
+                [ STATS ]
               </Link>
               <Link
                 href="/intel/player"
@@ -489,7 +493,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 {activeTab === 'xp' && xpLeaderboard.length > 0 && (
                   <div key={`xp-${xpLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
                     {xpLeaderboard.map((row, i) => (
-                      <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-sm font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+                      <div key={i} className="flex items-center gap-2 px-3 py-1.5 lg:py-2.5 text-sm lg:text-base font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
                         <span className="text-[#1a5c2a] w-4">{i + 1}.</span>
                         <span className="text-[#33bb55] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
                         {row.research_graduated && <span className="text-[#ffaa00] text-sm">★</span>}
@@ -506,7 +510,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 {canSeeDailyLb && activeTab === 'daily' && dailyLeaderboard.length > 0 && (
                   <div key={`daily-${dailyLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
                     {dailyLeaderboard.map((entry, i) => (
-                      <div key={i} className="flex items-center gap-3 px-3 py-1.5 anim-fade-in-up" style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
+                      <div key={i} className="flex items-center gap-3 px-3 py-1.5 lg:py-2.5 anim-fade-in-up" style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
                         <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#1a5c2a]'}`}>{i + 1}</span>
                         <span className="text-[#33bb55] text-sm font-mono flex-1 truncate">{entry.name}</span>
                         {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
@@ -535,6 +539,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               </div>
             );
           })()}
+            </div>
+          </div>
         </div>
       )}
     </div>
