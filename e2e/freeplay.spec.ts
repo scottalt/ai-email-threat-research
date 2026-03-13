@@ -23,18 +23,20 @@ test.describe('Freeplay Mode', () => {
 
     // Answer 10 cards to complete a round
     for (let i = 0; i < 10; i++) {
+      // Step 1: Select confidence first (UI requires this before answer buttons appear)
+      const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
+      await expect(confidenceButton).toBeVisible({ timeout: 15_000 });
+      await confidenceButton.click();
+
+      // Step 2: Now phishing/legit buttons appear
       const phishingButton = page.getByRole('button', { name: /phishing/i });
-      await expect(phishingButton).toBeVisible({ timeout: 15_000 });
+      await expect(phishingButton).toBeVisible({ timeout: 5_000 });
 
       const checkResponse = page.waitForResponse(
         (resp) => resp.url().includes('/api/cards/check'),
         { timeout: 15_000 },
       );
       await phishingButton.click();
-
-      const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
-      await expect(confidenceButton).toBeVisible({ timeout: 5_000 });
-      await confidenceButton.click();
 
       await checkResponse;
 

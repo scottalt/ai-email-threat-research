@@ -30,17 +30,20 @@ test.describe('Graduated User Modes & Pages', () => {
     await dailyButton.click();
     await cardsResponse;
 
+    // Step 1: Select confidence first (UI requires this before answer buttons appear)
+    const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
+    await expect(confidenceButton).toBeVisible({ timeout: 10_000 });
+    await confidenceButton.click();
+
+    // Step 2: Now phishing/legit buttons appear
     const phishingButton = page.getByRole('button', { name: /phishing/i });
-    await expect(phishingButton).toBeVisible({ timeout: 10_000 });
+    await expect(phishingButton).toBeVisible({ timeout: 5_000 });
 
     const checkResponse = page.waitForResponse(
       (resp) => resp.url().includes('/api/cards/check'),
       { timeout: 15_000 },
     );
     await phishingButton.click();
-
-    const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
-    await confidenceButton.click();
 
     await checkResponse;
     await expect(page.getByText(/correct|incorrect/i)).toBeVisible({ timeout: 5_000 });
@@ -60,17 +63,20 @@ test.describe('Graduated User Modes & Pages', () => {
     await expertButton.click();
     await cardsResponse;
 
+    // Step 1: Select confidence first
+    const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
+    await expect(confidenceButton).toBeVisible({ timeout: 10_000 });
+    await confidenceButton.click();
+
+    // Step 2: Now phishing/legit buttons appear
     const phishingButton = page.getByRole('button', { name: /phishing/i });
-    await expect(phishingButton).toBeVisible({ timeout: 10_000 });
+    await expect(phishingButton).toBeVisible({ timeout: 5_000 });
 
     const checkResponse = page.waitForResponse(
       (resp) => resp.url().includes('/api/cards/check'),
       { timeout: 15_000 },
     );
     await phishingButton.click();
-
-    const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
-    await confidenceButton.click();
 
     await checkResponse;
     await expect(page.getByText(/correct|incorrect/i)).toBeVisible({ timeout: 5_000 });

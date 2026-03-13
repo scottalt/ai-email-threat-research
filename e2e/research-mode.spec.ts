@@ -41,10 +41,15 @@ test.describe('Research Mode', () => {
     // Wait for cards response
     await cardsResponse;
 
-    // Answer the first card
+    // Step 1: Select confidence first (UI requires this before answer buttons appear)
+    const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
+    await expect(confidenceButton).toBeVisible({ timeout: 10_000 });
+    await confidenceButton.click();
+
+    // Step 2: Now phishing/legit buttons appear
     const phishingButton = page.getByRole('button', { name: /phishing/i });
     const legitButton = page.getByRole('button', { name: /legit/i });
-    await expect(phishingButton.or(legitButton)).toBeVisible({ timeout: 10_000 });
+    await expect(phishingButton.or(legitButton)).toBeVisible({ timeout: 5_000 });
 
     // Set up check listener BEFORE clicking
     const checkResponse = page.waitForResponse(
@@ -52,11 +57,6 @@ test.describe('Research Mode', () => {
       { timeout: 15_000 },
     );
     await phishingButton.click();
-
-    // Select confidence
-    const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
-    await expect(confidenceButton).toBeVisible({ timeout: 5_000 });
-    await confidenceButton.click();
 
     // Wait for server-side answer check
     const checkData = await (await checkResponse).json();
@@ -76,8 +76,9 @@ test.describe('Research Mode', () => {
     await expect(nextButton).toBeVisible({ timeout: 5_000 });
     await nextButton.click();
 
-    // Second card should load — confirms the game loop works
-    await expect(phishingButton.or(legitButton)).toBeVisible({ timeout: 10_000 });
+    // Second card should load — select confidence first
+    const confidenceButton2 = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
+    await expect(confidenceButton2).toBeVisible({ timeout: 10_000 });
   });
 
   test('server-side answer verification rejects re-checking same card', async ({ page }) => {
@@ -107,18 +108,20 @@ test.describe('Research Mode', () => {
 
     await cardsResponse;
 
-    // Answer one card
+    // Step 1: Select confidence first
+    const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
+    await expect(confidenceButton).toBeVisible({ timeout: 10_000 });
+    await confidenceButton.click();
+
+    // Step 2: Now answer
     const phishingButton = page.getByRole('button', { name: /phishing/i });
-    await expect(phishingButton).toBeVisible({ timeout: 10_000 });
+    await expect(phishingButton).toBeVisible({ timeout: 5_000 });
 
     const checkResponse = page.waitForResponse(
       (resp) => resp.url().includes('/api/cards/check'),
       { timeout: 15_000 },
     );
     await phishingButton.click();
-
-    const confidenceButton = page.getByRole('button', { name: /certain|likely|guessing/i }).first();
-    await confidenceButton.click();
 
     await checkResponse;
 
