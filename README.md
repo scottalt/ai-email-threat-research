@@ -1,14 +1,20 @@
 # Retro Phish
 
-A cybersecurity research game measuring how humans detect AI-generated phishing emails — built as a retro terminal experience.
+A cybersecurity research game measuring how humans detect AI-generated phishing emails. Built as a retro terminal experience.
 
 **Live:** [research.scottaltiparmak.com](https://research.scottaltiparmak.com)
+
+<p align="center">
+  <img src="docs/menu.jpg" alt="Terminal boot screen" width="280" />
+  <img src="docs/example.jpg" alt="Email analysis gameplay" width="280" />
+  <img src="docs/roundsummary.jpg" alt="Round summary with score" width="280" />
+</p>
 
 ---
 
 ## The Problem
 
-AI can now generate phishing emails with perfect grammar, flawless spelling, and convincing context. The old signals — broken English, awkward phrasing, obvious typos — no longer apply. So how do humans detect phishing in 2026?
+AI can now generate phishing emails with perfect grammar, flawless spelling, and convincing context. The old signals (broken English, awkward phrasing, obvious typos) no longer apply. So how do humans detect phishing in 2026?
 
 ## What This Is
 
@@ -23,8 +29,8 @@ No security background needed. If you use email, you're a valid research partici
 | Mode | Description | Access |
 |------|-------------|--------|
 | **Research Mode** | 10 cards per round from the research dataset. Every answer contributes to the live study. | Requires sign-in |
-| **Daily Challenge** | Same 10 cards for all players each day. Resets at UTC midnight. One attempt per day. | Requires sign-in |
 | **Freeplay** | 10 random cards per round. Unlimited replays. | Open to all |
+| **Daily Challenge** | Same 10 cards for all players each day. Resets at UTC midnight. One attempt per day. | Unlocked after 30 research answers |
 | **Expert Mode** | Extreme difficulty only. Double XP. | Unlocked after 30 research answers |
 
 **Core loop:**
@@ -61,7 +67,7 @@ No security background needed. If you use email, you're a valid research partici
 
 Players optionally self-report their professional background: `NON-TECHNICAL`, `TECHNICAL / NON-SECURITY`, or `INFOSEC / CYBERSECURITY`. This enables comparison of bypass rates across expertise levels.
 
-**Intel Briefing:** After submitting 30 research answers, players unlock the Intel Briefing — a live dashboard showing aggregate findings from all participants including overall bypass rates, accuracy by background, and technique effectiveness.
+**Intel Briefing:** After submitting 30 research answers, players unlock the Intel Briefing, a live dashboard showing aggregate findings from all participants including overall bypass rates, accuracy by background, and technique effectiveness.
 
 - Methodology: [research.scottaltiparmak.com/methodology](https://research.scottaltiparmak.com/methodology)
 
@@ -100,7 +106,7 @@ Players optionally self-report their professional background: `NON-TECHNICAL`, `
 | Expert | 180+ | Extreme | Expert Mode |
 | Research | 1,000+ | Easy → Extreme | Research Mode (frozen dataset) |
 
-Each pool is independent — research cards are never reused in other game modes.
+Each pool is independent. Research cards are never reused in other game modes.
 
 ---
 
