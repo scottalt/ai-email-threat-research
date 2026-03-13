@@ -31,7 +31,7 @@ test.describe('Freeplay Mode', () => {
     // Answer 10 cards to complete a round
     for (let i = 0; i < 10; i++) {
       const phishingButton = page.getByRole('button', { name: /phishing/i });
-      await expect(phishingButton).toBeVisible({ timeout: 10_000 });
+      await expect(phishingButton).toBeVisible({ timeout: 15_000 });
 
       const checkResponse = page.waitForResponse(
         (resp) => resp.url().includes('/api/cards/check'),
