@@ -33,7 +33,7 @@ function SectionHeader({ title }: { title: string }) {
 
 function BarRow({ label, value, pct, color, sub }: { label: string; value: string; pct: number; color: string; sub?: string }) {
   return (
-    <div className="flex items-center px-3 py-2 gap-3">
+    <div className="flex items-center px-3 py-2 lg:py-2.5 gap-3">
       <div className="flex-1 min-w-0">
         <span className="text-[#33bb55] text-sm lg:text-base font-mono">{label}</span>
         {sub && <span className="text-[#1a5c2a] text-sm lg:text-base font-mono ml-1">{sub}</span>}

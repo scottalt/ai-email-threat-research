@@ -174,7 +174,7 @@ export default function StatsPage() {
                   const pct = Math.round((data.correct / data.total) * 100);
                   const color = pct >= 80 ? '#00ff41' : pct >= 60 ? '#ffaa00' : '#ff3333';
                   return (
-                    <div key={mode} className="px-3 py-2.5">
+                    <div key={mode} className="px-3 py-2.5 lg:py-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[#33bb55] text-sm lg:text-base font-mono tracking-wider">{MODE_LABELS[mode] ?? mode.toUpperCase()}</span>
                         <div className="flex items-center gap-2">
@@ -195,14 +195,14 @@ export default function StatsPage() {
                 <span className="text-[#33bb55] text-sm lg:text-base tracking-widest">TOOL_USAGE</span>
               </div>
               <div className="divide-y divide-[rgba(0,255,65,0.08)]">
-                <div className="px-3 py-2.5">
+                <div className="px-3 py-2.5 lg:py-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[#33bb55] text-sm lg:text-base font-mono tracking-wider">HEADERS CHECKED</span>
                     <span className="text-sm lg:text-base font-mono font-bold text-[#00ff41]">{stats.headersRate}%</span>
                   </div>
                   <AccuracyBar pct={stats.headersRate} color="#33bb55" />
                 </div>
-                <div className="px-3 py-2.5">
+                <div className="px-3 py-2.5 lg:py-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[#33bb55] text-sm lg:text-base font-mono tracking-wider">URLS INSPECTED</span>
                     <span className="text-sm lg:text-base font-mono font-bold text-[#00ff41]">{stats.urlRate}%</span>
@@ -227,7 +227,7 @@ export default function StatsPage() {
                   const pct = Math.round((data.correct / data.total) * 100);
                   const color = pct >= 80 ? '#00ff41' : pct >= 60 ? '#ffaa00' : '#ff3333';
                   return (
-                    <div key={d} className="px-3 py-2.5">
+                    <div key={d} className="px-3 py-2.5 lg:py-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[#33bb55] text-sm lg:text-base font-mono tracking-wider">{d.toUpperCase()}</span>
                         <div className="flex items-center gap-2">
@@ -256,7 +256,7 @@ export default function StatsPage() {
                     : c === 'likely' ? (pct >= 70 ? '#00ff41' : '#ffaa00')
                     : '#33bb55';
                   return (
-                    <div key={c} className="px-3 py-2.5">
+                    <div key={c} className="px-3 py-2.5 lg:py-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[#33bb55] text-sm lg:text-base font-mono tracking-wider">{c.toUpperCase()}</span>
                         <div className="flex items-center gap-2">
