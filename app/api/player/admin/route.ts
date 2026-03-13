@@ -71,6 +71,9 @@ export async function PATCH(req: NextRequest) {
     researchGraduated: row.research_graduated as boolean,
     personalBestScore: row.personal_best_score as number,
     background: (row.background as PlayerBackground | null) ?? null,
+    achievements: [],
+    currentStreak: 0,
+    longestStreak: 0,
   };
   return NextResponse.json(profile);
 }
