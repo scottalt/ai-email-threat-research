@@ -15,14 +15,22 @@ export async function GET(req: NextRequest) {
   }
 
   const sessionId = req.nextUrl.searchParams.get('sessionId');
-  if (!sessionId) {
-    return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+  if (!sessionId || !/^[0-9a-f-]{36}$/.test(sessionId)) {
+    return NextResponse.json({ error: 'Invalid sessionId' }, { status: 400 });
+  }
+
+  // Prevent re-dealing: if session already has cards, return the existing deck
+  const existing = await redis.get<string>(`session-cards:${sessionId}`);
+  if (existing) {
+    const existingCards = typeof existing === 'string' ? JSON.parse(existing) : existing;
+    return NextResponse.json(existingCards.map(stripCardAnswers));
   }
 
   const cards = getDailyDeck();
 
-  // Store full card data server-side, keyed by session
-  await redis.set(`session-cards:${sessionId}`, JSON.stringify(cards), { ex: SESSION_TTL });
+  // Store full card data server-side, keyed by session (NX = only if not exists)
+  await redis.set(`session-cards:${sessionId}`, JSON.stringify(cards), { ex: SESSION_TTL, nx: true });
+  await redis.set(`session-streak:${sessionId}`, 0, { ex: SESSION_TTL });
 
   return NextResponse.json(cards.map(stripCardAnswers));
 }

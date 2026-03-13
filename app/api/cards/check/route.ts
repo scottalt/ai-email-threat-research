@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { sessionId, cardId, userAnswer, confidence, streak } = body;
+  const { sessionId, cardId, userAnswer, confidence } = body;
 
   if (!sessionId || !cardId || !userAnswer || !confidence) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -60,13 +60,19 @@ export async function POST(req: NextRequest) {
   }
   await redis.set(checkedKey, '1', { ex: 60 * 60 });
 
-  // Server-side answer verification
+  // Server-side answer verification with server-tracked streak
+  const streakKey = `session-streak:${sessionId}`;
+  const storedStreak = (await redis.get<number>(streakKey)) ?? 0;
+
   const correct = (userAnswer === 'phishing') === card.isPhishing;
-  const currentStreak = correct ? (streak ?? 0) + 1 : 0;
+  const currentStreak = correct ? storedStreak + 1 : 0;
   const streakBonus = correct && currentStreak > 0 && currentStreak % 3 === 0 ? STREAK_BONUS : 0;
   const pointsEarned = correct
     ? BASE_POINTS * (CONFIDENCE_MULTIPLIER[confidence] ?? 1) + streakBonus
     : CONFIDENCE_PENALTY[confidence] ?? 0;
+
+  // Persist streak server-side
+  await redis.set(streakKey, currentStreak, { ex: 60 * 60 });
 
   // Include research metadata if present (for research card answer logging)
   const researchFields = card as unknown as Record<string, unknown>;
