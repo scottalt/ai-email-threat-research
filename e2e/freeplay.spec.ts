@@ -1,32 +1,40 @@
 import { test, expect } from '@playwright/test';
+import { ensureTestUser, seedGraduatedUser, TEST_GRADUATED_EMAIL } from './helpers/test-accounts';
+import { injectSession } from './helpers/auth';
+
+const supabaseUrl = process.env.TEST_SUPABASE_URL!;
 
 test.describe('Freeplay Mode', () => {
+  let user: Awaited<ReturnType<typeof ensureTestUser>>;
+
+  test.beforeAll(async () => {
+    user = await ensureTestUser(TEST_GRADUATED_EMAIL);
+    await seedGraduatedUser(user.id);
+  });
+
   test('play a full round: card → answer → feedback → next → summary', async ({ page }) => {
+    await injectSession(page, supabaseUrl, user.accessToken, user.refreshToken);
     await page.goto('/');
 
+    // Graduated user sees [ PLAY ] for freeplay
     const playButton = page.getByRole('button', { name: /play/i }).first();
     await expect(playButton).toBeVisible({ timeout: 15_000 });
 
     // Set up response listener BEFORE clicking to avoid race condition
     const cardsResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/api/cards/freeplay'),
+      (resp) => resp.url().includes('/api/cards/'),
       { timeout: 30_000 },
     );
     await playButton.click();
-    const freeplayResp = await cardsResponse;
-    console.log(`Freeplay API status: ${freeplayResp.status()}`);
-    if (freeplayResp.status() !== 200) {
-      console.log(`Freeplay API body: ${await freeplayResp.text()}`);
-    }
+    await cardsResponse;
 
     // Answer 10 cards to complete a round
     for (let i = 0; i < 10; i++) {
       const phishingButton = page.getByRole('button', { name: /phishing/i });
       await expect(phishingButton).toBeVisible({ timeout: 10_000 });
 
-      // Set up check listener BEFORE clicking
       const checkResponse = page.waitForResponse(
-        (resp) => resp.url().includes('/api/cards/check') ,
+        (resp) => resp.url().includes('/api/cards/check'),
         { timeout: 15_000 },
       );
       await phishingButton.click();
