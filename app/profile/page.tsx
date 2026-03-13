@@ -95,7 +95,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#020902] flex items-center justify-center px-4">
+      <main className="min-h-screen bg-[#020902] flex items-center justify-center px-4 lg:pt-16 pb-20 lg:pb-8">
         <span className="text-[#33bb55] text-sm font-mono">LOADING...</span>
       </main>
     );
@@ -103,14 +103,11 @@ export default function ProfilePage() {
 
   if (!signedIn || !profile) {
     return (
-      <main className="min-h-screen bg-[#020902] flex items-center justify-center px-4">
+      <main className="min-h-screen bg-[#020902] flex items-center justify-center px-4 lg:pt-16 pb-20 lg:pb-8">
         <div className="w-full max-w-sm space-y-4">
           <div className="term-border bg-[#060c06] px-4 py-6 text-center space-y-3">
             <div className="text-[#33bb55] text-sm font-mono tracking-widest">NOT_AUTHENTICATED</div>
             <div className="text-[#33bb55] text-sm font-mono opacity-70">Sign in to view your profile.</div>
-            <Link href="/" className="block text-[#00ff41] text-sm font-mono hover:underline">
-              ← BACK TO TERMINAL
-            </Link>
           </div>
         </div>
       </main>
@@ -178,12 +175,11 @@ export default function ProfilePage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#020902] flex items-start justify-center px-4 py-8">
+    <main className="min-h-screen bg-[#020902] flex items-start justify-center px-4 py-8 lg:pt-16 pb-20 lg:pb-8">
       <div className="w-full max-w-sm lg:max-w-4xl space-y-4 lg:space-y-6">
         <div className="term-border bg-[#060c06]">
           <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
             <span className="text-[#33bb55] text-sm lg:text-base tracking-widest">OPERATOR_PROFILE</span>
-            <Link href="/" className="text-[#33bb55] text-sm font-mono hover:text-[#00ff41]">← TERMINAL</Link>
           </div>
 
           <div className="divide-y divide-[rgba(0,255,65,0.08)]">
