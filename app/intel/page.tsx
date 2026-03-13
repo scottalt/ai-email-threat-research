@@ -604,7 +604,7 @@ export default async function IntelPage() {
               <div className="mt-2">
                 Full methodology:{' '}
                 <Link href="/methodology" className="text-[#00aa28] hover:underline">
-                  retro-phish.scottaltiparmak.com/methodology
+                  research.scottaltiparmak.com/methodology
                 </Link>
               </div>
             </div>

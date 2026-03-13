@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 
 export const metadata = {
-  title: 'Research Methodology — Retro Phish',
+  title: 'Research Methodology - Retro Phish',
   description: 'Full methodology for the State of Phishing in the GenAI Era research study.',
 };
 

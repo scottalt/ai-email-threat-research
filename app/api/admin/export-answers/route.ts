@@ -109,8 +109,8 @@ function buildMetadata(data: ExportRow[]) {
     technique_breakdown: byTechnique,
     difficulty_breakdown: byDifficulty,
     background_breakdown: byBackground,
-    source: 'https://retro-phish.scottaltiparmak.com',
-    author: 'Scott Altiparmak — scottaltiparmak.com',
+    source: 'https://research.scottaltiparmak.com',
+    author: 'Scott Altiparmak - scottaltiparmak.com',
   };
 }
 

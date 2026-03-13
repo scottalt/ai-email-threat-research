@@ -64,9 +64,9 @@ function buildMetadata(data: ExportRow[]) {
     legit_cards: legit.length,
     technique_breakdown: byTechnique,
     difficulty_breakdown: byDifficulty,
-    source: 'https://retro-phish.scottaltiparmak.com',
-    methodology: 'https://retro-phish.scottaltiparmak.com/methodology',
-    author: 'Scott Altiparmak — scottaltiparmak.com',
+    source: 'https://research.scottaltiparmak.com',
+    methodology: 'https://research.scottaltiparmak.com/methodology',
+    author: 'Scott Altiparmak - scottaltiparmak.com',
   };
 }
 
