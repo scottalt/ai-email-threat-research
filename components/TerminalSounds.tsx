@@ -26,7 +26,7 @@ export function TerminalSounds() {
       if (!musicRef.current) {
         const audio = new Audio(MUSIC_SRC);
         audio.loop = true;
-        audio.volume = 0.06;
+        audio.volume = 0.15;
         musicRef.current = audio;
         console.log('[TerminalSounds] Audio element created');
       }
@@ -47,7 +47,7 @@ export function TerminalSounds() {
         if (!musicRef.current) {
           const audio = new Audio(MUSIC_SRC);
           audio.loop = true;
-          audio.volume = 0.06;
+          audio.volume = 0.15;
           musicRef.current = audio;
         }
         if (musicRef.current.paused) {
