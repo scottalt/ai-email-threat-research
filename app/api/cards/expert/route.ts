@@ -4,6 +4,9 @@ import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import { getExpertDeck } from '@/data/expert-cards';
+import { stripCardAnswers } from '@/lib/card-utils';
+
+const SESSION_TTL = 60 * 60; // 1 hour
 
 async function getGraduatedAuthId(): Promise<{ authId: string | null; graduated: boolean }> {
   const cookieStore = await cookies();
@@ -26,7 +29,6 @@ async function getGraduatedAuthId(): Promise<{ authId: string | null; graduated:
 }
 
 export async function GET(req: NextRequest) {
-  // Rate limit: 10 requests per IP per minute
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   const rlKey = `ratelimit:cards-expert:${ip}`;
   const rlCount = await redis.incr(rlKey);
@@ -40,7 +42,15 @@ export async function GET(req: NextRequest) {
   if (!authId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   if (!graduated) return NextResponse.json({ error: 'Expert mode not unlocked' }, { status: 403 });
 
+  const sessionId = req.nextUrl.searchParams.get('sessionId');
+  if (!sessionId) {
+    return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+  }
+
   const cards = getExpertDeck(10);
 
-  return NextResponse.json(cards);
+  // Store full card data server-side, keyed by session
+  await redis.set(`session-cards:${sessionId}`, JSON.stringify(cards), { ex: SESSION_TTL });
+
+  return NextResponse.json(cards.map(stripCardAnswers));
 }

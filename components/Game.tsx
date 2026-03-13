@@ -34,14 +34,13 @@ class SummaryErrorBoundary extends Component<
     return this.props.children;
   }
 }
-import { getShuffledDeck, getDailyDeck } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { FeedbackCard } from './FeedbackCard';
 import { RoundSummary } from './RoundSummary';
 import { StartScreen } from './StartScreen';
 import { ResearchIntro } from './ResearchIntro';
 import { TutorialCard } from './TutorialCard';
-import type { Card, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
+import type { Card, DealCard, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { usePlayer } from '@/lib/usePlayer';
 import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
@@ -61,11 +60,11 @@ const CONFIDENCE_PENALTY: Record<Confidence, number> = {
   certain: -200,
 };
 
-type GamePhase = 'start' | 'playing' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro' | 'research_unavailable' | 'tutorial';
+type GamePhase = 'start' | 'playing' | 'checking' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro' | 'research_unavailable' | 'tutorial';
 
 export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const [phase, setPhase] = useState<GamePhase>('start');
-  const [deck, setDeck] = useState<Card[]>([]);
+  const [deck, setDeck] = useState<DealCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [lastResult, setLastResult] = useState<RoundResult | null>(null);
@@ -111,6 +110,16 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     return 'desktop';
   }
 
+  function fetchFreeplayDeck() {
+    fetch(`/api/cards/freeplay?sessionId=${encodeURIComponent(sessionId.current)}`)
+      .then((r) => r.json())
+      .then((cards: Card[]) => {
+        setDeck(cards);
+        setPhase('playing');
+      })
+      .catch(() => setPhase('start'));
+  }
+
   function startRound(newMode: GameMode = 'freeplay') {
     sessionId.current = generateSessionId();
     sessionStartedAt.current = new Date().toISOString();
@@ -145,9 +154,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           if (!cards.length) {
             // Research deck not ready — fall back to freeplay silently
             setMode('freeplay');
-            setDeck(getShuffledDeck(ROUND_SIZE));
-            setPhase('playing');
-            return;
+            return fetchFreeplayDeck();
           }
           const arr = [...cards];
           for (let i = arr.length - 1; i > 0; i--) {
@@ -170,15 +177,13 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
 
     if (newMode === 'expert') {
       setPhase('loading' as GamePhase);
-      fetch('/api/cards/expert')
+      fetch(`/api/cards/expert?sessionId=${encodeURIComponent(sessionId.current)}`)
         .then((r) => r.json())
         .then((cards: Card[]) => {
           if (!cards.length) {
             // No extreme cards yet — fall back to freeplay silently
             setMode('freeplay');
-            setDeck(getShuffledDeck(ROUND_SIZE));
-            setPhase('playing');
-            return;
+            return fetchFreeplayDeck();
           }
           const arr = [...cards];
           for (let i = arr.length - 1; i > 0; i--) {
@@ -192,8 +197,16 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       return;
     }
 
-    setDeck(newMode === 'daily' ? getDailyDeck() : getShuffledDeck(ROUND_SIZE));
-    setPhase('playing');
+    // Freeplay and daily modes — fetch cards from server
+    setPhase('loading' as GamePhase);
+    const endpoint = newMode === 'daily' ? '/api/cards/daily' : '/api/cards/freeplay';
+    fetch(`${endpoint}?sessionId=${encodeURIComponent(sessionId.current)}`)
+      .then((r) => r.json())
+      .then((cards: Card[]) => {
+        setDeck(cards);
+        setPhase('playing');
+      })
+      .catch(() => setPhase('start'));
   }
 
   function handleAnswer(answer: Answer, confidence: Confidence, timing?: {
@@ -206,7 +219,72 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     urlInspected: boolean;
   }) {
     const card = deck[currentIndex];
-    const correct = (answer === 'phishing') === card.isPhishing;
+    const isServerChecked = mode !== 'research' && mode !== 'preview';
+
+    if (isServerChecked) {
+      // Server-side answer verification for freeplay/daily/expert
+      setPhase('checking');
+      fetch('/api/cards/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionId.current,
+          cardId: card.id,
+          userAnswer: answer,
+          confidence,
+          streak,
+        }),
+      })
+        .then(r => r.json())
+        .then((data: { correct: boolean; isPhishing: boolean; pointsEarned: number; streak: number; clues: string[]; explanation: string; highlights: string[]; technique: string | null }) => {
+          // Hydrate the card with server-provided answer data
+          const fullCard: Card = {
+            ...card,
+            isPhishing: data.isPhishing,
+            clues: data.clues,
+            explanation: data.explanation,
+            highlights: data.highlights,
+            technique: data.technique,
+          };
+
+          const fc = data.correct ? 'anim-clear-flash' : 'anim-breach-flash';
+          setFlashClass(fc);
+          setTimeout(() => setFlashClass(null), 500);
+
+          const result: RoundResult = { card: fullCard, userAnswer: answer, correct: data.correct, confidence, pointsEarned: data.pointsEarned };
+          setLastResult(result);
+          setResults((prev) => [...prev, result]);
+          setStreak(data.streak);
+          const newCorrectCount = data.correct ? correctCount + 1 : correctCount;
+          setCorrectCount(newCorrectCount);
+          setTotalScore((prev) => Math.max(0, prev + data.pointsEarned));
+
+          // Update the deck with the hydrated card so RoundSummary has full data
+          setDeck(prev => prev.map((c, i) => i === currentIndex ? fullCard : c));
+
+          if (soundEnabled) {
+            if (data.pointsEarned > BASE_POINTS * CONFIDENCE_MULTIPLIER[confidence]) playStreak();
+            else if (data.correct) playCorrect();
+            else playWrong();
+          }
+
+          // Log answer event (fire and forget)
+          if (typeof window !== 'undefined') {
+            logAnswerEvent(fullCard, answer, data.correct, confidence, data.streak, newCorrectCount, timing);
+          }
+
+          setPhase('feedback');
+        })
+        .catch(() => {
+          // If check fails, fall back to start — don't reveal answers
+          setPhase('start');
+        });
+      return;
+    }
+
+    // Research/preview mode — client-side check (research answers are verified server-side in /api/answers)
+    const fullCard = card as Card; // Research/preview cards always have full data
+    const correct = (answer === 'phishing') === fullCard.isPhishing;
 
     const fc = correct ? 'anim-clear-flash' : 'anim-breach-flash';
     setFlashClass(fc);
@@ -218,7 +296,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       ? BASE_POINTS * CONFIDENCE_MULTIPLIER[confidence] + streakBonus
       : CONFIDENCE_PENALTY[confidence];
 
-    const result: RoundResult = { card, userAnswer: answer, correct, confidence, pointsEarned };
+    const result: RoundResult = { card: fullCard, userAnswer: answer, correct, confidence, pointsEarned };
     setLastResult(result);
     setResults((prev) => [...prev, result]);
     setStreak(newStreak);
@@ -232,70 +310,82 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       else playWrong();
     }
 
-    // Log answer event (fire and forget — never block the game, skip in preview mode)
+    // Log answer event (fire and forget — skip in preview mode)
     if (typeof window !== 'undefined' && mode !== 'preview') {
-      const researchCard = card as Card & Record<string, unknown>;
-      const answerEvent: AnswerEvent = {
-        sessionId: sessionId.current,
-        cardId: card.id,
-        cardSource: (researchCard.cardSource as 'generated' | 'real') ?? 'generated',
-        isPhishing: card.isPhishing,
-        technique: (researchCard.technique as string | null) ?? null,
-        secondaryTechnique: (researchCard.secondaryTechnique as string | null) ?? null,
-        isGenaiSuspected: (researchCard.isGenaiSuspected as boolean | null) ?? null,
-        genaiConfidence: (researchCard.genaiConfidence as string | null) ?? null,
-        grammarQuality: (researchCard.grammarQuality as number | null) ?? null,
-        proseFluency: (researchCard.proseFluency as number | null) ?? null,
-        personalizationLevel: (researchCard.personalizationLevel as number | null) ?? null,
-        contextualCoherence: (researchCard.contextualCoherence as number | null) ?? null,
-        difficulty: card.difficulty,
-        type: card.type,
-        userAnswer: answer,
-        correct,
-        confidence,
-        timeFromRenderMs: timing?.timeFromRenderMs ?? null,
-        timeFromConfidenceMs: timing?.timeFromConfidenceMs ?? null,
-        confidenceSelectionTimeMs: timing?.confidenceSelectionTimeMs ?? null,
-        scrollDepthPct: timing?.scrollDepthPct ?? 0,
-        answerMethod: timing?.answerMethod ?? 'button',
-        answerOrdinal: currentIndex + 1,
-        streakAtAnswerTime: newStreak,
-        correctCountAtTime: newCorrectCount,
-        gameMode: mode,
-        isDailyChallenge: mode === 'daily',
-        datasetVersion: (researchCard.datasetVersion as string | null) ?? null,
-        headersOpened: timing?.headersOpened ?? false,
-        urlInspected: timing?.urlInspected ?? false,
-        authStatusSignal: card.authStatus,
-        hasReplyTo: !!card.replyTo,
-        hasUrl: /https?:\/\//.test(card.body),
-        hasAttachment: !!card.attachmentName,
-        hasSentAt: !!card.sentAt,
-      };
-
-      const sessionPayload: SessionPayload = {
-        sessionId: sessionId.current,
-        gameMode: mode,
-        isDailyChallenge: mode === 'daily',
-        startedAt: sessionStartedAt.current,
-        completedAt: null,
-        cardsAnswered: currentIndex + 1,
-        finalScore: null,
-        finalRank: null,
-        deviceType: getDeviceType(),
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
-        referrer: document.referrer,
-      };
-
-      fetch('/api/answers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answer: answerEvent, session: sessionPayload }),
-      }).catch(() => {});
+      logAnswerEvent(fullCard, answer, correct, confidence, newStreak, newCorrectCount, timing);
     }
 
     setPhase('feedback');
+  }
+
+  function logAnswerEvent(card: Card, answer: Answer, correct: boolean, confidence: Confidence, newStreak: number, newCorrectCount: number, timing?: {
+    timeFromRenderMs: number;
+    timeFromConfidenceMs: number | null;
+    confidenceSelectionTimeMs: number | null;
+    scrollDepthPct: number;
+    answerMethod: 'button';
+    headersOpened: boolean;
+    urlInspected: boolean;
+  }) {
+    const researchCard = card as Card & Record<string, unknown>;
+    const answerEvent: AnswerEvent = {
+      sessionId: sessionId.current,
+      cardId: card.id,
+      cardSource: (researchCard.cardSource as 'generated' | 'real') ?? 'generated',
+      isPhishing: card.isPhishing,
+      technique: (researchCard.technique as string | null) ?? null,
+      secondaryTechnique: (researchCard.secondaryTechnique as string | null) ?? null,
+      isGenaiSuspected: (researchCard.isGenaiSuspected as boolean | null) ?? null,
+      genaiConfidence: (researchCard.genaiConfidence as string | null) ?? null,
+      grammarQuality: (researchCard.grammarQuality as number | null) ?? null,
+      proseFluency: (researchCard.proseFluency as number | null) ?? null,
+      personalizationLevel: (researchCard.personalizationLevel as number | null) ?? null,
+      contextualCoherence: (researchCard.contextualCoherence as number | null) ?? null,
+      difficulty: card.difficulty,
+      type: card.type,
+      userAnswer: answer,
+      correct,
+      confidence,
+      timeFromRenderMs: timing?.timeFromRenderMs ?? null,
+      timeFromConfidenceMs: timing?.timeFromConfidenceMs ?? null,
+      confidenceSelectionTimeMs: timing?.confidenceSelectionTimeMs ?? null,
+      scrollDepthPct: timing?.scrollDepthPct ?? 0,
+      answerMethod: timing?.answerMethod ?? 'button',
+      answerOrdinal: currentIndex + 1,
+      streakAtAnswerTime: newStreak,
+      correctCountAtTime: newCorrectCount,
+      gameMode: mode,
+      isDailyChallenge: mode === 'daily',
+      datasetVersion: (researchCard.datasetVersion as string | null) ?? null,
+      headersOpened: timing?.headersOpened ?? false,
+      urlInspected: timing?.urlInspected ?? false,
+      authStatusSignal: card.authStatus,
+      hasReplyTo: !!card.replyTo,
+      hasUrl: /https?:\/\//.test(card.body),
+      hasAttachment: !!card.attachmentName,
+      hasSentAt: !!card.sentAt,
+    };
+
+    const sessionPayload: SessionPayload = {
+      sessionId: sessionId.current,
+      gameMode: mode,
+      isDailyChallenge: mode === 'daily',
+      startedAt: sessionStartedAt.current,
+      completedAt: null,
+      cardsAnswered: currentIndex + 1,
+      finalScore: null,
+      finalRank: null,
+      deviceType: getDeviceType(),
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      referrer: document.referrer,
+    };
+
+    fetch('/api/answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answer: answerEvent, session: sessionPayload }),
+    }).catch(() => {});
   }
 
   function handleNext() {
@@ -421,6 +511,16 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         >
           [ BACK TO TERMINAL ]
         </button>
+      </div>
+    );
+  }
+
+  if (phase === 'checking') {
+    return (
+      <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col items-center gap-4">
+        <div className="term-border bg-[#060c06] px-6 py-8 text-center">
+          <div className="text-[#00aa28] text-sm font-mono tracking-widest animate-pulse">VERIFYING_ANSWER...</div>
+        </div>
       </div>
     );
   }

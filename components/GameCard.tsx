@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import type { Card, Answer, Confidence, GameMode } from '@/lib/types';
+import type { DealCard, Answer, Confidence, GameMode } from '@/lib/types';
+
 import { parseFrom } from '@/lib/parseFrom';
 
 interface Props {
-  card: Card;
+  card: DealCard;
   onAnswer: (answer: Answer, confidence: Confidence, timing?: {
     timeFromRenderMs: number;
     timeFromConfidenceMs: number | null;
@@ -65,7 +66,7 @@ function parseBody(text: string): Segment[] {
 }
 
 function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
-  card: Card;
+  card: DealCard;
   onScroll?: (pct: number) => void;
   onHeadersOpened?: () => void;
   onUrlInspected?: () => void;
@@ -227,7 +228,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
 }
 
 function SMSDisplay({ card, onScroll, onUrlInspected }: {
-  card: Card;
+  card: DealCard;
   onScroll?: (pct: number) => void;
   onUrlInspected?: () => void;
 }) {

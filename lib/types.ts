@@ -22,6 +22,15 @@ export interface Card {
   sentAt?: string;
 }
 
+/** Card as delivered to the client — answer-revealing fields stripped for server-checked modes */
+export type DealCard = Omit<Card, 'isPhishing' | 'clues' | 'explanation' | 'highlights' | 'technique'> & {
+  isPhishing?: boolean;
+  clues?: string[];
+  explanation?: string;
+  highlights?: string[];
+  technique?: string | null;
+};
+
 export interface RoundResult {
   card: Card;
   userAnswer: Answer;
