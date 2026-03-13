@@ -15,7 +15,8 @@ export async function injectSession(
 ): Promise<void> {
   const projectRef = new URL(supabaseUrl).hostname.split('.')[0];
   const cookieName = `sb-${projectRef}-auth-token`;
-  const domain = new URL(page.url() || 'http://localhost').hostname;
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  const domain = new URL(baseUrl).hostname;
 
   const sessionPayload = JSON.stringify({
     access_token: accessToken,
