@@ -2,7 +2,7 @@ import { parse } from 'csv-parse/sync';
 import { readFileSync, writeFileSync } from 'fs';
 
 const csv = readFileSync(process.argv[2], 'utf-8');
-const records = parse(csv, { columns: true, skip_empty_lines: true, relax_column_count: true });
+const records: Record<string, string>[] = parse(csv, { columns: true, skip_empty_lines: true, relax_column_count: true });
 
 function escSql(val: string | null | undefined): string {
   if (val === null || val === undefined || val === '') return 'NULL';
