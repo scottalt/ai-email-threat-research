@@ -1,18 +1,12 @@
-import type { Card } from './types';
-
 /** Fields to strip from cards before sending to clients */
 const ANSWER_FIELDS = ['isPhishing', 'clues', 'explanation', 'highlights', 'technique'] as const;
 
 /** Strip answer-revealing fields from a card for client delivery */
-export function stripCardAnswers(card: Card): Omit<Card, 'isPhishing' | 'clues' | 'explanation' | 'highlights' | 'technique'> {
-  const stripped = { ...card };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function stripCardAnswers<T>(card: T): T {
+  const stripped = { ...card } as any;
   for (const field of ANSWER_FIELDS) {
-    delete (stripped as Record<string, unknown>)[field];
+    delete stripped[field];
   }
   return stripped;
-}
-
-/** Build a lookup map of card ID → full card from an array */
-export function buildCardMap(cards: Card[]): Map<string, Card> {
-  return new Map(cards.map(c => [c.id, c]));
 }

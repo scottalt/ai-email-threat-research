@@ -4,9 +4,11 @@ import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import type { ResearchCard } from '@/lib/types';
+import { stripCardAnswers } from '@/lib/card-utils';
 
 const ROUND_SIZE = 10;
 const CARDS_LIMIT = 1000;
+const SESSION_TTL = 60 * 60; // 1 hour
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -110,7 +112,13 @@ export async function GET(req: NextRequest) {
       datasetVersion: row.dataset_version,
     }));
 
-    return NextResponse.json(cards);
+    // Store full card data in Redis for server-side answer verification
+    if (sessionId && /^[0-9a-f-]{36}$/.test(sessionId)) {
+      await redis.set(`session-cards:${sessionId}`, JSON.stringify(cards), { ex: SESSION_TTL });
+    }
+
+    // Return cards with answer-revealing fields stripped
+    return NextResponse.json(cards.map(stripCardAnswers));
   } catch (err) {
     console.error('Cards research error:', err);
     return NextResponse.json({ error: 'Failed to load cards' }, { status: 500 });
