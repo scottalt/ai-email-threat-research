@@ -43,6 +43,7 @@ import { TutorialCard } from './TutorialCard';
 import type { Card, DealCard, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { usePlayer } from '@/lib/usePlayer';
+import { useNavVisibility } from '@/lib/NavVisibilityContext';
 import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
 import { getRankFromLevel } from '@/lib/rank';
 
@@ -80,6 +81,12 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const hasAutoStarted = useRef(false);
   const [flashClass, setFlashClass] = useState<string | null>(null);
   const sessionFinalized = useRef<Promise<void>>(Promise.resolve());
+  const { setNavHidden } = useNavVisibility();
+
+  useEffect(() => {
+    setNavHidden(phase !== 'start');
+    return () => setNavHidden(false);
+  }, [phase, setNavHidden]);
 
   // Auto-start in preview mode — skip the start screen entirely
   useEffect(() => {

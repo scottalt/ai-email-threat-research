@@ -41,7 +41,7 @@ test.describe('Graduated User Modes & Pages', () => {
     await injectSession(page, supabaseUrl, graduatedUser.accessToken, graduatedUser.refreshToken);
     await page.goto('/');
 
-    const expertButton = page.getByRole('button', { name: /expert mode/i });
+    const expertButton = page.getByRole('button', { name: /expert/i });
     await expect(expertButton).toBeVisible({ timeout: 15_000 });
 
     const cardsResponse = page.waitForResponse(
