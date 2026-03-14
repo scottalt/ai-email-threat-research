@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureTestUser, seedGraduatedUser, TEST_GRADUATED_EMAIL } from './helpers/test-accounts';
+import { ensureTestUser, seedGraduatedUser, resetPlayerState, TEST_GRADUATED_EMAIL } from './helpers/test-accounts';
 import { injectSession } from './helpers/auth';
 
 const supabaseUrl = process.env.TEST_SUPABASE_URL!;
