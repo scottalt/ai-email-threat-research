@@ -495,7 +495,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </Link>
           )}
 
-          <div className="flex items-center justify-center gap-4 text-sm font-mono">
+          <div className="flex items-center justify-center gap-4 text-sm font-mono -mt-3 lg:-mt-4">
             <span className="text-[#1a5c2a]">10 questions per round</span>
             <span className="text-[#1a5c2a]">·</span>
             <Link href="/changelog" className="text-[#1a5c2a] hover:text-[#33bb55] transition-colors tracking-wider">v{version}</Link>
