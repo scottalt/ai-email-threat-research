@@ -55,6 +55,14 @@ export function NavBar() {
               </Link>
             );
           })}
+          <Link
+            href="/changelog"
+            className={`text-sm tracking-wider transition-colors ${
+              pathname.startsWith('/changelog') ? 'text-[#00ff41]' : 'text-[#1a5c2a] hover:text-[#33bb55]'
+            }`}
+          >
+            WHAT&apos;S NEW
+          </Link>
           <button
             onClick={toggleSound}
             aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}

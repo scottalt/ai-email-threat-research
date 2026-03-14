@@ -9,6 +9,7 @@ import { useNavVisibility } from '@/lib/NavVisibilityContext';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
 import { playBootTick } from '@/lib/sounds';
+import { version } from '@/package.json';
 
 interface LeaderboardEntry {
   name: string;
@@ -497,7 +498,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           <div className="flex items-center justify-center gap-4 text-sm font-mono">
             <span className="text-[#1a5c2a]">10 questions per round</span>
             <span className="text-[#1a5c2a]">·</span>
-            <Link href="/changelog" className="text-[#33bb55] hover:text-[#00ff41] transition-colors tracking-wider">[ CHANGELOG ]</Link>
+            <Link href="/changelog" className="text-[#1a5c2a] hover:text-[#33bb55] transition-colors tracking-wider">v{version}</Link>
           </div>
 
           {/* Tabbed leaderboard — XP always visible; Daily tab only for graduated players */}
