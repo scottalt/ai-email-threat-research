@@ -1,6 +1,5 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 
@@ -83,23 +82,15 @@ export default function MethodologyPage() {
   const content = readFileSync(join(process.cwd(), 'docs/research/methodology.md'), 'utf-8');
 
   return (
-    <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center">
+    <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center lg:pt-16 pb-20 lg:pb-8">
       <div className="w-full max-w-2xl space-y-4 mt-8 mb-12">
         <div className="term-border bg-[#060c06]">
-          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2">
             <span className="text-[#00aa28] text-sm tracking-widest">RESEARCH_METHODOLOGY</span>
-            <Link href="/intel/player" className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28] transition-colors">
-              ← INTEL
-            </Link>
           </div>
           <div className="px-4 py-4">
             <ReactMarkdown components={components}>{content}</ReactMarkdown>
           </div>
-        </div>
-
-        <div className="flex gap-3 text-sm font-mono">
-          <Link href="/intel/player" className="text-[#003a0e] hover:text-[#00aa28] transition-colors">← INTEL</Link>
-          <Link href="/" className="text-[#003a0e] hover:text-[#00aa28] transition-colors">← TERMINAL</Link>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import type { GameMode, PlayerBackground } from '@/lib/types';
 import { getRankFromLevel } from '@/lib/rank';
 import Link from 'next/link';
 import { usePlayer } from '@/lib/usePlayer';
+import { useNavVisibility } from '@/lib/NavVisibilityContext';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
 import { playBootTick } from '@/lib/sounds';
@@ -42,10 +43,14 @@ const BOOT_LINES: { text: string; bright: boolean }[] = [
 ];
 
 export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound }: Props) {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [showButton, setShowButton] = useState(false);
+  const bootSeen = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bootSeen') === '1';
+  const [visibleCount, setVisibleCount] = useState(bootSeen ? BOOT_LINES.length : 0);
+  const [showButton, setShowButton] = useState(bootSeen);
+  const [bootDone, setBootDone] = useState(bootSeen);
+  const [bootHidden, setBootHidden] = useState(bootSeen);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
   const { profile, loading: playerLoading, signedIn, signInWithEmail, verifyOtp, signOut, refreshProfile, applyProfile } = usePlayer();
+  const { setNavHidden } = useNavVisibility();
   const [showAuthFlow, setShowAuthFlow] = useState(false);
   const [callsign, setCallsign] = useState('');
   const [callsignLoading, setCallsignLoading] = useState(false);
@@ -89,10 +94,30 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
   useEffect(() => {
     if (visibleCount === BOOT_LINES.length) {
-      const t = setTimeout(() => setShowButton(true), 300);
+      const t = setTimeout(() => {
+        setBootDone(true);
+        try { sessionStorage.setItem('bootSeen', '1'); } catch {}
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [visibleCount]);
+
+  // After boot fades out, show main content
+  useEffect(() => {
+    if (bootDone && !bootHidden) {
+      const fallback = setTimeout(() => {
+        setBootHidden(true);
+        setShowButton(true);
+      }, 400); // slightly longer than the 300ms transition
+      return () => clearTimeout(fallback);
+    }
+  }, [bootDone, bootHidden]);
+
+  // Hide nav bar during boot animation
+  useEffect(() => {
+    setNavHidden(!bootHidden);
+    return () => setNavHidden(false);
+  }, [bootHidden, setNavHidden]);
 
   function handleStart(mode: GameMode) {
     playBootTick();
@@ -148,52 +173,72 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
 
   return (
-    <div className="w-full max-w-sm px-4 pb-safe flex flex-col gap-6">
-      {/* Terminal window */}
-      <div className="term-border bg-[#060c06]">
-        <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
-          <span className="text-[#00aa28] text-sm tracking-widest">ANALYST_TERMINAL</span>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleSound}
-              aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
-              className={`text-sm font-mono transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#003a0e]'}`}
-            >
-              {soundEnabled ? '[SFX]' : '[SFX OFF]'}
-            </button>
-            <span className="text-[#00aa28] text-sm">■ □ □</span>
+    <div className={`w-full px-4 pb-safe flex flex-col gap-6 lg:gap-8 ${showButton ? 'max-w-sm lg:max-w-4xl' : 'max-w-md'}`}>
+      {/* Terminal boot animation — fades out after loading */}
+      {!bootHidden && (
+        <div
+          className={`term-border bg-[#060c06] transition-opacity duration-300 ${bootDone ? 'opacity-0' : 'opacity-100'}`}
+          onTransitionEnd={() => { if (bootDone) { setBootHidden(true); setShowButton(true); } }}
+        >
+          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
+            <span className="text-[#33bb55] text-sm tracking-widest">ANALYST_TERMINAL</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleSound}
+                aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
+                className={`lg:hidden text-sm font-mono transition-colors p-2 -m-2 ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a]'}`}
+              >
+                {soundEnabled ? '[SFX]' : '[SFX OFF]'}
+              </button>
+              <span className="text-[#33bb55] text-sm">■ □ □</span>
+            </div>
+          </div>
+          <div className="px-3 py-4 min-h-48 space-y-1 overflow-hidden">
+            {BOOT_LINES.slice(0, visibleCount).map((line, i) => (
+              <div
+                key={i}
+                className={`anim-fade-in text-sm font-mono leading-relaxed ${
+                  line.bright ? 'text-[#00ff41]' : 'text-[#33bb55]'
+                }`}
+              >
+                {line.text}
+              </div>
+            ))}
+            {!showButton && visibleCount < BOOT_LINES.length && (
+              <span className="cursor" />
+            )}
           </div>
         </div>
-        <div className="px-3 py-4 min-h-48 space-y-1 overflow-hidden">
-          {BOOT_LINES.slice(0, visibleCount).map((line, i) => (
-            <div
-              key={i}
-              className={`anim-fade-in text-sm font-mono leading-relaxed ${
-                line.bright ? 'text-[#00ff41]' : 'text-[#00aa28]'
-              }`}
-            >
-              {line.text}
-            </div>
-          ))}
-          {!showButton && visibleCount < BOOT_LINES.length && (
-            <span className="cursor" />
-          )}
-        </div>
-      </div>
+      )}
 
       {showButton && (
-        <div className="anim-fade-in-up space-y-4">
+        <div className="anim-fade-in-up space-y-4 lg:space-y-6">
+          {/* SFX toggle — mobile only, visible when not signed in (signed-in users see it in profile header) */}
+          {!signedIn && !showAuthFlow && (
+            <div className="flex justify-end lg:hidden">
+              <button
+                onClick={toggleSound}
+                aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
+                className={`text-sm font-mono transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a]'}`}
+              >
+                {soundEnabled ? '[SFX]' : '[SFX OFF]'}
+              </button>
+            </div>
+          )}
           {/* Player Profile Card */}
           {!playerLoading && (
             <div className="anim-fade-in-up">
               {signedIn && profile && !profile.displayName ? (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <span className="text-[#00aa28] text-sm tracking-widest">SET_CALLSIGN</span>
-                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28]">SIGN OUT</button>
+                    <span className="text-[#33bb55] text-sm tracking-widest">SET_CALLSIGN</span>
+                    <div className="flex items-center gap-3">
+                      <button onClick={toggleSound} aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'} className={`lg:hidden text-sm font-mono transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a]'}`}>{soundEnabled ? '[SFX]' : '[SFX OFF]'}</button>
+                      <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">SIGN OUT</button>
+                    </div>
                   </div>
                   <div className="px-3 py-3 space-y-2">
-                    <div className="text-[#003a0e] text-sm font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
+                    <div className="text-[#1a5c2a] text-sm font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
                     <form onSubmit={handleSetCallsign} className="flex gap-2">
                       <input
                         type="text"
@@ -213,8 +258,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       </button>
                     </form>
                     <div className="space-y-1.5 pt-1">
-                      <div className="text-[#00aa28] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
-                      <div className="text-[#00aa28] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
+                      <div className="text-[#33bb55] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
+                      <div className="text-[#33bb55] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
                       <div className="grid grid-cols-2 gap-1.5">
                         {BACKGROUND_OPTIONS.map((opt) => (
                           <button
@@ -224,7 +269,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                             className={`py-1.5 font-mono text-sm tracking-wider transition-all border ${
                               background === opt.value
                                 ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
-                                : 'text-[#00aa28] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
+                                : 'text-[#33bb55] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
                             }`}
                           >
                             {opt.label}
@@ -238,17 +283,31 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               ) : signedIn && profile ? (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <Link href="/profile" className="text-[#00ff41] text-sm tracking-widest font-bold hover:text-[#00ff41] border border-[rgba(0,255,65,0.3)] px-2 py-0.5 hover:bg-[rgba(0,255,65,0.06)] transition-colors">[ {profile.displayName} ]</Link>
-                    <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#003a0e] text-sm font-mono hover:text-[#00aa28]">SIGN OUT</button>
+                    <div className="flex items-center gap-3">
+                      <Link href="/profile" className="text-[#00ff41] text-sm tracking-widest font-bold hover:text-[#00ff41] border border-[rgba(0,255,65,0.3)] px-2 py-0.5 hover:bg-[rgba(0,255,65,0.06)] transition-colors">[ {profile.displayName} ]</Link>
+                      {profile.researchGraduated && (
+                        <span className="text-[#ffaa00] text-sm font-mono hidden lg:inline">⬡ GRADUATED</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {(profile.achievements?.length ?? 0) > 0 && (
+                        <Link href="/profile#achievements" className="text-[#33bb55] text-sm font-mono hover:text-[#00ff41] hidden lg:inline">
+                          ★ {profile.achievements?.length ?? 0}/20
+                        </Link>
+                      )}
+                      <button onClick={toggleSound} aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'} className={`lg:hidden text-sm font-mono transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a]'}`}>{soundEnabled ? '[SFX]' : '[SFX OFF]'}</button>
+                      <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">SIGN OUT</button>
+                    </div>
                   </div>
                   <div className="px-3 py-2 space-y-2">
                     <LevelMeter xp={profile.xp} level={profile.level} />
-                    <div className="flex items-center justify-between">
+                    {/* Mobile-only: show graduation + achievements below XP bar */}
+                    <div className="flex items-center justify-between lg:hidden">
                       {profile.researchGraduated && (
                         <div className="text-[#ffaa00] text-sm font-mono">⬡ RESEARCH GRADUATED</div>
                       )}
                       {(profile.achievements?.length ?? 0) > 0 && (
-                        <Link href="/profile#achievements" className="text-[#00aa28] text-sm font-mono hover:text-[#00ff41]">
+                        <Link href="/profile#achievements" className="text-[#33bb55] text-sm font-mono hover:text-[#00ff41]">
                           ★ {profile.achievements?.length ?? 0}/20
                         </Link>
                       )}
@@ -269,31 +328,35 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </div>
           )}
 
-          <div className="term-border bg-[#060c06]">
-            <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-              <span className="text-[#00aa28] text-sm tracking-widest">HOW_TO_PLAY</span>
-            </div>
-            <div className="px-3 py-3 space-y-2.5">
-              {[
-                ['[1]', 'Read the email carefully'],
-                ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
-                ['[3]', 'Classify: PHISHING or LEGIT'],
-                ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
-                ['[5]', 'GUESSING 1×, LIKELY 2× (−100 if wrong), CERTAIN 3× (−200 if wrong)'],
-                ['[6]', '3-streak bonus: +50 pts per milestone'],
-                ['[7]', 'Tap [HEADERS] on emails to inspect SPF/DKIM/DMARC and Reply-To'],
-                ['[8]', 'Tap highlighted URLs to inspect the real destination'],
-              ].map(([tag, desc]) => (
-                <div key={tag} className="flex gap-3 text-sm">
-                  <span className="text-[#00ff41] shrink-0">{tag}</span>
-                  <span className="text-[#00aa28]">{desc}</span>
+          {/* Two-column layout wrapper: sidebar + main on desktop */}
+          <div className="flex flex-col lg:flex-row lg:gap-0">
+            {/* Sidebar: reference content */}
+            <div className="contents lg:block lg:w-80 lg:shrink-0 lg:border-r lg:border-[rgba(0,255,65,0.15)] lg:pr-6 lg:space-y-4">
+              <div className="term-border bg-[#060c06]">
+                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
+                  <span className="text-[#33bb55] text-sm lg:text-base tracking-widest">HOW_TO_PLAY</span>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="px-3 py-3 space-y-2.5">
+                  {[
+                    ['[1]', 'Read the email carefully'],
+                    ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
+                    ['[3]', 'Classify: PHISHING or LEGIT'],
+                    ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
+                    ['[5]', 'GUESSING 1×, LIKELY 2× (−100 if wrong), CERTAIN 3× (−200 if wrong)'],
+                    ['[6]', '3-streak bonus: +50 pts per milestone'],
+                    ['[7]', 'Tap [HEADERS] on emails to inspect SPF/DKIM/DMARC and Reply-To'],
+                    ['[8]', 'Tap highlighted URLs to inspect the real destination'],
+                  ].map(([tag, desc]) => (
+                    <div key={tag} className="flex gap-3 text-sm lg:text-base">
+                      <span className="text-[#00ff41] shrink-0">{tag}</span>
+                      <span className="text-[#33bb55] lg:leading-relaxed">{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          {/* Signal guide */}
-          <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
+              {/* Signal guide */}
+              <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
             <button
               onClick={() => setShowGuide((o) => !o)}
               className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[rgba(255,170,0,0.05)] transition-colors"
@@ -331,12 +394,15 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 ].map(({ label, body }) => (
                   <div key={label} className="space-y-0.5">
                     <div className="text-[#ffaa00] text-sm font-mono tracking-widest">{label}</div>
-                    <p className="text-[#00aa28] text-sm font-mono leading-relaxed">{body}</p>
+                    <p className="text-[#33bb55] text-sm lg:text-base font-mono leading-relaxed">{body}</p>
                   </div>
                 ))}
               </div>
             )}
           </div>
+            </div>
+            {/* Main column: actions + leaderboard */}
+            <div className="contents lg:block lg:flex-1 lg:pl-6 lg:space-y-4">
 
           {(() => {
             const graduated = signedIn && (profile?.researchGraduated ?? false);
@@ -353,13 +419,13 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   className={`w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all ${
                     isResearch
                       ? 'border-[rgba(255,170,0,0.5)] text-[#ffaa00] hover:bg-[rgba(255,170,0,0.06)]'
-                      : 'text-[#00aa28] hover:bg-[rgba(0,255,65,0.05)]'
+                      : 'text-[#33bb55] hover:bg-[rgba(0,255,65,0.05)]'
                   }`}
                 >
                   {isResearch ? '[ RESEARCH MODE ]' : '[ PLAY ]'}
                 </button>
                 {!signedIn && (
-                  <p className="text-[#003a0e] text-sm text-center font-mono">sign in to contribute to the research study</p>
+                  <p className="text-[#1a5c2a] text-sm text-center font-mono">sign in to contribute to the research study</p>
                 )}
                 {researchCapped && (
                   <p className="text-[#ffaa00] text-sm text-center font-mono">
@@ -379,38 +445,35 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           {signedIn && profile?.researchGraduated ? (
             <button
               onClick={() => handleStart('daily')}
-              className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all"
+              className="w-full py-4 lg:py-5 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all"
             >
               [ DAILY CHALLENGE — {dateLabel} ]
             </button>
           ) : (
-            <div className="w-full py-4 term-border border-[rgba(0,255,65,0.15)] text-center font-mono text-sm tracking-widest text-[#003a0e] cursor-not-allowed select-none">
+            <div className="w-full py-4 term-border border-[rgba(0,255,65,0.15)] text-center font-mono text-sm tracking-widest text-[#1a5c2a] cursor-not-allowed select-none">
               [ DAILY CHALLENGE — LOCKED ]
-              <div className="text-[#003a0e] text-xs mt-1 tracking-wide">Complete research to unlock</div>
+              <div className="text-[#1a5c2a] text-xs mt-1 tracking-wide">Complete research to unlock</div>
             </div>
           )}
 
-          {signedIn && profile?.researchGraduated && (
-            <button
-              onClick={() => handleStart('expert')}
-              className="w-full py-4 term-border border-[rgba(255,170,0,0.4)] text-center text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.05)]"
-            >
-              [ EXPERT MODE ]
-            </button>
-          )}
-
-          {/* Post-graduation features */}
+          {/* Post-graduation features: Expert + Stats + Intel */}
           {signedIn && profile?.researchGraduated ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <button
+                onClick={() => handleStart('expert')}
+                className="col-span-2 lg:col-span-1 py-3 term-border border-[rgba(255,170,0,0.4)] text-center text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.05)] transition-all"
+              >
+                [ EXPERT ]
+              </button>
               <Link
                 href="/stats"
-                className="block w-full py-3 term-border text-center text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
+                className="block w-full py-3 term-border text-center text-[#33bb55] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
               >
-                [ MY STATS ]
+                [ STATS ]
               </Link>
               <Link
                 href="/intel/player"
-                className="block w-full py-3 term-border text-center text-[#00aa28] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
+                className="block w-full py-3 term-border text-center text-[#33bb55] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
               >
                 [ INTEL ]
               </Link>
@@ -418,14 +481,14 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           ) : (
             <Link
               href="/intel/player"
-              className="block w-full py-3 term-border border-[rgba(0,255,65,0.15)] text-center font-mono text-sm tracking-widest text-[#003a0e] select-none hover:bg-[rgba(0,255,65,0.02)] transition-all"
+              className="block w-full py-3 term-border border-[rgba(0,255,65,0.15)] text-center font-mono text-sm tracking-widest text-[#1a5c2a] select-none hover:bg-[rgba(0,255,65,0.02)] transition-all"
             >
               [ STATS + INTEL — LOCKED ]
               <span className="block text-xs mt-1 tracking-wide">Complete research to unlock</span>
             </Link>
           )}
 
-          <p className="text-[#003a0e] text-sm text-center font-mono">
+          <p className="text-[#1a5c2a] text-sm text-center font-mono">
             10 questions per round · email · randomized
           </p>
 
@@ -439,16 +502,16 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center gap-3">
                   <button
                     onClick={() => setActiveTab('xp')}
-                    className={`text-sm font-mono tracking-widest ${activeTab === 'xp' ? 'text-[#00ff41]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                    className={`text-sm font-mono tracking-widest ${activeTab === 'xp' ? 'text-[#00ff41]' : 'text-[#1a5c2a] hover:text-[#33bb55]'}`}
                   >
                     XP
                   </button>
                   {canSeeDailyLb && (
                     <>
-                      <span className="text-[#003a0e] text-sm">|</span>
+                      <span className="text-[#1a5c2a] text-sm">|</span>
                       <button
                         onClick={() => setActiveTab('daily')}
-                        className={`text-sm font-mono tracking-widest ${activeTab === 'daily' ? 'text-[#00ff41]' : 'text-[#003a0e] hover:text-[#00aa28]'}`}
+                        className={`text-sm font-mono tracking-widest ${activeTab === 'daily' ? 'text-[#00ff41]' : 'text-[#1a5c2a] hover:text-[#33bb55]'}`}
                       >
                         DAILY
                       </button>
@@ -458,9 +521,9 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 {activeTab === 'xp' && xpLeaderboard.length > 0 && (
                   <div key={`xp-${xpLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
                     {xpLeaderboard.map((row, i) => (
-                      <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-sm font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
-                        <span className="text-[#003a0e] w-4">{i + 1}.</span>
-                        <span className="text-[#00aa28] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
+                      <div key={i} className="flex items-center gap-2 px-3 py-1.5 lg:py-2.5 text-sm lg:text-base font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+                        <span className="text-[#1a5c2a] w-4">{i + 1}.</span>
+                        <span className="text-[#33bb55] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
                         {row.research_graduated && <span className="text-[#ffaa00] text-sm">★</span>}
                         {(() => { const r = getRankFromLevel(row.level); return (
                           <span className={`text-sm font-mono shrink-0`} style={{ color: r.color }}>
@@ -475,9 +538,9 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 {canSeeDailyLb && activeTab === 'daily' && dailyLeaderboard.length > 0 && (
                   <div key={`daily-${dailyLeaderboard.length}`} className="divide-y divide-[rgba(0,255,65,0.08)]">
                     {dailyLeaderboard.map((entry, i) => (
-                      <div key={i} className="flex items-center gap-3 px-3 py-1.5 anim-fade-in-up" style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
-                        <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#003a0e]'}`}>{i + 1}</span>
-                        <span className="text-[#00aa28] text-sm font-mono flex-1 truncate">{entry.name}</span>
+                      <div key={i} className="flex items-center gap-3 px-3 py-1.5 lg:py-2.5 anim-fade-in-up" style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
+                        <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[#ffaa00]' : 'text-[#1a5c2a]'}`}>{i + 1}</span>
+                        <span className="text-[#33bb55] text-sm font-mono flex-1 truncate">{entry.name}</span>
                         {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
                           <span className={`text-sm font-mono shrink-0`} style={{ color: r.color }}>{r.label}</span>
                         ); })()}
@@ -487,16 +550,16 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   </div>
                 )}
                 {canSeeDailyLb && activeTab === 'daily' && dailyLeaderboard.length === 0 && (
-                  <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No scores today yet.</div>
+                  <div className="px-3 py-4 text-center text-[#1a5c2a] text-sm font-mono">No scores today yet.</div>
                 )}
                 {activeTab === 'xp' && xpLeaderboard.length === 0 && (
-                  <div className="px-3 py-4 text-center text-[#003a0e] text-sm font-mono">No players yet.</div>
+                  <div className="px-3 py-4 text-center text-[#1a5c2a] text-sm font-mono">No players yet.</div>
                 )}
                 {!lbExpanded && (xpLeaderboard.length >= 10 || dailyLeaderboard.length >= 10) && (
                   <button
                     onClick={handleExpandLeaderboard}
                     disabled={lbExpandLoading}
-                    className="w-full py-2 border-t border-[rgba(0,255,65,0.15)] text-[#003a0e] hover:text-[#00aa28] text-sm font-mono tracking-widest transition-colors disabled:opacity-50"
+                    className="w-full py-2 border-t border-[rgba(0,255,65,0.15)] text-[#1a5c2a] hover:text-[#33bb55] text-sm font-mono tracking-widest transition-colors disabled:opacity-50"
                   >
                     {lbExpandLoading ? '...' : '[ SHOW MORE ]'}
                   </button>
@@ -504,6 +567,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               </div>
             );
           })()}
+            </div>
+          </div>
         </div>
       )}
     </div>

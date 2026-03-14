@@ -156,14 +156,12 @@ export async function GET() {
     for (const a of answers) {
       const joined = a.players as unknown as { background: string | null } | { background: string | null }[] | null;
       const player = Array.isArray(joined) ? joined[0] ?? null : joined;
-      const bg = player?.background ?? null;
-      if (!bg) continue;
+      const bg = player?.background ?? 'unset';
       if (!bgMap[bg]) bgMap[bg] = { total: 0, correct: 0 };
       bgMap[bg].total++;
       if (a.correct) bgMap[bg].correct++;
     }
     const byBackground = Object.entries(bgMap)
-      .filter(([, v]) => v.total >= 5)
       .map(([bg, v]) => ({
         background: bg,
         total: v.total,
