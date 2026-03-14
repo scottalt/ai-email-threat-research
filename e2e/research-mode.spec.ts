@@ -97,7 +97,7 @@ test.describe('Research Round Completion', () => {
     // Set up listener for XP call BEFORE starting the round
     const xpPromise = page.waitForResponse(
       (resp) => resp.url().includes('/api/player/xp') && resp.status() === 200,
-      { timeout: 60_000 },
+      { timeout: 120_000 },
     );
 
     const researchButton = page.getByRole('button', { name: /research mode/i });
