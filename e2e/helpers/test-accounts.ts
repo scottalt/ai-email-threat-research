@@ -36,17 +36,24 @@ interface TestUser {
  * Uses admin API — no OTP needed.
  */
 export async function ensureTestUser(email: string): Promise<TestUser> {
-  // Try to find existing user
-  const { data: { users } } = await authAdmin.auth.admin.listUsers();
-  let user = users.find((u) => u.email === email);
+  // Try to create the user first — if they already exist, fetch them instead.
+  // This avoids the listUsers() pagination bug where existing users weren't
+  // found because they fell outside the first page of results.
+  let user;
+  const { data: createData, error: createError } = await authAdmin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  });
 
-  if (!user) {
-    const { data, error } = await authAdmin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-    });
-    if (error) throw new Error(`Failed to create test user ${email}: ${error.message}`);
-    user = data.user;
+  if (createData?.user) {
+    user = createData.user;
+  } else if (createError?.message?.includes('already been registered')) {
+    // User exists — find them by listing with a filter
+    const { data: { users } } = await authAdmin.auth.admin.listUsers({ perPage: 1000 });
+    user = users.find((u) => u.email === email);
+    if (!user) throw new Error(`User ${email} reportedly exists but could not be found`);
+  } else {
+    throw new Error(`Failed to create test user ${email}: ${createError?.message}`);
   }
 
   // Generate a session for this user
