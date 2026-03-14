@@ -13,7 +13,9 @@ const dataAdmin = createClient(supabaseUrl, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-export const TEST_FRESH_EMAIL = 'test-fresh@phish-or-not.dev';
+// Fresh email per run — avoids accumulated answers from prior runs
+// hitting the 30-answer research cap or graduation
+export const TEST_FRESH_EMAIL = `test-fresh-${Date.now()}@phish-or-not.dev`;
 export const TEST_GRADUATED_EMAIL = 'test-graduated@phish-or-not.dev';
 export const TEST_FREEPLAY_EMAIL = 'test-freeplay@phish-or-not.dev';
 
@@ -82,11 +84,9 @@ export async function resetPlayerState(authId: string): Promise<void> {
 
   if (!player) return;
 
-  // Delete answers first (FK to sessions)
-  await dataAdmin.from('answers').delete().eq('player_id', player.id);
-
-  // Delete sessions owned by this player (sessions don't have player_id,
-  // but answers link them — after deleting answers, orphan sessions are harmless)
+  // Note: answers table has a trigger that blocks DELETEs (protect_answers_delete).
+  // We cannot wipe answers — instead, graduated/freeplay tests re-seed as needed,
+  // and the research test uses a unique email per run to start truly fresh.
 
   // Reset player_streaks if it exists
   await dataAdmin.from('player_streaks').delete().eq('player_id', player.id);
