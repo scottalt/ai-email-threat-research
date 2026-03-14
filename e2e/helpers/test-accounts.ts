@@ -88,16 +88,20 @@ export async function resetPlayerState(authId: string): Promise<void> {
   // Delete sessions owned by this player (sessions don't have player_id,
   // but answers link them — after deleting answers, orphan sessions are harmless)
 
+  // Reset player_streaks if it exists
+  await dataAdmin.from('player_streaks').delete().eq('player_id', player.id);
+
   // Reset player row to fresh state
   await dataAdmin.from('players').update({
     xp: 0,
     level: 1,
     research_graduated: false,
-    research_answers_submitted: 0,
     display_name: null,
     background: null,
-    daily_streak: 0,
-    last_daily_date: null,
+    total_sessions: 0,
+    research_sessions_completed: 0,
+    personal_best_score: 0,
+    last_xp_session_id: null,
   }).eq('id', player.id);
 }
 
