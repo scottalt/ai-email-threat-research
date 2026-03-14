@@ -15,7 +15,12 @@ const dataAdmin = createClient(supabaseUrl, serviceKey, {
 
 // Fresh email per run — avoids accumulated answers from prior runs
 // hitting the 30-answer research cap or graduation
-export const TEST_FRESH_EMAIL = `test-fresh-${Date.now()}@phish-or-not.dev`;
+// Fresh emails per run — avoids accumulated answers from prior runs
+// hitting the 30-answer research cap or graduation
+const RUN_ID = Date.now();
+export const TEST_FRESH_EMAIL = `test-fresh-${RUN_ID}@phish-or-not.dev`;
+export const TEST_FRESH_ROUND_EMAIL = `test-fresh-round-${RUN_ID}@phish-or-not.dev`;
+export const TEST_FREEPLAY_ROUND_EMAIL = `test-freeplay-round-${RUN_ID}@phish-or-not.dev`;
 export const TEST_GRADUATED_EMAIL = 'test-graduated@phish-or-not.dev';
 export const TEST_FREEPLAY_EMAIL = 'test-freeplay@phish-or-not.dev';
 

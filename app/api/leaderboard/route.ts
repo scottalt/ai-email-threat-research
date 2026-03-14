@@ -108,8 +108,8 @@ export async function POST(req: NextRequest) {
         computedScore += CONFIDENCE_PENALTY[a.confidence] ?? 0;
       }
     }
-    // Allow small tolerance for timing/rounding edge cases, but catch blatant manipulation
-    if (Math.abs(computedScore - score) > 50) {
+    // Allow minimal tolerance for rounding edge cases, but catch manipulation
+    if (Math.abs(computedScore - score) > 10) {
       return NextResponse.json({ error: 'Score mismatch' }, { status: 400 });
     }
 
