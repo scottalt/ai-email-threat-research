@@ -75,7 +75,7 @@ export function NavBar() {
 
       {/* Mobile: bottom tab bar */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#060c06] border-t border-[rgba(0,255,65,0.35)] font-mono animate-[fadeIn_0.5s_ease-in_2s_both]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex justify-around py-2">
+        <div className="flex justify-around py-2.5">
           {links.map((link) => {
             const active = link.match(pathname);
             return (
@@ -83,9 +83,10 @@ export function NavBar() {
                 key={link.path}
                 href={link.path}
                 aria-current={active ? 'page' : undefined}
-                className={`text-xs tracking-wider transition-colors px-2 py-1 ${
-                  active ? 'text-[#00ff41]' : 'text-[#1a5c2a]'
+                className={`text-sm tracking-wider transition-colors px-3 py-1.5 ${
+                  active ? 'text-[#00ff41] font-bold' : 'text-[#4a9a5a]'
                 }`}
+                style={active ? { textShadow: '0 0 8px rgba(0, 255, 65, 0.5)' } : undefined}
               >
                 {link.label}
               </Link>
