@@ -345,7 +345,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 </div>
                 <div className="px-3 py-3 space-y-2.5">
                   {[
-                    ['[1]', 'Read the email carefully'],
+                    ['[1]', 'Read each message carefully'],
                     ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
                     ['[3]', 'Classify: PHISHING or LEGIT'],
                     ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
