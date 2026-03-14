@@ -133,10 +133,29 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     onStart(mode);
   }
 
+  const callsignInputRef = useRef<HTMLInputElement>(null);
+  const backgroundRef = useRef<HTMLDivElement>(null);
+
+  function triggerShake(el: HTMLElement) {
+    el.classList.remove('anim-shake');
+    // Force reflow so re-adding the class restarts the animation
+    void el.offsetWidth;
+    el.classList.add('anim-shake');
+  }
+
   async function handleSetCallsign(e: React.FormEvent) {
     e.preventDefault();
     const name = callsign.trim();
-    if (!name) return;
+    if (!name) {
+      setCallsignError('Enter a callsign');
+      if (callsignInputRef.current) triggerShake(callsignInputRef.current);
+      return;
+    }
+    if (!background) {
+      setCallsignError('Select a background');
+      if (backgroundRef.current) triggerShake(backgroundRef.current);
+      return;
+    }
     setCallsignLoading(true);
     setCallsignError('');
     try {
@@ -409,6 +428,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       <div className="text-[#1a5c2a] text-sm font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
                       <form onSubmit={handleSetCallsign} className="flex gap-2">
                         <input
+                          ref={callsignInputRef}
                           type="text"
                           value={callsign}
                           onChange={(e) => { setCallsign(e.target.value); setCallsignError(''); }}
@@ -419,13 +439,13 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                         />
                         <button
                           type="submit"
-                          disabled={!callsign.trim() || !background || callsignLoading}
+                          disabled={callsignLoading}
                           className="px-3 py-1.5 term-border text-[#00ff41] font-mono text-sm tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                         >
                           {callsignLoading ? '...' : 'SET'}
                         </button>
                       </form>
-                      <div className="space-y-1.5 pt-1">
+                      <div ref={backgroundRef} className="space-y-1.5 pt-1">
                         <div className="text-[#33bb55] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
                         <div className="text-[#33bb55] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
                         <div className="grid grid-cols-2 gap-1.5">
