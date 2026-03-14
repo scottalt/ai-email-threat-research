@@ -16,7 +16,7 @@ function StatBlock({ label, value, sub, highlight }: { label: string; value: str
   const valueColor = highlight === 'red' ? 'text-[#ff3333]' : highlight === 'amber' ? 'text-[#ffaa00]' : 'text-[#00ff41]';
   return (
     <div className="term-border bg-[#060c06] px-3 py-3 text-center">
-      <div className="text-[#1a5c2a] text-sm lg:text-base font-mono tracking-widest">{label}</div>
+      <div className="text-[#1a5c2a] text-xs lg:text-base font-mono tracking-wider lg:tracking-widest">{label}</div>
       <div className={`text-2xl font-black font-mono mt-1 ${valueColor}`}>{value}</div>
       {sub && <div className="text-[#1a5c2a] text-sm lg:text-base font-mono mt-0.5">{sub}</div>}
     </div>
