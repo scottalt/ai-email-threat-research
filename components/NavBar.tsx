@@ -36,7 +36,7 @@ export function NavBar() {
     <>
       {/* Desktop: top bar */}
       <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-50 bg-[#060c06] border-b border-[rgba(0,255,65,0.35)] px-6 py-2.5 items-center justify-between font-mono animate-[fadeIn_0.5s_ease-in_2s_both]" style={{ boxShadow: '0 2px 12px rgba(0, 255, 65, 0.06)' }}>
-        <Link href="/" className="text-[#00ff41] text-sm font-bold tracking-widest" style={{ textShadow: '0 0 8px rgba(0, 255, 65, 0.4)' }}>
+        <Link href="/" className="text-[#00ff41] text-[15px] font-bold tracking-widest" style={{ textShadow: '0 0 8px rgba(0, 255, 65, 0.4)' }}>
           THREAT TERMINAL
         </Link>
         <div className="flex items-center gap-6">
@@ -47,8 +47,8 @@ export function NavBar() {
                 key={link.path}
                 href={link.path}
                 aria-current={active ? 'page' : undefined}
-                className={`text-sm tracking-wider transition-colors ${
-                  active ? 'text-[#00ff41]' : 'text-[#1a5c2a] hover:text-[#33bb55]'
+                className={`text-[15px] tracking-wider transition-colors ${
+                  active ? 'text-[#00ff41]' : 'text-[#4a9a5a] hover:text-[#33bb55]'
                 }`}
               >
                 {link.label}
@@ -57,8 +57,8 @@ export function NavBar() {
           })}
           <Link
             href="/changelog"
-            className={`text-sm tracking-wider transition-colors ${
-              pathname.startsWith('/changelog') ? 'text-[#00ff41]' : 'text-[#1a5c2a] hover:text-[#33bb55]'
+            className={`text-[15px] tracking-wider transition-colors ${
+              pathname.startsWith('/changelog') ? 'text-[#00ff41]' : 'text-[#4a9a5a] hover:text-[#33bb55]'
             }`}
           >
             WHAT&apos;S NEW
@@ -66,9 +66,13 @@ export function NavBar() {
           <button
             onClick={toggleSound}
             aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
-            className={`text-sm transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a] hover:text-[#33bb55]'}`}
+            className={`text-[15px] tracking-wider transition-colors hover:text-[#00ff41]`}
           >
-            {soundEnabled ? '[SFX]' : '[SFX OFF]'}
+            <span className="text-[#4a9a5a]">SFX </span>
+            {soundEnabled
+              ? <span className="text-[#00ff41]">[ON]</span>
+              : <span className="text-[#6aaa6a]">[OFF]</span>
+            }
           </button>
         </div>
       </nav>
