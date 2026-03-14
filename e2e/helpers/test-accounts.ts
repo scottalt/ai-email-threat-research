@@ -69,13 +69,31 @@ export async function ensureTestUser(email: string): Promise<TestUser> {
 }
 
 /**
+ * Ensure the test user has a player row with a display name.
+ * Required so the inline callsign gate doesn't block game start.
+ */
+export async function ensurePlayerProfile(authId: string, displayName = 'TEST_PLAYER'): Promise<void> {
+  const { data: player } = await dataAdmin
+    .from('players')
+    .select('id, display_name')
+    .eq('auth_id', authId)
+    .single();
+
+  if (!player) {
+    await dataAdmin.from('players').insert({ auth_id: authId, display_name: displayName, background: 'technical' });
+  } else if (!player.display_name) {
+    await dataAdmin.from('players').update({ display_name: displayName, background: 'technical' }).eq('id', player.id);
+  }
+}
+
+/**
  * Set up the graduated test user with 30 research answers and graduated flag.
  * Idempotent — safe to call multiple times.
  */
 export async function seedGraduatedUser(authId: string): Promise<void> {
   const { data: player } = await dataAdmin
     .from('players')
-    .select('id, research_graduated')
+    .select('id, research_graduated, display_name')
     .eq('auth_id', authId)
     .single();
 
@@ -84,15 +102,21 @@ export async function seedGraduatedUser(authId: string): Promise<void> {
   if (!player) {
     const { data: newPlayer, error } = await dataAdmin
       .from('players')
-      .insert({ auth_id: authId, research_graduated: true, xp: 3000, level: 5 })
+      .insert({ auth_id: authId, display_name: 'TEST_GRADUATED', background: 'technical', research_graduated: true, xp: 3000, level: 5 })
       .select('id')
       .single();
     if (error) throw new Error(`Failed to create player: ${error.message}`);
     playerId = newPlayer.id;
   } else {
     playerId = player.id;
-    if (!player.research_graduated) {
-      await dataAdmin.from('players').update({ research_graduated: true }).eq('id', playerId);
+    const updates: Record<string, unknown> = {};
+    if (!player.research_graduated) updates.research_graduated = true;
+    if (!(player as { display_name?: string }).display_name) {
+      updates.display_name = 'TEST_GRADUATED';
+      updates.background = 'technical';
+    }
+    if (Object.keys(updates).length > 0) {
+      await dataAdmin.from('players').update(updates).eq('id', playerId);
     }
   }
 
