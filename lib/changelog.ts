@@ -10,28 +10,10 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   // Research milestones (chronological)
   {
-    date: '2026-02-28',
-    category: 'milestone',
-    title: 'Development begins',
-    body: 'Design and development of the Threat Terminal research platform starts.',
-  },
-  {
-    date: '2026-03-04',
-    category: 'milestone',
-    title: 'Dataset target scaled to 1,000 cards',
-    body: 'Original 550-card target expanded to 1,000 to improve statistical power across difficulty levels and techniques.',
-  },
-  {
     date: '2026-03-11',
     category: 'milestone',
-    title: 'Platform opens to players',
-    body: 'Threat Terminal goes live. Players begin submitting phishing detection responses for the research study.',
-  },
-  {
-    date: '2026-03-12',
-    category: 'milestone',
-    title: 'Final research dataset locked — 1,000 cards',
-    body: 'The research card pool is finalized at 1,000 AI-generated email samples (798 Haiku, 202 Sonnet). No further changes will be made to research data.',
+    title: 'Research dataset v1 locked — platform opens to players',
+    body: '1,000 AI-generated email samples finalized. Research mode, daily challenges, player accounts, XP progression, and intel analytics available from day one.',
   },
 
   // Platform updates (chronological — page reverses for display)
