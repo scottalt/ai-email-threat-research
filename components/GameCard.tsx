@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { DealCard, Answer, Confidence, GameMode } from '@/lib/types';
 
 import { parseFrom } from '@/lib/parseFrom';
@@ -74,8 +74,17 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
   const [headersOpen, setHeadersOpen] = useState(false);
   const [showFromEmail, setShowFromEmail] = useState(false);
+  const [bodyExpanded, setBodyExpanded] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [bodyOverflows, setBodyOverflows] = useState(false);
   const segments = parseBody(card.body);
   const { displayName, email } = parseFrom(card.from);
+
+  // Detect if body content overflows the max-height
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (el) setBodyOverflows(el.scrollHeight > el.clientHeight);
+  }, [card.body]);
 
   const headers = (() => {
     if (card.authStatus === 'verified') {
@@ -192,7 +201,8 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
       )}
       <div className="relative">
         <div
-          className="px-3 py-3 text-sm text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 momentum-scroll font-mono scroll-fade-bottom"
+          ref={bodyRef}
+          className={`px-3 py-3 text-sm text-[#00aa28] leading-relaxed whitespace-pre-wrap font-mono ${bodyExpanded ? '' : 'max-h-52 momentum-scroll scroll-fade-bottom'}`}
           onScroll={(e) => {
             const el = e.currentTarget;
             const pct = Math.round(((el.scrollTop + el.clientHeight) / el.scrollHeight) * 100);
@@ -213,6 +223,14 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
             )
           )}
         </div>
+        {(bodyOverflows || bodyExpanded) && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setBodyExpanded((o) => !o); }}
+            className="w-full py-1.5 border-t border-[rgba(0,255,65,0.15)] text-[#1a5c2a] hover:text-[#33bb55] text-xs font-mono tracking-widest transition-colors"
+          >
+            {bodyExpanded ? '[ COLLAPSE ]' : '[ EXPAND ]'}
+          </button>
+        )}
       </div>
       {inspectedUrl && (
         <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
@@ -233,7 +251,15 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
   onUrlInspected?: () => void;
 }) {
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
+  const [bodyExpanded, setBodyExpanded] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [bodyOverflows, setBodyOverflows] = useState(false);
   const segments = parseBody(card.body);
+
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (el) setBodyOverflows(el.scrollHeight > el.clientHeight);
+  }, [card.body]);
 
   return (
     <div className="term-border bg-[#060c06] select-none scanline">
@@ -249,7 +275,8 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
       </div>
       <div className="relative">
         <div
-          className="px-3 py-3 text-sm text-[#00aa28] leading-relaxed whitespace-pre-wrap max-h-52 momentum-scroll font-mono scroll-fade-bottom"
+          ref={bodyRef}
+          className={`px-3 py-3 text-sm text-[#00aa28] leading-relaxed whitespace-pre-wrap font-mono ${bodyExpanded ? '' : 'max-h-52 momentum-scroll scroll-fade-bottom'}`}
           onScroll={(e) => {
             const el = e.currentTarget;
             const pct = Math.round(((el.scrollTop + el.clientHeight) / el.scrollHeight) * 100);
@@ -270,6 +297,14 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
             )
           )}
         </div>
+        {(bodyOverflows || bodyExpanded) && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setBodyExpanded((o) => !o); }}
+            className="w-full py-1.5 border-t border-[rgba(0,255,65,0.15)] text-[#1a5c2a] hover:text-[#33bb55] text-xs font-mono tracking-widest transition-colors"
+          >
+            {bodyExpanded ? '[ COLLAPSE ]' : '[ EXPAND ]'}
+          </button>
+        )}
       </div>
       {inspectedUrl && (
         <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
