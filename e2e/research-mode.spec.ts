@@ -88,7 +88,8 @@ test.describe('Research Round Completion', () => {
     await ensurePlayerProfile(freshUser.id, 'TEST_ROUND_RESEARCHER');
   });
 
-  test('full research round awards XP and records answers', { timeout: 120_000 }, async ({ page }) => {
+  test('full research round awards XP and records answers', async ({ page }) => {
+    test.setTimeout(120_000);
     const before = await getPlayerState(freshUser.id);
 
     await injectSession(page, supabaseUrl, freshUser.accessToken, freshUser.refreshToken);
