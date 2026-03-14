@@ -115,11 +115,12 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     }
   }, [bootDone, bootHidden]);
 
-  // Hide nav bar during boot animation — useLayoutEffect prevents flash before paint
+  // Hide nav bar during boot and until player profile is fully set up
   useLayoutEffect(() => {
-    setNavHidden(!bootHidden);
+    const profileReady = signedIn && !!profile?.displayName;
+    setNavHidden(!bootHidden || !profileReady);
     return () => setNavHidden(false);
-  }, [bootHidden, setNavHidden]);
+  }, [bootHidden, signedIn, profile?.displayName, setNavHidden]);
 
   // Scroll inline onboarding block into view when it mounts
   useEffect(() => {
