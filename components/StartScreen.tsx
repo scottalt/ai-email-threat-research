@@ -5,6 +5,7 @@ import type { GameMode, PlayerBackground } from '@/lib/types';
 import { getRankFromLevel } from '@/lib/rank';
 import Link from 'next/link';
 import { usePlayer } from '@/lib/usePlayer';
+import { useNavVisibility } from '@/lib/NavVisibilityContext';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
 import { playBootTick } from '@/lib/sounds';
@@ -49,6 +50,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const [bootHidden, setBootHidden] = useState(bootSeen);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
   const { profile, loading: playerLoading, signedIn, signInWithEmail, verifyOtp, signOut, refreshProfile, applyProfile } = usePlayer();
+  const { setNavHidden } = useNavVisibility();
   const [showAuthFlow, setShowAuthFlow] = useState(false);
   const [callsign, setCallsign] = useState('');
   const [callsignLoading, setCallsignLoading] = useState(false);
@@ -110,6 +112,12 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
       return () => clearTimeout(fallback);
     }
   }, [bootDone, bootHidden]);
+
+  // Hide nav bar during boot animation
+  useEffect(() => {
+    setNavHidden(!bootHidden);
+    return () => setNavHidden(false);
+  }, [bootHidden, setNavHidden]);
 
   function handleStart(mode: GameMode) {
     playBootTick();
