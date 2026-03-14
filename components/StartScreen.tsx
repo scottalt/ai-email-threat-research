@@ -488,9 +488,11 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </Link>
           )}
 
-          <p className="text-[#1a5c2a] text-sm text-center font-mono">
-            10 questions per round · email · randomized
-          </p>
+          <div className="flex items-center justify-center gap-4 text-sm font-mono">
+            <span className="text-[#1a5c2a]">10 questions per round</span>
+            <span className="text-[#1a5c2a]">·</span>
+            <Link href="/changelog" className="text-[#33bb55] hover:text-[#00ff41] transition-colors tracking-wider">[ CHANGELOG ]</Link>
+          </div>
 
           {/* Tabbed leaderboard — XP always visible; Daily tab only for graduated players */}
           {(() => {
