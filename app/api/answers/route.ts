@@ -96,17 +96,19 @@ export async function POST(req: NextRequest) {
     // For all modes: cross-check against Redis session card store (same store /api/cards/check uses)
     if (a.gameMode !== 'research') {
       const cardsJson = await redis.get<string>(`session-cards:${a.sessionId}`);
-      if (cardsJson) {
-        const cards = typeof cardsJson === 'string' ? JSON.parse(cardsJson) : cardsJson;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const card = cards.find((c: any) => c.id === a.cardId);
-        if (card) {
-          verifiedIsPhishing = card.isPhishing;
-          verifiedCorrect = (a.userAnswer === 'phishing') === card.isPhishing;
-          verifiedTechnique = card.technique ?? a.technique;
-        }
+      if (!cardsJson) {
+        // Redis key expired — reject rather than trusting client values
+        return NextResponse.json({ ok: true }); // silent reject
       }
-      // If Redis key expired, fall through with client values — check endpoint already verified
+      const cards = typeof cardsJson === 'string' ? JSON.parse(cardsJson) : cardsJson;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const card = cards.find((c: any) => c.id === a.cardId);
+      if (!card) {
+        return NextResponse.json({ ok: true }); // silent reject — card not in session
+      }
+      verifiedIsPhishing = card.isPhishing;
+      verifiedCorrect = (a.userAnswer === 'phishing') === card.isPhishing;
+      verifiedTechnique = card.technique ?? a.technique;
     }
 
     if (a.gameMode === 'research') {
@@ -228,6 +230,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (answerError) {
+      // Unique constraint violation = duplicate research answer (race condition caught by DB)
+      if (answerError.code === '23505') {
+        return NextResponse.json({ ok: true }); // silent reject — duplicate
+      }
       console.error('Answer insert failed:', answerError);
       return NextResponse.json({ ok: false, error: 'answer_insert_failed' }, { status: 500 });
     }
