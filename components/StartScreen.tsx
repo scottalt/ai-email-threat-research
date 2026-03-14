@@ -52,7 +52,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
   const { profile, loading: playerLoading, signedIn, signInWithEmail, verifyOtp, signOut, refreshProfile, applyProfile } = usePlayer();
   const { setNavHidden } = useNavVisibility();
-  const [showAuthFlow, setShowAuthFlow] = useState(false);
+  const [showInlineAuth, setShowInlineAuth] = useState(false);
+  const inlineAuthRef = useRef<HTMLDivElement>(null);
   const [callsign, setCallsign] = useState('');
   const [callsignLoading, setCallsignLoading] = useState(false);
   const [callsignError, setCallsignError] = useState('');
@@ -114,21 +115,48 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     }
   }, [bootDone, bootHidden]);
 
-  // Hide nav bar during boot animation — useLayoutEffect prevents flash before paint
+  // Hide nav bar during boot and until player profile is fully set up
   useLayoutEffect(() => {
-    setNavHidden(!bootHidden);
+    const profileReady = signedIn && !!profile?.displayName;
+    setNavHidden(!bootHidden || !profileReady);
     return () => setNavHidden(false);
-  }, [bootHidden, setNavHidden]);
+  }, [bootHidden, signedIn, profile?.displayName, setNavHidden]);
+
+  // Scroll inline onboarding block into view when it mounts
+  useEffect(() => {
+    if (inlineAuthRef.current) {
+      inlineAuthRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [showInlineAuth, signedIn]);
 
   function handleStart(mode: GameMode) {
     playBootTick();
     onStart(mode);
   }
 
+  const callsignInputRef = useRef<HTMLInputElement>(null);
+  const backgroundRef = useRef<HTMLDivElement>(null);
+
+  function triggerShake(el: HTMLElement) {
+    el.classList.remove('anim-shake');
+    // Force reflow so re-adding the class restarts the animation
+    void el.offsetWidth;
+    el.classList.add('anim-shake');
+  }
+
   async function handleSetCallsign(e: React.FormEvent) {
     e.preventDefault();
     const name = callsign.trim();
-    if (!name) return;
+    if (!name) {
+      setCallsignError('Enter a callsign');
+      if (callsignInputRef.current) triggerShake(callsignInputRef.current);
+      return;
+    }
+    if (!background) {
+      setCallsignError('Select a background');
+      if (backgroundRef.current) triggerShake(backgroundRef.current);
+      return;
+    }
     setCallsignLoading(true);
     setCallsignError('');
     try {
@@ -221,7 +249,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
       {showButton && (
         <div className="anim-fade-in-up space-y-4 lg:space-y-6">
           {/* SFX toggle — mobile only, visible when not signed in (signed-in users see it in profile header) */}
-          {!signedIn && !showAuthFlow && (
+          {!signedIn && (
             <div className="flex justify-end lg:hidden">
               <button
                 onClick={toggleSound}
@@ -232,106 +260,42 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               </button>
             </div>
           )}
-          {/* Player Profile Card */}
-          {!playerLoading && (
+          {/* Player Profile Card — only shown for signed-in users with a display name */}
+          {!playerLoading && signedIn && profile?.displayName && (
             <div className="anim-fade-in-up">
-              {signedIn && profile && !profile.displayName ? (
-                <div className="term-border bg-[#060c06]">
-                  <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <span className="text-[#33bb55] text-sm tracking-widest">SET_CALLSIGN</span>
-                    <div className="flex items-center gap-3">
-                      <button onClick={toggleSound} aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'} className={`lg:hidden text-sm font-mono transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a]'}`}>{soundEnabled ? '[SFX]' : '[SFX OFF]'}</button>
-                      <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">SIGN OUT</button>
-                    </div>
+              <div className="term-border bg-[#060c06]">
+                <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Link href="/profile" className="text-[#00ff41] text-sm tracking-widest font-bold hover:text-[#00ff41] border border-[rgba(0,255,65,0.3)] px-2 py-0.5 hover:bg-[rgba(0,255,65,0.06)] transition-colors">[ {profile.displayName} ]</Link>
+                    {profile.researchGraduated && (
+                      <span className="text-[#ffaa00] text-sm font-mono hidden lg:inline">⬡ GRADUATED</span>
+                    )}
                   </div>
-                  <div className="px-3 py-3 space-y-2">
-                    <div className="text-[#1a5c2a] text-sm font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
-                    <form onSubmit={handleSetCallsign} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={callsign}
-                        onChange={(e) => { setCallsign(e.target.value); setCallsignError(''); }}
-                        placeholder="ENTER CALLSIGN"
-                        maxLength={20}
-                        autoFocus
-                        className="flex-1 bg-transparent border border-[rgba(0,255,65,0.3)] text-[#00ff41] font-mono text-sm px-2 py-1.5 placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.7)]"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!callsign.trim() || !background || callsignLoading}
-                        className="px-3 py-1.5 term-border text-[#00ff41] font-mono text-sm tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                      >
-                        {callsignLoading ? '...' : 'SET'}
-                      </button>
-                    </form>
-                    <div className="space-y-1.5 pt-1">
-                      <div className="text-[#33bb55] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
-                      <div className="text-[#33bb55] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {BACKGROUND_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setBackground(background === opt.value ? null : opt.value)}
-                            className={`py-1.5 font-mono text-sm tracking-wider transition-all border ${
-                              background === opt.value
-                                ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
-                                : 'text-[#33bb55] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
-                            }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {callsignError && <div className="text-[#ff3333] text-sm font-mono">{callsignError}</div>}
+                  <div className="flex items-center gap-3">
+                    {(profile.achievements?.length ?? 0) > 0 && (
+                      <Link href="/profile#achievements" className="text-[#33bb55] text-sm font-mono hover:text-[#00ff41] hidden lg:inline">
+                        ★ {profile.achievements?.length ?? 0}/20
+                      </Link>
+                    )}
+                    <button onClick={toggleSound} aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'} className={`lg:hidden text-sm font-mono transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a]'}`}>{soundEnabled ? '[SFX]' : '[SFX OFF]'}</button>
+                    <button onClick={async () => { await signOut(); }} className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">SIGN OUT</button>
                   </div>
                 </div>
-              ) : signedIn && profile ? (
-                <div className="term-border bg-[#060c06]">
-                  <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Link href="/profile" className="text-[#00ff41] text-sm tracking-widest font-bold hover:text-[#00ff41] border border-[rgba(0,255,65,0.3)] px-2 py-0.5 hover:bg-[rgba(0,255,65,0.06)] transition-colors">[ {profile.displayName} ]</Link>
-                      {profile.researchGraduated && (
-                        <span className="text-[#ffaa00] text-sm font-mono hidden lg:inline">⬡ GRADUATED</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {(profile.achievements?.length ?? 0) > 0 && (
-                        <Link href="/profile#achievements" className="text-[#33bb55] text-sm font-mono hover:text-[#00ff41] hidden lg:inline">
-                          ★ {profile.achievements?.length ?? 0}/20
-                        </Link>
-                      )}
-                      <button onClick={toggleSound} aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'} className={`lg:hidden text-sm font-mono transition-colors ${soundEnabled ? 'text-[#00ff41]' : 'text-[#1a5c2a]'}`}>{soundEnabled ? '[SFX]' : '[SFX OFF]'}</button>
-                      <button onClick={async () => { await signOut(); setShowAuthFlow(false); }} className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">SIGN OUT</button>
-                    </div>
-                  </div>
-                  <div className="px-3 py-2 space-y-2">
-                    <LevelMeter xp={profile.xp} level={profile.level} />
-                    {/* Mobile-only: show graduation + achievements below XP bar */}
-                    <div className="flex items-center justify-between lg:hidden">
-                      {profile.researchGraduated && (
-                        <div className="text-[#ffaa00] text-sm font-mono">⬡ RESEARCH GRADUATED</div>
-                      )}
-                      {(profile.achievements?.length ?? 0) > 0 && (
-                        <Link href="/profile#achievements" className="text-[#33bb55] text-sm font-mono hover:text-[#00ff41]">
-                          ★ {profile.achievements?.length ?? 0}/20
-                        </Link>
-                      )}
-                    </div>
+                <div className="px-3 py-2 space-y-2">
+                  <LevelMeter xp={profile.xp} level={profile.level} />
+                  {/* Mobile-only: show graduation + achievements below XP bar */}
+                  <div className="flex items-center justify-between lg:hidden">
+                    {profile.researchGraduated && (
+                      <div className="text-[#ffaa00] text-sm font-mono">⬡ RESEARCH GRADUATED</div>
+                    )}
+                    {(profile.achievements?.length ?? 0) > 0 && (
+                      <Link href="/profile#achievements" className="text-[#33bb55] text-sm font-mono hover:text-[#00ff41]">
+                        ★ {profile.achievements?.length ?? 0}/20
+                      </Link>
+                    )}
                   </div>
                 </div>
-              ) : showAuthFlow ? (
-                <AuthFlow onSignIn={signInWithEmail} onVerifyCode={verifyOtp} onCancel={() => setShowAuthFlow(false)} />
-              ) : (
-                <button
-                  onClick={() => setShowAuthFlow(true)}
-                  className="w-full px-3 py-3 term-border bg-[#060c06] border-[rgba(255,170,0,0.5)] text-left font-mono hover:bg-[rgba(255,170,0,0.06)] transition-colors"
-                >
-                  <div className="text-[#ffaa00] text-sm tracking-widest font-bold">[ SIGN IN TO SAVE YOUR SCORE ]</div>
-                  <div className="text-[#cc8800] text-sm mt-1">Magic link · no password · track XP + rank</div>
-                </button>
-              )}
+              </div>
             </div>
           )}
 
@@ -417,24 +381,96 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             const graduated = signedIn && (profile?.researchGraduated ?? false);
             const researchCapped = signedIn && !graduated && (profile?.researchAnswersSubmitted ?? 0) >= 30;
             const isResearch = signedIn && !graduated && !researchCapped;
+            const needsCallsign = signedIn && !profile?.displayName;
             return (
               <>
-                <button
-                  onClick={() => {
-                    if (!signedIn) { setShowAuthFlow(true); return; }
-                    if (researchCapped) { handleStart('freeplay'); return; }
-                    handleStart(graduated ? 'freeplay' : 'research');
-                  }}
-                  className={`w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all ${
-                    isResearch
-                      ? 'border-[rgba(255,170,0,0.5)] text-[#ffaa00] hover:bg-[rgba(255,170,0,0.06)]'
-                      : 'text-[#33bb55] hover:bg-[rgba(0,255,65,0.05)]'
-                  }`}
-                >
-                  {isResearch ? '[ RESEARCH MODE ]' : '[ PLAY ]'}
-                </button>
-                {!signedIn && (
-                  <p className="text-[#1a5c2a] text-sm text-center font-mono">sign in to contribute to the research study</p>
+                {!needsCallsign && (
+                  <button
+                    onClick={() => {
+                      if (!signedIn) { setShowInlineAuth(true); return; }
+                      if (researchCapped) { handleStart('freeplay'); return; }
+                      handleStart(graduated ? 'freeplay' : 'research');
+                    }}
+                    className={`w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all ${
+                      !signedIn
+                        ? 'border-[rgba(255,170,0,0.5)] text-[#ffaa00] hover:bg-[rgba(255,170,0,0.06)]'
+                        : isResearch
+                          ? 'border-[rgba(255,170,0,0.5)] text-[#ffaa00] hover:bg-[rgba(255,170,0,0.06)]'
+                          : 'text-[#33bb55] hover:bg-[rgba(0,255,65,0.05)]'
+                    }`}
+                  >
+                    {!signedIn ? '[ LOG IN / SIGN UP TO PLAY ]' : isResearch ? '[ RESEARCH MODE ]' : '[ PLAY ]'}
+                  </button>
+                )}
+                {/* Inline onboarding: sign-in (State 1) or callsign setup (State 2) */}
+                {!signedIn && showInlineAuth && (
+                  <div ref={inlineAuthRef} className="anim-slide-down term-border bg-[#060c06] border-[rgba(255,170,0,0.5)]">
+                    <div className="px-3 py-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[#ffaa00] text-sm font-mono font-bold tracking-widest">SIGN IN TO START</div>
+                        <button onClick={() => setShowInlineAuth(false)} aria-label="Close sign-in" className="text-[#ffaa00] text-sm font-mono hover:text-[#cc8800] p-1">✕</button>
+                      </div>
+                      <div className="text-[#33bb55] text-sm font-mono">New or returning — enter your email to begin or continue</div>
+                      <div className="space-y-1 text-sm font-mono">
+                        <div className="text-[#33bb55]"><span className="text-[#ffaa00]">▸</span> Track your XP + climb the leaderboard</div>
+                        <div className="text-[#33bb55]"><span className="text-[#ffaa00]">▸</span> Contribute to phishing research</div>
+                        <div className="text-[#33bb55]"><span className="text-[#ffaa00]">▸</span> Unlock Daily Challenge + Expert Mode</div>
+                      </div>
+                      <div className="text-[#cc8800] text-xs font-mono">Magic code · no password · 10 seconds</div>
+                      <AuthFlow headless onSignIn={signInWithEmail} onVerifyCode={verifyOtp} onCancel={() => setShowInlineAuth(false)} />
+                    </div>
+                  </div>
+                )}
+                {signedIn && profile && !profile.displayName && (
+                  <div ref={inlineAuthRef} className="anim-slide-down term-border bg-[#060c06]">
+                    <div className="px-3 py-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#33bb55] text-sm tracking-widest">SET_CALLSIGN</span>
+                        <button onClick={async () => { await signOut(); setShowInlineAuth(false); }} aria-label="Cancel setup" className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55] p-1">✕</button>
+                      </div>
+                      <div className="text-[#1a5c2a] text-sm font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
+                      <form onSubmit={handleSetCallsign} className="space-y-2">
+                        <input
+                          ref={callsignInputRef}
+                          type="text"
+                          value={callsign}
+                          onChange={(e) => { setCallsign(e.target.value); setCallsignError(''); }}
+                          placeholder="ENTER CALLSIGN"
+                          maxLength={20}
+                          autoFocus
+                          className="w-full bg-transparent border border-[rgba(0,255,65,0.3)] text-[#00ff41] font-mono text-sm px-2 py-1.5 placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.7)]"
+                        />
+                        <div ref={backgroundRef} className="space-y-1.5 pt-1">
+                          <div className="text-[#33bb55] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
+                          <div className="text-[#33bb55] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {BACKGROUND_OPTIONS.map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => setBackground(background === opt.value ? null : opt.value)}
+                                className={`py-1.5 font-mono text-sm tracking-wider transition-all border ${
+                                  background === opt.value
+                                    ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
+                                    : 'text-[#33bb55] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {callsignError && <div className="text-[#ff3333] text-sm font-mono">{callsignError}</div>}
+                        <button
+                          type="submit"
+                          disabled={callsignLoading}
+                          className="w-full py-2.5 term-border text-[#00ff41] font-mono font-bold text-sm tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                          {callsignLoading ? '...' : '[ SET ]'}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
                 )}
                 {researchCapped && (
                   <p className="text-[#ffaa00] text-sm text-center font-mono">
@@ -500,7 +536,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           <div className="flex items-center justify-center gap-3 font-mono">
             <span className="text-[#1a5c2a] text-sm lg:text-base">10 questions per round</span>
             <span className="text-[#1a5c2a]">·</span>
-            <Link href="/changelog" className="text-[#1a5c2a] hover:text-[#33bb55] transition-colors tracking-wider text-sm lg:text-base">v{version}</Link>
+            <Link href="/changelog" className="text-[#33bb55] hover:text-[#00ff41] transition-colors tracking-wider text-sm lg:text-base border border-[rgba(0,255,65,0.2)] px-2 py-0.5 hover:border-[rgba(0,255,65,0.4)] hover:bg-[rgba(0,255,65,0.03)]">v{version}</Link>
           </div>
           </div>
 

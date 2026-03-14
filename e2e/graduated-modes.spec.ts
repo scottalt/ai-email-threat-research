@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   ensureTestUser,
   seedGraduatedUser,
+  resetPlayerState,
   TEST_GRADUATED_EMAIL,
 } from './helpers/test-accounts';
 import { injectSession } from './helpers/auth';
@@ -14,6 +15,7 @@ test.describe('Graduated User Modes & Pages', () => {
 
   test.beforeAll(async () => {
     graduatedUser = await ensureTestUser(TEST_GRADUATED_EMAIL);
+    await resetPlayerState(graduatedUser.id);
     await seedGraduatedUser(graduatedUser.id);
   });
 
