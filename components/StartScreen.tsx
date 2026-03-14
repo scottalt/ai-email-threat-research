@@ -370,12 +370,14 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     handleStart(graduated ? 'freeplay' : 'research');
                   }}
                   className={`w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all ${
-                    isResearch
+                    !signedIn
                       ? 'border-[rgba(255,170,0,0.5)] text-[#ffaa00] hover:bg-[rgba(255,170,0,0.06)]'
-                      : 'text-[#33bb55] hover:bg-[rgba(0,255,65,0.05)]'
+                      : isResearch
+                        ? 'border-[rgba(255,170,0,0.5)] text-[#ffaa00] hover:bg-[rgba(255,170,0,0.06)]'
+                        : 'text-[#33bb55] hover:bg-[rgba(0,255,65,0.05)]'
                   }`}
                 >
-                  {isResearch ? '[ RESEARCH MODE ]' : '[ PLAY ]'}
+                  {!signedIn ? '[ LOG IN / SIGN UP TO PLAY ]' : isResearch ? '[ RESEARCH MODE ]' : '[ PLAY ]'}
                 </button>
                 {/* Inline onboarding: sign-in (State 1) or callsign setup (State 2) */}
                 {!signedIn && showInlineAuth && (
