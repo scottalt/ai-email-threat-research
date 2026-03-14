@@ -26,8 +26,11 @@ export function NavBar() {
   const { navHidden } = useNavVisibility();
   const { soundEnabled, toggleSound } = useSoundEnabled();
 
+  // On home page, hide nav until boot animation completes (bootSeen flag in sessionStorage)
+  const bootPending = pathname === '/' && typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bootSeen') !== '1';
+
   if (!signedIn) return null;
-  if (navHidden) return null;
+  if (navHidden || bootPending) return null;
   if (shouldHideForPath(pathname)) return null;
 
   const links = NAV_LINKS;
