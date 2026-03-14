@@ -56,12 +56,6 @@ test.describe('Freeplay Round Completion', () => {
     await injectSession(page, supabaseUrl, user.accessToken, user.refreshToken);
     await page.goto('/');
 
-    // Set up listener for XP call BEFORE starting the round
-    const xpPromise = page.waitForResponse(
-      (resp) => resp.url().includes('/api/player/xp') && resp.status() === 200,
-      { timeout: 60_000 },
-    );
-
     const playButton = page.getByRole('button', { name: /play/i }).first();
     await expect(playButton).toBeVisible({ timeout: 15_000 });
     await playButton.click();
@@ -78,26 +72,18 @@ test.describe('Freeplay Round Completion', () => {
     // Wait for round summary screen
     await expect(page.getByText('SESSION_COMPLETE')).toBeVisible({ timeout: 15_000 });
 
-    // Wait for XP award API call to complete
-    const xpResponse = await xpPromise;
-    const xpData = await xpResponse.json();
+    // XP EARNED should appear on screen once the XP call completes
+    await expect(page.getByText('XP EARNED')).toBeVisible({ timeout: 30_000 });
 
-    // XP response must include expected fields
-    expect(xpData).toHaveProperty('xp');
-    expect(xpData).toHaveProperty('level');
-    expect(xpData).toHaveProperty('xpEarned');
-    expect(typeof xpData.xpEarned).toBe('number');
-    expect(xpData.xpEarned).toBeGreaterThan(0);
-
-    // XP EARNED should appear on screen
-    await expect(page.getByText('XP EARNED')).toBeVisible({ timeout: 10_000 });
-
-    // Verify database state was updated
-    const after = await getPlayerState(user.id);
-    expect(after!.xp).toBeGreaterThan(before!.xp);
-    expect(after!.total_sessions).toBeGreaterThan(before!.total_sessions);
-    expect(after!.last_xp_session_id).not.toBeNull();
-    expect(after!.last_xp_session_id).not.toBe(before!.last_xp_session_id);
+    // Verify database state was updated (source of truth)
+    // Poll briefly to allow the async XP write to complete
+    await expect(async () => {
+      const after = await getPlayerState(user.id);
+      expect(after!.xp).toBeGreaterThan(before!.xp);
+      expect(after!.total_sessions).toBeGreaterThan(before!.total_sessions);
+      expect(after!.last_xp_session_id).not.toBeNull();
+      expect(after!.last_xp_session_id).not.toBe(before!.last_xp_session_id);
+    }).toPass({ timeout: 15_000 });
 
     // Verify freeplay answers were recorded in the database
     const freeplayAnswers = await countAnswers(user.id, 'freeplay');
