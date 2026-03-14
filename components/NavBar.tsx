@@ -35,7 +35,7 @@ export function NavBar() {
   return (
     <>
       {/* Desktop: top bar */}
-      <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-50 bg-[#060c06] border-b border-[rgba(0,255,65,0.35)] px-6 py-2.5 items-center justify-between font-mono" style={{ boxShadow: '0 2px 12px rgba(0, 255, 65, 0.06)' }}>
+      <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-50 bg-[#060c06] border-b border-[rgba(0,255,65,0.35)] px-6 py-2.5 items-center justify-between font-mono animate-[fadeIn_0.5s_ease-in_2s_both]" style={{ boxShadow: '0 2px 12px rgba(0, 255, 65, 0.06)' }}>
         <Link href="/" className="text-[#00ff41] text-sm font-bold tracking-widest" style={{ textShadow: '0 0 8px rgba(0, 255, 65, 0.4)' }}>
           THREAT TERMINAL
         </Link>
@@ -55,6 +55,14 @@ export function NavBar() {
               </Link>
             );
           })}
+          <Link
+            href="/changelog"
+            className={`text-sm tracking-wider transition-colors ${
+              pathname.startsWith('/changelog') ? 'text-[#00ff41]' : 'text-[#1a5c2a] hover:text-[#33bb55]'
+            }`}
+          >
+            WHAT&apos;S NEW
+          </Link>
           <button
             onClick={toggleSound}
             aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
@@ -66,7 +74,7 @@ export function NavBar() {
       </nav>
 
       {/* Mobile: bottom tab bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#060c06] border-t border-[rgba(0,255,65,0.35)] font-mono" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#060c06] border-t border-[rgba(0,255,65,0.35)] font-mono animate-[fadeIn_0.5s_ease-in_2s_both]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex justify-around py-2">
           {links.map((link) => {
             const active = link.match(pathname);

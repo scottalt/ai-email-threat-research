@@ -9,6 +9,7 @@ import { useNavVisibility } from '@/lib/NavVisibilityContext';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
 import { playBootTick } from '@/lib/sounds';
+import { version } from '@/package.json';
 
 interface LeaderboardEntry {
   name: string;
@@ -335,7 +336,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           )}
 
           {/* Two-column layout wrapper: sidebar + main on desktop */}
-          <div className="flex flex-col lg:flex-row lg:gap-0">
+          <div className="flex flex-col gap-6 lg:flex-row lg:gap-0">
             {/* Sidebar: reference content */}
             <div className="contents lg:block lg:w-80 lg:shrink-0 lg:border-r lg:border-[rgba(0,255,65,0.15)] lg:pr-6 lg:space-y-4">
               <div className="term-border bg-[#060c06]">
@@ -344,7 +345,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 </div>
                 <div className="px-3 py-3 space-y-2.5">
                   {[
-                    ['[1]', 'Read the email carefully'],
+                    ['[1]', 'Read each email carefully'],
                     ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
                     ['[3]', 'Classify: PHISHING or LEGIT'],
                     ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
@@ -410,6 +411,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             {/* Main column: actions + leaderboard */}
             <div className="contents lg:block lg:flex-1 lg:pl-6 lg:space-y-4">
 
+          {/* Action buttons group */}
+          <div className="space-y-4">
           {(() => {
             const graduated = signedIn && (profile?.researchGraduated ?? false);
             const researchCapped = signedIn && !graduated && (profile?.researchAnswersSubmitted ?? 0) >= 30;
@@ -494,10 +497,11 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </Link>
           )}
 
-          <div className="flex items-center justify-center gap-4 text-sm font-mono">
-            <span className="text-[#1a5c2a]">10 questions per round</span>
+          <div className="flex items-center justify-center gap-3 font-mono">
+            <span className="text-[#1a5c2a] text-sm lg:text-base">10 questions per round</span>
             <span className="text-[#1a5c2a]">·</span>
-            <Link href="/changelog" className="text-[#33bb55] hover:text-[#00ff41] transition-colors tracking-wider">[ CHANGELOG ]</Link>
+            <Link href="/changelog" className="text-[#1a5c2a] hover:text-[#33bb55] transition-colors tracking-wider text-sm lg:text-base">v{version}</Link>
+          </div>
           </div>
 
           {/* Tabbed leaderboard — XP always visible; Daily tab only for graduated players */}
