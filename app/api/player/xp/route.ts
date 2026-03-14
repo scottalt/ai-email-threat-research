@@ -241,6 +241,27 @@ export async function PATCH(req: NextRequest) {
     }).eq('player_id', playerId);
   }
 
+  // Auto-submit to daily leaderboard for daily mode
+  if (verifiedGameMode === 'daily' && sessionCompleted && verifiedScore > 0) {
+    const { data: playerInfo } = await admin
+      .from('players')
+      .select('display_name, level')
+      .eq('auth_id', authId)
+      .single();
+    if (playerInfo?.display_name) {
+      const todayDate = new Date().toISOString().slice(0, 10);
+      const dailyKey = `leaderboard:daily:${todayDate}`;
+      const member = `${playerInfo.display_name}:${playerInfo.level ?? 1}`;
+      const existing = await redis.zscore(dailyKey, member);
+      if (existing === null || (existing as number) < verifiedScore) {
+        await redis.zadd(dailyKey, { score: verifiedScore, member });
+        // 7-day TTL
+        const expireAt = Math.floor(new Date(`${todayDate}T00:00:00Z`).getTime() / 1000) + 7 * 24 * 60 * 60;
+        await redis.expireat(dailyKey, expireAt);
+      }
+    }
+  }
+
   // Check for newly earned achievements
   let newAchievements: string[] = [];
   if (sessionId) {

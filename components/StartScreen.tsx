@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import type { GameMode, PlayerBackground } from '@/lib/types';
 import { getRankFromLevel } from '@/lib/rank';
 import Link from 'next/link';
@@ -113,8 +113,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     }
   }, [bootDone, bootHidden]);
 
-  // Hide nav bar during boot animation
-  useEffect(() => {
+  // Hide nav bar during boot animation — useLayoutEffect prevents flash before paint
+  useLayoutEffect(() => {
     setNavHidden(!bootHidden);
     return () => setNavHidden(false);
   }, [bootHidden, setNavHidden]);
@@ -168,6 +168,12 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     } finally {
       setLbExpandLoading(false);
     }
+  }
+
+  async function handleCollapseLeaderboard() {
+    setLbExpanded(false);
+    // Re-fetch the default (top 10/20) lists
+    fetchLeaderboard();
   }
 
   const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
@@ -564,6 +570,14 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     className="w-full py-2 border-t border-[rgba(0,255,65,0.15)] text-[#1a5c2a] hover:text-[#33bb55] text-sm font-mono tracking-widest transition-colors disabled:opacity-50"
                   >
                     {lbExpandLoading ? '...' : '[ SHOW MORE ]'}
+                  </button>
+                )}
+                {lbExpanded && (
+                  <button
+                    onClick={handleCollapseLeaderboard}
+                    className="w-full py-2 border-t border-[rgba(0,255,65,0.15)] text-[#1a5c2a] hover:text-[#33bb55] text-sm font-mono tracking-widest transition-colors"
+                  >
+                    [ SHOW LESS ]
                   </button>
                 )}
               </div>

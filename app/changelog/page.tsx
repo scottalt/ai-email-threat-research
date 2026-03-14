@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { usePlayer } from '@/lib/usePlayer';
 import { CHANGELOG_ENTRIES } from '@/lib/changelog';
 import { version } from '@/package.json';
@@ -26,8 +27,9 @@ export default function ChangelogPage() {
     <main className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center lg:pt-16 pb-20 lg:pb-8">
       <div className="w-full max-w-2xl space-y-6 mt-4">
 
-        {/* Version badge */}
-        <div className="text-center">
+        {/* Back link + Version badge */}
+        <div className="flex items-center justify-between">
+          <Link href="/" className="text-[#33bb55] hover:text-[#00ff41] text-sm font-mono tracking-wider transition-colors">[ BACK ]</Link>
           <span className="text-[#1a5c2a] text-xs font-mono tracking-widest">THREAT TERMINAL v{version}</span>
         </div>
 
