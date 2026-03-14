@@ -48,6 +48,12 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     title: 'v1.4.0 — Changelog',
     body: 'Research timeline and platform update history.',
   },
+  {
+    date: '2026-03-14',
+    category: 'update',
+    title: 'v1.5.0 — Improved sign-in flow',
+    body: 'Sign-in and callsign setup now appear inline below the Play button. No more scrolling up to find the sign-in form on mobile.',
+  },
 ];
 
 /*

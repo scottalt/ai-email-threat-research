@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureTestUser, TEST_FRESH_EMAIL } from './helpers/test-accounts';
+import { ensureTestUser, ensurePlayerProfile, resetPlayerState, TEST_FRESH_EMAIL } from './helpers/test-accounts';
 import { injectSession } from './helpers/auth';
 import { answerCard, clickNext, completeResearchOnboarding } from './helpers/game-actions';
 
@@ -10,6 +10,8 @@ test.describe('Research Mode', () => {
 
   test.beforeAll(async () => {
     freshUser = await ensureTestUser(TEST_FRESH_EMAIL);
+    await resetPlayerState(freshUser.id);
+    await ensurePlayerProfile(freshUser.id, 'TEST_RESEARCHER');
   });
 
   test('answer is server-verified with correct response structure', async ({ page }) => {
