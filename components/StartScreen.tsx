@@ -336,7 +336,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           )}
 
           {/* Two-column layout wrapper: sidebar + main on desktop */}
-          <div className="flex flex-col lg:flex-row lg:gap-0">
+          <div className="flex flex-col gap-6 lg:flex-row lg:gap-0">
             {/* Sidebar: reference content */}
             <div className="contents lg:block lg:w-80 lg:shrink-0 lg:border-r lg:border-[rgba(0,255,65,0.15)] lg:pr-6 lg:space-y-4">
               <div className="term-border bg-[#060c06]">
@@ -497,10 +497,10 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </Link>
           )}
 
-          <div className="flex items-center justify-center gap-3 text-sm font-mono">
-            <span className="text-[#1a5c2a]">10 questions per round</span>
+          <div className="flex items-center justify-center gap-3 font-mono">
+            <span className="text-[#1a5c2a] text-sm lg:text-base">10 questions per round</span>
             <span className="text-[#1a5c2a]">·</span>
-            <Link href="/changelog" className="text-[#1a5c2a] hover:text-[#33bb55] transition-colors tracking-wider">v{version}</Link>
+            <Link href="/changelog" className="text-[#1a5c2a] hover:text-[#33bb55] transition-colors tracking-wider text-sm lg:text-base">v{version}</Link>
           </div>
           </div>
 
