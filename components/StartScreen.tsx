@@ -426,7 +426,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                         <button onClick={async () => { await signOut(); setShowInlineAuth(false); }} aria-label="Cancel setup" className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55] p-1">✕</button>
                       </div>
                       <div className="text-[#1a5c2a] text-sm font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
-                      <form onSubmit={handleSetCallsign} className="flex gap-2">
+                      <form onSubmit={handleSetCallsign} className="space-y-2">
                         <input
                           ref={callsignInputRef}
                           type="text"
@@ -435,37 +435,37 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                           placeholder="ENTER CALLSIGN"
                           maxLength={20}
                           autoFocus
-                          className="flex-1 bg-transparent border border-[rgba(0,255,65,0.3)] text-[#00ff41] font-mono text-sm px-2 py-1.5 placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.7)]"
+                          className="w-full bg-transparent border border-[rgba(0,255,65,0.3)] text-[#00ff41] font-mono text-sm px-2 py-1.5 placeholder:text-[#003a0e] focus:outline-none focus:border-[rgba(0,255,65,0.7)]"
                         />
+                        <div ref={backgroundRef} className="space-y-1.5 pt-1">
+                          <div className="text-[#33bb55] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
+                          <div className="text-[#33bb55] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {BACKGROUND_OPTIONS.map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => setBackground(background === opt.value ? null : opt.value)}
+                                className={`py-1.5 font-mono text-sm tracking-wider transition-all border ${
+                                  background === opt.value
+                                    ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
+                                    : 'text-[#33bb55] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {callsignError && <div className="text-[#ff3333] text-sm font-mono">{callsignError}</div>}
                         <button
                           type="submit"
                           disabled={callsignLoading}
-                          className="px-3 py-1.5 term-border text-[#00ff41] font-mono text-sm tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                          className="w-full py-2.5 term-border text-[#00ff41] font-mono font-bold text-sm tracking-widest hover:bg-[rgba(0,255,65,0.08)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                         >
-                          {callsignLoading ? '...' : 'SET'}
+                          {callsignLoading ? '...' : '[ SET ]'}
                         </button>
                       </form>
-                      <div ref={backgroundRef} className="space-y-1.5 pt-1">
-                        <div className="text-[#33bb55] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[#ffaa00]">*REQUIRED</span></div>
-                        <div className="text-[#33bb55] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {BACKGROUND_OPTIONS.map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => setBackground(background === opt.value ? null : opt.value)}
-                              className={`py-1.5 font-mono text-sm tracking-wider transition-all border ${
-                                background === opt.value
-                                  ? 'text-[#00ff41] border-[rgba(0,255,65,0.8)] bg-[rgba(0,255,65,0.08)]'
-                                  : 'text-[#33bb55] border-[rgba(0,255,65,0.35)] hover:text-[#00ff41] hover:border-[rgba(0,255,65,0.5)]'
-                              }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      {callsignError && <div className="text-[#ff3333] text-sm font-mono">{callsignError}</div>}
                     </div>
                   </div>
                 )}
