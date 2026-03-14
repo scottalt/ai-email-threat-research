@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureTestUser, seedGraduatedUser, resetPlayerState, TEST_FREEPLAY_EMAIL } from './helpers/test-accounts';
+import { ensureTestUser, seedGraduatedUser, resetPlayerState, TEST_FREEPLAY_EMAIL, TEST_FREEPLAY_ROUND_EMAIL } from './helpers/test-accounts';
 import { injectSession } from './helpers/auth';
 import { answerCard, clickNext } from './helpers/game-actions';
 import { getPlayerState, countAnswers } from './helpers/db-assertions';
@@ -38,15 +38,28 @@ test.describe('Freeplay Mode', () => {
       if (i < 9) await clickNext(page);
     }
   });
+});
 
-  test('round completion awards XP and records answers', async ({ page }) => {
-    // Reset state so XP starts from a known value
+test.describe('Freeplay Round Completion', () => {
+  let user: Awaited<ReturnType<typeof ensureTestUser>>;
+
+  test.beforeAll(async () => {
+    user = await ensureTestUser(TEST_FREEPLAY_ROUND_EMAIL);
     await resetPlayerState(user.id);
     await seedGraduatedUser(user.id);
+  });
+
+  test('round completion awards XP and records answers', async ({ page }) => {
     const before = await getPlayerState(user.id);
 
     await injectSession(page, supabaseUrl, user.accessToken, user.refreshToken);
     await page.goto('/');
+
+    // Set up listener for XP call BEFORE starting the round
+    const xpPromise = page.waitForResponse(
+      (resp) => resp.url().includes('/api/player/xp') && resp.status() === 200,
+      { timeout: 60_000 },
+    );
 
     const playButton = page.getByRole('button', { name: /play/i }).first();
     await expect(playButton).toBeVisible({ timeout: 15_000 });
@@ -65,10 +78,7 @@ test.describe('Freeplay Mode', () => {
     await expect(page.getByText('SESSION_COMPLETE')).toBeVisible({ timeout: 15_000 });
 
     // Wait for XP award API call to complete
-    const xpResponse = await page.waitForResponse(
-      (resp) => resp.url().includes('/api/player/xp') && resp.status() === 200,
-      { timeout: 15_000 },
-    );
+    const xpResponse = await xpPromise;
     const xpData = await xpResponse.json();
 
     // XP response must include expected fields
