@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { ensureTestUser, seedGraduatedUser, resetPlayerState, TEST_FREEPLAY_EMAIL } from './helpers/test-accounts';
 import { injectSession } from './helpers/auth';
 import { answerCard, clickNext } from './helpers/game-actions';
+import { getPlayerState, countAnswers } from './helpers/db-assertions';
 
 const supabaseUrl = process.env.TEST_SUPABASE_URL!;
 
@@ -36,5 +37,59 @@ test.describe('Freeplay Mode', () => {
 
       if (i < 9) await clickNext(page);
     }
+  });
+
+  test('round completion awards XP and records answers', async ({ page }) => {
+    // Reset state so XP starts from a known value
+    await resetPlayerState(user.id);
+    await seedGraduatedUser(user.id);
+    const before = await getPlayerState(user.id);
+
+    await injectSession(page, supabaseUrl, user.accessToken, user.refreshToken);
+    await page.goto('/');
+
+    const playButton = page.getByRole('button', { name: /play/i }).first();
+    await expect(playButton).toBeVisible({ timeout: 15_000 });
+    await playButton.click();
+
+    // Play through all 10 cards
+    for (let i = 0; i < 10; i++) {
+      await answerCard(page);
+      if (i < 9) await clickNext(page);
+    }
+
+    // Click NEXT after the last card to trigger round completion
+    await clickNext(page);
+
+    // Wait for round summary screen
+    await expect(page.getByText('SESSION_COMPLETE')).toBeVisible({ timeout: 15_000 });
+
+    // Wait for XP award API call to complete
+    const xpResponse = await page.waitForResponse(
+      (resp) => resp.url().includes('/api/player/xp') && resp.status() === 200,
+      { timeout: 15_000 },
+    );
+    const xpData = await xpResponse.json();
+
+    // XP response must include expected fields
+    expect(xpData).toHaveProperty('xp');
+    expect(xpData).toHaveProperty('level');
+    expect(xpData).toHaveProperty('xpEarned');
+    expect(typeof xpData.xpEarned).toBe('number');
+    expect(xpData.xpEarned).toBeGreaterThan(0);
+
+    // XP EARNED should appear on screen
+    await expect(page.getByText('XP EARNED')).toBeVisible({ timeout: 10_000 });
+
+    // Verify database state was updated
+    const after = await getPlayerState(user.id);
+    expect(after!.xp).toBeGreaterThan(before!.xp);
+    expect(after!.total_sessions).toBeGreaterThan(before!.total_sessions);
+    expect(after!.last_xp_session_id).not.toBeNull();
+    expect(after!.last_xp_session_id).not.toBe(before!.last_xp_session_id);
+
+    // Verify freeplay answers were recorded in the database
+    const freeplayAnswers = await countAnswers(user.id, 'freeplay');
+    expect(freeplayAnswers).toBeGreaterThanOrEqual(10);
   });
 });
