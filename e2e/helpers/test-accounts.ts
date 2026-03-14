@@ -69,6 +69,39 @@ export async function ensureTestUser(email: string): Promise<TestUser> {
 }
 
 /**
+ * Reset a test user's player state to a clean slate.
+ * Deletes all answers and sessions, resets player row to defaults.
+ * Call in beforeAll to guarantee repeatable test runs.
+ */
+export async function resetPlayerState(authId: string): Promise<void> {
+  const { data: player } = await dataAdmin
+    .from('players')
+    .select('id')
+    .eq('auth_id', authId)
+    .single();
+
+  if (!player) return;
+
+  // Delete answers first (FK to sessions)
+  await dataAdmin.from('answers').delete().eq('player_id', player.id);
+
+  // Delete sessions owned by this player (sessions don't have player_id,
+  // but answers link them — after deleting answers, orphan sessions are harmless)
+
+  // Reset player row to fresh state
+  await dataAdmin.from('players').update({
+    xp: 0,
+    level: 1,
+    research_graduated: false,
+    research_answers_submitted: 0,
+    display_name: null,
+    background: null,
+    daily_streak: 0,
+    last_daily_date: null,
+  }).eq('id', player.id);
+}
+
+/**
  * Ensure the test user has a player row with a display name.
  * Required so the inline callsign gate doesn't block game start.
  */

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureTestUser, seedGraduatedUser, TEST_FREEPLAY_EMAIL } from './helpers/test-accounts';
+import { ensureTestUser, seedGraduatedUser, resetPlayerState, TEST_FREEPLAY_EMAIL } from './helpers/test-accounts';
 import { injectSession } from './helpers/auth';
 import { answerCard, clickNext } from './helpers/game-actions';
 
@@ -10,6 +10,7 @@ test.describe('Freeplay Mode', () => {
 
   test.beforeAll(async () => {
     user = await ensureTestUser(TEST_FREEPLAY_EMAIL);
+    await resetPlayerState(user.id);
     await seedGraduatedUser(user.id);
   });
 
