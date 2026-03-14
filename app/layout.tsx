@@ -14,23 +14,34 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Threat Terminal',
-  description: 'A retro terminal game and live research study on AI-generated email detection in 2026.',
+  metadataBase: new URL('https://research.scottaltiparmak.com'),
+  title: {
+    default: 'Threat Terminal — Can You Spot the Threat?',
+    template: '%s | Threat Terminal',
+  },
+  description: 'Test your phishing detection skills in this retro terminal game. A live research study measuring how humans detect AI-generated email threats in 2026.',
+  keywords: ['phishing', 'cybersecurity', 'email security', 'AI', 'research study', 'terminal game', 'social engineering', 'threat detection'],
   manifest: '/manifest.json',
+  alternates: {
+    canonical: '/',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Threat Terminal',
   },
   openGraph: {
+    siteName: 'Threat Terminal',
     title: 'Can You Spot the Threat?',
-    description: 'Can you spot a malicious email? A retro terminal game and live research study on AI-generated email detection.',
+    description: 'Can you spot a malicious email? Test your phishing detection skills in this retro terminal game and live research study.',
     type: 'website',
+    locale: 'en_US',
+    url: '/',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Can You Spot the Threat?',
-    description: 'A retro terminal game and live research study on AI-generated email detection.',
+    description: 'Test your phishing detection skills in this retro terminal game. A live research study on AI-generated email detection.',
   },
 };
 
@@ -50,7 +61,27 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/api/icons?size=192" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebApplication',
+              name: 'Threat Terminal',
+              url: 'https://research.scottaltiparmak.com',
+              description: 'Test your phishing detection skills in this retro terminal game. A live research study measuring how humans detect AI-generated email threats.',
+              applicationCategory: 'GameApplication',
+              operatingSystem: 'Any',
+              offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+              author: {
+                '@type': 'Person',
+                name: 'Scott Altiparmak',
+                url: 'https://scottaltiparmak.com',
+              },
+            }),
+          }}
+        />
       </head>
       <body className={`${geistMono.variable} antialiased`}>
         <ServiceWorker />

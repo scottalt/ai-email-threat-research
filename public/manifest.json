@@ -1,21 +1,22 @@
 {
   "name": "Threat Terminal",
   "short_name": "Threat Terminal",
-  "description": "A cybersecurity research game measuring how humans detect AI-generated email threats.",
+  "description": "Test your phishing detection skills. A cybersecurity research game measuring how humans detect AI-generated email threats.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#060c06",
   "theme_color": "#060c06",
   "orientation": "portrait",
+  "categories": ["games", "education", "security"],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/api/icons?size=192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/api/icons?size=512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
