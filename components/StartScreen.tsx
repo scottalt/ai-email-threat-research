@@ -536,7 +536,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           <div className="flex items-center justify-center gap-3 font-mono">
             <span className="text-[#1a5c2a] text-sm lg:text-base">10 questions per round</span>
             <span className="text-[#1a5c2a]">·</span>
-            <Link href="/changelog" className="text-[#1a5c2a] hover:text-[#33bb55] transition-colors tracking-wider text-sm lg:text-base">v{version}</Link>
+            <Link href="/changelog" className="text-[#33bb55] hover:text-[#00ff41] transition-colors tracking-wider text-sm lg:text-base border border-[rgba(0,255,65,0.2)] px-2 py-0.5 hover:border-[rgba(0,255,65,0.4)] hover:bg-[rgba(0,255,65,0.03)]">v{version}</Link>
           </div>
           </div>
 
