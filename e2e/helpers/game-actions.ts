@@ -28,11 +28,11 @@ export async function answerCard(
 }
 
 /**
- * Click the NEXT button to advance to the next card.
+ * Click the NEXT / VIEW RESULTS button to advance.
  * Uses force:true to bypass CSS animation stability checks.
  */
 export async function clickNext(page: Page): Promise<void> {
-  const nextButton = page.getByRole('button', { name: /next/i });
+  const nextButton = page.getByRole('button', { name: /next|view results/i });
   await expect(nextButton).toBeVisible({ timeout: 10_000 });
   await nextButton.click({ force: true });
 }
