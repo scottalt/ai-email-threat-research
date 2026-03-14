@@ -13,7 +13,9 @@ const dataAdmin = createClient(supabaseUrl, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-export const TEST_FRESH_EMAIL = 'test-fresh@phish-or-not.dev';
+// Fresh email per run — avoids accumulated answers from prior runs
+// hitting the 30-answer research cap or graduation
+export const TEST_FRESH_EMAIL = `test-fresh-${Date.now()}@phish-or-not.dev`;
 export const TEST_GRADUATED_EMAIL = 'test-graduated@phish-or-not.dev';
 export const TEST_FREEPLAY_EMAIL = 'test-freeplay@phish-or-not.dev';
 
@@ -69,13 +71,66 @@ export async function ensureTestUser(email: string): Promise<TestUser> {
 }
 
 /**
+ * Reset a test user's player state to a clean slate.
+ * Deletes all answers and sessions, resets player row to defaults.
+ * Call in beforeAll to guarantee repeatable test runs.
+ */
+export async function resetPlayerState(authId: string): Promise<void> {
+  const { data: player } = await dataAdmin
+    .from('players')
+    .select('id')
+    .eq('auth_id', authId)
+    .single();
+
+  if (!player) return;
+
+  // Note: answers table has a trigger that blocks DELETEs (protect_answers_delete).
+  // We cannot wipe answers — instead, graduated/freeplay tests re-seed as needed,
+  // and the research test uses a unique email per run to start truly fresh.
+
+  // Reset player_streaks if it exists
+  await dataAdmin.from('player_streaks').delete().eq('player_id', player.id);
+
+  // Reset player row to fresh state
+  await dataAdmin.from('players').update({
+    xp: 0,
+    level: 1,
+    research_graduated: false,
+    display_name: null,
+    background: null,
+    total_sessions: 0,
+    research_sessions_completed: 0,
+    personal_best_score: 0,
+    last_xp_session_id: null,
+  }).eq('id', player.id);
+}
+
+/**
+ * Ensure the test user has a player row with a display name.
+ * Required so the inline callsign gate doesn't block game start.
+ */
+export async function ensurePlayerProfile(authId: string, displayName = 'TEST_PLAYER'): Promise<void> {
+  const { data: player } = await dataAdmin
+    .from('players')
+    .select('id, display_name')
+    .eq('auth_id', authId)
+    .single();
+
+  if (!player) {
+    await dataAdmin.from('players').insert({ auth_id: authId, display_name: displayName, background: 'technical' });
+  } else if (!player.display_name) {
+    await dataAdmin.from('players').update({ display_name: displayName, background: 'technical' }).eq('id', player.id);
+  }
+}
+
+/**
  * Set up the graduated test user with 30 research answers and graduated flag.
  * Idempotent — safe to call multiple times.
  */
 export async function seedGraduatedUser(authId: string): Promise<void> {
   const { data: player } = await dataAdmin
     .from('players')
-    .select('id, research_graduated')
+    .select('id, research_graduated, display_name')
     .eq('auth_id', authId)
     .single();
 
@@ -84,15 +139,21 @@ export async function seedGraduatedUser(authId: string): Promise<void> {
   if (!player) {
     const { data: newPlayer, error } = await dataAdmin
       .from('players')
-      .insert({ auth_id: authId, research_graduated: true, xp: 3000, level: 5 })
+      .insert({ auth_id: authId, display_name: 'TEST_GRADUATED', background: 'technical', research_graduated: true, xp: 3000, level: 5 })
       .select('id')
       .single();
     if (error) throw new Error(`Failed to create player: ${error.message}`);
     playerId = newPlayer.id;
   } else {
     playerId = player.id;
-    if (!player.research_graduated) {
-      await dataAdmin.from('players').update({ research_graduated: true }).eq('id', playerId);
+    const updates: Record<string, unknown> = {};
+    if (!player.research_graduated) updates.research_graduated = true;
+    if (!(player as { display_name?: string }).display_name) {
+      updates.display_name = 'TEST_GRADUATED';
+      updates.background = 'technical';
+    }
+    if (Object.keys(updates).length > 0) {
+      await dataAdmin.from('players').update(updates).eq('id', playerId);
     }
   }
 
