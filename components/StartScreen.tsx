@@ -366,6 +366,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 <button
                   onClick={() => {
                     if (!signedIn) { setShowInlineAuth(true); return; }
+                    if (signedIn && !profile?.displayName) { setShowInlineAuth(true); return; }
                     if (researchCapped) { handleStart('freeplay'); return; }
                     handleStart(graduated ? 'freeplay' : 'research');
                   }}
