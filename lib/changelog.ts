@@ -54,6 +54,12 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     title: 'v1.5.0 — Improved sign-in flow',
     body: 'Sign-in and callsign setup now appear inline below the Play button. No more scrolling up to find the sign-in form on mobile.',
   },
+  {
+    date: '2026-03-15',
+    category: 'update',
+    title: 'v1.6.0 — Share your results',
+    body: 'Share your score from the round summary. Uses your device\'s native share sheet on mobile, or copies to clipboard on desktop.',
+  },
 ];
 
 /*
@@ -100,4 +106,5 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
  * 2026-03-13  Boot animation, color contrast improvements
  * 2026-03-13  SFX defaults to off, sessionStorage instead of localStorage
  * 2026-03-13  Changelog page
+ * 2026-03-15  Share results button on round summary (navigator.share + clipboard fallback)
  */

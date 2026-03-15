@@ -31,6 +31,29 @@ function getTier(score: number, total: number): { label: string; sub: string; co
 
 const CONFIDENCE_LABEL: Record<string, string> = { guessing: 'G', likely: 'L', certain: 'C' };
 
+const SHARE_URL = 'https://threatterminal.ai/?ref=share';
+
+function buildShareText(opts: {
+  label: string;
+  score: number;
+  total: number;
+  totalScore: number;
+  mode: GameMode;
+}): { text: string; url: string } {
+  let headline = `🎣 ${opts.label} · ${opts.score}/${opts.total} · ${opts.totalScore.toLocaleString()} pts`;
+
+  if (opts.mode === 'daily') {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    headline += ` · ${dateStr} Daily`;
+  } else if (opts.mode === 'expert') {
+    headline += ' · Expert';
+  }
+
+  const text = `${headline}\nCan you spot the phish? Most people can't.`;
+  return { text, url: SHARE_URL };
+}
+
 export function RoundSummary({ score, total, totalScore, results, mode, sessionId, onPlayAgain }: Props) {
   const tier = getTier(score, total);
   const [displayScore, setDisplayScore] = useState(0);
@@ -55,6 +78,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
     streakDay?: number; streakBonusXp?: number;
   } | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
+  const [copied, setCopied] = useState(false);
   const xpFired = useRef(false);
   useEffect(() => {
     if (mode !== 'research') return;
@@ -68,6 +92,27 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
 
   const correctCount = results.filter(r => r.correct).length;
   const xpEarned = getXpForRound(correctCount, total, mode);
+
+  async function handleShare() {
+    const label = rank ? rank.label : tier.label;
+    const { text, url } = buildShareText({ label, score, total, totalScore, mode });
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: 'Threat Terminal', text, url });
+      } catch {
+        // User dismissed share sheet or error — silently ignore
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        // Clipboard API failed — silently ignore
+      }
+    }
+  }
 
   useEffect(() => {
     if (!signedIn || xpFired.current) return;
@@ -255,6 +300,14 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
           </div>
         </div>
       )}
+
+      {/* Share results */}
+      <button
+        onClick={handleShare}
+        className="w-full py-4 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:scale-95 transition-all"
+      >
+        {copied ? '[ COPIED ✓ ]' : '[ SHARE RESULTS ]'}
+      </button>
 
       {/* Sign-in prompt for guests */}
       {!signedIn && (
