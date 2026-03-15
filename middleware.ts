@@ -46,7 +46,7 @@ export async function middleware(req: NextRequest) {
   if (isAdminRoute) {
     const adminUserId = process.env.ADMIN_USER_ID;
     if (!adminUserId || user?.id !== adminUserId) {
-      return NextResponse.redirect(new URL('/', req.url));
+      return new NextResponse(null, { status: 404 });
     }
   }
 
