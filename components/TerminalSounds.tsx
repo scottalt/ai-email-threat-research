@@ -25,7 +25,7 @@ export function TerminalSounds() {
       if (!musicRef.current) {
         const audio = new Audio(MUSIC_SRC);
         audio.loop = true;
-        audio.volume = 0.03;
+        audio.volume = 0.015;
         musicRef.current = audio;
       }
       musicRef.current.play().catch(() => {});
@@ -43,7 +43,7 @@ export function TerminalSounds() {
         if (!musicRef.current) {
           const audio = new Audio(MUSIC_SRC);
           audio.loop = true;
-          audio.volume = 0.03;
+          audio.volume = 0.015;
           musicRef.current = audio;
         }
         if (musicRef.current.paused) {

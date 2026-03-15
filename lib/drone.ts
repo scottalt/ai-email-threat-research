@@ -68,8 +68,8 @@ export class AmbientDrone {
       });
       this.bassSynth.connect(this.master);
 
-      // Fade in over 2.5s — keep low so SFX cut through
-      this.master.gain.rampTo(0.3, 2.5);
+      // Fade in over 2.5s — background level, SFX should dominate
+      this.master.gain.rampTo(0.06, 2.5);
 
       this.playChord();
       this.scheduleBlip();

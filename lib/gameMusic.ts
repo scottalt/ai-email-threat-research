@@ -136,8 +136,8 @@ export class GameMusic {
       this.kickSeq.start(0);
       Tone.getTransport().start();
 
-      // Fade in over 1s — keep low so SFX cut through
-      this.master.gain.rampTo(0.35, 1);
+      // Fade in over 1s — background level, SFX should dominate
+      this.master.gain.rampTo(0.08, 1);
     } catch {
       // Web Audio unavailable
     }
@@ -164,7 +164,7 @@ export class GameMusic {
   /** Sync to SFX toggle. Transport keeps running; only master gain changes. */
   setEnabled(enabled: boolean) {
     if (!this.master) return;
-    this.master.gain.rampTo(enabled ? 0.35 : 0, 0.3);
+    this.master.gain.rampTo(enabled ? 0.08 : 0, 0.3);
   }
 
   /** Fade out and tear down. Safe to call multiple times. */
