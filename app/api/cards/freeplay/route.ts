@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
-import { getShuffledDeck } from '@/data/cards';
+import { getSupabaseAdminClient } from '@/lib/supabase';
 import { toSafeCard } from '@/lib/card-utils';
+import type { Card } from '@/lib/types';
 
 const SESSION_TTL = 60 * 60; // 1 hour — plenty of time to finish a round
+const ROUND_SIZE = 10;
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
@@ -26,7 +28,41 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(existingCards.map(toSafeCard));
   }
 
-  const cards = getShuffledDeck(10);
+  // Fetch from DB — random selection of freeplay cards
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from('cards_generated')
+    .select('*')
+    .eq('pool', 'freeplay');
+
+  if (error || !data || data.length === 0) {
+    return NextResponse.json({ error: 'No cards available' }, { status: 500 });
+  }
+
+  // Shuffle and pick ROUND_SIZE
+  for (let i = data.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [data[i], data[j]] = [data[j], data[i]];
+  }
+  const deck = data.slice(0, ROUND_SIZE);
+
+  const cards: Card[] = deck.map((row) => ({
+    id: row.card_id,
+    type: row.type,
+    isPhishing: row.is_phishing,
+    difficulty: row.difficulty,
+    from: row.from_address,
+    subject: row.subject ?? undefined,
+    body: row.body,
+    clues: row.clues ?? [],
+    explanation: row.explanation ?? '',
+    highlights: row.highlights ?? [],
+    technique: row.technique ?? null,
+    authStatus: (row.auth_status ?? 'unverified') as 'verified' | 'unverified' | 'fail',
+    replyTo: row.reply_to ?? undefined,
+    attachmentName: row.attachment_name ?? undefined,
+    sentAt: row.sent_at ?? undefined,
+  }));
 
   // Store full card data server-side, keyed by session (NX = only if not exists)
   await redis.set(`session-cards:${sessionId}`, JSON.stringify(cards), { ex: SESSION_TTL, nx: true });

@@ -70,5 +70,7 @@ backups/
 /test-results/
 /playwright-report/
 
-# seed data contains card answers — never commit
+# card data contains answers — never commit
 supabase/seed.sql
+data/cards.ts
+data/expert-cards.ts
