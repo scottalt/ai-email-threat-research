@@ -58,6 +58,6 @@ export const config = {
     '/admin/:path*',
     '/api/admin/:path*',
     // Run on all page requests, skip Next.js internals and static files
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons|sw.js).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons|sw.js|robots.txt|sitemap.xml|opengraph-image|icon.svg|og-image.png).*)',
   ],
 };

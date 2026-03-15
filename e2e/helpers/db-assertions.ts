@@ -37,3 +37,29 @@ export async function countAnswers(authId: string, gameMode: string) {
     .eq('game_mode', gameMode);
   return count ?? 0;
 }
+
+/**
+ * Count answers by session_id and game_mode.
+ * Useful when auth session may not propagate correctly (e.g., preview deployments)
+ * and answers are recorded with player_id = null.
+ */
+export async function countAnswersBySession(sessionId: string, gameMode: string) {
+  const { count } = await admin
+    .from('answers')
+    .select('id', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
+    .eq('game_mode', gameMode);
+  return count ?? 0;
+}
+
+/**
+ * Check if a session was finalized (completed_at is set).
+ */
+export async function getSession(sessionId: string) {
+  const { data } = await admin
+    .from('sessions')
+    .select('session_id, completed_at, cards_answered, final_score')
+    .eq('session_id', sessionId)
+    .single();
+  return data;
+}

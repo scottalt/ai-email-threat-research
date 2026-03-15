@@ -1,0 +1,86 @@
+<h2>Navigation: Where should it live?</h2>
+<p class="subtitle">Currently every page has its own "← TERMINAL" back link. No shared nav exists.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0a1a0a;padding:12px;font-family:monospace;font-size:11px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(0,255,65,0.3);padding-bottom:8px;margin-bottom:12px;">
+          <span style="color:#00ff41;font-weight:bold;letter-spacing:2px;">THREAT TERMINAL</span>
+          <div style="display:flex;gap:16px;">
+            <span style="color:#33bb55;">PLAY</span>
+            <span style="color:#1a5c2a;">STATS</span>
+            <span style="color:#1a5c2a;">INTEL</span>
+            <span style="color:#1a5c2a;">PROFILE</span>
+            <span style="color:#1a5c2a;">[SFX]</span>
+          </div>
+        </div>
+        <div style="color:#1a5c2a;text-align:center;padding:40px 0;">[ page content below ]</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Top Nav Bar (Desktop Only)</h3>
+      <p>Persistent top bar on desktop with PLAY | STATS | INTEL | PROFILE links. Mobile stays as-is with back links. SFX toggle moves into the nav bar.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0a1a0a;padding:12px;font-family:monospace;font-size:11px;">
+        <div style="color:#1a5c2a;text-align:center;padding:30px 0;">[ page content ]</div>
+        <div style="display:flex;justify-content:space-around;border-top:1px solid rgba(0,255,65,0.3);padding-top:8px;margin-top:8px;">
+          <div style="text-align:center;">
+            <div style="color:#00ff41;font-size:14px;">▶</div>
+            <div style="color:#33bb55;font-size:9px;">PLAY</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:#1a5c2a;font-size:14px;">📊</div>
+            <div style="color:#1a5c2a;font-size:9px;">STATS</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:#1a5c2a;font-size:14px;">🔍</div>
+            <div style="color:#1a5c2a;font-size:9px;">INTEL</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:#1a5c2a;font-size:14px;">👤</div>
+            <div style="color:#1a5c2a;font-size:9px;">PROFILE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Bottom Nav Bar (Mobile + Desktop)</h3>
+      <p>Fixed bottom nav on all screen sizes. App-like feel. Replaces per-page back links entirely. Common on mobile-first apps.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0a1a0a;padding:12px;font-family:monospace;font-size:11px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(0,255,65,0.3);padding-bottom:8px;margin-bottom:8px;">
+          <span style="color:#00ff41;font-weight:bold;letter-spacing:2px;font-size:10px;">THREAT TERMINAL</span>
+          <div style="display:flex;gap:12px;">
+            <span style="color:#33bb55;font-size:10px;">PLAY</span>
+            <span style="color:#1a5c2a;font-size:10px;">STATS</span>
+            <span style="color:#1a5c2a;font-size:10px;">INTEL</span>
+            <span style="color:#1a5c2a;font-size:10px;">PROFILE</span>
+          </div>
+        </div>
+        <div style="color:#1a5c2a;text-align:center;padding:20px 0;font-size:10px;">[ desktop: top bar ]</div>
+        <div style="border-top:1px dashed rgba(0,255,65,0.2);margin-top:8px;padding-top:8px;text-align:center;">
+          <div style="display:flex;justify-content:space-around;">
+            <span style="color:#33bb55;font-size:9px;">▶ PLAY</span>
+            <span style="color:#1a5c2a;font-size:9px;">STATS</span>
+            <span style="color:#1a5c2a;font-size:9px;">INTEL</span>
+            <span style="color:#1a5c2a;font-size:9px;">PROFILE</span>
+          </div>
+          <div style="color:#1a5c2a;font-size:8px;margin-top:4px;">[ mobile: bottom bar ]</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C: Hybrid — Top on Desktop, Bottom on Mobile</h3>
+      <p>Desktop gets a slim top nav bar. Mobile gets a fixed bottom tab bar. Best of both worlds but more code to maintain.</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    background: #040804;
+    font-family: 'JetBrains Mono', 'Space Mono', monospace;
+    position: relative;
+  }
+
+  /* CRT base glow */
+  .crt-base {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(0,255,65,0.04) 0%, transparent 65%),
+      radial-gradient(ellipse at 50% 50%, #060c06 0%, #020402 100%);
+  }
+
+  /* Scanlines */
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.15) 3px,
+      rgba(0,0,0,0.15) 4px
+    );
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* Vignette */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+    z-index: 11;
+    pointer-events: none;
+  }
+
+  /* Terminal frame */
+  .frame {
+    position: absolute;
+    top: 18px;
+    left: 26px;
+    right: 26px;
+    bottom: 18px;
+    border: 1px solid rgba(0,255,65,0.2);
+    border-radius: 6px;
+    z-index: 2;
+  }
+
+  /* Header bar */
+  .header {
+    position: absolute;
+    top: 18px;
+    left: 26px;
+    right: 26px;
+    height: 42px;
+    border-bottom: 1px solid rgba(0,255,65,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    z-index: 3;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+
+  .header-title {
+    color: rgba(0,255,65,0.5);
+    font-size: 11px;
+    letter-spacing: 3px;
+    margin-left: 14px;
+    font-weight: 500;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00ff41;
+    box-shadow: 0 0 8px #00ff41, 0 0 16px rgba(0,255,65,0.5);
+  }
+
+  .live-text {
+    color: rgba(0,255,65,0.4);
+    font-size: 10px;
+    letter-spacing: 3px;
+    font-weight: 700;
+  }
+
+  /* Background email snippets */
+  .email-bg {
+    position: absolute;
+    top: 76px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 10.5px;
+    line-height: 1.6;
+  }
+
+  .email-left {
+    left: 44px;
+    width: 380px;
+    opacity: 0.18;
+  }
+
+  .email-right {
+    right: 44px;
+    width: 380px;
+    opacity: 0.12;
+  }
+
+  .email-field {
+    display: flex;
+    gap: 8px;
+  }
+
+  .email-label {
+    color: #005510;
+    font-weight: 700;
+    min-width: 38px;
+  }
+
+  .email-value {
+    color: #009922;
+  }
+
+  .email-body {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0,255,65,0.08);
+    color: #007718;
+    font-size: 9.5px;
+    line-height: 1.7;
+  }
+
+  /* Center content */
+  .center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+  }
+
+  /* Glow behind center content */
+  .center-glow {
+    position: absolute;
+    width: 700px;
+    height: 300px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse at center, rgba(0,255,65,0.06) 0%, transparent 70%);
+    z-index: 4;
+  }
+
+  /* Dark backdrop behind text for readability */
+  .text-backdrop {
+    position: absolute;
+    width: 900px;
+    height: 380px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse at center, rgba(4,8,4,0.95) 0%, rgba(4,8,4,0.8) 40%, transparent 70%);
+    z-index: 4;
+  }
+
+  /* Warning badge */
+  .warning-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .warning-line {
+    width: 50px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,170,0,0.5));
+  }
+
+  .warning-line-r {
+    width: 50px;
+    height: 1px;
+    background: linear-gradient(to left, transparent, rgba(255,170,0,0.5));
+  }
+
+  .warning-text {
+    color: #ffaa00;
+    font-size: 13px;
+    letter-spacing: 6px;
+    font-weight: 700;
+    text-shadow: 0 0 20px rgba(255,170,0,0.3);
+  }
+
+  /* Main headline */
+  .headline {
+    font-size: 74px;
+    font-weight: 800;
+    color: #00ff41;
+    letter-spacing: 3px;
+    text-shadow:
+      0 0 40px rgba(0,255,65,0.4),
+      0 0 80px rgba(0,255,65,0.15),
+      0 1px 0 rgba(0,255,65,0.8);
+    text-align: center;
+    line-height: 1;
+  }
+
+  /* Sub-headline */
+  .subheadline {
+    font-size: 30px;
+    color: #00cc33;
+    letter-spacing: 2px;
+    margin-top: 14px;
+    font-weight: 400;
+    text-shadow: 0 0 20px rgba(0,204,51,0.3);
+  }
+
+  /* Stat badge */
+  .stat-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 36px;
+    padding: 9px 24px;
+    border: 1px solid rgba(255,170,0,0.25);
+    border-radius: 3px;
+    background: rgba(255,170,0,0.03);
+  }
+
+  .stat-icon {
+    color: #ffaa00;
+    font-size: 14px;
+  }
+
+  .stat-text {
+    color: #dd9900;
+    font-size: 13px;
+    letter-spacing: 3px;
+    font-weight: 700;
+  }
+
+  /* CTA button */
+  .cta {
+    margin-top: 24px;
+    padding: 13px 52px;
+    border: 2px solid rgba(0,255,65,0.5);
+    border-radius: 4px;
+    background: rgba(0,255,65,0.04);
+    box-shadow:
+      0 0 20px rgba(0,255,65,0.08),
+      inset 0 0 20px rgba(0,255,65,0.02);
+    color: #00ff41;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    text-shadow: 0 0 10px rgba(0,255,65,0.4);
+  }
+
+  /* Bottom bar */
+  .footer {
+    position: absolute;
+    bottom: 18px;
+    left: 26px;
+    right: 26px;
+    height: 34px;
+    border-top: 1px solid rgba(0,255,65,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    z-index: 5;
+  }
+
+  .footer-text {
+    color: rgba(0,255,65,0.2);
+    font-size: 10px;
+    letter-spacing: 3px;
+    font-weight: 500;
+  }
+
+  /* Decorative corner brackets */
+  .corner {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    z-index: 6;
+  }
+  .corner-tl { top: 14px; left: 22px; border-top: 2px solid rgba(0,255,65,0.3); border-left: 2px solid rgba(0,255,65,0.3); }
+  .corner-tr { top: 14px; right: 22px; border-top: 2px solid rgba(0,255,65,0.3); border-right: 2px solid rgba(0,255,65,0.3); }
+  .corner-bl { bottom: 14px; left: 22px; border-bottom: 2px solid rgba(0,255,65,0.3); border-left: 2px solid rgba(0,255,65,0.3); }
+  .corner-br { bottom: 14px; right: 22px; border-bottom: 2px solid rgba(0,255,65,0.3); border-right: 2px solid rgba(0,255,65,0.3); }
+
+  /* Decorative data stream on far edges */
+  .data-stream {
+    position: absolute;
+    top: 70px;
+    bottom: 60px;
+    width: 16px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    opacity: 0.12;
+    overflow: hidden;
+  }
+
+  .data-stream-left { left: 32px; }
+  .data-stream-right { right: 32px; align-items: flex-end; }
+
+  .data-char {
+    color: #00ff41;
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+  }
+</style>
+</head>
+<body>
+  <div class="crt-base"></div>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+
+  <!-- Corner brackets -->
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+
+  <!-- Data streams on edges -->
+  <div class="data-stream data-stream-left">
+    <span class="data-char">0</span><span class="data-char">1</span><span class="data-char">1</span>
+    <span class="data-char">0</span><span class="data-char">0</span><span class="data-char">1</span>
+    <span class="data-char">1</span><span class="data-char">0</span><span class="data-char">1</span>
+    <span class="data-char">0</span><span class="data-char">0</span><span class="data-char">1</span>
+    <span class="data-char">1</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">0</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">1</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">0</span><span class="data-char">1</span><span class="data-char">1</span>
+    <span class="data-char">0</span><span class="data-char">0</span><span class="data-char">1</span>
+    <span class="data-char">1</span><span class="data-char">0</span><span class="data-char">1</span>
+    <span class="data-char">0</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">1</span><span class="data-char">0</span><span class="data-char">0</span>
+    <span class="data-char">1</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">0</span><span class="data-char">1</span><span class="data-char">1</span>
+  </div>
+  <div class="data-stream data-stream-right">
+    <span class="data-char">1</span><span class="data-char">0</span><span class="data-char">0</span>
+    <span class="data-char">1</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">0</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">1</span><span class="data-char">0</span><span class="data-char">1</span>
+    <span class="data-char">0</span><span class="data-char">0</span><span class="data-char">1</span>
+    <span class="data-char">1</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">0</span><span class="data-char">1</span><span class="data-char">1</span>
+    <span class="data-char">1</span><span class="data-char">0</span><span class="data-char">0</span>
+    <span class="data-char">0</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">1</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">0</span><span class="data-char">0</span><span class="data-char">1</span>
+    <span class="data-char">1</span><span class="data-char">0</span><span class="data-char">1</span>
+    <span class="data-char">0</span><span class="data-char">1</span><span class="data-char">0</span>
+    <span class="data-char">1</span><span class="data-char">0</span><span class="data-char">1</span>
+  </div>
+
+  <!-- Frame -->
+  <div class="frame"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="dot dot-red"></div>
+      <div class="dot dot-yellow"></div>
+      <div class="dot dot-green"></div>
+      <span class="header-title">THREAT_TERMINAL</span>
+    </div>
+    <div class="header-right">
+      <div class="live-dot"></div>
+      <span class="live-text">LIVE</span>
+    </div>
+  </div>
+
+  <!-- Background emails -->
+  <div class="email-bg email-left">
+    <div class="email-field">
+      <span class="email-label">FROM:</span>
+      <span class="email-value">security@paypa1-verify.com</span>
+    </div>
+    <div class="email-field">
+      <span class="email-label">SUBJ:</span>
+      <span class="email-value">Urgent: Verify your account now</span>
+    </div>
+    <div class="email-body">
+      Dear Customer, We have detected unusual<br>
+      activity on your account. Please click<br>
+      below to verify your identity immediately<br>
+      or your account will be suspended within<br>
+      24 hours. This is your final warning...
+    </div>
+  </div>
+
+  <div class="email-bg email-right">
+    <div class="email-field">
+      <span class="email-label">FROM:</span>
+      <span class="email-value">noreply@accounts.google.com</span>
+    </div>
+    <div class="email-field">
+      <span class="email-label">SUBJ:</span>
+      <span class="email-value">Security alert for your account</span>
+    </div>
+    <div class="email-body">
+      Someone just signed in to your Google<br>
+      Account from a new Windows device.<br>
+      If this was you, no further action<br>
+      is needed. If you don't recognize this<br>
+      activity, we'll help you secure your...
+    </div>
+  </div>
+
+  <!-- Center glow -->
+  <div class="center-glow"></div>
+  <div class="text-backdrop"></div>
+
+  <!-- Main content -->
+  <div class="center">
+    <div class="warning-badge">
+      <div class="warning-line"></div>
+      <span class="warning-text">INCOMING THREAT DETECTED</span>
+      <div class="warning-line-r"></div>
+    </div>
+
+    <div class="headline">ONE OF THESE IS FAKE.</div>
+    <div class="subheadline">Can you tell which?</div>
+
+    <div class="stat-badge">
+      <span class="stat-text">MOST PLAYERS GET IT WRONG</span>
+    </div>
+
+    <div class="cta">TEST YOUR INSTINCTS</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span class="footer-text">research.scottaltiparmak.com</span>
+    <span class="footer-text">FREE TO PLAY &bull; 2 MIN</span>
+  </div>
+</body>
+</html>

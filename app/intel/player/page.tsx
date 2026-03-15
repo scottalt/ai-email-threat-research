@@ -50,8 +50,7 @@ const BACKGROUND_LABELS: Record<string, string> = {
   infosec: 'INFOSEC',
   technical: 'TECHNICAL',
   other: 'NON-TECHNICAL',
-  prefer_not_to_say: 'UNDISCLOSED',
-  unset: 'UNSET',
+  undisclosed: 'UNDISCLOSED',
 };
 
 function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answersSubmitted: number }) {

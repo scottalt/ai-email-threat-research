@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 192px;
+    height: 192px;
+    overflow: hidden;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon {
+    width: 192px;
+    height: 192px;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(0,255,65,0.06) 0%, transparent 60%),
+      radial-gradient(circle at 50% 50%, #080e08 0%, #040804 100%);
+    border-radius: 36px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Scanlines */
+  .icon::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0,0,0,0.1) 2px,
+      rgba(0,0,0,0.1) 3px
+    );
+    border-radius: 36px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Vignette */
+  .icon::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.5) 100%);
+    border-radius: 36px;
+    pointer-events: none;
+    z-index: 11;
+  }
+
+  /* Border */
+  .border {
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(0,255,65,0.25);
+    border-radius: 32px;
+  }
+
+  /* Monogram */
+  .monogram {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 68px;
+    font-weight: 800;
+    color: #00ff41;
+    letter-spacing: 3px;
+    text-shadow:
+      0 0 20px rgba(0,255,65,0.5),
+      0 0 40px rgba(0,255,65,0.2),
+      0 1px 0 rgba(0,255,65,0.6);
+    z-index: 5;
+    margin-top: -4px;
+  }
+
+  /* Cursor block */
+  .cursor {
+    width: 9px;
+    height: 14px;
+    background: #00ff41;
+    opacity: 0.7;
+    margin-left: 2px;
+    margin-top: 4px;
+    box-shadow: 0 0 8px rgba(0,255,65,0.5);
+    display: inline-block;
+    z-index: 5;
+  }
+
+  .mono-row {
+    display: flex;
+    align-items: flex-end;
+    z-index: 5;
+  }
+
+  /* Label */
+  .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 800;
+    color: rgba(0,255,65,0.3);
+    letter-spacing: 4px;
+    margin-top: 4px;
+    z-index: 5;
+    text-shadow: 0 0 10px rgba(0,255,65,0.15);
+  }
+</style>
+</head>
+<body>
+  <div class="icon">
+    <div class="border"></div>
+    <div class="mono-row">
+      <span class="monogram">TT</span>
+      <span class="cursor"></span>
+    </div>
+    <div class="label">TERMINAL</div>
+  </div>
+</body>
+</html>
