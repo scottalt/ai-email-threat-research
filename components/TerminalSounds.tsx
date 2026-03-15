@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { playClick, playKeyPress } from '@/lib/sounds';
 
 const MUSIC_SRC = '/audio/joelfazhari-synthetic-deception-loopable-epic-cyberpunk-crime-music-157454.mp3';
+const MUSIC_GAIN = 0.015; // Keep music well below SFX
 
 const SKIP_KEYS = new Set([
   'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock',
@@ -16,24 +17,46 @@ function sfxEnabled(): boolean {
   try { return sessionStorage.getItem('sfx_enabled') === 'true'; } catch { return false; }
 }
 
+// Route MP3 through Web Audio API GainNode for volume control.
+// iOS Safari ignores HTMLAudioElement.volume — it's always 1.0.
+// Web Audio API gain works correctly on all platforms including iOS.
+interface MusicState {
+  audio: HTMLAudioElement;
+  ctx: AudioContext;
+  gain: GainNode;
+}
+
+function createMusic(): MusicState {
+  const audio = new Audio(MUSIC_SRC);
+  audio.loop = true;
+  audio.crossOrigin = 'anonymous';
+  const ctx = new AudioContext();
+  const source = ctx.createMediaElementSource(audio);
+  const gain = ctx.createGain();
+  gain.gain.value = MUSIC_GAIN;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  return { audio, ctx, gain };
+}
+
 export function TerminalSounds() {
-  const musicRef = useRef<HTMLAudioElement | null>(null);
+  const musicRef = useRef<MusicState | null>(null);
 
   // Background music — persists across all routes
   useEffect(() => {
     function startMusic() {
       if (!musicRef.current) {
-        const audio = new Audio(MUSIC_SRC);
-        audio.loop = true;
-        audio.volume = 0.015;
-        musicRef.current = audio;
+        musicRef.current = createMusic();
       }
-      musicRef.current.play().catch(() => {});
+      if (musicRef.current.ctx.state === 'suspended') {
+        musicRef.current.ctx.resume().catch(() => {});
+      }
+      musicRef.current.audio.play().catch(() => {});
     }
 
     function stopMusic() {
       if (musicRef.current) {
-        musicRef.current.pause();
+        musicRef.current.audio.pause();
       }
     }
 
@@ -41,13 +64,13 @@ export function TerminalSounds() {
     function handleFirstInteraction() {
       if (sfxEnabled()) {
         if (!musicRef.current) {
-          const audio = new Audio(MUSIC_SRC);
-          audio.loop = true;
-          audio.volume = 0.015;
-          musicRef.current = audio;
+          musicRef.current = createMusic();
         }
-        if (musicRef.current.paused) {
-          musicRef.current.play().then(() => {
+        if (musicRef.current.ctx.state === 'suspended') {
+          musicRef.current.ctx.resume().catch(() => {});
+        }
+        if (musicRef.current.audio.paused) {
+          musicRef.current.audio.play().then(() => {
             document.removeEventListener('click', handleFirstInteraction);
             document.removeEventListener('touchstart', handleFirstInteraction);
           }).catch(() => {});
@@ -74,7 +97,7 @@ export function TerminalSounds() {
       document.removeEventListener('click', handleFirstInteraction);
       document.removeEventListener('touchstart', handleFirstInteraction);
       window.removeEventListener('sfx-change', handleSfxChange);
-      musicRef.current?.pause();
+      musicRef.current?.audio.pause();
     };
   }, []);
 
