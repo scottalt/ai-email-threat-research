@@ -48,6 +48,12 @@ corpus/
 # claude code local settings
 .claude/
 
+# superpowers plugin artifacts
+.superpowers/
+
+# supabase CLI temp files
+supabase/.temp/
+
 # playwright screenshots
 .playwright-mcp/
 
