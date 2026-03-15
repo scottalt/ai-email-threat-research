@@ -15,14 +15,12 @@ const dataAdmin = createClient(supabaseUrl, serviceKey, {
 
 // Fresh email per run — avoids accumulated answers from prior runs
 // hitting the 30-answer research cap or graduation
-// Fresh emails per run — avoids accumulated answers from prior runs
-// hitting the 30-answer research cap or graduation
 const RUN_ID = Date.now();
 export const TEST_FRESH_EMAIL = `test-fresh-${RUN_ID}@phish-or-not.dev`;
 export const TEST_FRESH_ROUND_EMAIL = `test-fresh-round-${RUN_ID}@phish-or-not.dev`;
 export const TEST_FREEPLAY_ROUND_EMAIL = `test-freeplay-round-${RUN_ID}@phish-or-not.dev`;
-export const TEST_GRADUATED_EMAIL = 'test-graduated@phish-or-not.dev';
-export const TEST_FREEPLAY_EMAIL = 'test-freeplay@phish-or-not.dev';
+export const TEST_GRADUATED_EMAIL = `test-graduated-${RUN_ID}@phish-or-not.dev`;
+export const TEST_FREEPLAY_EMAIL = `test-freeplay-${RUN_ID}@phish-or-not.dev`;
 
 interface TestUser {
   id: string;
@@ -36,17 +34,24 @@ interface TestUser {
  * Uses admin API — no OTP needed.
  */
 export async function ensureTestUser(email: string): Promise<TestUser> {
-  // Try to find existing user
-  const { data: { users } } = await authAdmin.auth.admin.listUsers();
-  let user = users.find((u) => u.email === email);
+  // Try to create the user — if they already exist, look them up instead.
+  // This avoids the listUsers() pagination bug (default page size = 50)
+  // that caused "already registered" errors when the auth table grew.
+  let user;
+  const { data: createData, error: createError } = await authAdmin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  });
 
-  if (!user) {
-    const { data, error } = await authAdmin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-    });
-    if (error) throw new Error(`Failed to create test user ${email}: ${error.message}`);
-    user = data.user;
+  if (createData?.user) {
+    user = createData.user;
+  } else if (createError) {
+    // User already exists — find them by listing with a large page
+    const { data: { users } } = await authAdmin.auth.admin.listUsers({ perPage: 1000 });
+    user = users.find((u) => u.email === email);
+    if (!user) throw new Error(`Failed to find existing test user ${email}: ${createError.message}`);
+  } else {
+    throw new Error(`Failed to create test user ${email}: unknown error`);
   }
 
   // Generate a session for this user

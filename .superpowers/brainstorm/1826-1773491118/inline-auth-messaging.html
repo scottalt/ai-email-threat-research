@@ -1,0 +1,82 @@
+<h2>Inline Auth: What context should the player see?</h2>
+<p class="subtitle">When they tap Play and the auth form expands, what messaging surrounds it?</p>
+
+<div class="cards">
+  <div class="card" data-choice="minimal" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0f0a; padding:16px; font-family:monospace;">
+      <!-- Minimal version -->
+      <div style="border:1px solid rgba(0,255,65,0.3); padding:12px; background:#060c06; text-align:center; color:#33bb55; font-weight:bold; letter-spacing:3px; font-size:13px; opacity:0.5;">
+        [ PLAY ]
+      </div>
+      <div style="margin-top:12px; border:1px solid rgba(255,170,0,0.5); padding:16px; background:#060c06;">
+        <div style="color:#ffaa00; font-weight:bold; font-size:13px; margin-bottom:8px;">SIGN IN TO PLAY</div>
+        <div style="color:#cc8800; font-size:11px; margin-bottom:12px;">No password needed — we'll send a magic code</div>
+        <div style="border:1px solid rgba(0,255,65,0.3); padding:8px; background:#0a0f0a; color:#33bb55; font-size:12px; opacity:0.6;">
+          analyst@example.com
+        </div>
+        <div style="margin-top:8px; border:1px solid rgba(255,170,0,0.5); padding:8px; text-align:center; color:#ffaa00; font-weight:bold; font-size:12px;">
+          [ SEND CODE ]
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Minimal</h3>
+      <p>Just "Sign in to play" + email input. Clean and fast. No explanation of why.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="research-context" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0f0a; padding:16px; font-family:monospace;">
+      <!-- Research context version -->
+      <div style="border:1px solid rgba(0,255,65,0.3); padding:12px; background:#060c06; text-align:center; color:#33bb55; font-weight:bold; letter-spacing:3px; font-size:13px; opacity:0.5;">
+        [ PLAY ]
+      </div>
+      <div style="margin-top:12px; border:1px solid rgba(255,170,0,0.5); padding:16px; background:#060c06;">
+        <div style="color:#ffaa00; font-weight:bold; font-size:13px; margin-bottom:4px;">JOIN THE RESEARCH STUDY</div>
+        <div style="color:#33bb55; font-size:11px; margin-bottom:4px; line-height:1.5;">
+          Your answers contribute to phishing detection research.<br>
+          Play 30 rounds → graduate → unlock Daily Challenge + Expert Mode.
+        </div>
+        <div style="color:#cc8800; font-size:11px; margin-bottom:12px;">No password · magic code · takes 10 seconds</div>
+        <div style="border:1px solid rgba(0,255,65,0.3); padding:8px; background:#0a0f0a; color:#33bb55; font-size:12px; opacity:0.6;">
+          analyst@example.com
+        </div>
+        <div style="margin-top:8px; border:1px solid rgba(255,170,0,0.5); padding:8px; text-align:center; color:#ffaa00; font-weight:bold; font-size:12px;">
+          [ SEND CODE ]
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Research Context</h3>
+      <p>Explains the research purpose, the 30-round path, and what unlocks after graduation. Gives the player motivation.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="progression-hook" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0f0a; padding:16px; font-family:monospace;">
+      <!-- Progression hook version -->
+      <div style="border:1px solid rgba(0,255,65,0.3); padding:12px; background:#060c06; text-align:center; color:#33bb55; font-weight:bold; letter-spacing:3px; font-size:13px; opacity:0.5;">
+        [ PLAY ]
+      </div>
+      <div style="margin-top:12px; border:1px solid rgba(255,170,0,0.5); padding:16px; background:#060c06;">
+        <div style="color:#ffaa00; font-weight:bold; font-size:13px; margin-bottom:8px;">SIGN IN TO START</div>
+        <div style="color:#33bb55; font-size:11px; margin-bottom:12px; line-height:1.6;">
+          <span style="color:#ffaa00;">▸</span> Track your XP + climb the leaderboard<br>
+          <span style="color:#ffaa00;">▸</span> Contribute to phishing research<br>
+          <span style="color:#ffaa00;">▸</span> Unlock Daily Challenge + Expert Mode
+        </div>
+        <div style="color:#cc8800; font-size:11px; margin-bottom:12px;">Magic code · no password · 10 seconds</div>
+        <div style="border:1px solid rgba(0,255,65,0.3); padding:8px; background:#0a0f0a; color:#33bb55; font-size:12px; opacity:0.6;">
+          analyst@example.com
+        </div>
+        <div style="margin-top:8px; border:1px solid rgba(255,170,0,0.5); padding:8px; text-align:center; color:#ffaa00; font-weight:bold; font-size:12px;">
+          [ SEND CODE ]
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Progression Hook</h3>
+      <p>Bullet-point value props: XP tracking, research contribution, unlockable modes. Sells the sign-in as gaining access, not a gate.</p>
+    </div>
+  </div>
+</div>
