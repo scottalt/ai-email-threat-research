@@ -69,3 +69,6 @@ backups/
 # playwright
 /test-results/
 /playwright-report/
+
+# seed data contains card answers — never commit
+supabase/seed.sql
