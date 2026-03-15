@@ -26,9 +26,12 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { sessionId, cardId, userAnswer, confidence } = body;
+  const { sessionId, userAnswer, confidence } = body;
+  // Accept cardIndex (new) or cardId (legacy) — prefer cardIndex
+  const cardIndex = typeof body.cardIndex === 'number' ? body.cardIndex : null;
+  const cardId = typeof body.cardId === 'string' ? body.cardId : null;
 
-  if (!sessionId || !cardId || !userAnswer || !confidence) {
+  if (!sessionId || (cardIndex === null && !cardId) || !userAnswer || !confidence) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
@@ -47,13 +50,17 @@ export async function POST(req: NextRequest) {
   }
 
   const cards: Card[] = typeof cardsJson === 'string' ? JSON.parse(cardsJson) : cardsJson;
-  const card = cards.find(c => c.id === cardId);
+  // Resolve card by index (new) or by id (legacy)
+  const card = cardIndex !== null
+    ? (cardIndex >= 0 && cardIndex < cards.length ? cards[cardIndex] : undefined)
+    : cards.find(c => c.id === cardId);
   if (!card) {
     return NextResponse.json({ error: 'Card not dealt in this session' }, { status: 403 });
   }
 
   // Prevent checking the same card twice in a session
-  const checkedKey = `session-checked:${sessionId}:${cardId}`;
+  const resolvedId = card.id;
+  const checkedKey = `session-checked:${sessionId}:${resolvedId}`;
   const alreadyChecked = await redis.get(checkedKey);
   if (alreadyChecked) {
     return NextResponse.json({ error: 'Card already checked' }, { status: 409 });
@@ -82,6 +89,8 @@ export async function POST(req: NextRequest) {
     isPhishing: card.isPhishing,
     pointsEarned,
     streak: currentStreak,
+    cardId: card.id,             // real ID — safe post-answer, needed for answer logging
+    difficulty: card.difficulty,  // safe post-answer, used in feedback display
     clues: card.clues,
     explanation: card.explanation,
     highlights: card.highlights ?? [],

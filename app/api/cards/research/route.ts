@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import type { ResearchCard } from '@/lib/types';
-import { stripCardAnswers } from '@/lib/card-utils';
+import { toSafeCard } from '@/lib/card-utils';
 
 const ROUND_SIZE = 10;
 const CARDS_LIMIT = 1000;
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
       const existing = await redis.get<string>(`session-cards:${sessionId}`);
       if (existing) {
         const existingCards = typeof existing === 'string' ? JSON.parse(existing) : existing;
-        return NextResponse.json(existingCards.map(stripCardAnswers));
+        return NextResponse.json(existingCards.map(toSafeCard));
       }
     }
 
@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Return cards with answer-revealing fields stripped
-    return NextResponse.json(cards.map(stripCardAnswers));
+    return NextResponse.json(cards.map(toSafeCard));
   } catch (err) {
     console.error('Cards research error:', err);
     return NextResponse.json({ error: 'Failed to load cards' }, { status: 500 });
