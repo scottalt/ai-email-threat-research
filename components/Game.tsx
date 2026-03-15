@@ -237,7 +237,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: sessionId.current,
-          cardIndex: currentIndex,
+          cardIndex: '_idx' in card ? (card as SafeDealCard)._idx : currentIndex,
           userAnswer: answer,
           confidence,
           streak,
