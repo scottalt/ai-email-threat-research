@@ -1,0 +1,97 @@
+<h2>The Problem: Sign-In Gate is Invisible on Mobile</h2>
+<p class="subtitle">Here's what a new player sees when they scroll down on mobile</p>
+
+<div class="section">
+  <div class="mockup">
+    <div class="mockup-header">Current Mobile Layout (scrolled down)</div>
+    <div class="mockup-body" style="background:#0a0f0a; color:#33bb55; font-family:monospace; padding:0; max-width:375px; margin:0 auto;">
+      <!-- What's ABOVE the fold (scrolled past) -->
+      <div style="background:#111; padding:12px; border-bottom:2px dashed #ffaa00; opacity:0.4;">
+        <div style="color:#ffaa00; font-size:12px; text-align:center;">↑ SCROLLED PAST ↑</div>
+        <div style="border:1px solid rgba(255,170,0,0.5); padding:10px; margin-top:8px; background:#060c06;">
+          <div style="color:#ffaa00; font-weight:bold; font-size:13px;">[ SIGN IN TO SAVE YOUR SCORE ]</div>
+          <div style="color:#cc8800; font-size:11px; margin-top:4px;">Magic link · no password · track XP + rank</div>
+        </div>
+      </div>
+
+      <!-- HOW TO PLAY (takes up lots of space) -->
+      <div style="border:1px solid rgba(0,255,65,0.3); margin:12px; background:#060c06;">
+        <div style="border-bottom:1px solid rgba(0,255,65,0.35); padding:6px 12px;">
+          <span style="color:#33bb55; font-size:13px; letter-spacing:2px;">HOW_TO_PLAY</span>
+        </div>
+        <div style="padding:10px 12px; font-size:12px; line-height:1.8;">
+          <div>[1] Read each email carefully</div>
+          <div>[2] Set your confidence level</div>
+          <div>[3] Classify: PHISHING or LEGIT</div>
+          <div>[4] Correct + confident = more pts</div>
+          <div>[5] Scoring: 1x / 2x / 3x multipliers</div>
+          <div>[6] 3-streak bonus: +50 pts</div>
+          <div>[7] Tap [HEADERS] to inspect</div>
+          <div>[8] Tap URLs to inspect destination</div>
+        </div>
+      </div>
+
+      <!-- SIGNAL GUIDE (collapsed but still takes space) -->
+      <div style="border:1px solid rgba(255,170,0,0.3); margin:0 12px 12px; background:#060c06;">
+        <div style="padding:8px 12px; display:flex; justify-content:space-between;">
+          <span style="color:#ffaa00; font-size:12px; letter-spacing:2px;">[?] SIGNAL GUIDE</span>
+          <span style="color:#ffaa00;">▼</span>
+        </div>
+      </div>
+
+      <!-- WHAT THE USER SEES — THE PLAY BUTTON -->
+      <div style="border:3px solid #ff4444; margin:12px; padding:4px; border-radius:4px; position:relative;">
+        <div style="position:absolute; top:-12px; left:10px; background:#ff4444; color:white; font-size:10px; padding:2px 8px; border-radius:3px; font-weight:bold;">
+          USER IS HERE
+        </div>
+        <button style="width:100%; padding:12px; border:1px solid rgba(0,255,65,0.3); background:#060c06; color:#33bb55; font-weight:bold; letter-spacing:3px; font-size:13px; font-family:monospace; cursor:pointer;">
+          [ PLAY ]
+        </button>
+        <div style="text-align:center; color:#1a5c2a; font-size:11px; padding:8px 0;">
+          sign in to contribute to the research study
+        </div>
+      </div>
+
+      <!-- Locked buttons below -->
+      <div style="margin:12px; opacity:0.5;">
+        <div style="border:1px solid rgba(0,255,65,0.15); padding:10px; text-align:center; color:#1a5c2a; font-size:12px; letter-spacing:2px;">
+          [ DAILY CHALLENGE — LOCKED ]
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 style="margin-top:32px;">Core Question: What should happen when an unsigned-in player reaches the Play button?</h2>
+<p class="subtitle">Pick the general direction — we'll refine the details next</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Move Sign-In Next to Play</h3>
+      <p>Restructure the mobile layout so the sign-in card appears directly above the Play button, not at the top of the page. The gate is always visible next to the action.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Let Them Play Without Signing In</h3>
+      <p>Remove the sign-in gate entirely. Let anyone tap Play to start a game. Show a "sign in to save your score" prompt after the round ends (or inline during gameplay). Reduce friction to zero.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Sticky Sign-In Banner</h3>
+      <p>When the user scrolls past the sign-in card, show a compact sticky bar at the top of the screen: "Sign in to play · [Enter Email]". Tapping Play also scrolls up to the sign-in form with a visual highlight.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Inline Auth on Play Tap</h3>
+      <p>Keep the current layout, but when an unsigned-in user taps Play, expand an email input directly below the Play button (instead of scrolling up or showing nothing). The auth form comes to them.</p>
+    </div>
+  </div>
+</div>

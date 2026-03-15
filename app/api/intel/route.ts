@@ -152,11 +152,13 @@ export async function GET() {
     });
 
     // Accuracy by player background
+    // Merge 'prefer_not_to_say' and null/unset into a single 'undisclosed' bucket
     const bgMap: Record<string, { total: number; correct: number }> = {};
     for (const a of answers) {
       const joined = a.players as unknown as { background: string | null } | { background: string | null }[] | null;
       const player = Array.isArray(joined) ? joined[0] ?? null : joined;
-      const bg = player?.background ?? 'unset';
+      const rawBg = player?.background ?? 'unset';
+      const bg = (rawBg === 'unset' || rawBg === 'prefer_not_to_say') ? 'undisclosed' : rawBg;
       if (!bgMap[bg]) bgMap[bg] = { total: 0, correct: 0 };
       bgMap[bg].total++;
       if (a.correct) bgMap[bg].correct++;
