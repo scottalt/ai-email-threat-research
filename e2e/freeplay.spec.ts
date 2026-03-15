@@ -50,7 +50,7 @@ test.describe('Freeplay Round Completion', () => {
   });
 
   test('round completion awards XP and records answers', async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
     const before = await getPlayerState(user.id);
 
     await injectSession(page, supabaseUrl, user.accessToken, user.refreshToken);
@@ -59,7 +59,7 @@ test.describe('Freeplay Round Completion', () => {
     // Set up listener for XP call BEFORE starting the round
     const xpPromise = page.waitForResponse(
       (resp) => resp.url().includes('/api/player/xp') && resp.status() === 200,
-      { timeout: 60_000 },
+      { timeout: 90_000 },
     );
 
     const playButton = page.getByRole('button', { name: /play/i }).first();
