@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
 import { getShuffledDeck } from '@/data/cards';
-import { stripCardAnswers } from '@/lib/card-utils';
+import { toSafeCard } from '@/lib/card-utils';
 
 const SESSION_TTL = 60 * 60; // 1 hour — plenty of time to finish a round
 
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const existing = await redis.get<string>(`session-cards:${sessionId}`);
   if (existing) {
     const existingCards = typeof existing === 'string' ? JSON.parse(existing) : existing;
-    return NextResponse.json(existingCards.map(stripCardAnswers));
+    return NextResponse.json(existingCards.map(toSafeCard));
   }
 
   const cards = getShuffledDeck(10);
@@ -33,5 +33,5 @@ export async function GET(req: NextRequest) {
   await redis.set(`session-streak:${sessionId}`, 0, { ex: SESSION_TTL });
 
   // Return cards with answer data stripped
-  return NextResponse.json(cards.map(stripCardAnswers));
+  return NextResponse.json(cards.map(toSafeCard));
 }

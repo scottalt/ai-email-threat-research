@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import type { DealCard, Answer, Confidence, GameMode } from '@/lib/types';
+import type { SafeDealCard } from '@/lib/card-utils';
 
 import { parseFrom } from '@/lib/parseFrom';
 
 interface Props {
-  card: DealCard;
+  card: DealCard | SafeDealCard;
   onAnswer: (answer: Answer, confidence: Confidence, timing?: {
     timeFromRenderMs: number;
     timeFromConfidenceMs: number | null;
@@ -66,7 +67,7 @@ function parseBody(text: string): Segment[] {
 }
 
 function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
-  card: DealCard;
+  card: DealCard | SafeDealCard;
   onScroll?: (pct: number) => void;
   onHeadersOpened?: () => void;
   onUrlInspected?: () => void;
@@ -246,7 +247,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
 }
 
 function SMSDisplay({ card, onScroll, onUrlInspected }: {
-  card: DealCard;
+  card: DealCard | SafeDealCard;
   onScroll?: (pct: number) => void;
   onUrlInspected?: () => void;
 }) {

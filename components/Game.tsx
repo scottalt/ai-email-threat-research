@@ -41,6 +41,7 @@ import { StartScreen } from './StartScreen';
 import { ResearchIntro } from './ResearchIntro';
 import { TutorialCard } from './TutorialCard';
 import type { Card, DealCard, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
+import type { SafeDealCard } from '@/lib/card-utils';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { usePlayer } from '@/lib/usePlayer';
 import { useNavVisibility } from '@/lib/NavVisibilityContext';
@@ -65,7 +66,7 @@ type GamePhase = 'start' | 'playing' | 'checking' | 'feedback' | 'summary' | 'da
 
 export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const [phase, setPhase] = useState<GamePhase>('start');
-  const [deck, setDeck] = useState<DealCard[]>([]);
+  const [deck, setDeck] = useState<(DealCard | SafeDealCard)[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [lastResult, setLastResult] = useState<RoundResult | null>(null);
@@ -236,7 +237,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: sessionId.current,
-          cardId: card.id,
+          cardIndex: currentIndex,
           userAnswer: answer,
           confidence,
           streak,
@@ -245,6 +246,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         .then(r => r.json())
         .then((data: {
           correct: boolean; isPhishing: boolean; pointsEarned: number; streak: number;
+          cardId: string; difficulty: string;
           clues: string[]; explanation: string; highlights: string[]; technique: string | null;
           cardSource?: string; secondaryTechnique?: string | null;
           isGenaiSuspected?: boolean | null; genaiConfidence?: string | null;
@@ -252,9 +254,18 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           personalizationLevel?: number | null; contextualCoherence?: number | null;
           datasetVersion?: string | null;
         }) => {
-          // Hydrate the card with server-provided answer data (+ research metadata if present)
+          // Hydrate the card with server-provided answer data (post-answer, no leak)
           const fullCard: Card = {
-            ...card,
+            id: data.cardId,
+            type: card.type,
+            from: card.from,
+            subject: 'subject' in card ? (card as DealCard).subject : undefined,
+            body: card.body,
+            authStatus: (card.authStatus ?? 'unverified') as Card['authStatus'],
+            replyTo: 'replyTo' in card ? (card as DealCard).replyTo : undefined,
+            attachmentName: 'attachmentName' in card ? (card as DealCard).attachmentName : undefined,
+            sentAt: 'sentAt' in card ? (card as DealCard).sentAt : undefined,
+            difficulty: data.difficulty as Card['difficulty'],
             isPhishing: data.isPhishing,
             clues: data.clues,
             explanation: data.explanation,
@@ -578,7 +589,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           />
         )}
         <GameCard
-          key={currentCard.id}
+          key={currentIndex}
           card={currentCard}
           onAnswer={handleAnswer}
           questionNumber={currentIndex + 1}

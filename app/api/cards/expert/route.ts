@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import { getExpertDeck } from '@/data/expert-cards';
-import { stripCardAnswers } from '@/lib/card-utils';
+import { toSafeCard } from '@/lib/card-utils';
 
 const SESSION_TTL = 60 * 60; // 1 hour
 
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
   const existing = await redis.get<string>(`session-cards:${sessionId}`);
   if (existing) {
     const existingCards = typeof existing === 'string' ? JSON.parse(existing) : existing;
-    return NextResponse.json(existingCards.map(stripCardAnswers));
+    return NextResponse.json(existingCards.map(toSafeCard));
   }
 
   const cards = getExpertDeck(10);
@@ -60,5 +60,5 @@ export async function GET(req: NextRequest) {
   await redis.set(`session-cards:${sessionId}`, JSON.stringify(cards), { ex: SESSION_TTL, nx: true });
   await redis.set(`session-streak:${sessionId}`, 0, { ex: SESSION_TTL });
 
-  return NextResponse.json(cards.map(stripCardAnswers));
+  return NextResponse.json(cards.map(toSafeCard));
 }
