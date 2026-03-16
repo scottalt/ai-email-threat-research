@@ -85,6 +85,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
         if (hourlyReset <= now && dailyReset <= now) {
           localStorage.removeItem('xp_cooldown');
           setCooldownLabel(null); setAtCap(false); setCooldownTimer(null);
+          refreshProfile();
           return;
         }
 
@@ -97,6 +98,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           if (diff <= 0) {
             localStorage.removeItem('xp_cooldown');
             setCooldownLabel(null); setAtCap(false); setCooldownTimer(null);
+            refreshProfile(); // fetch fresh cooldown state from server
           } else {
             const timer = `${mins}m ${secs.toString().padStart(2, '0')}s`;
             setCooldownTimer(timer);
@@ -127,7 +129,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     check();
     const interval = setInterval(check, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshProfile]);
 
   /** Intercept game start — show cooldown modal if at cap for non-research modes */
   function tryStart(mode: GameMode) {
