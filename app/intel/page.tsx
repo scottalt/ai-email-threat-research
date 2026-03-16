@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getSupabaseAdminClient } from '@/lib/supabase';
+import { getSupabaseAdminClient, fetchAllRows } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
@@ -64,12 +64,15 @@ function median(nums: number[]): number {
 async function getIntel(): Promise<IntelData | null> {
   try {
     const supabase = getSupabaseAdminClient();
-    const { data: answers } = await supabase
-      .from('answers')
-      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id, answer_ordinal, scroll_depth_pct, players!player_id(background)')
-      .eq('game_mode', 'research');
+    const answers = await fetchAllRows(({ from, to }) =>
+      supabase
+        .from('answers')
+        .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id, answer_ordinal, scroll_depth_pct, players!player_id(background)')
+        .eq('game_mode', 'research')
+        .range(from, to),
+    );
 
-    if (!answers || answers.length === 0) {
+    if (answers.length === 0) {
       return {
         totalAnswers: 0, uniqueParticipants: 0, insufficient: true, overallBypassRate: 0,
         byTechnique: [], byDifficulty: [],

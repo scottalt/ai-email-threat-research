@@ -27,3 +27,24 @@ export function getSupabaseClient() {
 export function getSupabaseAdminClient() {
   return createClient(getUrl(), getServiceKey());
 }
+
+/**
+ * Fetch all rows from a Supabase query by paginating in batches.
+ * Supabase caps responses at 1,000 rows by default.
+ */
+export async function fetchAllRows<T>(
+  queryFn: (range: { from: number; to: number }) => PromiseLike<{ data: T[] | null; error: unknown }>,
+  batchSize = 1000,
+): Promise<T[]> {
+  const all: T[] = [];
+  let from = 0;
+  while (true) {
+    const to = from + batchSize - 1;
+    const { data, error } = await queryFn({ from, to });
+    if (error || !data) break;
+    all.push(...data);
+    if (data.length < batchSize) break;
+    from += batchSize;
+  }
+  return all;
+}

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getSupabaseAdminClient } from '@/lib/supabase';
+import { getSupabaseAdminClient, fetchAllRows } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/adminAuth';
 import { redis } from '@/lib/redis';
 
@@ -45,12 +45,15 @@ export async function GET() {
 
     const supabase = getSupabaseAdminClient();
 
-    const { data: answers } = await supabase
-      .from('answers')
-      .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id, players!player_id(background)')
-      .eq('game_mode', 'research');
+    const answers = await fetchAllRows(({ from, to }) =>
+      supabase
+        .from('answers')
+        .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id, players!player_id(background)')
+        .eq('game_mode', 'research')
+        .range(from, to),
+    );
 
-    if (!answers || answers.length === 0) {
+    if (answers.length === 0) {
       return NextResponse.json({ totalAnswers: 0, insufficient: true });
     }
 
