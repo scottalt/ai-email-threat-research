@@ -70,7 +70,7 @@ export function TutorialCard({ onComplete }: Props) {
 
         {/* Auth headers panel */}
         {showHeaders && (
-          <div className="border-b border-[rgba(0,255,65,0.2)] px-3 py-2 bg-[#03080a] space-y-1">
+          <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] px-3 py-2 bg-[#03080a] space-y-1">
             <div className="text-[var(--c-dark)] text-sm font-mono tracking-widest mb-1">AUTH_HEADERS</div>
             {[
               { label: 'SPF', status: 'FAIL' },
@@ -92,7 +92,7 @@ export function TutorialCard({ onComplete }: Props) {
         )}
 
         {/* Email metadata */}
-        <div className="px-3 py-2 space-y-1 border-b border-[rgba(0,255,65,0.15)]">
+        <div className="px-3 py-2 space-y-1 border-b border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)]">
           {/* FROM */}
           <div className="flex items-start gap-2 text-sm font-mono">
             <span className="text-[var(--c-dark)] w-8 shrink-0 pt-0.5">FROM</span>
@@ -182,7 +182,7 @@ export function TutorialCard({ onComplete }: Props) {
                 onClick={() => setConfidence(key)}
                 className={`flex-1 py-3 border font-mono text-sm tracking-wider transition-all active:scale-95 flex flex-col items-center gap-0.5 ${color} ${
                   confidence === key
-                    ? `${border} bg-[rgba(0,255,65,0.06)]`
+                    ? `${border} bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)]`
                     : `${border} opacity-60 hover:opacity-100`
                 }`}
               >
@@ -207,7 +207,7 @@ export function TutorialCard({ onComplete }: Props) {
           <button
             type="button"
             onClick={() => setAnswer('LEGIT')}
-            className="flex-1 py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:scale-95 transition-all"
+            className="flex-1 py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:scale-95 transition-all"
           >
             [ LEGIT ]
           </button>
@@ -218,7 +218,7 @@ export function TutorialCard({ onComplete }: Props) {
       {answer && (
         <div className={`term-border px-3 py-3 space-y-2 ${
           answer === 'PHISHING'
-            ? 'border-[rgba(0,255,65,0.5)]'
+            ? 'border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)]'
             : 'border-[rgba(255,51,51,0.5)]'
         } bg-[var(--c-bg)]`}>
           <div className={`text-sm font-mono font-bold tracking-widest ${
@@ -241,7 +241,7 @@ export function TutorialCard({ onComplete }: Props) {
         <button
           type="button"
           onClick={onComplete}
-          className="w-full py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:bg-[rgba(0,255,65,0.1)] transition-all"
+          className="w-full py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] transition-all"
         >
           [ GOT IT — START RESEARCH ]
         </button>

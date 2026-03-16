@@ -83,7 +83,7 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
                 </div>
                 <Link
                   href="/"
-                  className="block w-full py-3 mt-2 term-border text-center text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
+                  className="block w-full py-3 mt-2 term-border text-center text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] transition-all"
                 >
                   [ CONTINUE RESEARCH ]
                 </Link>
@@ -93,7 +93,7 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
                 <div className="text-[var(--c-muted)] text-sm font-mono">Sign in and play Research Mode to earn access.</div>
                 <Link
                   href="/"
-                  className="inline-block px-6 py-3 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
+                  className="inline-block px-6 py-3 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] transition-all"
                 >
                   [ GO TO TERMINAL ]
                 </Link>
@@ -137,7 +137,7 @@ function IntelContent({ data, isAdmin }: { data: IntelData; isAdmin: boolean }) 
             <SectionHeader title="DETECTION ACCURACY BY BACKGROUND" />
             <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
               {data.byBackground.map(({ background, accuracyRate, total }) => (
-                <BarRow key={background} label={BACKGROUND_LABELS[background] ?? background} sub={`n=${total}`} value={`${accuracyRate}%`} pct={accuracyRate} color="#00ff41" />
+                <BarRow key={background} label={BACKGROUND_LABELS[background] ?? background} sub={`n=${total}`} value={`${accuracyRate}%`} pct={accuracyRate} color="var(--c-primary)" />
               ))}
             </div>
             <div className="px-3 py-2 text-[var(--c-muted)] text-sm font-mono">
