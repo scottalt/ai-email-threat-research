@@ -21,7 +21,7 @@ const TUTORIAL_EMAIL = {
 type Confidence = 'GUESSING' | 'LIKELY' | 'CERTAIN';
 
 const CONFIDENCE_OPTIONS: { key: Confidence; mult: string; color: string; border: string; penalty: string }[] = [
-  { key: 'GUESSING', mult: '1×', color: 'text-[#00aa28]', border: 'border-[rgba(0,255,65,0.35)]',   penalty: 'no penalty' },
+  { key: 'GUESSING', mult: '1×', color: 'text-[var(--c-secondary)]', border: 'border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)]',   penalty: 'no penalty' },
   { key: 'LIKELY',   mult: '2×', color: 'text-[#ffaa00]', border: 'border-[rgba(255,170,0,0.6)]',  penalty: '−100 if wrong' },
   { key: 'CERTAIN',  mult: '3×', color: 'text-[#ff3333]', border: 'border-[rgba(255,51,51,0.6)]',  penalty: '−200 if wrong' },
 ];
@@ -40,18 +40,18 @@ export function TutorialCard({ onComplete }: Props) {
     <div className="anim-fade-in-up w-full max-w-sm px-4 flex flex-col gap-4 pb-safe">
 
       {/* Annotation strip */}
-      <div className="term-border border-[rgba(255,170,0,0.5)] bg-[#060c06] px-3 py-3 space-y-1">
+      <div className="term-border border-[rgba(255,170,0,0.5)] bg-[var(--c-bg)] px-3 py-3 space-y-1">
         <div className="text-[#ffaa00] text-sm font-mono font-bold tracking-widest">TRAINING_SIMULATION</div>
-        <div className="text-[#00aa28] text-sm font-mono leading-relaxed">
+        <div className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed">
           Explore the forensic tools below, then set your confidence and classify this email.
         </div>
       </div>
 
       {/* Fake email card */}
-      <div className="term-border bg-[#060c06]">
+      <div className="term-border bg-[var(--c-bg)]">
         {/* Card header with pulsing HEADERS button */}
-        <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
-          <span className="text-[#003a0e] text-sm font-mono tracking-widest">INCOMING_EMAIL</span>
+        <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 flex items-center justify-between">
+          <span className="text-[var(--c-dark)] text-sm font-mono tracking-widest">INCOMING_EMAIL</span>
           <button
             type="button"
             onClick={() => {
@@ -60,8 +60,8 @@ export function TutorialCard({ onComplete }: Props) {
             }}
             className={`text-sm font-mono px-2 py-0.5 border transition-colors ${
               showHeaders
-                ? 'border-[rgba(0,255,65,0.6)] text-[#00ff41]'
-                : 'border-[rgba(0,255,65,0.25)] text-[#003a0e] hover:text-[#00aa28]'
+                ? 'border-[color-mix(in_srgb,var(--c-primary)_60%,transparent)] text-[var(--c-primary)]'
+                : 'border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] text-[var(--c-dark)] hover:text-[var(--c-secondary)]'
             } ${!headersInteracted ? 'anim-hint-pulse' : ''}`}
           >
             [HEADERS]
@@ -71,20 +71,20 @@ export function TutorialCard({ onComplete }: Props) {
         {/* Auth headers panel */}
         {showHeaders && (
           <div className="border-b border-[rgba(0,255,65,0.2)] px-3 py-2 bg-[#03080a] space-y-1">
-            <div className="text-[#003a0e] text-sm font-mono tracking-widest mb-1">AUTH_HEADERS</div>
+            <div className="text-[var(--c-dark)] text-sm font-mono tracking-widest mb-1">AUTH_HEADERS</div>
             {[
               { label: 'SPF', status: 'FAIL' },
               { label: 'DKIM', status: 'FAIL' },
               { label: 'DMARC', status: 'FAIL' },
             ].map(({ label, status }) => (
               <div key={label} className="flex items-center gap-2 text-sm font-mono">
-                <span className="text-[#00aa28] w-12">{label}</span>
+                <span className="text-[var(--c-secondary)] w-12">{label}</span>
                 <span className="text-[#ff3333] font-bold">{status}</span>
               </div>
             ))}
             <div className="pt-1 space-y-0.5">
               <div className="flex gap-2 text-sm font-mono">
-                <span className="text-[#00aa28] w-16 shrink-0">REPLY-TO</span>
+                <span className="text-[var(--c-secondary)] w-16 shrink-0">REPLY-TO</span>
                 <span className="text-[#ffaa00]">{TUTORIAL_EMAIL.replyTo}</span>
               </div>
             </div>
@@ -95,10 +95,10 @@ export function TutorialCard({ onComplete }: Props) {
         <div className="px-3 py-2 space-y-1 border-b border-[rgba(0,255,65,0.15)]">
           {/* FROM */}
           <div className="flex items-start gap-2 text-sm font-mono">
-            <span className="text-[#003a0e] w-8 shrink-0 pt-0.5">FROM</span>
+            <span className="text-[var(--c-dark)] w-8 shrink-0 pt-0.5">FROM</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-[#00ff41]">{TUTORIAL_EMAIL.fromDisplay}</span>
+                <span className="text-[var(--c-primary)]">{TUTORIAL_EMAIL.fromDisplay}</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -107,7 +107,7 @@ export function TutorialCard({ onComplete }: Props) {
                   }}
                   className={`transition-colors ${
                     fromInteracted
-                      ? 'text-[#003a0e] hover:text-[#00aa28]'
+                      ? 'text-[var(--c-dark)] hover:text-[var(--c-secondary)]'
                       : 'text-[#ffaa00] anim-hint-text-pulse'
                   }`}
                   aria-label="Reveal sender email"
@@ -122,24 +122,24 @@ export function TutorialCard({ onComplete }: Props) {
           </div>
           {/* SUBJ */}
           <div className="flex items-start gap-2 text-sm font-mono">
-            <span className="text-[#003a0e] w-8 shrink-0 pt-0.5">SUBJ</span>
-            <span className="text-[#00ff41] flex-1">{TUTORIAL_EMAIL.subject}</span>
+            <span className="text-[var(--c-dark)] w-8 shrink-0 pt-0.5">SUBJ</span>
+            <span className="text-[var(--c-primary)] flex-1">{TUTORIAL_EMAIL.subject}</span>
           </div>
           {/* SENT */}
           <div className="flex items-center gap-2 text-sm font-mono">
-            <span className="text-[#003a0e] w-8 shrink-0">SENT</span>
-            <span className="text-[#00aa28]">{TUTORIAL_EMAIL.sentAt}</span>
+            <span className="text-[var(--c-dark)] w-8 shrink-0">SENT</span>
+            <span className="text-[var(--c-secondary)]">{TUTORIAL_EMAIL.sentAt}</span>
           </div>
           {/* ATCH */}
           <div className="flex items-center gap-2 text-sm font-mono">
-            <span className="text-[#003a0e] w-8 shrink-0">ATCH</span>
+            <span className="text-[var(--c-dark)] w-8 shrink-0">ATCH</span>
             <span className="text-[#ffaa00]">📎 {TUTORIAL_EMAIL.attachmentName}</span>
           </div>
         </div>
 
         {/* Body */}
         <div className="px-3 py-2 max-h-40 overflow-y-auto">
-          <div className="text-[#00aa28] text-sm font-mono whitespace-pre-wrap leading-relaxed">
+          <div className="text-[var(--c-secondary)] text-sm font-mono whitespace-pre-wrap leading-relaxed">
             {TUTORIAL_EMAIL.bodyBefore}
             <button
               type="button"
@@ -162,7 +162,7 @@ export function TutorialCard({ onComplete }: Props) {
         {/* URL inspector */}
         {showUrl && (
           <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[#03080a]">
-            <div className="text-[#003a0e] text-sm font-mono tracking-widest mb-1">URL_INSPECTOR</div>
+            <div className="text-[var(--c-dark)] text-sm font-mono tracking-widest mb-1">URL_INSPECTOR</div>
             <div className="text-[#ffaa00] text-sm font-mono break-all">{TUTORIAL_EMAIL.url}</div>
           </div>
         )}
@@ -171,7 +171,7 @@ export function TutorialCard({ onComplete }: Props) {
       {/* Confidence selector */}
       {!answer && (
         <div className="w-full space-y-2">
-          <div className="text-sm text-[#00aa28] font-mono text-center tracking-widest">
+          <div className="text-sm text-[var(--c-secondary)] font-mono text-center tracking-widest">
             — SET CONFIDENCE BEFORE ANSWERING —
           </div>
           <div className="flex gap-2">
@@ -207,7 +207,7 @@ export function TutorialCard({ onComplete }: Props) {
           <button
             type="button"
             onClick={() => setAnswer('LEGIT')}
-            className="flex-1 py-4 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:scale-95 transition-all"
+            className="flex-1 py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:scale-95 transition-all"
           >
             [ LEGIT ]
           </button>
@@ -220,13 +220,13 @@ export function TutorialCard({ onComplete }: Props) {
           answer === 'PHISHING'
             ? 'border-[rgba(0,255,65,0.5)]'
             : 'border-[rgba(255,51,51,0.5)]'
-        } bg-[#060c06]`}>
+        } bg-[var(--c-bg)]`}>
           <div className={`text-sm font-mono font-bold tracking-widest ${
-            answer === 'PHISHING' ? 'text-[#00ff41]' : 'text-[#ff3333]'
+            answer === 'PHISHING' ? 'text-[var(--c-primary)]' : 'text-[#ff3333]'
           }`}>
             {answer === 'PHISHING' ? '✓ PHISHING — CORRECT' : '✗ LEGIT — INCORRECT'}
           </div>
-          <div className="text-[#00aa28] text-sm font-mono space-y-0.5">
+          <div className="text-[var(--c-secondary)] text-sm font-mono space-y-0.5">
             <div>• <span className="text-[#ffaa00]">FROM:</span> paypa1.com — typosquatted domain</div>
             <div>• <span className="text-[#ffaa00]">HEADERS:</span> SPF / DKIM / DMARC all FAIL</div>
             <div>• <span className="text-[#ffaa00]">SENT:</span> 3:14 AM — unusual send time</div>
@@ -241,7 +241,7 @@ export function TutorialCard({ onComplete }: Props) {
         <button
           type="button"
           onClick={onComplete}
-          className="w-full py-4 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:bg-[rgba(0,255,65,0.1)] transition-all"
+          className="w-full py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] active:bg-[rgba(0,255,65,0.1)] transition-all"
         >
           [ GOT IT — START RESEARCH ]
         </button>

@@ -585,7 +585,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           <div
             key={flashClass + Date.now()}
             className={`fixed inset-0 pointer-events-none z-50 ${flashClass}`}
-            style={{ background: flashClass.includes('clear') ? 'rgba(0,255,65,0.12)' : 'rgba(255,51,51,0.12)' }}
+            style={{ background: flashClass.includes('clear') ? 'color-mix(in srgb, var(--c-primary) 12%, transparent)' : 'rgba(255,51,51,0.12)' }}
           />
         )}
         <GameCard

@@ -13,20 +13,20 @@ interface IntelData {
 }
 
 function StatBlock({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: 'red' | 'amber' }) {
-  const valueColor = highlight === 'red' ? 'text-[#ff3333]' : highlight === 'amber' ? 'text-[#ffaa00]' : 'text-[#00ff41]';
+  const valueColor = highlight === 'red' ? 'text-[#ff3333]' : highlight === 'amber' ? 'text-[#ffaa00]' : 'text-[var(--c-primary)]';
   return (
-    <div className="term-border bg-[#060c06] px-3 py-3 text-center">
-      <div className="text-[#1a5c2a] text-xs lg:text-base font-mono tracking-wider lg:tracking-widest">{label}</div>
+    <div className="term-border bg-[var(--c-bg)] px-3 py-3 text-center">
+      <div className="text-[var(--c-muted)] text-xs lg:text-base font-mono tracking-wider lg:tracking-widest">{label}</div>
       <div className={`text-2xl font-black font-mono mt-1 ${valueColor}`}>{value}</div>
-      {sub && <div className="text-[#1a5c2a] text-sm lg:text-base font-mono mt-0.5">{sub}</div>}
+      {sub && <div className="text-[var(--c-muted)] text-sm lg:text-base font-mono mt-0.5">{sub}</div>}
     </div>
   );
 }
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5">
-      <span className="text-[#33bb55] text-sm lg:text-base tracking-widest">{title}</span>
+    <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+      <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">{title}</span>
     </div>
   );
 }
@@ -35,10 +35,10 @@ function BarRow({ label, value, pct, color, sub }: { label: string; value: strin
   return (
     <div className="flex items-center px-3 py-2 lg:py-2.5 gap-3">
       <div className="flex-1 min-w-0">
-        <span className="text-[#33bb55] text-sm lg:text-base font-mono">{label}</span>
-        {sub && <span className="text-[#1a5c2a] text-sm lg:text-base font-mono ml-1">{sub}</span>}
+        <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono">{label}</span>
+        {sub && <span className="text-[var(--c-muted)] text-sm lg:text-base font-mono ml-1">{sub}</span>}
       </div>
-      <div className="w-24 lg:w-40 h-1 bg-[#1a5c2a] shrink-0">
+      <div className="w-24 lg:w-40 h-1 bg-[var(--c-muted)] shrink-0">
         <div className="h-full" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
       <span className="text-sm font-mono w-8 text-right shrink-0" style={{ color }}>{value}</span>
@@ -57,43 +57,43 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
   const pct = Math.round(Math.min(answersSubmitted / RESEARCH_GRADUATION_ANSWERS, 1) * 100);
 
   return (
-    <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center lg:pt-16 pb-20 lg:pb-4">
+    <div className="min-h-screen bg-[var(--c-bg)] p-4 flex flex-col items-center lg:pt-16 pb-20 lg:pb-4">
       <div className="w-full max-w-2xl space-y-4 mt-8">
-        <div className="term-border bg-[#060c06]">
-          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2">
-            <span className="text-[#33bb55] text-sm tracking-widest">INTEL_BRIEFING</span>
+        <div className="term-border bg-[var(--c-bg)]">
+          <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-2">
+            <span className="text-[var(--c-secondary)] text-sm tracking-widest">INTEL_BRIEFING</span>
           </div>
           <div className="px-3 py-6 space-y-4 text-center">
-            <div className="text-[#33bb55] text-4xl font-mono">&#128274;</div>
-            <div className="text-[#00ff41] text-sm font-mono font-bold tracking-wide">
+            <div className="text-[var(--c-secondary)] text-4xl font-mono">&#128274;</div>
+            <div className="text-[var(--c-primary)] text-sm font-mono font-bold tracking-wide">
               CLASSIFIED: INTEL BRIEFING
             </div>
-            <div className="text-[#33bb55] text-sm font-mono leading-relaxed max-w-md mx-auto">
+            <div className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed max-w-md mx-auto">
               Submit {RESEARCH_GRADUATION_ANSWERS} research answers to unlock live aggregate findings from all participants.
             </div>
 
             {signedIn ? (
               <div className="space-y-3 max-w-xs mx-auto">
-                <div className="text-[#1a5c2a] text-sm font-mono">YOUR CLEARANCE PROGRESS</div>
-                <div className="h-2 bg-[#003a0e] w-full">
-                  <div className="h-full bg-[#00aa28] transition-all duration-500" style={{ width: `${pct}%` }} />
+                <div className="text-[var(--c-muted)] text-sm font-mono">YOUR CLEARANCE PROGRESS</div>
+                <div className="h-2 bg-[var(--c-dark)] w-full">
+                  <div className="h-full bg-[var(--c-secondary)] transition-all duration-500" style={{ width: `${pct}%` }} />
                 </div>
-                <div className="text-[#33bb55] text-sm font-mono">
+                <div className="text-[var(--c-secondary)] text-sm font-mono">
                   {answersSubmitted}/{RESEARCH_GRADUATION_ANSWERS} answers
                 </div>
                 <Link
                   href="/"
-                  className="block w-full py-3 mt-2 term-border text-center text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
+                  className="block w-full py-3 mt-2 term-border text-center text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
                 >
                   [ CONTINUE RESEARCH ]
                 </Link>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="text-[#1a5c2a] text-sm font-mono">Sign in and play Research Mode to earn access.</div>
+                <div className="text-[var(--c-muted)] text-sm font-mono">Sign in and play Research Mode to earn access.</div>
                 <Link
                   href="/"
-                  className="inline-block px-6 py-3 term-border text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
+                  className="inline-block px-6 py-3 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
                 >
                   [ GO TO TERMINAL ]
                 </Link>
@@ -108,17 +108,17 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
 
 function IntelContent({ data, isAdmin }: { data: IntelData; isAdmin: boolean }) {
   return (
-    <div className="min-h-screen bg-[#060c06] p-4 flex flex-col items-center lg:pt-16 pb-20 lg:pb-4">
+    <div className="min-h-screen bg-[var(--c-bg)] p-4 flex flex-col items-center lg:pt-16 pb-20 lg:pb-4">
       <div className="w-full max-w-2xl lg:max-w-3xl space-y-4 mt-8">
         {/* Header */}
-        <div className="term-border bg-[#060c06]">
-          <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-2 flex items-center justify-between">
-            <span className="text-[#33bb55] text-sm tracking-widest">INTEL_BRIEFING</span>
-            {isAdmin && <Link href="/intel" className="text-[#1a5c2a] text-sm font-mono hover:text-[#33bb55]">ADMIN VIEW</Link>}
+        <div className="term-border bg-[var(--c-bg)]">
+          <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-2 flex items-center justify-between">
+            <span className="text-[var(--c-secondary)] text-sm tracking-widest">INTEL_BRIEFING</span>
+            {isAdmin && <Link href="/intel" className="text-[var(--c-muted)] text-sm font-mono hover:text-[var(--c-secondary)]">ADMIN VIEW</Link>}
           </div>
           <div className="px-3 py-3">
-            <div className="text-[#00ff41] text-sm font-mono">STATE OF PHISHING IN THE GENAI ERA</div>
-            <div className="text-[#1a5c2a] text-sm font-mono">
+            <div className="text-[var(--c-primary)] text-sm font-mono">STATE OF PHISHING IN THE GENAI ERA</div>
+            <div className="text-[var(--c-muted)] text-sm font-mono">
               Live aggregate findings from all Research Mode participants.
             </div>
           </div>
@@ -133,14 +133,14 @@ function IntelContent({ data, isAdmin }: { data: IntelData; isAdmin: boolean }) 
 
         {/* Accuracy by background */}
         {data.byBackground && data.byBackground.length > 0 && (
-          <div className="term-border bg-[#060c06]">
+          <div className="term-border bg-[var(--c-bg)]">
             <SectionHeader title="DETECTION ACCURACY BY BACKGROUND" />
-            <div className="divide-y divide-[rgba(0,255,65,0.08)]">
+            <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
               {data.byBackground.map(({ background, accuracyRate, total }) => (
                 <BarRow key={background} label={BACKGROUND_LABELS[background] ?? background} sub={`n=${total}`} value={`${accuracyRate}%`} pct={accuracyRate} color="#00ff41" />
               ))}
             </div>
-            <div className="px-3 py-2 text-[#1a5c2a] text-sm font-mono">
+            <div className="px-3 py-2 text-[var(--c-muted)] text-sm font-mono">
               Does security background correlate with phishing detection accuracy?
             </div>
           </div>
@@ -181,8 +181,8 @@ export default function PlayerIntelPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#060c06] flex items-center justify-center lg:pt-16 pb-20 lg:pb-4">
-        <div className="text-[#33bb55] text-sm font-mono tracking-widest animate-pulse">LOADING...</div>
+      <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center lg:pt-16 pb-20 lg:pb-4">
+        <div className="text-[var(--c-secondary)] text-sm font-mono tracking-widest animate-pulse">LOADING...</div>
       </div>
     );
   }
@@ -198,8 +198,8 @@ export default function PlayerIntelPage() {
 
   if (fetching || !data) {
     return (
-      <div className="min-h-screen bg-[#060c06] flex items-center justify-center lg:pt-16 pb-20 lg:pb-4">
-        <div className="text-[#33bb55] text-sm font-mono tracking-widest animate-pulse">DECRYPTING INTEL...</div>
+      <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center lg:pt-16 pb-20 lg:pb-4">
+        <div className="text-[var(--c-secondary)] text-sm font-mono tracking-widest animate-pulse">DECRYPTING INTEL...</div>
       </div>
     );
   }

@@ -89,7 +89,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
       return {
         spf: 'PASS', dkim: 'PASS', dmarc: 'PASS',
         replyTo: card.replyTo ?? card.from, returnPath: `<${card.from}>`,
-        color: { spf: '#00aa28', dkim: '#00aa28', dmarc: '#00aa28' },
+        color: { spf: 'var(--c-secondary)', dkim: 'var(--c-secondary)', dmarc: 'var(--c-secondary)' },
       };
     }
     if (card.authStatus === 'fail') {
@@ -111,7 +111,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
       {showFlash && (
         <div
           className={`fixed inset-0 pointer-events-none z-50 ${
-            correct ? 'bg-[rgba(0,255,65,0.07)] clear-overlay' : 'bg-[rgba(255,0,0,0.12)] breach-overlay'
+            correct ? 'bg-[color-mix(in_srgb,var(--c-primary)_7%,transparent)] clear-overlay' : 'bg-[rgba(255,0,0,0.12)] breach-overlay'
           }`}
         />
       )}
@@ -185,11 +185,11 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
               TECHNIQUE: <span className="text-[#ff3333]">{card.technique.toUpperCase().replace(/-/g, ' ')}</span>
             </span>
             <span className={{
-              easy: 'text-[#00aa28]',
+              easy: 'text-[var(--c-secondary)]',
               medium: 'text-[#ffaa00]',
               hard: 'text-[#ff3333]',
               extreme: 'text-[#ff0080]',
-            }[card.difficulty as string] ?? 'text-[#00aa28]'}>
+            }[card.difficulty as string] ?? 'text-[var(--c-secondary)]'}>
               {card.difficulty.toUpperCase()}
             </span>
           </div>
@@ -220,7 +220,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
               wasPhishing && card.highlights?.length
                 ? highlightBody(text, card.highlights).map((seg, i) =>
                     seg.highlighted
-                      ? <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
+                      ? <mark key={i} style={{ backgroundColor: '#ffaa00', color: 'var(--c-bg)', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
                       : <span key={i}>{seg.text}</span>
                   )
                 : text;
@@ -246,7 +246,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                   {wasPhishing && card.highlights?.length
                     ? highlightBody(card.subject, card.highlights).map((seg, i) =>
                         seg.highlighted
-                          ? <mark key={i} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
+                          ? <mark key={i} style={{ backgroundColor: '#ffaa00', color: 'var(--c-bg)', borderRadius: '2px', padding: '0 2px' }}>{seg.text}</mark>
                           : <span key={i}>{seg.text}</span>
                       )
                     : card.subject}
@@ -321,7 +321,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                 wasPhishing && card.highlights?.length
                   ? highlightBody(seg.content, card.highlights).map((hl, j) =>
                       hl.highlighted
-                        ? <mark key={j} style={{ backgroundColor: '#ffaa00', color: '#060c06', borderRadius: '2px', padding: '0 2px' }}>{hl.text}</mark>
+                        ? <mark key={j} style={{ backgroundColor: '#ffaa00', color: 'var(--c-bg)', borderRadius: '2px', padding: '0 2px' }}>{hl.text}</mark>
                         : <span key={j}>{hl.text}</span>
                     )
                   : <span key={i}>{seg.content}</span>
@@ -403,7 +403,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           if (signals.length === 0) return null;
 
           return (
-            <div className="term-border bg-[#060c06] border-[rgba(255,170,0,0.3)]">
+            <div className="term-border bg-[var(--c-bg)] border-[rgba(255,170,0,0.3)]">
               <div className="border-b border-[rgba(255,170,0,0.3)] px-3 py-1.5">
                 <span className="text-[#ffaa00] text-sm tracking-widest">FORENSIC_SIGNALS</span>
               </div>
@@ -421,13 +421,13 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
 
         {/* Red flags */}
         {wasPhishing && card.clues.length > 0 && (
-          <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.3)]">
+          <div className="term-border bg-[var(--c-bg)] border-[rgba(255,51,51,0.3)]">
             <div className="border-b border-[rgba(255,51,51,0.3)] px-3 py-1.5">
               <span className="text-[#aa2222] text-sm tracking-widest">RED_FLAGS_DETECTED</span>
             </div>
             <ul className="px-3 py-3 space-y-2">
               {card.clues.map((clue, i) => (
-                <li key={i} className="flex gap-2 text-sm text-[#00aa28] font-mono">
+                <li key={i} className="flex gap-2 text-sm text-[var(--c-secondary)] font-mono">
                   <span className="text-[#ff3333] shrink-0">▸</span>
                   <span>{clue}</span>
                 </li>
@@ -438,7 +438,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
 
         <button
           onClick={onNext}
-          className="w-full py-4 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all anim-pulse-glow"
+          className="w-full py-4 term-border-bright text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] transition-all anim-pulse-glow"
         >
           {questionNumber === total ? '[ VIEW RESULTS ]' : '[ NEXT TRANSMISSION ]'}
         </button>
@@ -449,17 +449,17 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
             {!showFlag ? (
               <button
                 onClick={() => setShowFlag(true)}
-                className="text-[#003a0e] hover:text-[#00aa28] font-mono text-sm transition-colors"
+                className="text-[var(--c-dark)] hover:text-[var(--c-secondary)] font-mono text-sm transition-colors"
               >
                 [ REPORT ISSUE ]
               </button>
             ) : (
-              <div className="term-border bg-[#060c06] border-[rgba(255,51,51,0.2)] px-3 py-3 space-y-2 text-left">
+              <div className="term-border bg-[var(--c-bg)] border-[rgba(255,51,51,0.2)] px-3 py-3 space-y-2 text-left">
                 <div className="text-[#aa2222] text-sm font-mono tracking-widest">REPORT_ISSUE</div>
                 <select
                   value={flagReason}
                   onChange={(e) => setFlagReason(e.target.value)}
-                  className="w-full bg-[#060c06] border border-[rgba(255,51,51,0.3)] text-[#00aa28] font-mono text-sm px-2 py-1.5 focus:outline-none"
+                  className="w-full bg-[var(--c-bg)] border border-[rgba(255,51,51,0.3)] text-[var(--c-secondary)] font-mono text-sm px-2 py-1.5 focus:outline-none"
                 >
                   <option value="">-- SELECT REASON --</option>
                   <option value="wrong_answer">Wrong answer (misclassified)</option>
@@ -471,7 +471,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                   value={flagComment}
                   onChange={(e) => setFlagComment(e.target.value)}
                   placeholder="Comment (optional)"
-                  className="w-full bg-transparent border border-[rgba(255,51,51,0.2)] text-[#00aa28] font-mono text-sm px-2 py-1 focus:outline-none placeholder:text-[#003a0e]"
+                  className="w-full bg-transparent border border-[rgba(255,51,51,0.2)] text-[var(--c-secondary)] font-mono text-sm px-2 py-1 focus:outline-none placeholder:text-[var(--c-dark)]"
                 />
                 <div className="flex gap-2">
                   <button
@@ -490,7 +490,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                   </button>
                   <button
                     onClick={() => setShowFlag(false)}
-                    className="px-3 py-1.5 border border-[rgba(0,255,65,0.2)] text-[#003a0e] font-mono text-sm hover:text-[#00aa28] transition-all"
+                    className="px-3 py-1.5 border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] text-[var(--c-dark)] font-mono text-sm hover:text-[var(--c-secondary)] transition-all"
                   >
                     CANCEL
                   </button>
@@ -499,7 +499,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
             )}
           </div>
         ) : (
-          <div className="text-center text-[#003a0e] font-mono text-sm">FLAG SUBMITTED</div>
+          <div className="text-center text-[var(--c-dark)] font-mono text-sm">FLAG SUBMITTED</div>
         )}
       </div>
     </div>

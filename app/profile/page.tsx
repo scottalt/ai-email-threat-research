@@ -463,7 +463,7 @@ export default function ProfilePage() {
 
         {/* Admin override panel — only visible to admin */}
         {isAdmin && (
-          <div className="border border-[rgba(255,170,0,0.3)] bg-[#060c06]">
+          <div className="border border-[rgba(255,170,0,0.3)] bg-[var(--c-bg)]">
             <button
               onClick={() => setShowAdmin(o => !o)}
               className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[rgba(255,170,0,0.04)] transition-colors"
@@ -507,7 +507,7 @@ export default function ProfilePage() {
                 </div>
 
                 {adminMsg && (
-                  <div className={`text-sm font-mono ${adminMsg === 'APPLIED' ? 'text-[#00ff41]' : 'text-[#ff3333]'}`}>
+                  <div className={`text-sm font-mono ${adminMsg === 'APPLIED' ? 'text-[var(--c-primary)]' : 'text-[#ff3333]'}`}>
                     {adminMsg}
                   </div>
                 )}

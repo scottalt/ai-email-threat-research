@@ -19,7 +19,7 @@ export function AchievementToast({ achievementIds }: Props) {
         return (
           <div
             key={id}
-            className="term-border bg-[#060c06] anim-fade-in-up overflow-hidden"
+            className="term-border bg-[var(--c-bg)] anim-fade-in-up overflow-hidden"
             style={{ borderColor: `${color}44` }}
           >
             <div
@@ -45,7 +45,7 @@ export function AchievementToast({ achievementIds }: Props) {
                 >
                   {def.name}
                 </div>
-                <div className="text-[#00aa28] text-sm font-mono mt-0.5">
+                <div className="text-[var(--c-secondary)] text-sm font-mono mt-0.5">
                   {def.description}
                 </div>
               </div>
