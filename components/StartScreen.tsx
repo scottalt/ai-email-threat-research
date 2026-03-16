@@ -377,12 +377,26 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
           {/* XP cooldown indicator */}
           {signedIn && cooldownLabel && (
-            <div className="term-border border-[rgba(255,170,0,0.4)] bg-[#060c06] px-3 py-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[#ffaa00] text-sm font-mono font-bold tracking-wider">{cooldownLabel}</span>
-                <span className="text-[#1a5c2a] text-sm font-mono shrink-0 hidden lg:inline">RESEARCH UNAFFECTED</span>
-              </div>
-              <div className="text-[#1a5c2a] text-xs font-mono mt-1 lg:hidden">Research mode unaffected</div>
+            <div
+              className="border border-[rgba(255,170,0,0.5)] bg-[#0a0800] px-3 py-3"
+              style={{ boxShadow: '0 0 12px rgba(255, 170, 0, 0.1), inset 0 0 12px rgba(255, 170, 0, 0.03)' }}
+            >
+              {atCap ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-[#ffaa00] text-lg animate-pulse">&#128274;</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[#ffaa00] text-sm font-mono font-bold tracking-widest">XP_LOCKED</div>
+                    <div className="text-[#ffaa00] text-lg font-mono font-black mt-0.5">{cooldownTimer}</div>
+                  </div>
+                  <span className="text-[#664400] text-xs font-mono shrink-0 hidden lg:block">RESEARCH<br />UNAFFECTED</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="text-[#ffaa00] text-sm">&#9888;</span>
+                  <span className="text-[#ffaa00] text-sm font-mono font-bold tracking-wider">{cooldownLabel}</span>
+                </div>
+              )}
+              {atCap && <div className="text-[#664400] text-xs font-mono mt-1.5 lg:hidden">Research mode unaffected</div>}
             </div>
           )}
 
