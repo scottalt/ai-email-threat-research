@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdminClient } from '@/lib/supabase';
+import { getSupabaseAdminClient, fetchAllRows } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/adminAuth';
 
 // Research-relevant columns only — excludes internal/operational fields
@@ -20,15 +20,14 @@ export async function GET(req: NextRequest) {
   const format = req.nextUrl.searchParams.get('format') ?? 'json';
 
   const supabase = getSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from('cards_real')
-    .select(EXPORT_SELECT)
-    .order('approved_at', { ascending: true });
 
-  if (error) return NextResponse.json({ error: 'Failed to fetch cards' }, { status: 500 });
-
-  // Double cast required — Supabase can't infer column types from a dynamic select string
-  const rows = (data as unknown as ExportRow[] | null) ?? [];
+  const rows = await fetchAllRows<ExportRow>(({ from, to }) =>
+    supabase
+      .from('cards_real')
+      .select(EXPORT_SELECT)
+      .order('approved_at', { ascending: true })
+      .range(from, to) as PromiseLike<{ data: ExportRow[] | null; error: unknown }>,
+  );
   if (!rows.length) return NextResponse.json({ error: 'No approved cards to export.' }, { status: 404 });
 
   const date = new Date().toISOString().slice(0, 10);

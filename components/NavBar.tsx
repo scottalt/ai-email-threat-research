@@ -1,10 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePlayer } from '@/lib/usePlayer';
 import { useNavVisibility } from '@/lib/NavVisibilityContext';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
+import { version } from '@/package.json';
 
 const NAV_LINKS = [
   { label: 'HOME', path: '/', match: (p: string) => p === '/' },
@@ -25,6 +27,11 @@ export function NavBar() {
   const { signedIn } = usePlayer();
   const { navHidden } = useNavVisibility();
   const { soundEnabled, toggleSound } = useSoundEnabled();
+
+  const [hasUnread, setHasUnread] = useState(false);
+  useEffect(() => {
+    try { setHasUnread(localStorage.getItem('lastSeenVersion') !== version); } catch {}
+  }, []);
 
   if (!signedIn) return null;
   if (navHidden) return null;
@@ -57,11 +64,15 @@ export function NavBar() {
           })}
           <Link
             href="/changelog"
-            className={`text-[17px] tracking-wider transition-colors ${
+            onClick={() => { try { localStorage.setItem('lastSeenVersion', version); setHasUnread(false); } catch {} }}
+            className={`relative text-[17px] tracking-wider transition-colors ${
               pathname.startsWith('/changelog') ? 'text-[#00ff41]' : 'text-[#5ab86a] hover:text-[#33bb55]'
             }`}
           >
             WHAT&apos;S NEW
+            {hasUnread && (
+              <span className="absolute -top-0.5 -right-2 w-2 h-2 rounded-full bg-[#ffaa00] animate-pulse" />
+            )}
           </Link>
           <button
             onClick={toggleSound}

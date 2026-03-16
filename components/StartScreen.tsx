@@ -65,10 +65,20 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const [lbExpanded, setLbExpanded] = useState(false);
   const [lbExpandLoading, setLbExpandLoading] = useState(false);
 
+  // "What's new" unread dot
+  const [hasUnreadChangelog, setHasUnreadChangelog] = useState(false);
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem('lastSeenVersion');
+      setHasUnreadChangelog(seen !== version);
+    } catch {}
+  }, []);
+
   // XP cooldown state
   const [cooldownLabel, setCooldownLabel] = useState<string | null>(null);
   const [atCap, setAtCap] = useState(false);
   const [cooldownTimer, setCooldownTimer] = useState<string | null>(null);
+  const [cooldownCapType, setCooldownCapType] = useState<'HOURLY' | 'DAILY'>('HOURLY');
   const [cooldownModalMode, setCooldownModalMode] = useState<GameMode | null>(null);
 
   useEffect(() => {
@@ -91,7 +101,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
         // At cap — show countdown
         if (cd.hourlyRemaining === 0 || cd.dailyRemaining === 0) {
-          const resetMs = cd.dailyRemaining === 0 ? dailyReset : hourlyReset;
+          const isDaily = cd.dailyRemaining === 0;
+          const resetMs = isDaily ? dailyReset : hourlyReset;
           const diff = Math.max(0, resetMs - now);
           const mins = Math.floor(diff / 60000);
           const secs = Math.floor((diff % 60000) / 1000);
@@ -102,6 +113,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           } else {
             const timer = `${mins}m ${secs.toString().padStart(2, '0')}s`;
             setCooldownTimer(timer);
+            setCooldownCapType(isDaily ? 'DAILY' : 'HOURLY');
             setCooldownLabel(`XP COOLDOWN · ${timer}`);
             setAtCap(true);
           }
@@ -385,7 +397,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 <div className="flex items-center gap-3">
                   <span className="text-[#ffaa00] text-lg animate-pulse">&#128274;</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[#ffaa00] text-sm font-mono font-bold tracking-widest">XP_LOCKED — HOURLY CAP REACHED</div>
+                    <div className="text-[#ffaa00] text-sm font-mono font-bold tracking-widest">XP_LOCKED — {cooldownCapType} CAP REACHED</div>
                     <div className="text-[#ffaa00] text-lg font-mono font-black mt-0.5">RESETS IN {cooldownTimer}</div>
                   </div>
                   <span className="text-[#664400] text-xs font-mono shrink-0 hidden lg:block">RESEARCH<br />UNAFFECTED</span>
@@ -664,7 +676,16 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           <div className="flex items-center justify-center gap-3 font-mono">
             <span className="text-[#1a5c2a] text-sm lg:text-base">10 questions per round</span>
             <span className="text-[#1a5c2a]">·</span>
-            <Link href="/changelog" className="text-[#33bb55] hover:text-[#00ff41] transition-colors tracking-wider text-sm lg:text-base border border-[rgba(0,255,65,0.2)] px-2 py-0.5 hover:border-[rgba(0,255,65,0.4)] hover:bg-[rgba(0,255,65,0.03)]">v{version}</Link>
+            <Link
+              href="/changelog"
+              onClick={() => { try { localStorage.setItem('lastSeenVersion', version); setHasUnreadChangelog(false); } catch {} }}
+              className="relative text-[#33bb55] hover:text-[#00ff41] transition-colors tracking-wider text-sm lg:text-base border border-[rgba(0,255,65,0.2)] px-2 py-0.5 hover:border-[rgba(0,255,65,0.4)] hover:bg-[rgba(0,255,65,0.03)]"
+            >
+              v{version}
+              {hasUnreadChangelog && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#ffaa00] animate-pulse" />
+              )}
+            </Link>
           </div>
           </div>
 
