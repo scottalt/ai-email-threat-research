@@ -65,13 +65,17 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const [lbExpanded, setLbExpanded] = useState(false);
   const [lbExpandLoading, setLbExpandLoading] = useState(false);
 
-  // XP cooldown indicator
+  // XP cooldown state
   const [cooldownLabel, setCooldownLabel] = useState<string | null>(null);
+  const [atCap, setAtCap] = useState(false);
+  const [cooldownTimer, setCooldownTimer] = useState<string | null>(null);
+  const [cooldownModalMode, setCooldownModalMode] = useState<GameMode | null>(null);
+
   useEffect(() => {
     function check() {
       try {
         const raw = localStorage.getItem('xp_cooldown');
-        if (!raw) { setCooldownLabel(null); return; }
+        if (!raw) { setCooldownLabel(null); setAtCap(false); setCooldownTimer(null); return; }
         const cd = JSON.parse(raw) as { hourlyRemaining: number; dailyRemaining: number; hourlyResetsAt: string; dailyResetsAt: string };
         const now = Date.now();
         const hourlyReset = new Date(cd.hourlyResetsAt).getTime();
@@ -80,7 +84,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
         // If both resets are in the past, cooldown is stale
         if (hourlyReset <= now && dailyReset <= now) {
           localStorage.removeItem('xp_cooldown');
-          setCooldownLabel(null);
+          setCooldownLabel(null); setAtCap(false); setCooldownTimer(null);
           return;
         }
 
@@ -92,12 +96,18 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           const secs = Math.floor((diff % 60000) / 1000);
           if (diff <= 0) {
             localStorage.removeItem('xp_cooldown');
-            setCooldownLabel(null);
+            setCooldownLabel(null); setAtCap(false); setCooldownTimer(null);
           } else {
-            setCooldownLabel(`XP COOLDOWN · ${mins}m ${secs.toString().padStart(2, '0')}s`);
+            const timer = `${mins}m ${secs.toString().padStart(2, '0')}s`;
+            setCooldownTimer(timer);
+            setCooldownLabel(`XP COOLDOWN · ${timer}`);
+            setAtCap(true);
           }
           return;
         }
+
+        setAtCap(false);
+        setCooldownTimer(null);
 
         // Low remaining — show warning
         if (cd.hourlyRemaining <= 3) {
@@ -111,13 +121,22 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
         setCooldownLabel(null);
       } catch {
-        setCooldownLabel(null);
+        setCooldownLabel(null); setAtCap(false); setCooldownTimer(null);
       }
     }
     check();
     const interval = setInterval(check, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  /** Intercept game start — show cooldown modal if at cap for non-research modes */
+  function tryStart(mode: GameMode) {
+    if (atCap && mode !== 'research') {
+      setCooldownModalMode(mode);
+      return;
+    }
+    handleStart(mode);
+  }
 
   const fetchLeaderboard = useCallback(async () => {
     const d = new Date();
@@ -477,8 +496,9 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   <button
                     onClick={() => {
                       if (!signedIn) { setShowInlineAuth(true); return; }
-                      if (researchCapped) { handleStart('freeplay'); return; }
-                      handleStart(graduated ? 'freeplay' : 'research');
+                      if (researchCapped) { tryStart('freeplay'); return; }
+                      if (graduated) { tryStart('freeplay'); return; }
+                      handleStart('research');
                     }}
                     className={`w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all ${
                       !signedIn
@@ -578,7 +598,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           {/* Daily challenge button — locked until research graduation */}
           {signedIn && profile?.researchGraduated ? (
             <button
-              onClick={() => handleStart('daily')}
+              onClick={() => tryStart('daily')}
               className="w-full py-4 lg:py-5 term-border-bright text-[#00ff41] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.08)] active:bg-[rgba(0,255,65,0.15)] transition-all"
             >
               [ DAILY CHALLENGE — {dateLabel} ]
@@ -594,7 +614,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           {signedIn && profile?.researchGraduated ? (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <button
-                onClick={() => handleStart('expert')}
+                onClick={() => tryStart('expert')}
                 className="col-span-2 lg:col-span-1 py-3 term-border border-[rgba(255,170,0,0.4)] text-center text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.05)] transition-all"
               >
                 [ EXPERT ]
@@ -712,6 +732,48 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               </div>
             );
           })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* XP Cooldown Modal */}
+      {cooldownModalMode && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 px-4" onClick={() => setCooldownModalMode(null)}>
+          <div className="term-border bg-[#060c06] w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="border-b border-[rgba(255,170,0,0.4)] px-3 py-2">
+              <span className="text-[#ffaa00] text-sm font-mono font-bold tracking-widest">COOLDOWN_ACTIVE</span>
+            </div>
+            <div className="px-3 py-4 space-y-3">
+              <div className="text-center">
+                <div className="text-[#ffaa00] text-2xl font-mono font-bold">{cooldownTimer ?? '—'}</div>
+                <div className="text-[#1a5c2a] text-sm font-mono mt-1">until XP earning resumes</div>
+              </div>
+              <div className="text-[#33bb55] text-sm font-mono text-center leading-relaxed">
+                You can still play — this session won&apos;t earn XP.
+              </div>
+              <div className="space-y-2">
+                <button
+                  onClick={() => { const mode = cooldownModalMode; setCooldownModalMode(null); handleStart(mode); }}
+                  className="w-full py-3 term-border text-[#33bb55] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(0,255,65,0.05)] transition-all"
+                >
+                  [ PLAY ANYWAY — NO XP ]
+                </button>
+                {signedIn && !(profile?.researchGraduated ?? false) && (profile?.researchAnswersSubmitted ?? 0) < 30 && (
+                  <button
+                    onClick={() => { setCooldownModalMode(null); handleStart('research'); }}
+                    className="w-full py-3 term-border border-[rgba(255,170,0,0.5)] text-[#ffaa00] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,170,0,0.06)] transition-all"
+                  >
+                    [ PLAY RESEARCH — EARNS XP ]
+                  </button>
+                )}
+                <button
+                  onClick={() => setCooldownModalMode(null)}
+                  className="w-full py-2 text-[#1a5c2a] font-mono text-sm tracking-widest hover:text-[#33bb55] transition-colors"
+                >
+                  [ CANCEL ]
+                </button>
+              </div>
             </div>
           </div>
         </div>
