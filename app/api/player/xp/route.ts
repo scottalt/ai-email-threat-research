@@ -7,7 +7,7 @@ import { redis } from '@/lib/redis';
 import { checkAchievements } from '@/lib/achievement-checker';
 
 // Rate limits for freeplay/expert XP awards (research has its own caps in answers route)
-const MAX_XP_SESSIONS_PER_HOUR = 6;   // ~1 session per 10 min is generous
+const MAX_XP_SESSIONS_PER_HOUR = 12;  // ~1 session per 5 min
 const MAX_XP_SESSIONS_PER_DAY = 30;   // ~3 sessions per waking hour
 const MIN_SESSION_DURATION_MS = 15_000; // 15s — no human reads 10 emails faster than this
 
