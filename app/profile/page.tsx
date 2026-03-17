@@ -39,6 +39,8 @@ export default function ProfilePage() {
   const [callsignError, setCallsignError] = useState('');
   const [editingBackground, setEditingBackground] = useState(false);
   const [backgroundSaving, setBackgroundSaving] = useState(false);
+  const [showRanks, setShowRanks] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
 
   // Admin override panel
   const [isAdmin, setIsAdmin] = useState(false);
@@ -306,81 +308,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Two-column on desktop: rank ladder + achievements */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-4 lg:space-y-0">
-        {/* Rank ladder */}
-        <div className="term-border bg-[var(--c-bg)]">
-          <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
-            <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">RANK_PROGRESSION</span>
-          </div>
-          <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
-            {RANKS.map((rank) => {
-              const isCurrent = getRankFromLevel(profile.level).label === rank.label;
-              return (
-                <div key={rank.label} className={`flex items-center justify-between px-3 py-2 lg:py-2.5 ${isCurrent ? 'bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)]' : ''}`}>
-                  <div className="flex items-center gap-2">
-                    {isCurrent && <span className="text-[var(--c-primary)] text-sm lg:text-base font-mono">▶</span>}
-                    {!isCurrent && <span className="text-sm lg:text-base font-mono opacity-0">▶</span>}
-                    <span
-                      className={`text-sm lg:text-base font-mono font-bold ${isCurrent ? 'anim-rank-pulse' : ''}`}
-                      style={{ color: rank.color }}
-                    >
-                      {rank.label}
-                    </span>
-                  </div>
-                  <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono opacity-60">LVL {rank.levels}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Achievements */}
-        <div className="term-border bg-[var(--c-bg)]">
-          <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 flex items-center justify-between">
-            <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">ACHIEVEMENTS</span>
-            <span className="text-[var(--c-secondary)] text-sm font-mono">
-              {profile.achievements?.length ?? 0}/{ACHIEVEMENTS.length}
-            </span>
-          </div>
-          <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_6%,transparent)]">
-            {(Object.keys(CATEGORY_LABELS) as AchievementCategory[]).map((cat) => {
-              const catAchievements = ACHIEVEMENTS.filter(a => a.category === cat);
-              return (
-                <div key={cat}>
-                  <div className="px-3 py-1.5 bg-[color-mix(in_srgb,var(--c-primary)_2%,transparent)]">
-                    <span className="text-[var(--c-muted)] text-sm font-mono tracking-widest">{CATEGORY_LABELS[cat]}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-px bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)]">
-                    {catAchievements.map((a) => {
-                      const unlocked = profile.achievements?.includes(a.id) ?? false;
-                      const color = unlocked ? RARITY_COLORS[a.rarity] : 'var(--c-muted)';
-                      return (
-                        <div
-                          key={a.id}
-                          className={`px-3 py-2.5 bg-[var(--c-bg)] ${unlocked ? '' : 'opacity-40'}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-mono" style={{ color }}>{a.icon}</span>
-                            <span className="text-sm font-mono font-bold tracking-wider" style={{ color }}>
-                              {a.name}
-                            </span>
-                          </div>
-                          <div className="text-sm font-mono mt-0.5" style={{ color: unlocked ? 'var(--c-secondary)' : 'var(--c-muted)' }}>
-                            {unlocked ? a.description : '[LOCKED]'}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        </div>
-
-        {/* Terminal Themes */}
+        {/* Terminal Themes — prominent placement */}
         <div className="term-border bg-[var(--c-bg)]">
           <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
             <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">TERMINAL_THEMES</span>
@@ -458,6 +386,95 @@ export default function ProfilePage() {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* Collapsible sections: rank ladder + achievements */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-4 lg:space-y-0">
+          {/* Rank ladder — collapsible on mobile */}
+          <div className="term-border bg-[var(--c-bg)]">
+            <button
+              onClick={() => setShowRanks(o => !o)}
+              className="lg:hidden w-full border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-2 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)] transition-colors"
+            >
+              <span className="text-[var(--c-secondary)] text-sm tracking-widest">RANK_PROGRESSION</span>
+              <span className="text-[var(--c-secondary)] text-sm">{showRanks ? '▲' : '▼'}</span>
+            </button>
+            <div className="hidden lg:block border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+              <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">RANK_PROGRESSION</span>
+            </div>
+            <div className={`${showRanks ? '' : 'hidden'} lg:block divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]`}>
+              {RANKS.map((rank) => {
+                const isCurrent = getRankFromLevel(profile.level).label === rank.label;
+                return (
+                  <div key={rank.label} className={`flex items-center justify-between px-3 py-2 lg:py-2.5 ${isCurrent ? 'bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)]' : ''}`}>
+                    <div className="flex items-center gap-2">
+                      {isCurrent && <span className="text-[var(--c-primary)] text-sm lg:text-base font-mono">▶</span>}
+                      {!isCurrent && <span className="text-sm lg:text-base font-mono opacity-0">▶</span>}
+                      <span
+                        className={`text-sm lg:text-base font-mono font-bold ${isCurrent ? 'anim-rank-pulse' : ''}`}
+                        style={{ color: rank.color }}
+                      >
+                        {rank.label}
+                      </span>
+                    </div>
+                    <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono opacity-60">LVL {rank.levels}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Achievements — collapsible on mobile */}
+          <div className="term-border bg-[var(--c-bg)]">
+            <button
+              onClick={() => setShowAchievements(o => !o)}
+              className="lg:hidden w-full border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-2 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)] transition-colors"
+            >
+              <span className="text-[var(--c-secondary)] text-sm tracking-widest">ACHIEVEMENTS</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[var(--c-secondary)] text-sm font-mono">{profile.achievements?.length ?? 0}/{ACHIEVEMENTS.length}</span>
+                <span className="text-[var(--c-secondary)] text-sm">{showAchievements ? '▲' : '▼'}</span>
+              </div>
+            </button>
+            <div className="hidden lg:flex border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 items-center justify-between">
+              <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">ACHIEVEMENTS</span>
+              <span className="text-[var(--c-secondary)] text-sm font-mono">{profile.achievements?.length ?? 0}/{ACHIEVEMENTS.length}</span>
+            </div>
+            <div className={`${showAchievements ? '' : 'hidden'} lg:block divide-y divide-[color-mix(in_srgb,var(--c-primary)_6%,transparent)]`}>
+              {(Object.keys(CATEGORY_LABELS) as AchievementCategory[]).map((cat) => {
+                const catAchievements = ACHIEVEMENTS.filter(a => a.category === cat);
+                return (
+                  <div key={cat}>
+                    <div className="px-3 py-1.5 bg-[color-mix(in_srgb,var(--c-primary)_2%,transparent)]">
+                      <span className="text-[var(--c-muted)] text-sm font-mono tracking-widest">{CATEGORY_LABELS[cat]}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-px bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)]">
+                      {catAchievements.map((a) => {
+                        const unlocked = profile.achievements?.includes(a.id) ?? false;
+                        const color = unlocked ? RARITY_COLORS[a.rarity] : 'var(--c-muted)';
+                        return (
+                          <div
+                            key={a.id}
+                            className={`px-3 py-2.5 bg-[var(--c-bg)] ${unlocked ? '' : 'opacity-40'}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-mono" style={{ color }}>{a.icon}</span>
+                              <span className="text-sm font-mono font-bold tracking-wider" style={{ color }}>
+                                {a.name}
+                              </span>
+                            </div>
+                            <div className="text-sm font-mono mt-0.5" style={{ color: unlocked ? 'var(--c-secondary)' : 'var(--c-muted)' }}>
+                              {unlocked ? a.description : '[LOCKED]'}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
