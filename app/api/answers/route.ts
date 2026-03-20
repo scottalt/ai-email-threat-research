@@ -200,6 +200,21 @@ export async function POST(req: NextRequest) {
       verifiedCorrect = (a.userAnswer === 'phishing') === card.is_phishing;
     }
 
+    // Server-side streak and correct count — never trust client values
+    const streakKey = `session-streak:${a.sessionId}`;
+    let serverStreak = (await redis.get<number>(streakKey)) ?? 0;
+    // Research mode doesn't go through /api/cards/check, so update streak here
+    if (a.gameMode === 'research') {
+      serverStreak = verifiedCorrect ? serverStreak + 1 : 0;
+      await redis.set(streakKey, serverStreak, { ex: 60 * 60 });
+    }
+
+    const { count: serverCorrectCount } = await supabase
+      .from('answers')
+      .select('id', { count: 'exact', head: true })
+      .eq('session_id', a.sessionId)
+      .eq('correct', true);
+
     // Insert answer event
     const { error: answerError } = await supabase.from('answers').insert({
       player_id: playerId ?? null,
@@ -226,8 +241,8 @@ export async function POST(req: NextRequest) {
       scroll_depth_pct: Math.min(100, Math.max(0, a.scrollDepthPct ?? 0)),
       answer_method: a.answerMethod,
       answer_ordinal: a.answerOrdinal,
-      streak_at_answer_time: a.streakAtAnswerTime,
-      correct_count_at_time: a.correctCountAtTime,
+      streak_at_answer_time: serverStreak,
+      correct_count_at_time: serverCorrectCount ?? 0,
       game_mode: a.gameMode,
       is_daily_challenge: a.isDailyChallenge,
       dataset_version: a.datasetVersion,
