@@ -44,7 +44,8 @@ test.describe('Navigation & UI', () => {
     await seedGraduatedUser(graduatedUser.id);
     await injectSession(page, supabaseUrl, graduatedUser.accessToken, graduatedUser.refreshToken);
     await page.goto('/play');
-    const gameNav = page.locator('nav').filter({ hasText: 'HOME' });
+    // NavBar renders two <nav> elements (desktop + mobile), use first()
+    const gameNav = page.locator('nav').filter({ hasText: 'HOME' }).first();
     await expect(gameNav).toBeVisible({ timeout: 10_000 });
   });
 
