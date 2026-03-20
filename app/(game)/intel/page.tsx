@@ -67,7 +67,7 @@ async function getIntel(): Promise<IntelData | null> {
     const answers = await fetchAllRows(({ from, to }) =>
       supabase
         .from('answers')
-        .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id, answer_ordinal, scroll_depth_pct, players!player_id(background)')
+        .select('correct, technique, is_phishing, is_genai_suspected, genai_confidence, prose_fluency, grammar_quality, confidence, time_from_render_ms, difficulty, type, card_source, headers_opened, url_inspected, auth_status, has_reply_to, has_url, player_id, answer_ordinal, scroll_depth_pct, session_id, players!player_id(background)')
         .eq('game_mode', 'research')
         .range(from, to),
     );
@@ -193,12 +193,26 @@ async function getIntel(): Promise<IntelData | null> {
         sample: ordinalMap[ord].total,
       }));
 
-    // Reading depth: accuracy by scroll depth
-    const deepReads = answers.filter((a) => a.scroll_depth_pct != null && a.scroll_depth_pct >= 75);
-    const shallowReads = answers.filter((a) => a.scroll_depth_pct != null && a.scroll_depth_pct < 50);
+    // Reading depth: accuracy by scroll depth (mobile-only — desktop shows full email, no scroll constraint)
+    const sessionIds = [...new Set(answers.map((a) => a.session_id).filter(Boolean))];
+    const mobileSessions = new Set<string>();
+    // Fetch session viewport widths in batches to identify mobile sessions
+    for (let i = 0; i < sessionIds.length; i += 500) {
+      const batch = sessionIds.slice(i, i + 500);
+      const { data: sessions } = await supabase
+        .from('sessions')
+        .select('session_id, viewport_width')
+        .in('session_id', batch);
+      for (const s of sessions ?? []) {
+        if (s.viewport_width != null && s.viewport_width < 1024) mobileSessions.add(s.session_id);
+      }
+    }
+    const mobileAnswers = answers.filter((a) => a.session_id && mobileSessions.has(a.session_id));
+    const deepReads = mobileAnswers.filter((a) => a.scroll_depth_pct != null && a.scroll_depth_pct >= 75);
+    const shallowReads = mobileAnswers.filter((a) => a.scroll_depth_pct != null && a.scroll_depth_pct < 50);
     const deepReadAccuracy = deepReads.length >= 3 ? Math.round((deepReads.filter((a) => a.correct).length / deepReads.length) * 100) : null;
     const shallowReadAccuracy = shallowReads.length >= 3 ? Math.round((shallowReads.filter((a) => a.correct).length / shallowReads.length) * 100) : null;
-    const scrollDepths = answers.map((a) => a.scroll_depth_pct).filter((v): v is number => v != null);
+    const scrollDepths = mobileAnswers.map((a) => a.scroll_depth_pct).filter((v): v is number => v != null);
     const medianScrollDepth = scrollDepths.length ? median(scrollDepths) : null;
 
     return {
@@ -547,7 +561,7 @@ export default async function IntelPage() {
               {/* Reading depth */}
               {data.readingDepth && (data.readingDepth.deepReadAccuracy !== null || data.readingDepth.shallowReadAccuracy !== null) && (
                 <div className="term-border bg-[#060c06]">
-                  <SectionHeader title="READING DEPTH vs ACCURACY" />
+                  <SectionHeader title="READING DEPTH vs ACCURACY (MOBILE)" />
                   <div className="px-3 py-3 space-y-3">
                     {data.readingDepth.medianScrollDepth !== null && (
                       <div className="term-border px-2 py-2 text-center">
@@ -569,7 +583,7 @@ export default async function IntelPage() {
                         </div>
                       )}
                     </div>
-                    <p className="text-[#003a0e] text-sm font-mono">Does scrolling deeper correlate with better accuracy?</p>
+                    <p className="text-[#003a0e] text-sm font-mono">Mobile users only (desktop shows full email). Does scrolling deeper correlate with better accuracy?</p>
                   </div>
                 </div>
               )}

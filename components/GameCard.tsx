@@ -214,7 +214,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
       <div className="relative">
         <div
           ref={bodyRef}
-          className={`px-3 py-3 text-sm text-[var(--c-secondary)] leading-relaxed whitespace-pre-wrap font-mono ${bodyExpanded ? '' : 'max-h-52 momentum-scroll scroll-fade-bottom'}`}
+          className={`px-3 py-3 text-sm text-[var(--c-secondary)] leading-relaxed whitespace-pre-wrap font-mono ${bodyExpanded ? '' : 'max-h-52 lg:max-h-none momentum-scroll scroll-fade-bottom lg:overflow-visible'}`}
           onScroll={(e) => {
             const el = e.currentTarget;
             const pct = Math.round(((el.scrollTop + el.clientHeight) / el.scrollHeight) * 100);
@@ -238,7 +238,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
         {(bodyOverflows || bodyExpanded) && (
           <button
             onClick={(e) => { e.stopPropagation(); setBodyExpanded((o) => !o); }}
-            className="w-full py-1.5 border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-[var(--c-muted)] hover:text-[var(--c-secondary)] text-xs font-mono tracking-widest transition-colors"
+            className="lg:hidden w-full py-1.5 border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-[var(--c-muted)] hover:text-[var(--c-secondary)] text-xs font-mono tracking-widest transition-colors"
           >
             {bodyExpanded ? '[ COLLAPSE ]' : '[ EXPAND ]'}
           </button>
@@ -299,7 +299,7 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
       <div className="relative">
         <div
           ref={bodyRef}
-          className={`px-3 py-3 text-sm text-[var(--c-secondary)] leading-relaxed whitespace-pre-wrap font-mono ${bodyExpanded ? '' : 'max-h-52 momentum-scroll scroll-fade-bottom'}`}
+          className={`px-3 py-3 text-sm text-[var(--c-secondary)] leading-relaxed whitespace-pre-wrap font-mono ${bodyExpanded ? '' : 'max-h-52 lg:max-h-none momentum-scroll scroll-fade-bottom lg:overflow-visible'}`}
           onScroll={(e) => {
             const el = e.currentTarget;
             const pct = Math.round(((el.scrollTop + el.clientHeight) / el.scrollHeight) * 100);
@@ -323,7 +323,7 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
         {(bodyOverflows || bodyExpanded) && (
           <button
             onClick={(e) => { e.stopPropagation(); setBodyExpanded((o) => !o); }}
-            className="w-full py-1.5 border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-[var(--c-muted)] hover:text-[var(--c-secondary)] text-xs font-mono tracking-widest transition-colors"
+            className="lg:hidden w-full py-1.5 border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-[var(--c-muted)] hover:text-[var(--c-secondary)] text-xs font-mono tracking-widest transition-colors"
           >
             {bodyExpanded ? '[ COLLAPSE ]' : '[ EXPAND ]'}
           </button>
