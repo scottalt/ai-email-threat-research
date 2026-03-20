@@ -27,6 +27,7 @@ export async function GET() {
       recentResearchAnswers,
       recentAllAnswers,
       playersWithResearchCounts,
+      recentResearchSessions,
       totalResearchAnswers,
       answersLast24h,
       answersLast7d,
@@ -75,7 +76,17 @@ export async function GET() {
         .gte('research_sessions_completed', 1)
         .order('research_sessions_completed', { ascending: false }),
 
-      // 6. Total research answers ever
+      // 6. Research sessions with dealt cards (last 7 days) — if dealt but 0 answers, pipeline is broken
+      supabase
+        .from('sessions')
+        .select('session_id, dealt_card_ids, started_at, cards_answered, game_mode')
+        .eq('game_mode', 'research')
+        .not('dealt_card_ids', 'is', null)
+        .gte('started_at', sevenDaysAgo)
+        .order('started_at', { ascending: false })
+        .limit(50),
+
+      // 7. Total research answers ever
       supabase
         .from('answers')
         .select('id', { count: 'exact', head: true })
@@ -155,8 +166,45 @@ export async function GET() {
 
     const cappedPlayers = perPlayerCounts.filter((p) => p.capped);
 
+    // Abandoned research sessions: dealt cards but 0 answers recorded
+    // This is the smoking gun — it means someone loaded research cards but their answers never saved
+    const researchSessionIds = new Set((recentResearchAnswers.data ?? []).map((a) => a.session_id));
+    const allResearchAnswerSessionIds = new Set<string>();
+    // Also check answers older than 24h for sessions in the 7d window
+    {
+      const sessionIdsToCheck = (recentResearchSessions.data ?? [])
+        .map((s) => s.session_id)
+        .filter((sid) => !researchSessionIds.has(sid));
+      if (sessionIdsToCheck.length > 0) {
+        for (let i = 0; i < sessionIdsToCheck.length; i += 20) {
+          const batch = sessionIdsToCheck.slice(i, i + 20);
+          const { data: answerCheck } = await supabase
+            .from('answers')
+            .select('session_id')
+            .eq('game_mode', 'research')
+            .in('session_id', batch);
+          for (const row of answerCheck ?? []) {
+            allResearchAnswerSessionIds.add(row.session_id);
+          }
+        }
+      }
+    }
+    // Merge both sets
+    for (const sid of researchSessionIds) allResearchAnswerSessionIds.add(sid);
+
+    const abandonedSessions = (recentResearchSessions.data ?? [])
+      .filter((s) => !allResearchAnswerSessionIds.has(s.session_id))
+      .map((s) => ({
+        sessionId: s.session_id,
+        cardsDealt: Array.isArray(s.dealt_card_ids) ? s.dealt_card_ids.length : 0,
+        startedAt: s.started_at,
+      }));
+
     // Build health signals
     const signals: string[] = [];
+    if (abandonedSessions.length > 0) {
+      signals.push(`CRITICAL: ${abandonedSessions.length} research session(s) had cards dealt but ZERO answers saved — answers are being silently dropped`);
+    }
     if ((answersLast24h.count ?? 0) === 0 && (recentAuthUsers.length > 0)) {
       signals.push('WARNING: Auth users active in last 7d but ZERO research answers in last 24h');
     }
@@ -189,6 +237,7 @@ export async function GET() {
         createdAt: p.created_at,
       })),
       cappedPlayers,
+      abandonedSessions,
       recentResearchAnswers: (recentResearchAnswers.data ?? []).slice(0, 20).map((a) => ({
         playerId: a.player_id,
         sessionId: a.session_id,

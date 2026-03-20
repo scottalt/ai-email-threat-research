@@ -15,6 +15,7 @@ interface HealthData {
   recentAuthUsers: { authId: string; email: string; lastSignIn: string; createdAt: string }[];
   recentPlayersNoResearchAnswers: { playerId: string; displayName: string | null; createdAt: string }[];
   cappedPlayers: { playerId: string; displayName: string | null; count: number; capped: boolean }[];
+  abandonedSessions: { sessionId: string; cardsDealt: number; startedAt: string }[];
   recentResearchAnswers: { playerId: string; sessionId: string; cardId: string; correct: boolean; createdAt: string }[];
 }
 
@@ -30,14 +31,15 @@ function timeAgo(dateStr: string): string {
 }
 
 function SignalBadge({ signal }: { signal: string }) {
+  const isCritical = signal.includes('CRITICAL');
   const isWarning = signal.includes('WARNING') || signal.includes('possible');
   const isOk = signal.includes('No anomalies');
   const color = isOk ? 'text-[#00ff41] border-[rgba(0,255,65,0.3)]'
-    : isWarning ? 'text-[#ff3333] border-[rgba(255,51,51,0.3)]'
+    : (isCritical || isWarning) ? 'text-[#ff3333] border-[rgba(255,51,51,0.3)]'
     : 'text-[#ffaa00] border-[rgba(255,170,0,0.3)]';
   return (
     <div className={`term-border ${color} px-3 py-2 text-xs font-mono`}>
-      {isWarning ? '⚠ ' : isOk ? '✓ ' : '● '}{signal}
+      {isCritical ? '🚨 ' : isWarning ? '⚠ ' : isOk ? '✓ ' : '● '}{signal}
     </div>
   );
 }
@@ -146,6 +148,27 @@ export default function ResearchHealthPage() {
                           }`}>{count}</span>
                         </div>
                       ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Abandoned Sessions — the definitive broken pipeline signal */}
+              {data.abandonedSessions.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[#ff3333] text-[10px] font-mono tracking-widest">
+                    CARDS DEALT BUT 0 ANSWERS SAVED ({data.abandonedSessions.length})
+                  </div>
+                  <div className="term-border border-[rgba(255,51,51,0.5)] px-3 py-2 space-y-1">
+                    {data.abandonedSessions.map((s) => (
+                      <div key={s.sessionId} className="flex items-center gap-2 text-xs font-mono">
+                        <span className="text-[#ff3333] font-bold shrink-0">{s.cardsDealt} cards</span>
+                        <span className="text-[#003a0e] truncate flex-1">{s.sessionId.slice(0, 12)}...</span>
+                        <span className="text-[#003a0e] text-[10px] shrink-0">{timeAgo(s.startedAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-[#ff3333] text-[10px] font-mono px-1">
+                    These sessions loaded research cards but no answers were recorded. This confirms answers are being silently dropped — likely an auth cookie issue where getPlayerId() returns null.
                   </div>
                 </div>
               )}
