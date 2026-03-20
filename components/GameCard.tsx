@@ -77,15 +77,18 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
   const [showFromEmail, setShowFromEmail] = useState(false);
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const urlInspectorRef = useRef<HTMLDivElement>(null);
   const [bodyOverflows, setBodyOverflows] = useState(false);
 
-  // Scroll URL inspector into view when it opens
-  useEffect(() => {
-    if (inspectedUrl && urlInspectorRef.current) {
-      urlInspectorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, [inspectedUrl]);
+  // Callback ref: scroll URL inspector into view when it mounts
+  const urlInspectorRef = (el: HTMLDivElement | null) => {
+    if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50);
+  };
+
+  function toggleUrl(url: string) {
+    onUrlInspected?.();
+    setInspectedUrl((prev) => prev === url ? null : url);
+  }
+
   const segments = parseBody(card.body);
   const { displayName, email } = parseFrom(card.from);
 
@@ -223,9 +226,9 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
               <span
                 key={i}
                 className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
-                onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.actual); }}
+                onClick={(e) => { e.stopPropagation(); toggleUrl(seg.actual); }}
               >
-                {seg.display}<span className="opacity-50 text-sm ml-0.5">[↗]</span>
+                {seg.display}<span className="opacity-50 text-sm ml-0.5">{inspectedUrl === seg.actual ? '[−]' : '[↗]'}</span>
               </span>
             ) : (
               <span key={i}>{seg.content}</span>
@@ -262,15 +265,18 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const urlInspectorRef = useRef<HTMLDivElement>(null);
   const [bodyOverflows, setBodyOverflows] = useState(false);
 
-  // Scroll URL inspector into view when it opens
-  useEffect(() => {
-    if (inspectedUrl && urlInspectorRef.current) {
-      urlInspectorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, [inspectedUrl]);
+  // Callback ref: scroll URL inspector into view when it mounts
+  const urlInspectorRef = (el: HTMLDivElement | null) => {
+    if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50);
+  };
+
+  function toggleUrl(url: string) {
+    onUrlInspected?.();
+    setInspectedUrl((prev) => prev === url ? null : url);
+  }
+
   const segments = parseBody(card.body);
 
   useEffect(() => {
@@ -305,9 +311,9 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
               <span
                 key={i}
                 className="text-[#ffaa00] underline cursor-pointer hover:text-[#ffcc44] transition-colors"
-                onClick={(e) => { e.stopPropagation(); onUrlInspected?.(); setInspectedUrl(seg.actual); }}
+                onClick={(e) => { e.stopPropagation(); toggleUrl(seg.actual); }}
               >
-                {seg.display}<span className="opacity-50 text-sm ml-0.5">[↗]</span>
+                {seg.display}<span className="opacity-50 text-sm ml-0.5">{inspectedUrl === seg.actual ? '[−]' : '[↗]'}</span>
               </span>
             ) : (
               <span key={i}>{seg.content}</span>
