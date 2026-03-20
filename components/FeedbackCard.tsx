@@ -107,7 +107,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
   })();
 
   return (
-    <div className="w-full max-w-sm lg:max-w-lg px-4 pb-safe relative">
+    <div className="w-full max-w-sm lg:max-w-4xl px-4 pb-safe relative">
       {showFlash && (
         <div
           className={`fixed inset-0 pointer-events-none z-50 ${
@@ -117,6 +117,10 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
       )}
 
       <div className="anim-fade-in-up flex flex-col gap-4">
+        {/* Two-column on desktop: left = result/score, right = email review */}
+        <div className="flex flex-col lg:flex-row gap-4">
+        {/* Left column: result + score */}
+        <div className="flex flex-col gap-4 lg:w-[340px] lg:shrink-0">
         {/* Result header */}
         <div className={`term-border bg-[var(--c-bg)] ${correct ? 'border-[color-mix(in_srgb,var(--c-primary)_60%,transparent)]' : 'border-[rgba(255,51,51,0.6)]'} ${!correct ? 'anim-glitch' : ''}`}>
           <div className={`border-b px-3 py-2 flex items-center justify-between ${correct ? 'border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)]' : 'border-[rgba(255,51,51,0.4)]'}`}>
@@ -195,6 +199,17 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           </div>
         )}
 
+        {/* Explanation — in left column on desktop */}
+        <div className="term-border bg-[var(--c-bg)] hidden lg:block">
+          <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+            <span className="text-[var(--c-secondary)] text-sm tracking-widest">ANALYST_NOTES</span>
+          </div>
+          <p className="px-3 py-3 text-sm text-[var(--c-secondary)] leading-relaxed font-mono">{card.explanation}</p>
+        </div>
+        </div>{/* end left column */}
+
+        {/* Right column: email review + signals */}
+        <div className="flex flex-col gap-4 lg:flex-1 lg:min-w-0">
         {/* Interactive card review */}
         <div className="term-border bg-[var(--c-bg)]">
           <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 flex items-center justify-between">
@@ -307,7 +322,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           )}
 
           {/* Body */}
-          <pre className="px-3 py-3 text-sm text-[var(--c-secondary)] font-mono leading-relaxed whitespace-pre-wrap break-words max-h-52 momentum-scroll scroll-fade-bottom">
+          <pre className="px-3 py-3 text-sm text-[var(--c-secondary)] font-mono leading-relaxed whitespace-pre-wrap break-words max-h-52 lg:max-h-none momentum-scroll scroll-fade-bottom lg:scroll-fade-none">
             {parseBodySegments(card.body).map((seg, i) =>
               seg.type === 'url' ? (
                 <span
@@ -346,8 +361,8 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           )}
         </div>
 
-        {/* Explanation */}
-        <div className="term-border bg-[var(--c-bg)]">
+        {/* Explanation — mobile only (desktop shows in left column) */}
+        <div className="term-border bg-[var(--c-bg)] lg:hidden">
           <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
             <span className="text-[var(--c-secondary)] text-sm tracking-widest">ANALYST_NOTES</span>
           </div>
@@ -435,6 +450,9 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
             </ul>
           </div>
         )}
+
+        </div>{/* end right column */}
+        </div>{/* end two-column wrapper */}
 
         <button
           onClick={onNext}
