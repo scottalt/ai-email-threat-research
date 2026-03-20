@@ -13,7 +13,7 @@ interface HealthData {
     answersByModeLast24h: Record<string, number>;
   };
   recentAuthUsers: { authId: string; email: string; lastSignIn: string; createdAt: string }[];
-  recentPlayersNoResearchAnswers: { playerId: string; displayName: string | null; createdAt: string }[];
+  playerActivity: { playerId: string; displayName: string | null; createdAt: string; modes: Record<string, number>; researchCapped: boolean }[];
   cappedPlayers: { playerId: string; displayName: string | null; count: number; capped: boolean }[];
   abandonedSessions: { sessionId: string; cardsDealt: number; startedAt: string }[];
   recentResearchAnswers: { playerId: string; sessionId: string; cardId: string; correct: boolean; createdAt: string }[];
@@ -192,22 +192,49 @@ export default function ResearchHealthPage() {
                 )}
               </div>
 
-              {/* Players with no research answers — smoking gun */}
-              {data.recentPlayersNoResearchAnswers.length > 0 && (
+              {/* Player Activity — what are recent players actually doing? */}
+              {data.playerActivity.length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-[#ff3333] text-[10px] font-mono tracking-widest">
-                    SIGNED IN BUT 0 RESEARCH ANSWERS ({data.recentPlayersNoResearchAnswers.length})
+                  <div className="text-[#003a0e] text-[10px] font-mono tracking-widest">
+                    PLAYER ACTIVITY ({data.playerActivity.length} recent)
                   </div>
-                  <div className="term-border border-[rgba(255,51,51,0.3)] px-3 py-2 space-y-1">
-                    {data.recentPlayersNoResearchAnswers.map((p) => (
-                      <div key={p.playerId} className="flex justify-between text-xs font-mono gap-2">
-                        <span className="text-[#ffaa00] truncate flex-1">{p.displayName ?? p.playerId.slice(0, 8)}</span>
-                        <span className="text-[#003a0e] text-[10px] shrink-0">joined {timeAgo(p.createdAt)}</span>
-                      </div>
-                    ))}
+                  <div className="term-border px-3 py-2 space-y-1.5 max-h-56 overflow-y-auto">
+                    {data.playerActivity.map((p) => {
+                      const totalAnswers = Object.values(p.modes).reduce((s, n) => s + n, 0);
+                      const hasResearch = (p.modes['research'] ?? 0) > 0;
+                      const hasFreeplay = (p.modes['freeplay'] ?? 0) > 0;
+                      const hasNothing = totalAnswers === 0;
+                      return (
+                        <div key={p.playerId} className="flex items-center gap-2 text-xs font-mono">
+                          <span className="text-[#00aa28] truncate flex-1 min-w-0">
+                            {p.displayName ?? p.playerId.slice(0, 8)}
+                          </span>
+                          <div className="flex gap-1 shrink-0">
+                            {hasResearch && (
+                              <span className="text-[#00aaff] text-[10px]">R:{p.modes['research']}</span>
+                            )}
+                            {hasFreeplay && (
+                              <span className="text-[#00aa28] text-[10px]">F:{p.modes['freeplay']}</span>
+                            )}
+                            {p.modes['expert'] && (
+                              <span className="text-[#ffaa00] text-[10px]">E:{p.modes['expert']}</span>
+                            )}
+                            {p.modes['daily'] && (
+                              <span className="text-[#00aa28] text-[10px]">D:{p.modes['daily']}</span>
+                            )}
+                            {hasNothing && (
+                              <span className="text-[#003a0e] text-[10px]">no activity</span>
+                            )}
+                            {p.researchCapped && (
+                              <span className="text-[#ff3333] text-[10px]">CAPPED</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="text-[#003a0e] text-[10px] font-mono px-1">
-                    These players signed in but no research answers were recorded. Could indicate auth cookies not surviving to answer submission, or they simply haven&apos;t played research yet.
+                    R=research F=freeplay E=expert D=daily. Players with &quot;no activity&quot; signed in and left.
                   </div>
                 </div>
               )}

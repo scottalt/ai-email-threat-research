@@ -114,57 +114,40 @@ export async function GET() {
       modeCountsLast24h[mode] = (modeCountsLast24h[mode] ?? 0) + 1;
     }
 
-    // Find players who signed in recently but have zero research answers
-    const playerIds = new Set((recentPlayers.data ?? []).map((p) => p.id));
-    const researchPlayerIds = new Set((recentResearchAnswers.data ?? []).map((a) => a.player_id));
+    // Per-player activity breakdown: what are recent players actually doing?
+    const recentPlayerIds = (recentPlayers.data ?? []).map((p) => p.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const playerActivity: { playerId: string; displayName: string | null; createdAt: string; modes: Record<string, number>; researchCapped: boolean }[] = [];
 
-    const recentPlayersNoResearch = (recentPlayers.data ?? []).filter(
-      (p) => !researchPlayerIds.has(p.id) && p.research_sessions_completed === 0
-    );
-
-    // Count research answers per player to find who's hit the 30-answer cap
-    const playerResearchCounts: Record<string, number> = {};
-    for (const p of playersWithResearchCounts.data ?? []) {
-      // We need actual answer counts, not just sessions
-      playerResearchCounts[p.id] = 0; // will be filled below
-    }
-
-    // Get per-player research answer counts for active players
-    const activePlayerIds = [...new Set([
-      ...(recentPlayers.data ?? []).map((p) => p.id),
-      ...(playersWithResearchCounts.data ?? []).map((p) => p.id),
-    ])];
-
-    const perPlayerCounts: { playerId: string; displayName: string | null; count: number; capped: boolean }[] = [];
-    if (activePlayerIds.length > 0) {
-      // Query in batches of 20
-      for (let i = 0; i < Math.min(activePlayerIds.length, 60); i += 20) {
-        const batch = activePlayerIds.slice(i, i + 20);
-        const { data: countData } = await supabase
+    if (recentPlayerIds.length > 0) {
+      for (let i = 0; i < Math.min(recentPlayerIds.length, 60); i += 20) {
+        const batch = recentPlayerIds.slice(i, i + 20);
+        const { data: answerData } = await supabase
           .from('answers')
-          .select('player_id')
-          .eq('game_mode', 'research')
+          .select('player_id, game_mode')
           .in('player_id', batch);
 
-        const counts: Record<string, number> = {};
-        for (const row of countData ?? []) {
-          counts[row.player_id] = (counts[row.player_id] ?? 0) + 1;
+        const modesByPlayer: Record<string, Record<string, number>> = {};
+        for (const row of answerData ?? []) {
+          if (!modesByPlayer[row.player_id]) modesByPlayer[row.player_id] = {};
+          modesByPlayer[row.player_id][row.game_mode] = (modesByPlayer[row.player_id][row.game_mode] ?? 0) + 1;
         }
 
         for (const pid of batch) {
-          const player = (recentPlayers.data ?? []).find((p) => p.id === pid)
-            ?? (playersWithResearchCounts.data ?? []).find((p) => p.id === pid);
-          perPlayerCounts.push({
+          const player = (recentPlayers.data ?? []).find((p) => p.id === pid);
+          const modes = modesByPlayer[pid] ?? {};
+          playerActivity.push({
             playerId: pid,
             displayName: player?.display_name ?? null,
-            count: counts[pid] ?? 0,
-            capped: (counts[pid] ?? 0) >= 30,
+            createdAt: player?.created_at ?? '',
+            modes,
+            researchCapped: (modes['research'] ?? 0) >= 30,
           });
         }
       }
     }
 
-    const cappedPlayers = perPlayerCounts.filter((p) => p.capped);
+    const cappedPlayers = playerActivity.filter((p) => p.researchCapped);
 
     // Abandoned research sessions: dealt cards but 0 answers recorded
     // This is the smoking gun — it means someone loaded research cards but their answers never saved
@@ -208,8 +191,13 @@ export async function GET() {
     if ((answersLast24h.count ?? 0) === 0 && (recentAuthUsers.length > 0)) {
       signals.push('WARNING: Auth users active in last 7d but ZERO research answers in last 24h');
     }
-    if (recentPlayersNoResearch.length > 0) {
-      signals.push(`${recentPlayersNoResearch.length} recent player(s) signed in but have 0 research answers — possible auth cookie issue`);
+    const playersNoActivity = playerActivity.filter((p) => Object.keys(p.modes).length === 0);
+    const playersOnlyFreeplay = playerActivity.filter((p) => Object.keys(p.modes).length > 0 && !p.modes['research']);
+    if (playersNoActivity.length > 0) {
+      signals.push(`${playersNoActivity.length} recent player(s) signed in but have zero answers in any mode — signed in and left`);
+    }
+    if (playersOnlyFreeplay.length > 0) {
+      signals.push(`${playersOnlyFreeplay.length} recent player(s) playing freeplay but not research — by choice, not a bug`);
     }
     if (cappedPlayers.length > 0) {
       signals.push(`${cappedPlayers.length} player(s) have hit the 30-answer lifetime research cap`);
@@ -231,12 +219,13 @@ export async function GET() {
         answersByModeLast24h: modeCountsLast24h,
       },
       recentAuthUsers: recentAuthUsers.slice(0, 20),
-      recentPlayersNoResearchAnswers: recentPlayersNoResearch.map((p) => ({
-        playerId: p.id,
-        displayName: p.display_name,
-        createdAt: p.created_at,
+      playerActivity,
+      cappedPlayers: cappedPlayers.map((p) => ({
+        playerId: p.playerId,
+        displayName: p.displayName,
+        count: p.modes['research'] ?? 0,
+        capped: p.researchCapped,
       })),
-      cappedPlayers,
       abandonedSessions,
       recentResearchAnswers: (recentResearchAnswers.data ?? []).slice(0, 20).map((a) => ({
         playerId: a.player_id,
