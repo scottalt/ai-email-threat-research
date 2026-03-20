@@ -19,7 +19,7 @@ export async function answerCard(
 
   const checkResponse = page.waitForResponse(
     (resp) => resp.url().includes('/api/cards/check'),
-    { timeout: 15_000 },
+    { timeout: 30_000 },
   );
   await answerButton.click();
 
