@@ -17,7 +17,7 @@ test.describe('Research Mode', () => {
 
   test('answer is server-verified with correct response structure', async ({ page }) => {
     await injectSession(page, supabaseUrl, freshUser.accessToken, freshUser.refreshToken);
-    await page.goto('/');
+    await page.goto('/play');
 
     const researchButton = page.getByRole('button', { name: /research mode/i });
     await expect(researchButton).toBeVisible({ timeout: 15_000 });
@@ -54,7 +54,7 @@ test.describe('Research Mode', () => {
 
   test('each card produces exactly one /check call', async ({ page }) => {
     await injectSession(page, supabaseUrl, freshUser.accessToken, freshUser.refreshToken);
-    await page.goto('/');
+    await page.goto('/play');
 
     let checkCount = 0;
     page.on('response', (resp) => {
@@ -92,7 +92,7 @@ test.describe('Research Round Completion', () => {
     test.setTimeout(120_000);
 
     await injectSession(page, supabaseUrl, freshUser.accessToken, freshUser.refreshToken);
-    await page.goto('/');
+    await page.goto('/play');
 
     const researchButton = page.getByRole('button', { name: /research mode/i });
     await expect(researchButton).toBeVisible({ timeout: 15_000 });
