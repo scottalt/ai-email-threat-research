@@ -19,7 +19,7 @@ export default function NotFound() {
           </div>
         </div>
         <Link
-          href="/"
+          href="/play"
           className="block w-full py-4 term-border text-center text-[var(--c-secondary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] active:scale-95 transition-all"
         >
           [ BACK TO TERMINAL ]
