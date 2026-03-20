@@ -32,10 +32,21 @@ export async function GET() {
       answersLast24h,
       answersLast7d,
     ] = await Promise.all([
-      // 1. Recent Supabase auth users (last 7 days) — shows who's logging in
-      supabase.auth.admin.listUsers({ page: 1, perPage: 50 }).then(({ data }) => {
-        const users = data?.users ?? [];
-        return users
+      // 1. Recent Supabase auth users (last 7 days) — paginate to find all recent sign-ins
+      (async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const allUsers: any[] = [];
+        let page = 1;
+        const perPage = 100;
+        while (page <= 10) { // safety cap at 1000 users
+          const { data } = await supabase.auth.admin.listUsers({ page, perPage });
+          const users = data?.users ?? [];
+          if (users.length === 0) break;
+          allUsers.push(...users);
+          if (users.length < perPage) break;
+          page++;
+        }
+        return allUsers
           .filter((u) => u.last_sign_in_at && new Date(u.last_sign_in_at) >= new Date(sevenDaysAgo))
           .sort((a, b) => new Date(b.last_sign_in_at!).getTime() - new Date(a.last_sign_in_at!).getTime())
           .map((u) => ({
@@ -44,7 +55,7 @@ export async function GET() {
             lastSignIn: u.last_sign_in_at,
             createdAt: u.created_at,
           }));
-      }),
+      })(),
 
       // 2. Recently created/updated players (last 7 days)
       supabase
