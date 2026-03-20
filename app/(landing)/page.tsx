@@ -257,6 +257,15 @@ export default async function LandingPage() {
             >
               Scott Altiparmak
             </a>
+            {' · '}
+            <a
+              href="https://scottaltiparmak.com/research"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#71717a] hover:text-[#a1a1aa] hover:underline transition-colors"
+            >
+              Read more
+            </a>
           </div>
         </div>
       </section>
