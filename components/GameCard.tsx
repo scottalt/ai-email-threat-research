@@ -77,7 +77,15 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
   const [showFromEmail, setShowFromEmail] = useState(false);
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const urlInspectorRef = useRef<HTMLDivElement>(null);
   const [bodyOverflows, setBodyOverflows] = useState(false);
+
+  // Scroll URL inspector into view when it opens
+  useEffect(() => {
+    if (inspectedUrl && urlInspectorRef.current) {
+      urlInspectorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [inspectedUrl]);
   const segments = parseBody(card.body);
   const { displayName, email } = parseFrom(card.from);
 
@@ -234,7 +242,7 @@ function EmailDisplay({ card, onScroll, onHeadersOpened, onUrlInspected }: {
         )}
       </div>
       {inspectedUrl && (
-        <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
+        <div ref={urlInspectorRef} className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
             <button onClick={() => setInspectedUrl(null)} className="text-[var(--c-dark)] text-sm font-mono hover:text-[var(--c-secondary)] transition-colors p-2 -m-2" aria-label="Close URL inspector">[ × ]</button>
@@ -254,7 +262,15 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const urlInspectorRef = useRef<HTMLDivElement>(null);
   const [bodyOverflows, setBodyOverflows] = useState(false);
+
+  // Scroll URL inspector into view when it opens
+  useEffect(() => {
+    if (inspectedUrl && urlInspectorRef.current) {
+      urlInspectorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [inspectedUrl]);
   const segments = parseBody(card.body);
 
   useEffect(() => {
@@ -308,7 +324,7 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
         )}
       </div>
       {inspectedUrl && (
-        <div className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
+        <div ref={urlInspectorRef} className="border-t border-[rgba(255,170,0,0.3)] px-3 py-2 bg-[rgba(255,170,0,0.04)]">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
             <button onClick={() => setInspectedUrl(null)} className="text-[var(--c-dark)] text-sm font-mono hover:text-[var(--c-secondary)] transition-colors p-2 -m-2" aria-label="Close URL inspector">[ × ]</button>
