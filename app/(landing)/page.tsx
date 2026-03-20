@@ -4,11 +4,12 @@ import { getSupabaseAdminClient } from '@/lib/supabase';
 async function getStats() {
   try {
     const supabase = getSupabaseAdminClient();
-    const [participants, total, correct] = await Promise.all([
+    const [participantRows, total, correct] = await Promise.all([
       supabase
-        .from('players')
-        .select('id', { count: 'exact', head: true })
-        .gte('research_sessions_completed', 1),
+        .from('answers')
+        .select('player_id')
+        .eq('game_mode', 'research')
+        .not('player_id', 'is', null),
       supabase
         .from('answers')
         .select('id', { count: 'exact', head: true })
@@ -19,9 +20,12 @@ async function getStats() {
         .eq('game_mode', 'research')
         .eq('correct', true),
     ]);
+    const uniqueParticipants = new Set(
+      (participantRows.data ?? []).map((r) => r.player_id)
+    ).size;
     const totalAnswers = total.count ?? 0;
     return {
-      participants: participants.count ?? 0,
+      participants: uniqueParticipants,
       totalAnswers,
       overallAccuracy:
         totalAnswers > 0
@@ -61,7 +65,6 @@ export default async function LandingPage() {
             href="https://scottaltiparmak.com/research"
             className="text-[#a1a1aa] text-sm hover:text-white transition-colors"
             target="_blank"
-            rel="noopener noreferrer"
             rel="noopener noreferrer"
           >
             Research
