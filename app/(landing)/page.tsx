@@ -32,7 +32,7 @@ export default async function LandingPage() {
   const stats = await getStats();
 
   return (
-    <>
+    <div className="overflow-x-hidden">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 py-4 px-6 flex items-center justify-between bg-[rgba(9,9,11,0.8)] backdrop-blur-xl border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5 font-bold text-[15px] tracking-tight">
@@ -53,10 +53,8 @@ export default async function LandingPage() {
             How It Works
           </a>
           <a
-            href="https://scottaltiparmak.com/research"
+            href="#research"
             className="text-[#a1a1aa] text-sm hover:text-white transition-colors"
-            target="_blank"
-            rel="noopener noreferrer"
           >
             Research
           </a>
@@ -100,9 +98,7 @@ export default async function LandingPage() {
               Take the Challenge
             </Link>
             <a
-              href="https://scottaltiparmak.com/research"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#research"
               className="px-8 py-3.5 text-[#a1a1aa] text-[15px] font-semibold rounded-[10px] border border-white/10 hover:text-white hover:border-white/20 transition-all"
             >
               Learn More
@@ -286,6 +282,6 @@ export default async function LandingPage() {
           Take the Challenge &rarr;
         </Link>
       </section>
-    </>
+    </div>
   );
 }
