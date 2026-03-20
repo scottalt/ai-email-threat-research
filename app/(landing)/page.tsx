@@ -8,7 +8,7 @@ async function getStats() {
       supabase
         .from('players')
         .select('id', { count: 'exact', head: true })
-        .gte('total_sessions', 1),
+        .gte('research_sessions_completed', 1),
       supabase
         .from('answers')
         .select('id', { count: 'exact', head: true })
