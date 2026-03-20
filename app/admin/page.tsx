@@ -319,7 +319,7 @@ export default function AdminPage() {
             [ PREVIEW MODE — NO DATA WRITTEN ]
           </Link>
           <Link
-            href="/api/admin/research-health"
+            href="/admin/research-health"
             className="block w-full py-3 term-border border-[rgba(0,170,255,0.4)] text-[#00aaff] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,170,255,0.05)] transition-all"
           >
             [ RESEARCH HEALTH CHECK — AUTH + PIPELINE DIAGNOSTIC ]
