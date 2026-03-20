@@ -60,10 +60,17 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const [background, setBackground] = useState<PlayerBackground | null>(null);
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'daily' | 'xp'>('xp');
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [lbExpanded, setLbExpanded] = useState(false);
   const [lbExpandLoading, setLbExpandLoading] = useState(false);
+
+  // Expand HOW_TO_PLAY for new players, keep collapsed for experienced ones
+  useEffect(() => {
+    if (!playerLoading && !profile) setShowHowToPlay(true); // not signed in — show it
+    if (profile && (profile.totalSessions ?? 0) < 1) setShowHowToPlay(true); // new player
+  }, [playerLoading, profile]);
 
   // "What's new" unread dot
   const [hasUnreadChangelog, setHasUnreadChangelog] = useState(false);
@@ -417,10 +424,15 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             {/* Sidebar: reference content */}
             <div className="contents lg:block lg:w-80 lg:shrink-0 lg:border-r lg:border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] lg:pr-6 lg:space-y-4">
               <div className="term-border bg-[var(--c-bg)]">
-                <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                <button
+                  onClick={() => setShowHowToPlay((o) => !o)}
+                  className="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)] transition-colors"
+                >
                   <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">HOW_TO_PLAY</span>
-                </div>
-                <div className="px-3 py-3 space-y-2.5">
+                  <span className="text-[var(--c-secondary)]">{showHowToPlay ? '▲' : '▼'}</span>
+                </button>
+                {showHowToPlay && (
+                <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-3 space-y-2.5">
                   {[
                     ['[1]', 'Read each email carefully'],
                     ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
@@ -437,6 +449,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     </div>
                   ))}
                 </div>
+                )}
               </div>
 
               {/* Signal guide */}
