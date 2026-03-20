@@ -8,20 +8,18 @@ async function getStats() {
     const supabase = getSupabaseAdminClient();
 
     // Use fetchAllRows (same as admin endpoint) to paginate past Supabase's 1000-row limit
-    const [answers, players] = await Promise.all([
-      fetchAllRows(({ from, to }) =>
-        supabase.from('answers').select('correct, player_id').eq('game_mode', 'research').range(from, to),
-      ),
-      fetchAllRows(({ from, to }) =>
-        supabase.from('players').select('research_sessions_completed').gte('research_sessions_completed', 1).range(from, to),
-      ),
-    ]);
+    const answers = await fetchAllRows(({ from, to }) =>
+      supabase.from('answers').select('correct, player_id').eq('game_mode', 'research').range(from, to),
+    );
 
     const totalAnswers = answers.length;
     const correctAnswers = answers.filter(a => a.correct).length;
+    const distinctParticipants = new Set(
+      answers.filter(a => a.player_id).map(a => a.player_id)
+    ).size;
 
     return {
-      participants: players.length,
+      participants: distinctParticipants,
       totalAnswers,
       overallAccuracy: totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0,
     };
