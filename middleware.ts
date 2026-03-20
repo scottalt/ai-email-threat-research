@@ -38,6 +38,13 @@ export async function middleware(req: NextRequest) {
     // Non-admin routes can proceed anonymously; admin routes redirect below.
   }
 
+  // Signed-in users on landing page → redirect to game
+  if (pathname === '/' && user) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/play';
+    return NextResponse.redirect(url);
+  }
+
   // Protect admin routes — must be the designated admin Supabase user
   const isAdminRoute =
     pathname.startsWith('/admin') ||

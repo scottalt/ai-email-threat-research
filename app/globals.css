@@ -28,15 +28,18 @@
 }
 
 body {
-  background: var(--c-bg);
-  color: var(--c-primary);
-  font-family: var(--font-geist-mono), 'Courier New', monospace;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
 }
 
+.crt-active {
+  background: var(--c-bg);
+  color: var(--c-primary);
+  font-family: var(--font-geist-mono), 'Courier New', monospace;
+}
+
 /* CRT scanlines */
-body::before {
+.crt-active::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -52,7 +55,7 @@ body::before {
 }
 
 /* CRT vignette */
-body::after {
+.crt-active::after {
   content: '';
   position: fixed;
   inset: 0;

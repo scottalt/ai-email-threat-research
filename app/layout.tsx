@@ -1,11 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { ServiceWorker } from '@/components/ServiceWorker';
-import { TerminalSounds } from '@/components/TerminalSounds';
-import { PlayerProvider } from '@/lib/PlayerContext';
-import { NavVisibilityProvider } from '@/lib/NavVisibilityContext';
-import { ThemeProvider } from '@/lib/ThemeContext';
-import { NavBar } from '@/components/NavBar';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
@@ -86,16 +81,7 @@ export default function RootLayout({
       </head>
       <body className={`${geistMono.variable} antialiased`}>
         <ServiceWorker />
-        <TerminalSounds />
-        <div className="scanline-sweep" aria-hidden="true" />
-        <PlayerProvider>
-          <ThemeProvider>
-            <NavVisibilityProvider>
-              <NavBar />
-              {children}
-            </NavVisibilityProvider>
-          </ThemeProvider>
-        </PlayerProvider>
+        {children}
         <Analytics />
       </body>
     </html>

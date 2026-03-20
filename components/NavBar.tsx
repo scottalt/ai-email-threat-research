@@ -9,7 +9,7 @@ import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { version } from '@/package.json';
 
 const NAV_LINKS = [
-  { label: 'HOME', path: '/', match: (p: string) => p === '/' },
+  { label: 'HOME', path: '/play', match: (p: string) => p === '/play' },
   { label: 'STATS', path: '/stats', match: (p: string) => p.startsWith('/stats') },
   { label: 'INTEL', path: '/intel/player', match: (p: string) => p.startsWith('/intel') },
   { label: 'PROFILE', path: '/profile', match: (p: string) => p.startsWith('/profile') },
