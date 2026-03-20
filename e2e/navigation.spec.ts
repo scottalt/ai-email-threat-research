@@ -12,7 +12,8 @@ test.describe('Navigation & UI', () => {
 
   test('game page loads with play button', async ({ page }) => {
     await page.goto('/play');
-    await expect(page.getByRole('button', { name: /play/i }).first()).toBeVisible({ timeout: 15_000 });
+    // Match "[ PLAY ]" or "[ RESEARCH MODE ]" or "[ LOG IN / SIGN UP TO PLAY ]" but not "HOW_TO_PLAY"
+    await expect(page.getByRole('button', { name: /^\[.*(?:play|research mode|sign up).*\]$/i })).toBeVisible({ timeout: 15_000 });
   });
 
   test('methodology page renders content', async ({ page }) => {

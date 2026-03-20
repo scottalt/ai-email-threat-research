@@ -20,12 +20,10 @@ test.describe('Freeplay Mode', () => {
     await injectSession(page, supabaseUrl, user.accessToken, user.refreshToken);
     await page.goto('/play');
 
-    const playButton = page.getByRole('button', { name: /play/i }).first();
+    // Match "[ PLAY ]" but not "HOW_TO_PLAY"
+    const playButton = page.getByRole('button', { name: /^\[\s*play\s*\]$/i });
     await expect(playButton).toBeVisible({ timeout: 15_000 });
     await playButton.click();
-
-    // Cards API can be slow on preview deploys — the answerCard helper
-    // waits up to 30s for confidence buttons which covers the load time
 
     // Play through 10 cards, verifying server check response each time
     for (let i = 0; i < 10; i++) {
@@ -65,7 +63,8 @@ test.describe('Freeplay Round Completion', () => {
       { timeout: 60_000 },
     );
 
-    const playButton = page.getByRole('button', { name: /play/i }).first();
+    // Match "[ PLAY ]" but not "HOW_TO_PLAY"
+    const playButton = page.getByRole('button', { name: /^\[\s*play\s*\]$/i });
     await expect(playButton).toBeVisible({ timeout: 15_000 });
     await playButton.click();
 
