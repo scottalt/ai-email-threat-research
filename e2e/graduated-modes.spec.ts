@@ -21,7 +21,7 @@ test.describe('Graduated User Modes & Pages', () => {
 
   test('daily challenge: server-verified answer', async ({ page }) => {
     await injectSession(page, supabaseUrl, graduatedUser.accessToken, graduatedUser.refreshToken);
-    await page.goto('/');
+    await page.goto('/play');
 
     const dailyButton = page.getByRole('button', { name: /daily challenge/i });
     await expect(dailyButton).toBeVisible({ timeout: 15_000 });
@@ -41,7 +41,7 @@ test.describe('Graduated User Modes & Pages', () => {
 
   test('expert mode: server-verified answer', async ({ page }) => {
     await injectSession(page, supabaseUrl, graduatedUser.accessToken, graduatedUser.refreshToken);
-    await page.goto('/');
+    await page.goto('/play');
 
     const expertButton = page.getByRole('button', { name: /expert/i });
     await expect(expertButton).toBeVisible({ timeout: 15_000 });
