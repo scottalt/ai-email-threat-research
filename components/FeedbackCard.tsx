@@ -322,7 +322,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
           )}
 
           {/* Body */}
-          <pre className="px-3 py-3 text-sm text-[var(--c-secondary)] font-mono leading-relaxed whitespace-pre-wrap break-words max-h-52 lg:max-h-none momentum-scroll scroll-fade-bottom lg:scroll-fade-none">
+          <pre className="px-3 py-3 text-xs text-[var(--c-muted)] font-mono leading-relaxed whitespace-pre-wrap break-words max-h-40 lg:max-h-52 momentum-scroll scroll-fade-bottom">
             {parseBodySegments(card.body).map((seg, i) =>
               seg.type === 'url' ? (
                 <span
