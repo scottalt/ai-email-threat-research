@@ -77,6 +77,40 @@ export async function GET(
     playerMap[p.id] = p.display_name;
   }
 
+  // For completed matches, include full card data for review (safe to reveal post-match)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let reviewCards: any[] | undefined;
+  if (match.status === 'complete' && match.card_ids?.length > 0) {
+    const { data: cards } = await admin
+      .from('cards_generated')
+      .select('card_id, type, from_address, subject, body, is_phishing, difficulty, technique, clues, explanation, highlights, attachment_name')
+      .in('card_id', match.card_ids);
+
+    if (cards) {
+      // Sort by match card order
+      const cardMap = new Map(cards.map((c) => [c.card_id, c]));
+      reviewCards = match.card_ids.map((id: string, i: number) => {
+        const c = cardMap.get(id);
+        if (!c) return null;
+        return {
+          index: i,
+          cardId: c.card_id,
+          type: c.type,
+          from: c.from_address,
+          subject: c.subject,
+          body: c.body,
+          isPhishing: c.is_phishing,
+          difficulty: c.difficulty,
+          technique: c.technique,
+          clues: c.clues ?? [],
+          explanation: c.explanation ?? '',
+          highlights: c.highlights ?? [],
+          attachmentName: c.attachment_name,
+        };
+      }).filter(Boolean);
+    }
+  }
+
   return NextResponse.json({
     match: {
       id: match.id,
@@ -105,5 +139,6 @@ export async function GET(
       timeFromRenderMs: a.time_from_render_ms,
     })),
     players: playerMap,
+    reviewCards,
   });
 }

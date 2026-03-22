@@ -60,6 +60,11 @@ export function H2HResult({
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showReview, setShowReview] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [reviewCards, setReviewCards] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [myAnswers, setMyAnswers] = useState<any[]>([]);
 
   // winnerId is the source of truth — reason is just for display flavor
   const isWin = winnerId === playerId;
@@ -100,6 +105,14 @@ export function H2HResult({
             oppEliminated: isWin && oppCards < H2H_CARDS_PER_MATCH,
             oppPointsDelta: oppPointsDelta ?? null,
           });
+
+          // Store review cards and player's answers
+          if (data.reviewCards) setReviewCards(data.reviewCards);
+          const playerAnswers = (data.answers ?? []).filter(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (a: any) => a.playerId === playerId
+          );
+          setMyAnswers(playerAnswers);
         }
 
         if (statsRes.ok) {
@@ -208,6 +221,84 @@ export function H2HResult({
           )}
         </div>
       ) : null}
+
+      {/* Review cards */}
+      {reviewCards.length > 0 && (
+        <div className="w-full">
+          <button
+            onClick={() => setShowReview(!showReview)}
+            className="w-full py-2 text-sm font-mono tracking-widest text-[var(--c-secondary)] hover:text-[var(--c-primary)] active:scale-[0.98] transition-all"
+          >
+            {showReview ? '[ HIDE REVIEW ]' : '[ REVIEW EMAILS ]'}
+          </button>
+          {showReview && (
+            <div className="space-y-3 mt-2">
+              {reviewCards.map((card) => {
+                const answer = myAnswers.find(
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (a: any) => a.cardIndex === card.index
+                );
+                const answered = !!answer;
+                const correct = answer?.correct ?? false;
+
+                return (
+                  <div
+                    key={card.index}
+                    className={`term-border bg-[var(--c-bg)] ${
+                      !answered ? 'border-[var(--c-dark)]' :
+                      correct ? 'border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)]' :
+                      'border-[rgba(255,51,51,0.4)]'
+                    }`}
+                  >
+                    <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] px-3 py-1.5 flex items-center justify-between">
+                      <span className="text-[var(--c-muted)] text-xs tracking-widest">
+                        CARD {card.index + 1}/{reviewCards.length}
+                      </span>
+                      <div className="flex items-center gap-2 text-xs font-mono">
+                        {answered && (
+                          <span className={correct ? 'text-[var(--c-primary)]' : 'text-[#ff3333]'}>
+                            {correct ? 'CORRECT' : 'WRONG'}
+                          </span>
+                        )}
+                        {!answered && (
+                          <span className="text-[var(--c-muted)]">NOT REACHED</span>
+                        )}
+                        <span className={card.isPhishing ? 'text-[#ff3333]' : 'text-[var(--c-primary)]'}>
+                          {card.isPhishing ? 'PHISHING' : 'LEGIT'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="px-3 py-2 space-y-1 text-sm font-mono">
+                      <div className="flex gap-2">
+                        <span className="text-[var(--c-muted)] w-10 shrink-0">FROM:</span>
+                        <span className="text-[var(--c-secondary)] break-all">{card.from}</span>
+                      </div>
+                      {card.subject && (
+                        <div className="flex gap-2">
+                          <span className="text-[var(--c-muted)] w-10 shrink-0">SUBJ:</span>
+                          <span className="text-[var(--c-secondary)]">{card.subject}</span>
+                        </div>
+                      )}
+                    </div>
+                    {card.explanation && (
+                      <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] px-3 py-2">
+                        <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed">{card.explanation}</p>
+                      </div>
+                    )}
+                    {card.isPhishing && card.technique && (
+                      <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] px-3 py-1.5">
+                        <span className="text-[#ff3333] text-xs font-mono tracking-widest">
+                          TECHNIQUE: {card.technique.toUpperCase().replace(/-/g, ' ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Win streak */}
       {isWin && stats && stats.winStreak >= 2 && (
