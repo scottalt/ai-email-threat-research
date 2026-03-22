@@ -136,7 +136,7 @@ function CardDisplay({ card }: { card: SafeDealCard }) {
                 <span className="break-all">{displayName}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowFromEmail((o) => !o); }}
-                  className="ml-1 text-sm text-[var(--c-dark)] hover:text-[#ffaa00] transition-colors"
+                  className="ml-1 text-sm text-[var(--c-dark)] hover:text-[#ffaa00] active:scale-95 transition-all"
                   aria-label={showFromEmail ? 'Hide sender email address' : 'Show sender email address'}
                 >
                   {showFromEmail ? '[\u2212]' : '[\u2197]'}
@@ -190,7 +190,7 @@ function CardDisplay({ card }: { card: SafeDealCard }) {
         {(bodyOverflows || bodyExpanded) && (
           <button
             onClick={(e) => { e.stopPropagation(); setBodyExpanded((o) => !o); }}
-            className="lg:hidden w-full py-1.5 border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-[var(--c-muted)] hover:text-[var(--c-secondary)] text-xs font-mono tracking-widest transition-colors"
+            className="lg:hidden w-full py-3 border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-[var(--c-muted)] hover:text-[var(--c-secondary)] active:scale-95 text-xs font-mono tracking-widest transition-all"
           >
             {bodyExpanded ? '[ COLLAPSE ]' : '[ EXPAND ]'}
           </button>
@@ -204,7 +204,7 @@ function CardDisplay({ card }: { card: SafeDealCard }) {
             <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
             <button
               onClick={() => setInspectedUrl(null)}
-              className="text-[var(--c-dark)] text-sm font-mono hover:text-[var(--c-secondary)] transition-colors p-2 -m-2"
+              className="text-[var(--c-dark)] text-sm font-mono hover:text-[var(--c-secondary)] active:scale-95 transition-all p-2 -m-2"
               aria-label="Close URL inspector"
             >
               [ x ]
@@ -801,7 +801,7 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
           {!showForfeitConfirm ? (
             <button
               onClick={() => setShowForfeitConfirm(true)}
-              className="text-[var(--c-dark)] hover:text-[#ff3333] transition-colors p-2 -m-2"
+              className="text-[var(--c-dark)] hover:text-[#ff3333] active:scale-95 transition-all p-2 -m-2"
             >
               [FORFEIT]
             </button>
@@ -810,13 +810,13 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
               <span className="text-[#ff3333]">FORFEIT?</span>
               <button
                 onClick={handleForfeit}
-                className="text-[#ff3333] hover:text-[#ff6666] transition-colors"
+                className="text-[#ff3333] hover:text-[#ff6666] active:scale-95 transition-all"
               >
                 [YES]
               </button>
               <button
                 onClick={() => setShowForfeitConfirm(false)}
-                className="text-[var(--c-secondary)] hover:text-[var(--c-primary)] transition-colors"
+                className="text-[var(--c-secondary)] hover:text-[var(--c-primary)] active:scale-95 transition-all"
               >
                 [NO]
               </button>

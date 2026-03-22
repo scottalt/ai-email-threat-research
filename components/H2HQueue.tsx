@@ -186,7 +186,7 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
           <p className="text-[var(--c-primary)] text-sm mb-4">{error}</p>
           <button
             onClick={onCancel}
-            className="w-full py-2 border border-[var(--c-primary)] text-[var(--c-primary)] text-sm tracking-widest hover:bg-[var(--c-primary)] hover:text-[var(--c-bg)] transition-colors"
+            className="w-full py-3 border border-[var(--c-primary)] text-[var(--c-primary)] text-sm tracking-widest hover:bg-[var(--c-primary)] hover:text-[var(--c-bg)] active:scale-95 transition-all"
           >
             BACK
           </button>
@@ -284,7 +284,7 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
           {/* Cancel button */}
           <button
             onClick={handleCancel}
-            className="w-full py-2 border border-[var(--c-primary)]/40 text-[var(--c-secondary)] text-sm tracking-widest hover:border-[var(--c-primary)] hover:text-[var(--c-primary)] transition-colors"
+            className="w-full py-3 border border-[var(--c-primary)]/40 text-[var(--c-secondary)] text-sm tracking-widest hover:border-[var(--c-primary)] hover:text-[var(--c-primary)] active:scale-95 transition-all"
           >
             CANCEL
           </button>

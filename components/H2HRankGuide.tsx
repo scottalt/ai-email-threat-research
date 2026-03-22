@@ -19,7 +19,7 @@ export function H2HRankGuide({ currentPoints }: { currentPoints: number }) {
     <div className="w-full term-border bg-[var(--c-bg)]">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)] transition-colors"
+        className="w-full px-3 py-3 flex items-center justify-between text-sm font-mono hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)] active:scale-[0.98] transition-all"
       >
         <span className="text-[var(--c-secondary)] tracking-widest">RANK_TIERS</span>
         <span className="text-[var(--c-secondary)]">{expanded ? '\u25B2' : '\u25BC'}</span>

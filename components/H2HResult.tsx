@@ -220,13 +220,13 @@ export function H2HResult({
       <div className="flex gap-3 mt-2">
         <button
           onClick={onRematch}
-          className="px-4 py-2 text-sm font-mono border border-[var(--c-primary)] text-[var(--c-primary)] hover:bg-[var(--c-primary)] hover:text-[var(--c-bg)] transition-colors"
+          className="px-4 py-3 text-sm font-mono border border-[var(--c-primary)] text-[var(--c-primary)] hover:bg-[var(--c-primary)] hover:text-[var(--c-bg)] active:scale-95 transition-all"
         >
           QUEUE AGAIN
         </button>
         <button
           onClick={onBack}
-          className="px-4 py-2 text-sm font-mono border border-[var(--c-border)] text-[var(--c-muted)] hover:text-[var(--c-fg)] hover:border-[var(--c-fg)] transition-colors"
+          className="px-4 py-3 text-sm font-mono border border-[var(--c-border)] text-[var(--c-muted)] hover:text-[var(--c-fg)] hover:border-[var(--c-fg)] active:scale-95 transition-all"
         >
           TERMINAL
         </button>
