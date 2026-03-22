@@ -19,6 +19,13 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: '2026-03-22',
     category: 'milestone',
+    title: 'v2.0 — Head-to-Head competitive mode',
+    body: 'Real-time 1v1 matchmaking. Race through 5 emails against another player. Wrong answer eliminates you. Fastest perfect run wins. Seasonal ranked tiers from Bronze to Elite. Climb the ladder, defend your rank.',
+  },
+
+  {
+    date: '2026-03-22',
+    category: 'milestone',
     title: 'Phase 2 begins — streamlined for technique detection',
     body: 'After observing Phase 1 data and player behaviour, we identified that three supplementary signals were distracting from the core research question rather than supporting it. Authentication headers, while not a perfect shortcut, were discouraging players from engaging with the email content. Many checked PASS/FAIL first and anchored on that instead of reading the message. Reply-To and Send Time added noise without meaningfully aiding detection. These have been removed so the task focuses squarely on what we set out to measure: which phishing techniques do humans miss when the writing quality is no longer a tell? Phase 1 data is preserved for comparison.',
   },
@@ -85,6 +92,12 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     title: 'v1.9.0 — Simplified email view',
     body: 'Email authentication headers (SPF/DKIM/DMARC), Reply-To, and Send Time have been removed from the game view. These fields were inconsistently populated across the card deck, creating potential confounds. The game now focuses purely on identifying phishing techniques from email content, sender details, and URLs.',
   },
+  {
+    date: '2026-03-22',
+    category: 'update',
+    title: 'v2.0.0 — Head-to-Head mode + unlock ladder',
+    body: 'New competitive mode: 1v1 ranked matches in real time. 5 cards, same deck, pure speed. Wrong answer eliminates. Seasonal ranks from Bronze to Elite with skill-based point scaling. Expert mode merged into Freeplay. New unlock progression: 10 research answers unlocks H2H, 20 unlocks Daily Challenge, 30 unlocks Freeplay.',
+  },
 ];
 
 /*
@@ -136,4 +149,13 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
  * 2026-03-22  Add auth_visible column to answers for phase 1/2 partitioning
  * 2026-03-22  Remove Reply-To from UI — only exists on phishing cards (298/0), dead giveaway confound
  * 2026-03-22  Remove SENT row from UI — inconsistently populated (~60% missing across both types)
+ * 2026-03-22  v2.0.0 — Head-to-Head competitive mode (Season 0)
+ * 2026-03-22  Supabase Realtime Broadcast for live match communication
+ * 2026-03-22  7-tier rank system (Bronze → Elite), skill-based point scaling
+ * 2026-03-22  Server-side timing verification (Redis render timestamps)
+ * 2026-03-22  Merge Expert into Freeplay (single combined card pool)
+ * 2026-03-22  Tiered unlock ladder: 10 → H2H, 20 → Daily, 30 → Freeplay
+ * 2026-03-22  Lower research graduation threshold from 30 to 10 answers
+ * 2026-03-22  Ghost matches for empty queue (unrated, 30s timeout)
+ * 2026-03-22  Anti-cheat: participant verification, idempotent finalization, rate limiting
  */

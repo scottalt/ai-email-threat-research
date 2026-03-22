@@ -60,6 +60,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const [background, setBackground] = useState<PlayerBackground | null>(null);
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'daily' | 'xp'>('xp');
+  const [h2hStats, setH2HStats] = useState<{ rankLabel: string; rankPoints: number; rankColor: string; wins: number; losses: number; winStreak: number } | null>(null);
   // Collapse HOW_TO_PLAY for returning players who've completed at least 1 session
   const isExperiencedPlayer = !!profile && (profile.totalSessions ?? 0) >= 1;
   const [showHowToPlay, setShowHowToPlay] = useState(true);
@@ -176,6 +177,18 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
+
+  // Fetch H2H stats if graduated
+  useEffect(() => {
+    if (!profile?.researchGraduated) return;
+    let cancelled = false;
+    fetch('/api/h2h/stats').then(async (res) => {
+      if (cancelled || !res.ok) return;
+      const data = await res.json();
+      if (!cancelled) setH2HStats(data);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [profile?.researchGraduated]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -660,7 +673,18 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               className="w-full py-4 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-2 border-[rgba(255,0,128,0.5)] text-[#ff0080] hover:bg-[rgba(255,0,128,0.04)]"
             >
               [ HEAD 2 HEAD ]
-              <div className="text-[#003a0e] text-xs mt-1 font-normal tracking-wide">SEASON 0 — ranked competitive</div>
+              <div className="text-[#003a0e] text-xs mt-1 font-normal tracking-wide">
+                {h2hStats ? (
+                  <span>
+                    <span style={{ color: h2hStats.rankColor }}>{h2hStats.rankLabel}</span>
+                    {' '}{h2hStats.rankPoints} pts
+                    {' · '}{h2hStats.wins}W {h2hStats.losses}L
+                    {h2hStats.winStreak >= 2 && <span className="text-[var(--c-primary)]"> · {h2hStats.winStreak} streak</span>}
+                  </span>
+                ) : (
+                  'SEASON 0 — ranked competitive'
+                )}
+              </div>
             </button>
           ) : signedIn ? (
             <div className="w-full py-4 term-border border-[rgba(255,0,128,0.15)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] cursor-not-allowed select-none">
