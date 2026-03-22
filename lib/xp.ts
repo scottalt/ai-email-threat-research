@@ -21,6 +21,7 @@ export const MAX_LEVEL = LEVEL_THRESHOLDS.length; // 30
 
 /** XP earned from a completed round */
 export function getXpForRound(correctCount: number, totalCards: number, mode: string): number {
+  if (totalCards === 0) return 0; // empty session = no XP
   const correct = correctCount * XP_PER_CORRECT;
   const completionBonus = correctCount === totalCards ? 50 : XP_PER_SESSION_COMPLETE;
   // Expert mode: double XP (harder cards)
