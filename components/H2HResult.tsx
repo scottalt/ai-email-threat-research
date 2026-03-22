@@ -233,19 +233,20 @@ export function H2HResult({
           </button>
           {showReview && (
             <div className="space-y-3 mt-2">
-              {reviewCards.map((card) => {
+              {reviewCards.filter((card) =>
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                myAnswers.some((a: any) => a.cardIndex === card.index)
+              ).map((card) => {
                 const answer = myAnswers.find(
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   (a: any) => a.cardIndex === card.index
                 );
-                const answered = !!answer;
                 const correct = answer?.correct ?? false;
 
                 return (
                   <div
                     key={card.index}
                     className={`term-border bg-[var(--c-bg)] ${
-                      !answered ? 'border-[var(--c-dark)]' :
                       correct ? 'border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)]' :
                       'border-[rgba(255,51,51,0.4)]'
                     }`}
@@ -255,14 +256,9 @@ export function H2HResult({
                         CARD {card.index + 1}/{reviewCards.length}
                       </span>
                       <div className="flex items-center gap-2 text-xs font-mono">
-                        {answered && (
-                          <span className={correct ? 'text-[var(--c-primary)]' : 'text-[#ff3333]'}>
-                            {correct ? 'CORRECT' : 'WRONG'}
-                          </span>
-                        )}
-                        {!answered && (
-                          <span className="text-[var(--c-muted)]">NOT REACHED</span>
-                        )}
+                        <span className={correct ? 'text-[var(--c-primary)]' : 'text-[#ff3333]'}>
+                          {correct ? 'CORRECT' : 'WRONG'}
+                        </span>
                         <span className={card.isPhishing ? 'text-[#ff3333]' : 'text-[var(--c-primary)]'}>
                           {card.isPhishing ? 'PHISHING' : 'LEGIT'}
                         </span>
