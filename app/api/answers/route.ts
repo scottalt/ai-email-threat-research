@@ -200,14 +200,9 @@ export async function POST(req: NextRequest) {
       verifiedCorrect = (a.userAnswer === 'phishing') === card.is_phishing;
     }
 
-    // Server-side streak and correct count — never trust client values
+    // Server-side streak — read from Redis (written by /api/cards/check for all modes)
     const streakKey = `session-streak:${a.sessionId}`;
-    let serverStreak = (await redis.get<number>(streakKey)) ?? 0;
-    // Research mode doesn't go through /api/cards/check, so update streak here
-    if (a.gameMode === 'research') {
-      serverStreak = verifiedCorrect ? serverStreak + 1 : 0;
-      await redis.set(streakKey, serverStreak, { ex: 60 * 60 });
-    }
+    const serverStreak = (await redis.get<number>(streakKey)) ?? 0;
 
     const { count: serverCorrectCount } = await supabase
       .from('answers')
