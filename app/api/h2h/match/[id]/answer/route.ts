@@ -364,38 +364,19 @@ export async function POST(
     .single();
 
   if (opponentWrongOnSameCard) {
-    // Both got the same card wrong — faster answer time = answered first = loses
-    // (they rushed and got it wrong; slower player was still deliberating)
+    // Both got the same card wrong — compare speed
+    // Faster answer = rushed and got it wrong = loses
     const myTime = timeFromRenderMs;
     const oppTime = opponentWrongOnSameCard.time_from_render_ms;
     const loserId = myTime <= oppTime ? playerId : opponentId;
     const winnerId = loserId === playerId ? opponentId : playerId;
     await finalizeMatch(matchId, winnerId, loserId);
   } else {
-    // Check if opponent got ANY card wrong (eliminated on an earlier card)
-    const { count: opponentWrongCount } = await admin
-      .from('h2h_match_answers')
-      .select('*', { count: 'exact', head: true })
-      .eq('match_id', matchId)
-      .eq('player_id', opponentId)
-      .eq('correct', false);
-
-    if ((opponentWrongCount ?? 0) > 0) {
-      // Opponent already eliminated on a different card — compare who got further
-      // Player who got further (higher card index) wins
-      if (cardIndex > opponentCards) {
-        await finalizeMatch(matchId, playerId, opponentId);
-      } else if (opponentCards > cardIndex) {
-        await finalizeMatch(matchId, opponentId, playerId);
-      } else {
-        // Same card count but different cards — this player answered the current card
-        // wrong while opponent was eliminated earlier. Opponent loses (eliminated first).
-        await finalizeMatch(matchId, playerId, opponentId);
-      }
-    } else {
-      // Opponent still playing — they win by default (this player eliminated first)
-      await finalizeMatch(matchId, opponentId, playerId);
-    }
+    // Wrong answer = you lose. Period.
+    // Doesn't matter if opponent is on card 1 and you're on card 5.
+    // Doesn't matter if opponent was already eliminated on an earlier card.
+    // You made a mistake, you lose.
+    await finalizeMatch(matchId, opponentId, playerId);
   }
 
   return NextResponse.json({
