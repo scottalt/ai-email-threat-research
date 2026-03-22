@@ -336,19 +336,66 @@ export async function POST(
     });
   }
 
-  // ── Wrong answer — player is eliminated, they lose ──
-  // Simple rule: wrong answer = you lose. No draws.
-  // If opponent is also eliminated or still playing, opponent wins.
-  // For ghost matches (no opponent), match just ends.
+  // ── Wrong answer — check if opponent also got this card wrong ──
 
-  if (opponentId) {
-    await finalizeMatch(matchId, opponentId, playerId);
-  } else {
+  if (!opponentId) {
     // Ghost match — just mark complete, no winner
     await admin.from('h2h_matches').update({
       status: 'complete',
       ended_at: new Date().toISOString(),
     }).eq('id', matchId);
+
+    return NextResponse.json({
+      correct: false,
+      eliminated: true,
+      finished: false,
+      cardIndex,
+    });
+  }
+
+  // Check if opponent answered this same card incorrectly
+  const { data: opponentWrongOnSameCard } = await admin
+    .from('h2h_match_answers')
+    .select('time_from_render_ms')
+    .eq('match_id', matchId)
+    .eq('player_id', opponentId)
+    .eq('card_index', cardIndex)
+    .eq('correct', false)
+    .single();
+
+  if (opponentWrongOnSameCard) {
+    // Both got the same card wrong — faster answer time = answered first = loses
+    // (they rushed and got it wrong; slower player was still deliberating)
+    const myTime = timeFromRenderMs;
+    const oppTime = opponentWrongOnSameCard.time_from_render_ms;
+    const loserId = myTime <= oppTime ? playerId : opponentId;
+    const winnerId = loserId === playerId ? opponentId : playerId;
+    await finalizeMatch(matchId, winnerId, loserId);
+  } else {
+    // Check if opponent got ANY card wrong (eliminated on an earlier card)
+    const { count: opponentWrongCount } = await admin
+      .from('h2h_match_answers')
+      .select('*', { count: 'exact', head: true })
+      .eq('match_id', matchId)
+      .eq('player_id', opponentId)
+      .eq('correct', false);
+
+    if ((opponentWrongCount ?? 0) > 0) {
+      // Opponent already eliminated on a different card — compare who got further
+      // Player who got further (higher card index) wins
+      if (cardIndex > opponentCards) {
+        await finalizeMatch(matchId, playerId, opponentId);
+      } else if (opponentCards > cardIndex) {
+        await finalizeMatch(matchId, opponentId, playerId);
+      } else {
+        // Same card count but different cards — this player answered the current card
+        // wrong while opponent was eliminated earlier. Opponent loses (eliminated first).
+        await finalizeMatch(matchId, playerId, opponentId);
+      }
+    } else {
+      // Opponent still playing — they win by default (this player eliminated first)
+      await finalizeMatch(matchId, opponentId, playerId);
+    }
   }
 
   return NextResponse.json({
