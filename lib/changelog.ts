@@ -20,7 +20,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     date: '2026-03-22',
     category: 'milestone',
     title: 'Phase 2 begins — streamlined for technique detection',
-    body: 'After observing Phase 1 data and player behaviour, we identified that three supplementary signals were distracting from the core research question rather than supporting it. Authentication headers, while not a perfect shortcut, were discouraging players from engaging with the email content — many checked PASS/FAIL first and anchored on that instead of reading the message. Reply-To and Send Time added noise without meaningfully aiding detection. These have been removed so the task focuses squarely on what we set out to measure: which phishing techniques do humans miss when the writing quality is no longer a tell? Phase 1 data is preserved for comparison.',
+    body: 'After observing Phase 1 data and player behaviour, we identified that three supplementary signals were distracting from the core research question rather than supporting it. Authentication headers, while not a perfect shortcut, were discouraging players from engaging with the email content. Many checked PASS/FAIL first and anchored on that instead of reading the message. Reply-To and Send Time added noise without meaningfully aiding detection. These have been removed so the task focuses squarely on what we set out to measure: which phishing techniques do humans miss when the writing quality is no longer a tell? Phase 1 data is preserved for comparison.',
   },
 
   // Platform updates (chronological — page reverses for display)
