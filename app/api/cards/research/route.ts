@@ -90,6 +90,7 @@ export async function GET(req: NextRequest) {
         session_id: sessionId,
         game_mode: 'research',
         dealt_card_ids: dealtCardIds,
+        player_id: playerId ?? undefined,
       }, { onConflict: 'session_id' });
       if (dealErr) console.error('Failed to record dealt cards:', dealErr);
     }

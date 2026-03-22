@@ -15,7 +15,7 @@ interface HealthData {
   recentAuthUsers: { authId: string; email: string; lastSignIn: string; createdAt: string }[];
   playerActivity: { playerId: string; displayName: string | null; createdAt: string; modes: Record<string, number>; researchCapped: boolean }[];
   cappedPlayers: { playerId: string; displayName: string | null; count: number; capped: boolean }[];
-  abandonedSessions: { sessionId: string; cardsDealt: number; startedAt: string; status: 'suspicious' | 'bounce' | 'anonymous' }[];
+  abandonedSessions: { sessionId: string; cardsDealt: number; startedAt: string; status: string }[];
   recentResearchAnswers: { playerId: string; sessionId: string; cardId: string; correct: boolean; createdAt: string }[];
 }
 
