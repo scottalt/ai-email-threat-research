@@ -385,6 +385,50 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
     };
   }, [matchId, playerId, isGhost, onMatchEnd, handleMatchResult]);
 
+  // ── Ghost opponent simulation ──
+  // Simulates a competitive ghost with variable speed and a chance of elimination
+  useEffect(() => {
+    if (!isGhost || loading || eliminated || finished) return;
+
+    // Generate ghost card times on mount (3-8s per card, randomized)
+    const ghostTimes = Array.from({ length: H2H_CARDS_PER_MATCH }, () =>
+      3000 + Math.random() * 5000
+    );
+    // 15% chance ghost gets eliminated on each card after card 2
+    const ghostEliminationCard = Math.random() < 0.15 ? 2 + Math.floor(Math.random() * 3) : -1;
+
+    let ghostCard = 0;
+    let totalElapsed = 0;
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    for (let i = 0; i < H2H_CARDS_PER_MATCH; i++) {
+      totalElapsed += ghostTimes[i];
+
+      if (i === ghostEliminationCard) {
+        // Ghost gets eliminated on this card
+        const t = setTimeout(() => {
+          setOpponentIndex(i + 1);
+          setOpponentEliminated(true);
+        }, totalElapsed);
+        timers.push(t);
+        break;
+      }
+
+      const capturedIndex = i;
+      const capturedElapsed = totalElapsed;
+      const t = setTimeout(() => {
+        ghostCard = capturedIndex + 1;
+        setOpponentIndex(ghostCard);
+      }, capturedElapsed);
+      timers.push(t);
+    }
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+  }, [isGhost, loading, eliminated, finished]);
+
   // ── Submit answer ──
   async function submitAnswer(userAnswer: 'phishing' | 'legit') {
     if (submitting) return;
@@ -428,7 +472,20 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
           setTimeout(() => {
             setCardIndex(nextIndex);
             if (nextIndex >= H2H_CARDS_PER_MATCH) {
-              setFinished(true);
+              if (isGhost) {
+                // Ghost match — end immediately, player wins (unrated)
+                if (!matchEndedRef.current) {
+                  matchEndedRef.current = true;
+                  onMatchEnd({
+                    winnerId: playerId, // ghost matches always show as win for the player
+                    myPointsDelta: 0,
+                    opponentPointsDelta: 0,
+                    reason: 'completed',
+                  });
+                }
+              } else {
+                setFinished(true);
+              }
             }
           }, 200);
         } else {
