@@ -608,7 +608,8 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
   }
 
   // ── Ready-up lobby hooks (MUST be above early returns to avoid hook count mismatch) ──
-  const [readyTimer, setReadyTimer] = useState(15);
+  const [readyTimer, setReadyTimer] = useState(30);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   // Ghost matches skip the lobby and start immediately
   useEffect(() => {
@@ -619,21 +620,31 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
     }
   }, [isGhost, loading, cards.length]);
 
-  // Start match when both players are ready
+  // Both ready → start 5-second countdown, then begin match
   useEffect(() => {
-    if (ready && opponentReady && !matchStarted) {
-      setTimeout(() => setMatchStarted(true), 500);
-    }
-  }, [ready, opponentReady, matchStarted]);
+    if (!ready || !opponentReady || matchStarted || countdown !== null) return;
+    setCountdown(5);
+  }, [ready, opponentReady, matchStarted, countdown]);
 
-  // Ready timeout — forfeit if not ready within 15 seconds
   useEffect(() => {
-    if (loading || matchStarted || isGhost) return;
+    if (countdown === null || matchStarted) return;
+    if (countdown <= 0) {
+      setMatchStarted(true);
+      return;
+    }
+    const t = setTimeout(() => setCountdown(countdown - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown, matchStarted]);
+
+  // Ready timeout — 30s for both players to accept, otherwise forfeit (no winner/loser)
+  useEffect(() => {
+    if (loading || matchStarted || isGhost || countdown !== null) return;
     const interval = setInterval(() => {
       setReadyTimer((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          if (!ready && !matchEndedRef.current) {
+          // Neither player wins — match cancelled
+          if (!matchEndedRef.current) {
             matchEndedRef.current = true;
             onMatchEnd({
               winnerId: null,
@@ -648,7 +659,7 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [loading, matchStarted, isGhost, ready, onMatchEnd]);
+  }, [loading, matchStarted, isGhost, countdown, onMatchEnd]);
 
   function handleReady() {
     setReady(true);
@@ -708,26 +719,34 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
               </div>
             </div>
 
-            {/* Timer */}
-            <div className="text-[var(--c-muted)] text-xs font-mono">
-              {readyTimer > 0 ? `Auto-forfeit in ${readyTimer}s` : 'Forfeiting...'}
-            </div>
-
-            {!ready ? (
-              <button
-                onClick={handleReady}
-                className="w-full py-3 term-border border-2 border-[rgba(255,0,128,0.5)] text-[#ff0080] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,0,128,0.06)] active:scale-95 transition-all"
-              >
-                [ READY ]
-              </button>
-            ) : !opponentReady ? (
-              <div className="text-[var(--c-muted)] text-sm font-mono animate-pulse">
-                Waiting for opponent to ready up...
+            {countdown !== null ? (
+              /* Both ready — countdown to start */
+              <div className="space-y-3">
+                <div className="text-[#ff0080] text-4xl font-mono font-black">{countdown}</div>
+                <div className="text-[var(--c-primary)] text-sm font-mono font-bold tracking-widest">
+                  MATCH STARTING
+                </div>
               </div>
             ) : (
-              <div className="text-[var(--c-primary)] text-sm font-mono font-bold animate-pulse">
-                STARTING...
-              </div>
+              <>
+                {/* Timer */}
+                <div className="text-[var(--c-muted)] text-xs font-mono">
+                  Match cancelled in {readyTimer}s if not accepted
+                </div>
+
+                {!ready ? (
+                  <button
+                    onClick={handleReady}
+                    className="w-full py-3 term-border border-2 border-[rgba(255,0,128,0.5)] text-[#ff0080] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,0,128,0.06)] active:scale-95 transition-all"
+                  >
+                    [ ACCEPT MATCH ]
+                  </button>
+                ) : (
+                  <div className="text-[var(--c-muted)] text-sm font-mono animate-pulse">
+                    Waiting for opponent...
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
