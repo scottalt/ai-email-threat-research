@@ -516,8 +516,10 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           {/* Action buttons group */}
           <div className="space-y-4">
           {(() => {
-            const graduated = signedIn && (profile?.researchGraduated ?? false);
-            const researchCapped = signedIn && !graduated && (profile?.researchAnswersSubmitted ?? 0) >= 30; // lifetime cap — can still play research after graduation
+            const answers = profile?.researchAnswersSubmitted ?? 0;
+            const graduated = signedIn && (profile?.researchGraduated ?? false); // 10+ answers = H2H unlocked
+            const fullyUnlocked = signedIn && answers >= 20; // 20+ = freeplay, daily, expert, stats, intel
+            const researchCapped = answers >= 30;
             const isResearch = signedIn && !graduated && !researchCapped;
             const needsCallsign = signedIn && !profile?.displayName;
             return (
@@ -530,6 +532,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     [ LOG IN / SIGN UP TO PLAY ]
                   </button>
                 )}
+                {/* Pre-graduation: prominent research button */}
                 {!needsCallsign && signedIn && isResearch && (
                   <button
                     onClick={() => handleStart('research')}
@@ -538,7 +541,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     [ RESEARCH MODE ]
                   </button>
                 )}
-                {!needsCallsign && signedIn && (graduated || researchCapped) && (
+                {/* Post-full-unlock (20+): freeplay button */}
+                {!needsCallsign && signedIn && fullyUnlocked && (
                   <button
                     onClick={() => tryStart('freeplay')}
                     className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all text-[var(--c-secondary)] hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)]"
@@ -546,12 +550,22 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     [ FREEPLAY ]
                   </button>
                 )}
-                {!needsCallsign && signedIn && graduated && !researchCapped && (
+                {/* Post-graduation, pre-full-unlock (10-19): research is still primary action */}
+                {!needsCallsign && signedIn && graduated && !fullyUnlocked && (
+                  <button
+                    onClick={() => handleStart('research')}
+                    className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)]"
+                  >
+                    [ RESEARCH MODE — {answers}/20 to unlock all modes ]
+                  </button>
+                )}
+                {/* Post-full-unlock, research not capped: subtle contribute button */}
+                {!needsCallsign && signedIn && fullyUnlocked && !researchCapped && (
                   <button
                     onClick={() => handleStart('research')}
                     className="w-full py-2 term-border font-mono tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)] text-[var(--c-accent-dim)] hover:text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_4%,transparent)]"
                   >
-                    [ CONTRIBUTE TO RESEARCH — {profile?.researchAnswersSubmitted ?? 0}/30 ]
+                    [ CONTRIBUTE TO RESEARCH — {answers}/30 ]
                   </button>
                 )}
                 {/* Inline onboarding: sign-in (State 1) or callsign setup (State 2) */}
@@ -629,22 +643,17 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     RESEARCH COMPLETE — 30/30 answers submitted. Thank you!
                   </p>
                 )}
-                {graduated && profile && (profile.researchAnswersSubmitted ?? 0) < 30 && (
-                  <p className="text-[var(--c-accent-dim)] text-sm text-center font-mono">
-                    RESEARCH: {profile.researchAnswersSubmitted}/30 — keep contributing for bonus achievements
-                  </p>
-                )}
                 {isResearch && profile && (
                   <p className="text-[var(--c-accent-dim)] text-sm text-center font-mono">
-                    {profile.researchAnswersSubmitted} of 10 answers to qualify for ranked play
+                    {answers} of 10 answers to unlock Head-to-Head
                   </p>
                 )}
               </>
             );
           })()}
 
-          {/* Daily challenge button — locked until research graduation */}
-          {signedIn && profile?.researchGraduated ? (
+          {/* Daily challenge button — locked until 20 research answers */}
+          {signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20 ? (
             <button
               onClick={() => tryStart('daily')}
               className="w-full py-4 lg:py-5 term-border-bright text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] transition-all"
@@ -654,12 +663,12 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           ) : (
             <div className="w-full py-4 term-border border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] cursor-not-allowed select-none">
               [ DAILY CHALLENGE — LOCKED ]
-              <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Submit 10 research answers to unlock</div>
+              <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Submit 20 research answers to unlock</div>
             </div>
           )}
 
-          {/* Post-graduation features: Expert + Stats + Intel */}
-          {signedIn && profile?.researchGraduated ? (
+          {/* Post-full-unlock features: Expert + Stats + Intel (20+ answers) */}
+          {signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20 ? (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <button
                 onClick={() => tryStart('expert')}
@@ -686,7 +695,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               className="block w-full py-3 term-border border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] select-none hover:bg-[color-mix(in_srgb,var(--c-primary)_2%,transparent)] transition-all"
             >
               [ STATS + INTEL — LOCKED ]
-              <span className="block text-xs mt-1 tracking-wide">Submit 10 research answers to unlock</span>
+              <span className="block text-xs mt-1 tracking-wide">Submit 20 research answers to unlock</span>
             </Link>
           )}
 
@@ -706,9 +715,9 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           </div>
           </div>
 
-          {/* Tabbed leaderboard — XP always visible; Daily tab only for graduated players */}
+          {/* Tabbed leaderboard — XP always visible; Daily tab only for fully unlocked players */}
           {(() => {
-            const canSeeDailyLb = signedIn && profile?.researchGraduated;
+            const canSeeDailyLb = signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20;
             const showLeaderboard = xpLeaderboard.length > 0 || (canSeeDailyLb && dailyLeaderboard.length > 0);
             if (!showLeaderboard) return null;
             return (

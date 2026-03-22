@@ -65,7 +65,7 @@ export function ResearchIntro({ onBegin }: Props) {
                 email, IP, location, or any identifying information.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
-                10 research answers to qualify for ranked play. Keep contributing for bonus achievements.{' '}
+                10 answers unlocks Head-to-Head. 20 answers unlocks all modes. 30 answers for full completion.{' '}
                 <Link href="/intel/player" className="text-[var(--c-secondary)] hover:underline">Preview</Link>.
               </p>
             </div>
