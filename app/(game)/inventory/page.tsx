@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePlayer } from '@/lib/usePlayer';
 import { THEMES, isThemeUnlocked } from '@/lib/themes';
 import { ACHIEVEMENTS, RARITY_COLORS } from '@/lib/achievements';
 import { useTheme } from '@/lib/ThemeContext';
+import { getRankFromPoints } from '@/lib/h2h';
 import Link from 'next/link';
 
 type Tab = 'themes' | 'badges';
@@ -13,6 +14,16 @@ export default function InventoryPage() {
   const { profile, loading, signedIn, refreshProfile } = usePlayer();
   const { theme: activeTheme, setThemeId } = useTheme();
   const [tab, setTab] = useState<Tab>('themes');
+  const [showPreview, setShowPreview] = useState(false);
+  const [h2hRank, setH2HRank] = useState<{ rankLabel: string; rankPoints: number; rankColor: string } | null>(null);
+  const researchComplete = (profile?.researchAnswersSubmitted ?? 0) >= 30;
+
+  useEffect(() => {
+    if (!profile?.researchGraduated) return;
+    fetch('/api/h2h/stats').then(async (res) => {
+      if (res.ok) setH2HRank(await res.json());
+    }).catch(() => {});
+  }, [profile?.researchGraduated]);
 
   if (loading) {
     return (
@@ -48,6 +59,53 @@ export default function InventoryPage() {
           </Link>
           <h1 className="text-[var(--c-primary)] text-sm font-mono tracking-widest font-bold">INVENTORY</h1>
           <div className="w-12" />
+        </div>
+
+        {/* Opponent preview — what others see */}
+        <div className="term-border bg-[var(--c-bg)]">
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)] active:scale-[0.98] transition-all"
+          >
+            <span className="text-[var(--c-secondary)] tracking-widest">OPPONENT_VIEW</span>
+            <span className="text-[var(--c-secondary)]">{showPreview ? '\u25B2' : '\u25BC'}</span>
+          </button>
+          {showPreview && (() => {
+            const featuredAchievement = profile.featuredBadge
+              ? ACHIEVEMENTS.find((a) => a.id === profile.featuredBadge)
+              : null;
+            return (
+              <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] px-4 py-4">
+                <div className="text-[var(--c-muted)] text-xs font-mono mb-3 text-center">This is how you appear to opponents in H2H</div>
+                <div className="border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] p-4 max-w-xs mx-auto">
+                  <div className="text-center space-y-2">
+                    <div className="text-[var(--c-primary)] text-sm font-mono font-bold">
+                      {profile.displayName ?? 'ANON'}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm font-mono">
+                      {featuredAchievement && (
+                        <span style={{ color: RARITY_COLORS[featuredAchievement.rarity] }}>
+                          {featuredAchievement.icon}
+                        </span>
+                      )}
+                      <span style={{ color: h2hRank?.rankColor ?? 'var(--c-muted)' }}>
+                        {h2hRank?.rankLabel ?? 'BRONZE'}
+                      </span>
+                      <span className="text-[var(--c-muted)]">{h2hRank?.rankPoints ?? 0} pts</span>
+                    </div>
+                    {featuredAchievement && (
+                      <div className="text-xs font-mono" style={{ color: RARITY_COLORS[featuredAchievement.rarity] }}>
+                        {featuredAchievement.name}
+                      </div>
+                    )}
+                    {!featuredAchievement && (
+                      <div className="text-[var(--c-muted)] text-xs font-mono">No badge equipped</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Tab bar */}
@@ -183,9 +241,9 @@ export default function InventoryPage() {
                     {achievement.name}
                   </div>
 
-                  {/* Description */}
+                  {/* Description — hidden for locked badges until 30 research answers */}
                   <div className="text-[10px] font-mono text-center mb-2" style={{ color: earned ? 'var(--c-secondary)' : '#444' }}>
-                    {achievement.description}
+                    {earned || researchComplete ? achievement.description : '???'}
                   </div>
 
                   {/* Rarity label */}
