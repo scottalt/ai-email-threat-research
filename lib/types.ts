@@ -127,4 +127,5 @@ export interface PlayerProfile {
   achievements?: string[];
   currentStreak: number;
   longestStreak: number;
+  featuredBadge: string | null;
 }

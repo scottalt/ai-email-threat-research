@@ -74,6 +74,7 @@ export async function PATCH(req: NextRequest) {
     achievements: [],
     currentStreak: 0,
     longestStreak: 0,
+    featuredBadge: (row.featured_badge as string | null) ?? null,
   };
   return NextResponse.json(profile);
 }
