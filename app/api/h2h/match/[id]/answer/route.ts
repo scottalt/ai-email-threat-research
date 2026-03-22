@@ -241,10 +241,24 @@ export async function POST(
   // Verify answer
   const correct = (userAnswer === 'phishing') === card.isPhishing;
 
+  // Server-side timing: compute real elapsed time since card was shown
+  // Card render time is set when previous answer was submitted (or match start for card 0)
+  const renderKey = `match-render:${matchId}:${playerId}:${cardIndex}`;
+  const renderTimestamp = await redis.get<number>(renderKey);
+  const now = Date.now();
+  // Use server-computed time if available, fall back to client time (with a floor of 500ms)
+  const serverTimeMs = renderTimestamp ? now - renderTimestamp : null;
+  const verifiedTimeMs = serverTimeMs ?? Math.max(timeFromRenderMs, 500);
+
   // Mark as checked in Redis (30 min TTL)
   await redis.set(checkedKey, '1', { ex: 1800 });
 
-  // Insert answer record
+  // Set render timestamp for the NEXT card (so server can compute their time too)
+  if (correct && cardIndex + 1 < H2H_CARDS_PER_MATCH) {
+    await redis.set(`match-render:${matchId}:${playerId}:${cardIndex + 1}`, now, { ex: 1800 });
+  }
+
+  // Insert answer record with server-verified time
   const admin = getSupabaseAdminClient();
   await admin.from('h2h_match_answers').insert({
     match_id: matchId,
@@ -252,7 +266,7 @@ export async function POST(
     card_index: cardIndex,
     user_answer: userAnswer,
     correct,
-    time_from_render_ms: timeFromRenderMs,
+    time_from_render_ms: verifiedTimeMs,
   });
 
   // Get match to determine player role
@@ -285,7 +299,7 @@ export async function POST(
   if (correct) {
     // Increment player's cards_completed and accumulate time
     const newCards = currentCards + 1;
-    const newTime = currentTime + timeFromRenderMs;
+    const newTime = currentTime + verifiedTimeMs;
 
     await admin
       .from('h2h_matches')
@@ -366,7 +380,7 @@ export async function POST(
   if (opponentWrongOnSameCard) {
     // Both got the same card wrong — compare speed
     // Faster answer = rushed and got it wrong = loses
-    const myTime = timeFromRenderMs;
+    const myTime = verifiedTimeMs;
     const oppTime = opponentWrongOnSameCard.time_from_render_ms;
     const loserId = myTime <= oppTime ? playerId : opponentId;
     const winnerId = loserId === playerId ? opponentId : playerId;

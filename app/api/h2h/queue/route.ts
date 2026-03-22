@@ -7,7 +7,7 @@ import { CURRENT_SEASON, H2H_QUEUE_TIMEOUT_MS, H2H_CARDS_PER_MATCH, H2H_MATCH_TT
 
 // ── Deal cards for a match ──
 
-async function dealMatchCards(matchId: string): Promise<string[]> {
+async function dealMatchCards(matchId: string, playerIds: string[]): Promise<string[]> {
   const supabase = getSupabaseAdminClient();
   const { data } = await supabase
     .from('cards_generated')
@@ -42,6 +42,12 @@ async function dealMatchCards(matchId: string): Promise<string[]> {
   }));
 
   await redis.set(`match-cards:${matchId}`, JSON.stringify(cards), { ex: H2H_MATCH_TTL });
+
+  // Set server-side render timestamp for card 0 for all players (for timing verification)
+  const now = Date.now();
+  for (const pid of playerIds) {
+    await redis.set(`match-render:${matchId}:${pid}:0`, now, { ex: H2H_MATCH_TTL });
+  }
 
   // Update match record with card IDs
   await supabase.from('h2h_matches').update({
@@ -193,7 +199,7 @@ export async function GET() {
       }
 
       // Deal cards for the ghost match
-      await dealMatchCards(match.id);
+      await dealMatchCards(match.id, [playerId]);
 
       // Clean up queue
       await redis.zrem('h2h:queue', JSON.stringify(selfEntry));
@@ -248,7 +254,7 @@ export async function GET() {
   const matchId = match.id;
 
   // Deal cards for the match
-  await dealMatchCards(matchId);
+  await dealMatchCards(matchId, sortedIds);
 
   // Set matched keys for both players (60s TTL so the other player sees it on next poll)
   await redis.set(`h2h:matched:${sortedIds[0]}`, matchId, { ex: 60 });
