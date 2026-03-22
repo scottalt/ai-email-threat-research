@@ -706,6 +706,9 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       </span>
                     </div>
                     <div className="text-[var(--c-secondary)] text-xs mt-1 font-normal tracking-wide">
+                      1v1 RANKED MULTIPLAYER
+                    </div>
+                    <div className="text-[var(--c-muted)] text-xs mt-0.5 font-normal tracking-wide">
                       {h2hStats.rankPoints} pts
                       {' · '}{h2hStats.wins}W {h2hStats.losses}L
                       {h2hStats.winStreak >= 2 && <span className="text-[var(--c-primary)]"> · {h2hStats.winStreak} streak</span>}
