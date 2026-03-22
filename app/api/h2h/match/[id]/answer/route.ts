@@ -103,6 +103,24 @@ async function finalizeMatch(
     const newWinnerPoints = Math.max(0, winnerPoints + winnerDelta);
     const newLoserPoints = Math.max(0, loserPoints + loserDelta);
 
+    // Atomically mark match complete — only if still active (prevents double-finalization)
+    const { data: updated } = await admin
+      .from('h2h_matches')
+      .update({
+        status: 'complete',
+        winner_id: winnerId,
+        player1_points_delta:
+          winnerId === match.player1_id ? winnerDelta : loserDelta,
+        player2_points_delta:
+          winnerId === match.player2_id ? winnerDelta : loserDelta,
+        ended_at: new Date().toISOString(),
+      })
+      .eq('id', matchId)
+      .eq('status', 'active')
+      .select('id');
+
+    if (!updated || updated.length === 0) return; // already finalized by another thread
+
     // Upsert winner stats
     await admin.from('h2h_player_stats').upsert(
       {
@@ -145,30 +163,20 @@ async function finalizeMatch(
       },
       { onConflict: 'player_id,season' },
     );
-
-    // Update match with winner, deltas, and completion
-    await admin
-      .from('h2h_matches')
-      .update({
-        status: 'complete',
-        winner_id: winnerId,
-        player1_points_delta:
-          winnerId === match.player1_id ? winnerDelta : loserDelta,
-        player2_points_delta:
-          winnerId === match.player2_id ? winnerDelta : loserDelta,
-        ended_at: new Date().toISOString(),
-      })
-      .eq('id', matchId);
   } else {
-    // Unrated / ghost match — just mark complete
-    await admin
+    // Unrated / ghost match — atomically mark complete only if still active
+    const { data: updated } = await admin
       .from('h2h_matches')
       .update({
         status: 'complete',
         winner_id: winnerId,
         ended_at: new Date().toISOString(),
       })
-      .eq('id', matchId);
+      .eq('id', matchId)
+      .eq('status', 'active')
+      .select('id');
+
+    if (!updated || updated.length === 0) return; // already finalized by another thread
   }
 }
 
@@ -184,6 +192,14 @@ export async function POST(
   const playerId = await getAuthenticatedPlayerId();
   if (!playerId) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  // Rate limit: max 30 answer submissions per player per 60 seconds
+  const answerRlKey = `ratelimit:h2h-answer:${playerId}`;
+  const answerRlCount = await redis.incr(answerRlKey);
+  if (answerRlCount === 1) await redis.expire(answerRlKey, 60);
+  if (answerRlCount > 30) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   // Parse body
@@ -248,7 +264,7 @@ export async function POST(
   const now = Date.now();
   // Use server-computed time if available, fall back to client time (with a floor of 500ms)
   const serverTimeMs = renderTimestamp ? now - renderTimestamp : null;
-  const verifiedTimeMs = serverTimeMs ?? Math.max(timeFromRenderMs, 500);
+  const verifiedTimeMs = serverTimeMs ?? Math.min(Math.max(timeFromRenderMs, 500), 60000);
 
   // Mark as checked in Redis (30 min TTL)
   await redis.set(checkedKey, '1', { ex: 1800 });
@@ -278,6 +294,11 @@ export async function POST(
 
   if (!match) {
     return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+  }
+
+  // Verify submitter is a participant in this match
+  if (playerId !== match.player1_id && playerId !== match.player2_id) {
+    return NextResponse.json({ error: 'Not a participant in this match' }, { status: 403 });
   }
 
   const isPlayer1 = playerId === match.player1_id;
@@ -353,11 +374,11 @@ export async function POST(
   // ── Wrong answer — check if opponent also got this card wrong ──
 
   if (!opponentId) {
-    // Ghost match — just mark complete, no winner
+    // Ghost match — just mark complete, no winner (atomic to prevent double-finalization)
     await admin.from('h2h_matches').update({
       status: 'complete',
       ended_at: new Date().toISOString(),
-    }).eq('id', matchId);
+    }).eq('id', matchId).eq('status', 'active');
 
     return NextResponse.json({
       correct: false,

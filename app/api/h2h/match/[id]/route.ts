@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 
 // ── GET /api/h2h/match/[id] — Return match state for initial load / reconnection ──
@@ -13,7 +15,32 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid match id' }, { status: 400 });
   }
 
+  // Authenticate the request
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } },
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   const admin = getSupabaseAdminClient();
+
+  // Resolve player ID from auth
+  const { data: player } = await admin
+    .from('players')
+    .select('id')
+    .eq('auth_id', user.id)
+    .single();
+
+  if (!player) {
+    return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+  }
 
   // Fetch match record
   const { data: match, error: matchErr } = await admin
@@ -24,6 +51,11 @@ export async function GET(
 
   if (matchErr || !match) {
     return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+  }
+
+  // Verify requester is a participant in this match
+  if (player.id !== match.player1_id && player.id !== match.player2_id) {
+    return NextResponse.json({ error: 'Not a participant in this match' }, { status: 403 });
   }
 
   // Fetch answers for this match, ordered by card_index
