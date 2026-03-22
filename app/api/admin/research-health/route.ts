@@ -115,7 +115,7 @@ export async function GET() {
       // 6. Research sessions with dealt cards (last 7 days) — if dealt but 0 answers, pipeline is broken
       supabase
         .from('sessions')
-        .select('session_id, dealt_card_ids, started_at, cards_answered, game_mode')
+        .select('session_id, player_id, dealt_card_ids, started_at, cards_answered, game_mode')
         .eq('game_mode', 'research')
         .not('dealt_card_ids', 'is', null)
         .gte('started_at', sevenDaysAgo)
@@ -211,18 +211,48 @@ export async function GET() {
     // Merge both sets
     for (const sid of researchSessionIds) allResearchAnswerSessionIds.add(sid);
 
-    const abandonedSessions = (recentResearchSessions.data ?? [])
-      .filter((s) => !allResearchAnswerSessionIds.has(s.session_id))
-      .map((s) => ({
+    // Classify abandoned sessions: bounce (no player activity) vs suspicious (player active elsewhere)
+    const abandonedRaw = (recentResearchSessions.data ?? [])
+      .filter((s) => !allResearchAnswerSessionIds.has(s.session_id));
+
+    // Look up whether each abandoned session's player has other answers
+    const abandonedPlayerIds = [...new Set(abandonedRaw.map((s) => s.player_id).filter(Boolean))] as string[];
+    const activeAbandonedPlayers = new Set<string>();
+    if (abandonedPlayerIds.length > 0) {
+      for (let i = 0; i < abandonedPlayerIds.length; i += 20) {
+        const batch = abandonedPlayerIds.slice(i, i + 20);
+        const { data: activityCheck } = await supabase
+          .from('answers')
+          .select('player_id')
+          .in('player_id', batch)
+          .limit(batch.length);
+        for (const row of activityCheck ?? []) {
+          activeAbandonedPlayers.add(row.player_id);
+        }
+      }
+    }
+
+    const abandonedSessions = abandonedRaw.map((s) => {
+      const hasPlayer = Boolean(s.player_id);
+      const playerActive = hasPlayer && activeAbandonedPlayers.has(s.player_id!);
+      return {
         sessionId: s.session_id,
         cardsDealt: Array.isArray(s.dealt_card_ids) ? s.dealt_card_ids.length : 0,
         startedAt: s.started_at,
-      }));
+        // suspicious = player exists AND has answers elsewhere but none in this session
+        status: playerActive ? 'suspicious' : hasPlayer ? 'bounce' : 'anonymous',
+      };
+    });
 
     // Build health signals
     const signals: string[] = [];
-    if (abandonedSessions.length > 0) {
-      signals.push(`${abandonedSessions.length} research session(s) had cards dealt but no answers — likely bounced before answering`);
+    const suspiciousSessions = abandonedSessions.filter((s) => s.status === 'suspicious');
+    const bounceSessions = abandonedSessions.filter((s) => s.status !== 'suspicious');
+    if (suspiciousSessions.length > 0) {
+      signals.push(`CRITICAL: ${suspiciousSessions.length} session(s) had cards dealt, player is active elsewhere, but ZERO answers saved — possible silent failure`);
+    }
+    if (bounceSessions.length > 0) {
+      signals.push(`${bounceSessions.length} session(s) had cards dealt but no answers — likely bounced before answering`);
     }
     if ((answersLast24h.count ?? 0) === 0 && (recentAuthUsers.length > 0)) {
       signals.push('WARNING: Auth users active in last 7d but ZERO research answers in last 24h');
@@ -243,137 +273,6 @@ export async function GET() {
     }
     if (signals.length === 0) {
       signals.push('No anomalies detected');
-    }
-
-    // Fetch recent error/warning logs from Vercel runtime (if configured)
-    let vercelLogs: { time: string; method: string; path: string; status: number; level: string; message: string }[] = [];
-    let vercelLogsError: string | null = null;
-    const vercelToken = process.env.VERCEL_TOKEN;
-    const vercelProjectId = process.env.VERCEL_PROJECT_ID;
-    const vercelTeamId = process.env.VERCEL_TEAM_ID;
-
-    const vercelLogsMissing = [
-      !vercelToken && 'VERCEL_TOKEN',
-      !vercelProjectId && 'VERCEL_PROJECT_ID',
-      !vercelTeamId && 'VERCEL_TEAM_ID',
-    ].filter(Boolean);
-
-    if (vercelLogsMissing.length > 0) {
-      vercelLogsError = `Missing env vars: ${vercelLogsMissing.join(', ')}`;
-    }
-
-    if (vercelToken && vercelProjectId && vercelTeamId) {
-      try {
-        // Step 1: Get the current production deployment ID
-        const teamParam = `teamId=${encodeURIComponent(vercelTeamId)}`;
-        const dplRes = await fetch(
-          `https://api.vercel.com/v6/deployments?projectId=${vercelProjectId}&target=production&limit=1&${teamParam}`,
-          { headers: { Authorization: `Bearer ${vercelToken}` } }
-        );
-        if (!dplRes.ok) {
-          vercelLogsError = `Failed to fetch deployment: ${dplRes.status}`;
-        } else {
-          const dplJson = await dplRes.json();
-          const deploymentId = dplJson?.deployments?.[0]?.uid;
-          if (!deploymentId) {
-            vercelLogsError = 'No production deployment found';
-          } else {
-            // Step 2: Fetch runtime logs stream (NDJSON) with timeout
-            // The endpoint is a live stream that never closes, so we abort after 5s
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 5000);
-            try {
-              const logsRes = await fetch(
-                `https://api.vercel.com/v1/projects/${vercelProjectId}/deployments/${deploymentId}/runtime-logs?${teamParam}`,
-                { headers: { Authorization: `Bearer ${vercelToken}` }, signal: controller.signal }
-              );
-              if (!logsRes.ok) {
-                const body = await logsRes.text().catch(() => '');
-                vercelLogsError = `Vercel logs API returned ${logsRes.status}: ${body.slice(0, 200)}`;
-              } else if (logsRes.body) {
-                // Read the NDJSON stream line by line with a cap
-                const reader = logsRes.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-                const oneDayAgoMs = now.getTime() - 24 * 60 * 60 * 1000;
-                const MAX_LINES = 200; // stop reading after this many lines
-                let linesRead = 0;
-
-                try {
-                  while (linesRead < MAX_LINES) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop() ?? ''; // keep incomplete last line in buffer
-
-                    for (const line of lines) {
-                      if (!line.trim()) continue;
-                      linesRead++;
-                      try {
-                        const entry = JSON.parse(line);
-                        if (
-                          (entry.level === 'error' || entry.level === 'warning') &&
-                          entry.requestPath?.includes('/api/answers') &&
-                          (entry.timestampInMs ?? 0) >= oneDayAgoMs
-                        ) {
-                          vercelLogs.push({
-                            time: new Date(entry.timestampInMs).toISOString(),
-                            method: entry.requestMethod ?? '',
-                            path: entry.requestPath ?? '',
-                            status: entry.responseStatusCode ?? 0,
-                            level: entry.level,
-                            message: typeof entry.message === 'string' ? entry.message.slice(0, 200) : '',
-                          });
-                        }
-                      } catch {
-                        // skip unparseable lines
-                      }
-                    }
-                  }
-                } catch (streamErr) {
-                  // AbortError is expected when timeout fires — not a real error
-                  const isAbort = controller.signal.aborted
-                    || (streamErr instanceof Error && (streamErr.name === 'AbortError' || streamErr.message.includes('aborted')));
-                  if (!isAbort) {
-                    throw streamErr;
-                  }
-                } finally {
-                  reader.cancel().catch(() => {});
-                }
-
-                // Sort by time descending
-                vercelLogs.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-                vercelLogs = vercelLogs.slice(0, 50);
-              }
-            } finally {
-              clearTimeout(timeout);
-            }
-          }
-        }
-
-        // Add signal if there are actual errors (not just warnings)
-        const errorCount = vercelLogs.filter((l) => l.level === 'error').length;
-        if (errorCount > 0) {
-          signals.push(`CRITICAL: ${errorCount} runtime error(s) in Vercel logs in last 24h — check vercelLogs below`);
-        }
-
-        // Summarize warning types
-        const warningTypes: Record<string, number> = {};
-        for (const log of vercelLogs.filter((l) => l.level === 'warning')) {
-          const type = log.message.match(/\[answers\] reject: (.+?)(?:,|$)/)?.[1] ?? 'unknown';
-          warningTypes[type] = (warningTypes[type] ?? 0) + 1;
-        }
-        if (Object.keys(warningTypes).length > 0) {
-          signals.push(`Vercel warnings (24h): ${Object.entries(warningTypes).map(([k, v]) => `${k} (${v})`).join(', ')}`);
-        }
-      } catch (err) {
-        // Abort errors are expected — we use whatever logs we collected before timeout
-        const isAbort = err instanceof Error && (err.name === 'AbortError' || err.message.includes('aborted'));
-        if (!isAbort) {
-          vercelLogsError = `Failed to fetch Vercel logs: ${err instanceof Error ? err.message : String(err)}`;
-        }
-      }
     }
 
     return NextResponse.json({
@@ -401,9 +300,6 @@ export async function GET() {
         correct: a.correct,
         createdAt: a.created_at,
       })),
-      vercelLogs: vercelLogs.length > 0 ? vercelLogs : undefined,
-      vercelLogsError: vercelLogsError ?? undefined,
-      vercelLogsConfigured: Boolean(vercelToken),
     });
   } catch (err) {
     console.error('[research-health] error:', err);
