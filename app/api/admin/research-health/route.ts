@@ -264,48 +264,63 @@ export async function GET() {
 
     if (vercelToken && vercelProjectId && vercelTeamId) {
       try {
-        const logsParams = new URLSearchParams({
-          projectId: vercelProjectId,
-          teamId: vercelTeamId,
-          environment: 'production',
-          query: 'answers',
-          since: oneDayAgo,
-          limit: '50',
-        });
-        // Fetch error and warning level logs
-        for (const level of ['error', 'warning'] as const) {
-          logsParams.set('level', level);
-          const res = await fetch(`https://api.vercel.com/v3/runtime/logs?${logsParams}`, {
-            headers: { Authorization: `Bearer ${vercelToken}` },
-          });
-          if (res.ok) {
-            const json = await res.json();
-            const entries = json?.logs ?? json?.data ?? json?.events ?? [];
-            if (Array.isArray(entries)) {
-              for (const entry of entries) {
-                vercelLogs.push({
-                  time: entry.timestamp ?? entry.createdAt ?? entry.date ?? entry.created ?? '',
-                  method: entry.method ?? entry.proxy?.method ?? entry.requestMethod ?? '',
-                  path: entry.path ?? entry.proxy?.path ?? entry.requestPath ?? '',
-                  status: entry.statusCode ?? entry.proxy?.statusCode ?? entry.responseStatusCode ?? 0,
-                  level,
-                  message: typeof entry.message === 'string' ? entry.message.slice(0, 200) : JSON.stringify(entry.message ?? entry.text ?? '').slice(0, 200),
-                });
-              }
-            }
-            // Debug: if no entries found, capture the response shape
-            if (vercelLogs.length === 0 && !vercelLogsError) {
-              const keys = Object.keys(json ?? {});
-              vercelLogsError = `API ok but 0 entries parsed (response keys: ${keys.join(', ') || 'empty'})`;
-            }
+        // Step 1: Get the current production deployment ID
+        const teamParam = `teamId=${encodeURIComponent(vercelTeamId)}`;
+        const dplRes = await fetch(
+          `https://api.vercel.com/v6/deployments?projectId=${vercelProjectId}&target=production&limit=1&${teamParam}`,
+          { headers: { Authorization: `Bearer ${vercelToken}` } }
+        );
+        if (!dplRes.ok) {
+          vercelLogsError = `Failed to fetch deployment: ${dplRes.status}`;
+        } else {
+          const dplJson = await dplRes.json();
+          const deploymentId = dplJson?.deployments?.[0]?.uid;
+          if (!deploymentId) {
+            vercelLogsError = 'No production deployment found';
           } else {
-            const body = await res.text().catch(() => '');
-            vercelLogsError = `Vercel API returned ${res.status}: ${body.slice(0, 200)}`;
+            // Step 2: Fetch runtime logs stream (NDJSON)
+            const logsRes = await fetch(
+              `https://api.vercel.com/v1/projects/${vercelProjectId}/deployments/${deploymentId}/runtime-logs?${teamParam}`,
+              { headers: { Authorization: `Bearer ${vercelToken}` } }
+            );
+            if (!logsRes.ok) {
+              const body = await logsRes.text().catch(() => '');
+              vercelLogsError = `Vercel logs API returned ${logsRes.status}: ${body.slice(0, 200)}`;
+            } else {
+              // Parse NDJSON stream — each line is a JSON object
+              const text = await logsRes.text();
+              const lines = text.split('\n').filter((l) => l.trim());
+              const oneDayAgoMs = now.getTime() - 24 * 60 * 60 * 1000;
+
+              for (const line of lines) {
+                try {
+                  const entry = JSON.parse(line);
+                  // Only include errors and warnings from the answers endpoint
+                  if (
+                    (entry.level === 'error' || entry.level === 'warning') &&
+                    entry.requestPath?.includes('/api/answers') &&
+                    (entry.timestampInMs ?? 0) >= oneDayAgoMs
+                  ) {
+                    vercelLogs.push({
+                      time: new Date(entry.timestampInMs).toISOString(),
+                      method: entry.requestMethod ?? '',
+                      path: entry.requestPath ?? '',
+                      status: entry.responseStatusCode ?? 0,
+                      level: entry.level,
+                      message: typeof entry.message === 'string' ? entry.message.slice(0, 200) : '',
+                    });
+                  }
+                } catch {
+                  // skip unparseable lines
+                }
+              }
+
+              // Sort by time descending
+              vercelLogs.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+              vercelLogs = vercelLogs.slice(0, 50);
+            }
           }
         }
-        // Sort by time descending
-        vercelLogs.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-        vercelLogs = vercelLogs.slice(0, 50);
 
         // Add signal if there are actual errors (not just warnings)
         const errorCount = vercelLogs.filter((l) => l.level === 'error').length;
