@@ -607,6 +607,54 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
     setCardIndex(nextIndex);
   }
 
+  // ── Ready-up lobby hooks (MUST be above early returns to avoid hook count mismatch) ──
+  const [readyTimer, setReadyTimer] = useState(15);
+
+  // Ghost matches skip the lobby and start immediately
+  useEffect(() => {
+    if (isGhost && !loading && cards.length > 0) {
+      setReady(true);
+      setOpponentReady(true);
+      setMatchStarted(true);
+    }
+  }, [isGhost, loading, cards.length]);
+
+  // Start match when both players are ready
+  useEffect(() => {
+    if (ready && opponentReady && !matchStarted) {
+      setTimeout(() => setMatchStarted(true), 500);
+    }
+  }, [ready, opponentReady, matchStarted]);
+
+  // Ready timeout — forfeit if not ready within 15 seconds
+  useEffect(() => {
+    if (loading || matchStarted || isGhost) return;
+    const interval = setInterval(() => {
+      setReadyTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          if (!ready && !matchEndedRef.current) {
+            matchEndedRef.current = true;
+            onMatchEnd({
+              winnerId: null,
+              myPointsDelta: 0,
+              opponentPointsDelta: 0,
+              reason: 'forfeit',
+            });
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [loading, matchStarted, isGhost, ready, onMatchEnd]);
+
+  function handleReady() {
+    setReady(true);
+    broadcastReady(playerId);
+  }
+
   // ── Loading / error states ──
   if (loading) {
     return (
@@ -628,30 +676,8 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
     );
   }
 
-  // ── Ready-up lobby (real matches only) ──
-  // Ghost matches skip the lobby and start immediately
-  useEffect(() => {
-    if (isGhost && !loading && cards.length > 0) {
-      setReady(true);
-      setOpponentReady(true);
-      setMatchStarted(true);
-    }
-  }, [isGhost, loading, cards.length]);
-
-  // Start match when both players are ready
-  useEffect(() => {
-    if (ready && opponentReady && !matchStarted) {
-      // Brief countdown feel
-      setTimeout(() => setMatchStarted(true), 500);
-    }
-  }, [ready, opponentReady, matchStarted]);
-
-  function handleReady() {
-    setReady(true);
-    broadcastReady(playerId);
-  }
-
-  if (!loading && !error && !matchStarted && !isGhost) {
+  // ── Ready-up lobby (rendered as early return — safe because all hooks are above) ──
+  if (!matchStarted && !isGhost) {
     return (
       <div className="flex flex-col items-center gap-4 w-full max-w-sm lg:max-w-lg px-4 pb-safe">
         <div className="w-full term-border bg-[var(--c-bg)]">
@@ -663,7 +689,7 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
               OPPONENT FOUND
             </div>
             <div className="text-[var(--c-secondary)] text-sm font-mono">
-              {opponentName}
+              vs {opponentName}
             </div>
 
             {/* Ready status */}
@@ -680,6 +706,11 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
                   {opponentReady ? 'READY' : 'WAITING...'}
                 </div>
               </div>
+            </div>
+
+            {/* Timer */}
+            <div className="text-[var(--c-muted)] text-xs font-mono">
+              {readyTimer > 0 ? `Auto-forfeit in ${readyTimer}s` : 'Forfeiting...'}
             </div>
 
             {!ready ? (
