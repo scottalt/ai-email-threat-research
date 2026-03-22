@@ -333,9 +333,9 @@ export async function GET() {
                   }
                 } catch (streamErr) {
                   // AbortError is expected when timeout fires — not a real error
-                  if (streamErr instanceof DOMException && streamErr.name === 'AbortError') {
-                    // normal timeout, we have whatever logs we collected
-                  } else {
+                  const isAbort = controller.signal.aborted
+                    || (streamErr instanceof Error && (streamErr.name === 'AbortError' || streamErr.message.includes('aborted')));
+                  if (!isAbort) {
                     throw streamErr;
                   }
                 } finally {
@@ -368,7 +368,11 @@ export async function GET() {
           signals.push(`Vercel warnings (24h): ${Object.entries(warningTypes).map(([k, v]) => `${k} (${v})`).join(', ')}`);
         }
       } catch (err) {
-        vercelLogsError = `Failed to fetch Vercel logs: ${err instanceof Error ? err.message : String(err)}`;
+        // Abort errors are expected — we use whatever logs we collected before timeout
+        const isAbort = err instanceof Error && (err.name === 'AbortError' || err.message.includes('aborted'));
+        if (!isAbort) {
+          vercelLogsError = `Failed to fetch Vercel logs: ${err instanceof Error ? err.message : String(err)}`;
+        }
       }
     }
 
