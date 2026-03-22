@@ -14,18 +14,19 @@ export const CURRENT_SEASON = 'season-0';
 export interface H2HRank {
   tier: string;
   label: string;
+  icon: string;
   minPoints: number;
   color: string;
 }
 
 export const H2H_RANKS: H2HRank[] = [
-  { tier: 'bronze',   label: 'Bronze',   minPoints: 0,    color: '#003a0e' },
-  { tier: 'silver',   label: 'Silver',   minPoints: 100,  color: '#00aa28' },
-  { tier: 'gold',     label: 'Gold',     minPoints: 250,  color: '#ffaa00' },
-  { tier: 'platinum', label: 'Platinum', minPoints: 450,  color: '#00aaff' },
-  { tier: 'diamond',  label: 'Diamond',  minPoints: 700,  color: '#ff0080' },
-  { tier: 'master',   label: 'Master',   minPoints: 1000, color: '#ff3333' },
-  { tier: 'elite',    label: 'Elite',    minPoints: 1400, color: '#ffd700' },
+  { tier: 'bronze',   label: 'BRONZE',   icon: '◇',  minPoints: 0,    color: '#003a0e' },
+  { tier: 'silver',   label: 'SILVER',   icon: '◆',  minPoints: 100,  color: '#00aa28' },
+  { tier: 'gold',     label: 'GOLD',     icon: '◆◆', minPoints: 250,  color: '#ffaa00' },
+  { tier: 'platinum', label: 'PLATINUM', icon: '⬡',  minPoints: 450,  color: '#00aaff' },
+  { tier: 'diamond',  label: 'DIAMOND',  icon: '⬡⬡', minPoints: 700,  color: '#ff0080' },
+  { tier: 'master',   label: 'MASTER',   icon: '★',  minPoints: 1000, color: '#ff3333' },
+  { tier: 'elite',    label: 'ELITE',    icon: '★★', minPoints: 1400, color: '#ffd700' },
 ];
 
 // ── Rank helpers ──

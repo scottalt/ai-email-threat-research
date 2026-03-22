@@ -61,7 +61,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const [background, setBackground] = useState<PlayerBackground | null>(null);
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean }[]>([]);
   const [activeTab, setActiveTab] = useState<'daily' | 'xp' | 'h2h'>('xp');
-  const [h2hStats, setH2HStats] = useState<{ rankLabel: string; rankPoints: number; rankColor: string; wins: number; losses: number; winStreak: number } | null>(null);
+  const [h2hStats, setH2HStats] = useState<{ rankLabel: string; rankIcon: string; rankPoints: number; rankColor: string; wins: number; losses: number; winStreak: number } | null>(null);
   const [h2hLeaderboard, setH2HLeaderboard] = useState<{ position: number; displayName: string; rankPoints: number; rankLabel: string; rankColor: string; wins: number; losses: number }[]>([]);
   // Collapse HOW_TO_PLAY for returning players who've completed at least 1 session
   const isExperiencedPlayer = !!profile && (profile.totalSessions ?? 0) >= 1;
@@ -701,8 +701,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     <div className="flex items-center justify-center gap-2">
                       <span>[ HEAD 2 HEAD ]</span>
                       <span className="text-[10px] px-1 py-0.5 border border-[rgba(255,170,0,0.5)] text-[#ffaa00] font-normal">BETA</span>
-                      <span className="text-xs px-1.5 py-0.5 border border-[rgba(255,0,128,0.4)]" style={{ color: h2hStats.rankColor }}>
-                        {h2hStats.rankLabel}
+                      <span className="text-xs px-1.5 py-0.5 border border-[rgba(255,0,128,0.4)] inline-flex items-center gap-1" style={{ color: h2hStats.rankColor }}>
+                        {h2hStats.rankIcon} {h2hStats.rankLabel}
                       </span>
                     </div>
                     <div className="text-[var(--c-secondary)] text-xs mt-1 font-normal tracking-wide">

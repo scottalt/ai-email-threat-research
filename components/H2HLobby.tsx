@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ACHIEVEMENTS, RARITY_COLORS } from '@/lib/achievements';
+import { getRankFromPoints } from '@/lib/h2h';
 import { H2HRankGuide } from './H2HRankGuide';
 import type { PlayerProfile } from '@/lib/types';
 
@@ -48,12 +49,15 @@ export function H2HLobby({ profile, onSearch, onBack }: Props) {
 
             {/* Rank */}
             <div className="flex items-center justify-center gap-3 text-sm font-mono">
-              <span className="text-lg" style={{ color: h2hStats?.rankColor ?? '#003a0e' }}>
-                {'\u25C6'}
-              </span>
-              <span className="font-bold" style={{ color: h2hStats?.rankColor ?? '#003a0e' }}>
-                {h2hStats?.rankLabel ?? 'BRONZE'}
-              </span>
+              {(() => {
+                const rank = getRankFromPoints(h2hStats?.rankPoints ?? 0);
+                return (
+                  <>
+                    <span className="text-lg" style={{ color: rank.color }}>{rank.icon}</span>
+                    <span className="font-bold" style={{ color: rank.color }}>{rank.label}</span>
+                  </>
+                );
+              })()}
               <span className="text-[var(--c-muted)]">
                 {h2hStats?.rankPoints ?? 0} pts
               </span>

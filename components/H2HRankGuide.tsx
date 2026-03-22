@@ -2,15 +2,14 @@
 
 import { useState, memo } from 'react';
 
-const TIERS = [
-  { label: 'BRONZE', min: 0, color: '#003a0e' },
-  { label: 'SILVER', min: 100, color: '#00aa28' },
-  { label: 'GOLD', min: 250, color: '#ffaa00' },
-  { label: 'PLATINUM', min: 450, color: '#00aaff' },
-  { label: 'DIAMOND', min: 700, color: '#ff0080' },
-  { label: 'MASTER', min: 1000, color: '#ff3333' },
-  { label: 'ELITE', min: 1400, color: '#ffd700' },
-];
+import { H2H_RANKS } from '@/lib/h2h';
+
+const TIERS = H2H_RANKS.map((r) => ({
+  label: r.label,
+  icon: r.icon,
+  min: r.minPoints,
+  color: r.color,
+}));
 
 export const H2HRankGuide = memo(function H2HRankGuide({ currentPoints }: { currentPoints: number }) {
   const [expanded, setExpanded] = useState(false);
@@ -41,7 +40,7 @@ export const H2HRankGuide = memo(function H2HRankGuide({ currentPoints }: { curr
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-lg" style={{ color: tier.color }}>{'\u25C6'}</span>
+                  <span className="text-lg" style={{ color: tier.color }}>{tier.icon}</span>
                   <span className="text-sm font-bold" style={{ color: tier.color }}>{tier.label}</span>
                   {isCurrent && <span className="text-[var(--c-primary)] text-xs font-bold">{'\u25C0'} YOU</span>}
                 </div>
