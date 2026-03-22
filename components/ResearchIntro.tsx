@@ -36,12 +36,12 @@ export function ResearchIntro({ onBegin }: Props) {
             </div>
             <ul className="px-3 py-3 space-y-2">
               {[
-                'Sender domain \u2014 tap [\u2197] next to the sender name to reveal the actual email address',
-                'Attachment name \u2014 check [ATCH] for suspicious filenames',
-                'URL destinations \u2014 tap any link to inspect the full URL',
+                'Sender domain — tap [↗] next to the sender name to reveal the actual email address',
+                'Attachment name — check [ATCH] for suspicious filenames',
+                'URL destinations — tap any link to inspect the full URL',
               ].map((signal, i) => (
                 <li key={i} className="flex gap-2 text-sm text-[var(--c-secondary)] font-mono">
-                  <span className="text-[var(--c-accent)] shrink-0">\u25B8</span>
+                  <span className="text-[var(--c-accent)] shrink-0">▸</span>
                   <span>{signal}</span>
                 </li>
               ))}
@@ -54,7 +54,7 @@ export function ResearchIntro({ onBegin }: Props) {
             </div>
             <div className="px-3 py-3 space-y-2">
               <p className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed">
-                Sign-in required. No password \u2014 just a 6-digit code to your email.
+                Sign-in required. No password — just a 6-digit code to your email.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
                 <span className="text-[var(--c-secondary)]">Recorded:</span>{' '}

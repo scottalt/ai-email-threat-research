@@ -467,7 +467,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             /* ── Shared content blocks (rendered in both layouts) ── */
 
             const howToPlayPanel = (
-              <div className={`term-border bg-[var(--c-bg)]${isGraduated ? ' lg:hidden' : ''}`}>
+              <div className="term-border bg-[var(--c-bg)]">
                 <button
                   onClick={() => { setHowToPlayManuallyToggled(true); setShowHowToPlay((o) => !o); }}
                   className="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)] transition-colors"
@@ -497,7 +497,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             );
 
             const signalGuidePanel = (
-              <div className={`term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)]${isGraduated ? ' lg:hidden' : ''}`}>
+              <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)]">
                 <button
                   onClick={() => setShowGuide((o) => !o)}
                   className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[color-mix(in_srgb,var(--c-accent)_5%,transparent)] transition-colors"
@@ -995,10 +995,12 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             if (isGraduated) {
               return (
                 <div className="space-y-4">
-                  {/* Mobile: single column, same order as before */}
-                  {howToPlayPanel}
-                  {signalGuidePanel}
-                  {aboutPanel}
+                  {/* Mobile only: panels at top */}
+                  <div className="lg:hidden space-y-4">
+                    {howToPlayPanel}
+                    {signalGuidePanel}
+                    {aboutPanel}
+                  </div>
 
                   {/* Desktop two-column layout for graduated players */}
                   <div className="lg:flex lg:gap-5">
@@ -1008,14 +1010,10 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       {h2hSection}
                       {dailyButton}
                       {statsIntelLinks}
-                      {/* Desktop text links for HOW_TO_PLAY / SIGNAL_GUIDE */}
-                      <div className="hidden lg:flex gap-3 mt-auto pt-4 text-sm font-mono">
-                        <button onClick={() => setShowHowToPlay(v => !v)} className="text-[var(--c-secondary)] hover:text-[var(--c-primary)] transition-colors underline-offset-2 hover:underline">
-                          HOW_TO_PLAY
-                        </button>
-                        <button onClick={() => setShowGuide(v => !v)} className="text-[var(--c-secondary)] hover:text-[var(--c-primary)] transition-colors underline-offset-2 hover:underline">
-                          SIGNAL_GUIDE
-                        </button>
+                      {/* Desktop: HOW_TO_PLAY / SIGNAL_GUIDE as collapsible panels */}
+                      <div className="hidden lg:block space-y-3 mt-auto pt-4">
+                        {howToPlayPanel}
+                        {signalGuidePanel}
                       </div>
                     </div>
                     {/* Right column */}
