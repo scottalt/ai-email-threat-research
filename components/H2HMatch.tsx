@@ -386,24 +386,26 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
   }, [matchId, playerId, isGhost, onMatchEnd, handleMatchResult]);
 
   // ── Ghost opponent simulation ──
-  // Simulates a competitive ghost with variable speed and a chance of elimination
+  // Ghost speed and failure chance scale with card complexity (body length as proxy)
   useEffect(() => {
-    if (!isGhost || loading || eliminated || finished) return;
+    if (!isGhost || loading || eliminated || finished || cards.length === 0) return;
 
-    // Generate ghost card times on mount — variable speed per card
-    // Earlier cards faster (more confident), later cards slower (harder decisions)
-    const ghostTimes = Array.from({ length: H2H_CARDS_PER_MATCH }, (_, i) => {
-      const baseMin = 2000 + i * 400;  // card 0: 2s min, card 4: 3.6s min
-      const baseMax = 5000 + i * 800;  // card 0: 5s max, card 4: 8.2s max
-      return baseMin + Math.random() * (baseMax - baseMin);
+    // Use card body length as a difficulty proxy — longer = harder = slower ghost
+    const ghostTimes = cards.map((card) => {
+      const len = card.body.length;
+      // Short emails (<300 chars): 2-4s, Medium (300-600): 3-6s, Long (600+): 5-9s
+      if (len < 300) return 2000 + Math.random() * 2000;
+      if (len < 600) return 3000 + Math.random() * 3000;
+      return 5000 + Math.random() * 4000;
     });
 
-    // Per-card elimination chance — increases on later cards (harder content)
-    // card 0-1: 2%, card 2: 5%, card 3: 8%, card 4: 12%
-    const elimChances = [0.02, 0.02, 0.05, 0.08, 0.12];
+    // Failure chance also scales with card complexity
+    // Short: 2%, Medium: 6%, Long: 12%
     let ghostEliminationCard = -1;
-    for (let i = 0; i < H2H_CARDS_PER_MATCH; i++) {
-      if (Math.random() < elimChances[i]) {
+    for (let i = 0; i < cards.length; i++) {
+      const len = cards[i].body.length;
+      const failChance = len < 300 ? 0.02 : len < 600 ? 0.06 : 0.12;
+      if (Math.random() < failChance) {
         ghostEliminationCard = i;
         break;
       }
