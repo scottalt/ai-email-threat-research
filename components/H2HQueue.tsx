@@ -196,102 +196,88 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh] px-4">
-      <div className="term-border w-full max-w-sm bg-[var(--c-bg)] font-mono">
+    <div className="w-full max-w-md lg:max-w-lg mx-auto px-4 space-y-3">
+      <div className="term-border w-full bg-[var(--c-bg)] font-mono">
         {/* Header */}
-        <div className="border-b border-[var(--c-primary)]/30 px-4 py-3">
-          <h2 className="text-[var(--c-primary)] text-sm tracking-widest font-bold">
+        <div className="border-b border-[rgba(255,0,128,0.3)] px-4 py-3 flex items-center justify-between">
+          <h2 className="text-[#ff0080] text-sm tracking-widest font-bold">
             HEAD_2_HEAD
           </h2>
+          <span className="text-[var(--c-muted)] text-xs tracking-widest">SEASON 0</span>
         </div>
 
         {/* Body */}
         <div className="px-4 py-5 space-y-5">
-          {/* Status text */}
-          <div>
-            <p className="text-[var(--c-primary)] text-sm tracking-wide animate-pulse">
+          {/* Status */}
+          <div className="text-center">
+            <p className="text-[var(--c-primary)] text-sm tracking-widest animate-pulse">
               SEARCHING FOR OPPONENT{dots}
             </p>
-            <p className="text-[var(--c-secondary)] text-xs mt-1">
-              5 cards. Wrong = eliminated.
+            <p className="text-[var(--c-muted)] text-sm mt-1">
+              5 cards. Wrong answer = eliminated. Fastest perfect run wins.
             </p>
           </div>
 
           {/* VS panel */}
-          <div className="border border-[var(--c-primary)]/20 p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-[var(--c-secondary)] text-[10px] tracking-widest mb-1">
-                  YOU
+          <div className="border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] p-4">
+            <div className="flex items-center">
+              {/* You */}
+              <div className="flex-1 min-w-0">
+                <p className="text-[var(--c-muted)] text-xs tracking-widest mb-1">YOU</p>
+                <p className="text-[var(--c-primary)] text-sm font-bold truncate">{displayName}</p>
+                <p className="text-sm mt-1 font-bold" style={{ color: rankColor }}>
+                  {rankLabel}
                 </p>
-                <p className="text-[var(--c-primary)] text-sm font-bold truncate">
-                  {displayName}
-                </p>
-                <p
-                  className="text-xs mt-1 tracking-wide"
-                  style={{ color: rankColor }}
-                >
-                  {rankLabel} ({rankPoints})
-                </p>
+                <p className="text-[var(--c-muted)] text-xs">{rankPoints} pts</p>
               </div>
 
-              <div className="px-3">
-                <span className="text-[var(--c-primary)]/40 text-lg font-bold">
-                  VS
-                </span>
+              {/* VS divider */}
+              <div className="px-4 lg:px-6">
+                <span className="text-[var(--c-muted)] text-xl font-black">VS</span>
               </div>
 
-              <div className="flex-1 text-right">
-                <p className="text-[var(--c-secondary)] text-[10px] tracking-widest mb-1">
-                  ???
-                </p>
-                <p className="text-[#003a0e] text-sm animate-pulse">
-                  scanning{dots}
-                </p>
+              {/* Opponent */}
+              <div className="flex-1 min-w-0 text-right">
+                <p className="text-[var(--c-muted)] text-xs tracking-widest mb-1">OPPONENT</p>
+                <p className="text-[var(--c-muted)] text-sm animate-pulse">scanning{dots}</p>
               </div>
             </div>
           </div>
 
-          {/* Timers */}
-          <div className="space-y-1">
-            <p className="text-[var(--c-secondary)] text-xs">
-              Queue time:{' '}
-              <span className="text-[var(--c-primary)]">{elapsed}s</span>
-            </p>
+          {/* Info bar */}
+          <div className="flex items-center justify-between text-sm font-mono">
+            <span className="text-[var(--c-muted)]">
+              Queue: <span className="text-[var(--c-primary)]">{elapsed}s</span>
+            </span>
             {ghostCountdown > 0 && (
-              <p className="text-[var(--c-dark)] text-xs">
-                Ghost match in{' '}
-                <span className="text-[var(--c-secondary)]">
-                  {ghostCountdown}s
-                </span>
-              </p>
+              <span className="text-[var(--c-muted)]">
+                Ghost in <span className="text-[var(--c-secondary)]">{ghostCountdown}s</span>
+              </span>
             )}
             {ratedMatchesLeft !== null && (
-              <p className="text-[var(--c-dark)] text-xs">
-                Rated matches today:{' '}
-                <span className={ratedMatchesLeft > 0 ? 'text-[var(--c-secondary)]' : 'text-[#ffaa00]'}>
-                  {ratedMatchesLeft} remaining
-                </span>
-              </p>
-            )}
-            {winStreak >= 2 && (
-              <p className="text-[var(--c-primary)] text-xs font-bold">
-                {winStreak}-WIN STREAK
-              </p>
+              <span className="text-[var(--c-muted)]">
+                Rated: <span className={ratedMatchesLeft > 0 ? 'text-[var(--c-secondary)]' : 'text-[#ffaa00]'}>{ratedMatchesLeft} left</span>
+              </span>
             )}
           </div>
+
+          {winStreak >= 2 && (
+            <div className="text-center">
+              <span className="text-[var(--c-primary)] text-sm font-bold tracking-widest">{winStreak}-WIN STREAK</span>
+            </div>
+          )}
 
           {/* Cancel button */}
           <button
             onClick={handleCancel}
-            className="w-full py-3 border border-[var(--c-primary)]/40 text-[var(--c-secondary)] text-sm tracking-widest hover:border-[var(--c-primary)] hover:text-[var(--c-primary)] active:scale-95 transition-all"
+            className="w-full py-3 border border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)] text-[var(--c-secondary)] text-sm tracking-widest hover:border-[var(--c-primary)] hover:text-[var(--c-primary)] active:scale-95 transition-all"
           >
             CANCEL
           </button>
         </div>
       </div>
 
-      {/* Rank tiers guide */}
+      {/* Rank tiers guide — same width as main panel */}
       <H2HRankGuide currentPoints={rankPoints} />
     </div>
   );
