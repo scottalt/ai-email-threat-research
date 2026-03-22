@@ -517,8 +517,9 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           <div className="space-y-4">
           {(() => {
             const answers = profile?.researchAnswersSubmitted ?? 0;
-            const graduated = signedIn && (profile?.researchGraduated ?? false); // 10+ answers = H2H unlocked
-            const fullyUnlocked = signedIn && answers >= 20; // 20+ = freeplay, daily, expert, stats, intel
+            const graduated = signedIn && (profile?.researchGraduated ?? false); // 10+ = H2H unlocked
+            const dailyUnlocked = signedIn && answers >= 20; // 20+ = daily + stats + intel
+            const freeplayUnlocked = signedIn && answers >= 30; // 30 = freeplay (research complete)
             const researchCapped = answers >= 30;
             const isResearch = signedIn && !graduated && !researchCapped;
             const needsCallsign = signedIn && !profile?.displayName;
@@ -541,8 +542,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     [ RESEARCH MODE ]
                   </button>
                 )}
-                {/* Post-full-unlock (20+): freeplay button */}
-                {!needsCallsign && signedIn && fullyUnlocked && (
+                {/* Freeplay — unlocked at 30 (research complete) */}
+                {!needsCallsign && signedIn && freeplayUnlocked && (
                   <button
                     onClick={() => tryStart('freeplay')}
                     className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all text-[var(--c-secondary)] hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)]"
@@ -550,22 +551,22 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     [ FREEPLAY ]
                   </button>
                 )}
-                {/* Post-graduation, pre-full-unlock (10-19): research is still primary action */}
-                {!needsCallsign && signedIn && graduated && !fullyUnlocked && (
+                {/* Graduated (10-19): research is primary, next unlock = daily at 20 */}
+                {!needsCallsign && signedIn && graduated && !dailyUnlocked && (
                   <button
                     onClick={() => handleStart('research')}
                     className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)]"
                   >
-                    [ RESEARCH MODE — {answers}/20 to unlock all modes ]
+                    [ RESEARCH MODE — {answers}/20 to unlock Daily Challenge ]
                   </button>
                 )}
-                {/* Post-full-unlock, research not capped: subtle contribute button */}
-                {!needsCallsign && signedIn && fullyUnlocked && !researchCapped && (
+                {/* Daily unlocked (20-29): research continues, next unlock = freeplay at 30 */}
+                {!needsCallsign && signedIn && dailyUnlocked && !freeplayUnlocked && (
                   <button
                     onClick={() => handleStart('research')}
-                    className="w-full py-2 term-border font-mono tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)] text-[var(--c-accent-dim)] hover:text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_4%,transparent)]"
+                    className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)]"
                   >
-                    [ CONTRIBUTE TO RESEARCH — {answers}/30 ]
+                    [ RESEARCH MODE — {answers}/30 to unlock Freeplay ]
                   </button>
                 )}
                 {/* Inline onboarding: sign-in (State 1) or callsign setup (State 2) */}
@@ -683,7 +684,15 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </div>
           )}
 
-          {/* Post-full-unlock features: Stats + Intel (20+ answers) */}
+          {/* Freeplay locked state (unlocks at 30) */}
+          {signedIn && (profile?.researchAnswersSubmitted ?? 0) < 30 && profile?.researchGraduated && (
+            <div className="w-full py-3 term-border border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] cursor-not-allowed select-none">
+              [ FREEPLAY — LOCKED ]
+              <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Submit 30 research answers to unlock</div>
+            </div>
+          )}
+
+          {/* Stats + Intel (20+ answers) */}
           {signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20 ? (
             <div className="grid grid-cols-2 gap-3">
               <Link

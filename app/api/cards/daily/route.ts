@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { redis } from '@/lib/redis';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { toSafeCard } from '@/lib/card-utils';
@@ -6,6 +8,7 @@ import type { Card } from '@/lib/types';
 
 const SESSION_TTL = 60 * 60; // 1 hour
 const ROUND_SIZE = 10;
+const DAILY_UNLOCK_ANSWERS = 20;
 
 /** Deterministic PRNG — same seed = same shuffle for the day */
 function mulberry32(seed: number) {
@@ -29,6 +32,30 @@ export async function GET(req: NextRequest) {
   if (rlCount === 1) await redis.expire(rlKey, 60);
   if (rlCount > 10) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  // Server-side gate: daily requires 20 research answers
+  try {
+    const cookieStore = await cookies();
+    const authClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+    );
+    const { data: { user } } = await authClient.auth.getUser();
+    if (user) {
+      const admin = getSupabaseAdminClient();
+      const { data: player } = await admin.from('players').select('id').eq('auth_id', user.id).single();
+      if (player) {
+        const { count } = await admin.from('answers').select('id', { count: 'exact', head: true })
+          .eq('player_id', player.id).eq('game_mode', 'research');
+        if ((count ?? 0) < DAILY_UNLOCK_ANSWERS) {
+          return NextResponse.json({ error: 'Complete 20 research answers to unlock daily challenge' }, { status: 403 });
+        }
+      }
+    }
+  } catch {
+    // If auth check fails, allow through (graceful degradation)
   }
 
   const sessionId = req.nextUrl.searchParams.get('sessionId');

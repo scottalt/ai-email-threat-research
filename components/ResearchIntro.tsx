@@ -65,7 +65,7 @@ export function ResearchIntro({ onBegin }: Props) {
                 email, IP, location, or any identifying information.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
-                10 answers unlocks Head-to-Head. 20 answers unlocks all modes. 30 answers for full completion.{' '}
+                10 answers unlocks Head-to-Head. 20 unlocks Daily Challenge. 30 unlocks Freeplay.{' '}
                 <Link href="/intel/player" className="text-[var(--c-secondary)] hover:underline">Preview</Link>.
               </p>
             </div>
