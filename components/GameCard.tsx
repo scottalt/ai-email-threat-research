@@ -131,12 +131,6 @@ function EmailDisplay({ card, onScroll, onUrlInspected }: {
             <span className="text-[var(--c-primary)] font-mono">{card.subject}</span>
           </div>
         )}
-        {card.sentAt && (
-          <div className="flex gap-2 text-sm">
-            <span className="text-[var(--c-secondary)] w-10 shrink-0">SENT:</span>
-            <span className="text-[var(--c-primary)] font-mono text-sm">{card.sentAt}</span>
-          </div>
-        )}
         {card.attachmentName && (
           <div className="flex gap-2 text-sm">
             <span className="text-[var(--c-secondary)] w-10 shrink-0">ATCH:</span>

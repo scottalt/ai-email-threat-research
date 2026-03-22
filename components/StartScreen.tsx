@@ -439,8 +439,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
                     ['[5]', 'GUESSING 1×, LIKELY 2× (−100 if wrong), CERTAIN 3× (−200 if wrong)'],
                     ['[6]', '3-streak bonus: +50 pts per milestone'],
-                    ['[7]', 'Tap [HEADERS] on emails to inspect SPF/DKIM/DMARC and Reply-To'],
-                    ['[8]', 'Tap highlighted URLs to inspect the real destination'],
+                    ['[7]', 'Tap highlighted URLs to inspect the real destination'],
                   ].map(([tag, desc]) => (
                     <div key={tag} className="flex gap-3 text-sm lg:text-base">
                       <span className="text-[var(--c-primary)] shrink-0">{tag}</span>
@@ -468,20 +467,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     body: 'The sender name shown is a display name — it can be set to anything and proves nothing. Tap [↗] next to it to reveal the actual email address. Check that the domain matches the organisation claimed in the email. Look for typosquatting (paypa1.com), wrong TLDs (.net instead of .com), and lookalike subdomains.',
                   },
                   {
-                    label: 'AUTH HEADERS',
-                    body: 'Click [HEADERS] on any email. FAIL = sender could not authenticate. NONE = no headers configured. PASS = authenticated — but attackers register lookalike domains that also pass. PASS is not proof of legitimacy.',
-                  },
-                  {
                     label: 'URL INSPECTOR',
                     body: 'Click any underlined link to reveal the full URL before acting on it. Check: does the domain match the sender? Watch for typosquatting (paypa1.com), wrong TLDs (.net instead of .com), and subdomain tricks.',
-                  },
-                  {
-                    label: 'REPLY-TO',
-                    body: 'Visible in [HEADERS]. If Reply-To differs from the sender domain — especially a free provider like Gmail or Outlook — your reply goes to the attacker, not the organisation.',
-                  },
-                  {
-                    label: 'SENT TIME',
-                    body: 'Check the SENT row. Phishing often arrives at odd hours (2am, unusual timezones) to avoid scrutiny. Legitimate business emails typically arrive in business hours.',
                   },
                   {
                     label: 'CONFIDENCE',

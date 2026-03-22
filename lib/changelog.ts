@@ -83,7 +83,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     date: '2026-03-22',
     category: 'update',
     title: 'v1.9.0 — Simplified email view',
-    body: 'Email authentication headers (SPF/DKIM/DMARC) have been removed from the game view. The game now focuses purely on identifying phishing techniques from email content, sender details, and URLs.',
+    body: 'Email authentication headers (SPF/DKIM/DMARC), Reply-To, and Send Time have been removed from the game view. These fields were inconsistently populated across the card deck, creating potential confounds. The game now focuses purely on identifying phishing techniques from email content, sender details, and URLs.',
   },
 ];
 
@@ -134,4 +134,6 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
  * 2026-03-15  Share results button on round summary (navigator.share + clipboard fallback)
  * 2026-03-22  Remove auth headers from game UI (Phase 2) — confound with difficulty
  * 2026-03-22  Add auth_visible column to answers for phase 1/2 partitioning
+ * 2026-03-22  Remove Reply-To from UI — only exists on phishing cards (298/0), dead giveaway confound
+ * 2026-03-22  Remove SENT row from UI — inconsistently populated (~60% missing across both types)
  */

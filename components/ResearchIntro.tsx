@@ -37,10 +37,7 @@ export function ResearchIntro({ onBegin }: Props) {
             <ul className="px-3 py-3 space-y-2">
               {[
                 'Sender domain \u2014 tap [\u2197] next to the sender name to reveal the actual email address',
-                'Send time \u2014 check [SENT] for odd hours or mismatched timezones',
                 'Attachment name \u2014 check [ATCH] for suspicious filenames',
-                'Authentication headers \u2014 tap [HEADERS] for SPF/DKIM/DMARC',
-                'Reply-To mismatch \u2014 visible in [HEADERS] panel',
                 'URL destinations \u2014 tap any link to inspect the full URL',
               ].map((signal, i) => (
                 <li key={i} className="flex gap-2 text-sm text-[var(--c-secondary)] font-mono">
@@ -61,7 +58,7 @@ export function ResearchIntro({ onBegin }: Props) {
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
                 <span className="text-[var(--c-secondary)]">Recorded:</span>{' '}
-                answer, confidence, response time, header/URL inspection, session position, self-reported background.
+                answer, confidence, response time, URL inspection, session position, self-reported background.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
                 <span className="text-[var(--c-secondary)]">Not recorded:</span>{' '}

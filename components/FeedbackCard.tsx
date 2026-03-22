@@ -238,12 +238,6 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                 </span>
               </div>
             )}
-            {card.sentAt && (
-              <div className="flex gap-2 text-sm font-mono">
-                <span className="text-[var(--c-dark)] w-10 shrink-0">SENT:</span>
-                <span className="text-[var(--c-secondary)] text-sm">{card.sentAt}</span>
-              </div>
-            )}
             {card.attachmentName && (
               <div className="flex gap-2 text-sm font-mono">
                 <span className="text-[var(--c-dark)] w-10 shrink-0">ATCH:</span>
@@ -306,28 +300,9 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
         {(() => {
           const signals: string[] = [];
 
-          if (card.type === 'email') {
-            // Reply-To mismatch — email only
-            if (card.replyTo) {
-              signals.push(
-                wasPhishing
-                  ? `Reply-To: ${card.replyTo} — replies would route to the attacker's address, not the sender's domain.`
-                  : `Reply-To: ${card.replyTo} — sender uses a separate reply address. Common in marketing and bulk mail.`
-              );
-            }
-          }
-
           // URL presence — applies to both email and SMS
           if (/https?:\/\/\S+/.test(card.body)) {
             signals.push(`This ${card.type === 'sms' ? 'message' : 'email'} contained URLs. The URL inspector reveals the full destination before clicking.`);
-          }
-
-          // Send time — email only
-          if (card.type === 'email' && card.sentAt) {
-            signals.push(wasPhishing
-              ? `Sent: ${card.sentAt} — verify the send time and timezone match the sender's claimed location.`
-              : `Sent: ${card.sentAt} — send time is consistent with the sender's context.`
-            );
           }
 
           if (signals.length === 0) return null;
