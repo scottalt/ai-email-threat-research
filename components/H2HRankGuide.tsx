@@ -51,8 +51,9 @@ export function H2HRankGuide({ currentPoints }: { currentPoints: number }) {
             );
           })}
           <div className="text-[var(--c-dark)] text-xs font-mono pt-2 space-y-0.5">
-            <div>Win: +12 to +45 pts (more vs higher ranks)</div>
-            <div>Loss: -8 to -30 pts (less vs higher ranks)</div>
+            <div>Win: +8 to +40 pts (more vs higher ranks)</div>
+            <div>Loss: -8 to -35 pts (less vs lower ranks)</div>
+            <div>50% winrate at same tier = no climb. You need to win more than you lose.</div>
           </div>
         </div>
       )}

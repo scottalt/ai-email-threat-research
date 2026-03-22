@@ -67,18 +67,18 @@ export function calculatePointsDelta(
   let delta: number;
 
   if (isWinner) {
-    if (tierDiff >= 2) delta = 12;       // 2+ tiers above loser
-    else if (tierDiff === 1) delta = 18; // 1 tier above
-    else if (tierDiff === 0) delta = 25; // same tier
-    else if (tierDiff === -1) delta = 35; // 1 tier below (upset)
-    else delta = 45;                      // 2+ tiers below (big upset)
+    if (tierDiff >= 2) delta = 8;        // 2+ tiers above loser — expected win, small reward
+    else if (tierDiff === 1) delta = 14; // 1 tier above — still expected
+    else if (tierDiff === 0) delta = 20; // same tier — fair match
+    else if (tierDiff === -1) delta = 30; // 1 tier below — upset
+    else delta = 40;                      // 2+ tiers below — big upset
   } else {
-    // Losses — delta is negative
-    if (tierDiff >= 2) delta = -30;       // lost to someone 2+ tiers below
-    else if (tierDiff === 1) delta = -25; // lost to someone 1 tier below
-    else if (tierDiff === 0) delta = -18; // same tier
-    else if (tierDiff === -1) delta = -12; // lost to someone 1 tier above
-    else delta = -8;                       // lost to someone 2+ tiers above
+    // Losses — symmetric at same tier, harsher for losing to lower ranks
+    if (tierDiff >= 2) delta = -35;       // lost to someone 2+ tiers below — embarrassing
+    else if (tierDiff === 1) delta = -28; // lost to someone 1 tier below
+    else if (tierDiff === 0) delta = -20; // same tier — fair match
+    else if (tierDiff === -1) delta = -12; // lost to someone 1 tier above — expected
+    else delta = -8;                       // lost to someone 2+ tiers above — no shame
   }
 
   // Daily diminishing returns

@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
-import { CURRENT_SEASON, H2H_QUEUE_TIMEOUT_MS, H2H_CARDS_PER_MATCH, H2H_MATCH_TTL } from '@/lib/h2h';
+import { CURRENT_SEASON, H2H_QUEUE_TIMEOUT_MS, H2H_CARDS_PER_MATCH, H2H_MATCH_TTL, getRankFromPoints, getRankIndex } from '@/lib/h2h';
 
 // ── Deal cards for a match ──
 
@@ -211,8 +211,27 @@ export async function GET() {
     return NextResponse.json({ matched: false });
   }
 
-  // >= 2 entries — find first opponent (any entry that is not self)
-  const opponentEntry = entries.find((e) => e.playerId !== playerId);
+  // >= 2 entries — skill-based matchmaking
+  // Prefer same-tier opponents, widen search over time
+  const selfRank = getRankFromPoints(selfEntry.rankPoints);
+  const selfRankIdx = getRankIndex(selfRank.tier);
+  const waitSeconds = (now - selfEntry.joinedAt) / 1000;
+
+  // Tier search radius widens: 0-5s = same tier, 5-15s = ±1, 15s+ = any
+  const maxTierDiff = waitSeconds < 5 ? 0 : waitSeconds < 15 ? 1 : Infinity;
+
+  // Find best opponent within tier range (closest rank first)
+  const candidates = entries
+    .filter((e) => e.playerId !== playerId)
+    .map((e) => {
+      const oppRank = getRankFromPoints(e.rankPoints);
+      const oppRankIdx = getRankIndex(oppRank.tier);
+      return { entry: e, tierDiff: Math.abs(selfRankIdx - oppRankIdx) };
+    })
+    .filter((c) => c.tierDiff <= maxTierDiff)
+    .sort((a, b) => a.tierDiff - b.tierDiff);
+
+  const opponentEntry = candidates[0]?.entry;
   if (!opponentEntry) {
     return NextResponse.json({ matched: false });
   }
