@@ -652,6 +652,22 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             );
           })()}
 
+          {/* H2H button — unlocked at 10 research answers (graduation) */}
+          {signedIn && profile?.researchGraduated ? (
+            <button
+              onClick={() => handleStart('h2h')}
+              className="w-full py-4 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-2 border-[rgba(255,0,128,0.5)] text-[#ff0080] hover:bg-[rgba(255,0,128,0.04)]"
+            >
+              [ HEAD 2 HEAD ]
+              <div className="text-[#003a0e] text-xs mt-1 font-normal tracking-wide">SEASON 0 — ranked competitive</div>
+            </button>
+          ) : signedIn ? (
+            <div className="w-full py-4 term-border border-[rgba(255,0,128,0.15)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] cursor-not-allowed select-none">
+              [ HEAD 2 HEAD — LOCKED ]
+              <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Submit 10 research answers to unlock</div>
+            </div>
+          ) : null}
+
           {/* Daily challenge button — locked until 20 research answers */}
           {signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20 ? (
             <button

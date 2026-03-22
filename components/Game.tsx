@@ -40,6 +40,9 @@ import { RoundSummary } from './RoundSummary';
 import { StartScreen } from './StartScreen';
 import { ResearchIntro } from './ResearchIntro';
 import { TutorialCard } from './TutorialCard';
+import { H2HQueue } from './H2HQueue';
+import { H2HMatch } from './H2HMatch';
+import { H2HResult } from './H2HResult';
 import type { Card, DealCard, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
 import type { SafeDealCard } from '@/lib/card-utils';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
@@ -62,7 +65,10 @@ const CONFIDENCE_PENALTY: Record<Confidence, number> = {
   certain: -200,
 };
 
-type GamePhase = 'start' | 'playing' | 'checking' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro' | 'research_unavailable' | 'tutorial';
+type GamePhase = 'start' | 'playing' | 'checking' | 'feedback'
+  | 'summary' | 'daily_complete' | 'loading'
+  | 'research_intro' | 'research_unavailable' | 'tutorial'
+  | 'h2h_queue' | 'h2h_match' | 'h2h_result';
 
 export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const [phase, setPhase] = useState<GamePhase>('start');
@@ -79,6 +85,9 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const sessionId = useRef<string>('');
   const sessionStartedAt = useRef<string>('');
   const [correctCount, setCorrectCount] = useState(0);
+  const [h2hMatchId, setH2HMatchId] = useState<string | null>(null);
+  const [h2hIsGhost, setH2HIsGhost] = useState(false);
+  const [h2hResult, setH2HResult] = useState<{ winnerId: string | null; myPointsDelta: number; opponentPointsDelta: number; reason: string } | null>(null);
   const hasAutoStarted = useRef(false);
   const [flashClass, setFlashClass] = useState<string | null>(null);
   const sessionFinalized = useRef<Promise<void>>(Promise.resolve());
@@ -144,6 +153,12 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         setPhase('daily_complete');
         return;
       }
+    }
+
+    if (newMode === 'h2h') {
+      setMode('h2h');
+      setPhase('h2h_queue');
+      return;
     }
 
     setMode(newMode);
@@ -458,6 +473,64 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       setCurrentIndex(nextIndex);
       setPhase('playing');
     }
+  }
+
+  if (phase === 'h2h_queue' && profile) {
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <H2HQueue
+          profile={{ id: profile.id, displayName: profile.displayName }}
+          onMatchFound={(matchId, isGhost) => {
+            setH2HMatchId(matchId);
+            setH2HIsGhost(isGhost);
+            setPhase('h2h_match');
+          }}
+          onCancel={() => setPhase('start')}
+        />
+      </div>
+    );
+  }
+
+  if (phase === 'h2h_match' && h2hMatchId && profile) {
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <H2HMatch
+          matchId={h2hMatchId}
+          playerId={profile.id}
+          isGhost={h2hIsGhost}
+          onMatchEnd={(result) => {
+            setH2HResult(result);
+            setPhase('h2h_result');
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (phase === 'h2h_result' && h2hMatchId && profile) {
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <H2HResult
+          matchId={h2hMatchId}
+          playerId={profile.id}
+          winnerId={h2hResult?.winnerId ?? null}
+          myPointsDelta={h2hResult?.myPointsDelta ?? 0}
+          isGhost={h2hIsGhost}
+          reason={h2hResult?.reason ?? 'completed'}
+          onRematch={() => {
+            setH2HMatchId(null);
+            setH2HResult(null);
+            setPhase('h2h_queue');
+          }}
+          onBack={() => {
+            setH2HMatchId(null);
+            setH2HResult(null);
+            setH2HIsGhost(false);
+            setPhase('start');
+          }}
+        />
+      </div>
+    );
   }
 
   if (phase === 'start') {

@@ -43,24 +43,27 @@ export function subscribeToMatch(
 
   const supabase = getSupabaseBrowserClient();
 
-  channel = supabase.channel(`match:${matchId}`, {
+  const ch = supabase.channel(`match:${matchId}`, {
     config: { broadcast: { self: false } },
   });
 
-  channel
-    .on('broadcast', { event: 'progress' }, (payload) => {
+  ch
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .on('broadcast', { event: 'progress' }, (payload: any) => {
       const data = payload.payload as MatchProgressEvent;
       if (data.playerId !== playerId) {
         onOpponentProgress(data);
       }
     })
-    .on('broadcast', { event: 'result' }, (payload) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .on('broadcast', { event: 'result' }, (payload: any) => {
       const data = payload.payload as MatchResultEvent;
       onMatchResult(data);
     })
     .subscribe();
 
-  return channel;
+  channel = ch;
+  return ch;
 }
 
 // ---------------------------------------------------------------------------
