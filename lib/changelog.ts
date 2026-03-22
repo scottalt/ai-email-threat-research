@@ -5,6 +5,7 @@ export interface ChangelogEntry {
   category: ChangelogCategory;
   title: string;
   body?: string;
+  highlight?: boolean; // major release — render with special styling
 }
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
@@ -14,13 +15,6 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     category: 'milestone',
     title: 'Research dataset v1 locked — platform opens to players',
     body: '1,000 AI-generated email samples finalized. Research mode, daily challenges, player accounts, XP progression, and intel analytics available from day one.',
-  },
-
-  {
-    date: '2026-03-22',
-    category: 'milestone',
-    title: 'v2.0 — Head-to-Head competitive mode',
-    body: 'Real-time 1v1 matchmaking. Race through 5 emails against another player. Wrong answer eliminates you. Fastest perfect run wins. Seasonal ranked tiers from Bronze to Elite. Climb the ladder, defend your rank.',
   },
 
   {
@@ -97,6 +91,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     category: 'update',
     title: 'v2.0.0 — Head-to-Head mode + unlock ladder',
     body: 'New competitive mode: 1v1 ranked matches in real time. 5 cards, same deck, pure speed. Wrong answer eliminates. Seasonal ranks from Bronze to Elite with skill-based point scaling. Expert mode merged into Freeplay. New unlock progression: 10 research answers unlocks H2H, 20 unlocks Daily Challenge, 30 unlocks Freeplay.',
+    highlight: true,
   },
 ];
 
