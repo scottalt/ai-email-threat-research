@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getRankFromPoints } from '@/lib/h2h';
+import { H2HRankGuide } from './H2HRankGuide';
 
 interface Props {
   profile: { id: string; displayName: string | null };
@@ -289,6 +290,9 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
           </button>
         </div>
       </div>
+
+      {/* Rank tiers guide */}
+      <H2HRankGuide currentPoints={rankPoints} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { useNavVisibility } from '@/lib/NavVisibilityContext';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
 import { playBootTick } from '@/lib/sounds';
+import { H2HRankGuide } from './H2HRankGuide';
 import { version } from '@/package.json';
 
 interface LeaderboardEntry {
@@ -702,6 +703,11 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Submit 10 research answers to unlock</div>
             </div>
           ) : null}
+
+          {/* Rank tiers — visible to graduated players */}
+          {signedIn && profile?.researchGraduated && (
+            <H2HRankGuide currentPoints={h2hStats?.rankPoints ?? 0} />
+          )}
 
           {/* Daily challenge button — locked until 20 research answers */}
           {signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20 ? (
