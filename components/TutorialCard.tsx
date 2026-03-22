@@ -12,7 +12,6 @@ const TUTORIAL_EMAIL = {
   subject: 'Urgent: Your account has been limited',
   sentAt: 'Mar 9, 2026, 3:14 AM',
   attachmentName: 'account_recovery.zip',
-  replyTo: 'support@gmail-helpdesk.com',
   bodyBefore: `We have detected unusual activity on your PayPal account. To avoid permanent suspension, you must verify your identity immediately.\n\nYour account access will be restricted in 24 hours if no action is taken.\n\nVerify your account now: `,
   url: 'http://paypa1-secure.com/verify?token=a9f3k2xR',
   bodyAfter: `\n\nDo not ignore this message. Failure to verify will result in permanent account closure.\n\n— PayPal Security Team`,
@@ -191,7 +190,6 @@ export function TutorialCard({ onComplete }: Props) {
           <div className="text-[var(--c-secondary)] text-sm font-mono space-y-0.5">
             <div>• <span className="text-[var(--c-accent)]">FROM:</span> paypa1.com — typosquatted domain</div>
             <div>• <span className="text-[var(--c-accent)]">SENT:</span> 3:14 AM — unusual send time</div>
-            <div>• <span className="text-[var(--c-accent)]">REPLY-TO:</span> free provider, domain mismatch</div>
             <div>• <span className="text-[var(--c-accent)]">URL:</span> paypa1-secure.com — typosquatted</div>
           </div>
         </div>
