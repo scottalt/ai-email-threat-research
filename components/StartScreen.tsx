@@ -616,9 +616,14 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     RESEARCH COMPLETE — 30/30 answers submitted. Thank you!
                   </p>
                 )}
+                {graduated && profile && (profile.researchAnswersSubmitted ?? 0) < 30 && (
+                  <p className="text-[var(--c-accent-dim)] text-sm text-center font-mono">
+                    RESEARCH: {profile.researchAnswersSubmitted}/30 — keep contributing for bonus achievements
+                  </p>
+                )}
                 {isResearch && profile && (
                   <p className="text-[var(--c-accent-dim)] text-sm text-center font-mono">
-                    {profile.researchAnswersSubmitted} of 30 answers submitted
+                    {profile.researchAnswersSubmitted} of 10 answers to qualify for ranked play
                   </p>
                 )}
               </>
@@ -636,7 +641,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           ) : (
             <div className="w-full py-4 term-border border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] cursor-not-allowed select-none">
               [ DAILY CHALLENGE — LOCKED ]
-              <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Complete research to unlock</div>
+              <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Submit 10 research answers to unlock</div>
             </div>
           )}
 
@@ -668,7 +673,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               className="block w-full py-3 term-border border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] select-none hover:bg-[color-mix(in_srgb,var(--c-primary)_2%,transparent)] transition-all"
             >
               [ STATS + INTEL — LOCKED ]
-              <span className="block text-xs mt-1 tracking-wide">Complete research to unlock</span>
+              <span className="block text-xs mt-1 tracking-wide">Submit 10 research answers to unlock</span>
             </Link>
           )}
 
