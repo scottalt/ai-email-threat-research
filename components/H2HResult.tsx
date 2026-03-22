@@ -60,8 +60,9 @@ export function H2HResult({
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isWin = winnerId === playerId;
-  const isDraw = winnerId === null;
+  const isWin = winnerId === playerId && winnerId !== null;
+  const isLoss = reason === 'eliminated' || reason === 'forfeit' || (winnerId !== null && winnerId !== playerId);
+  const isDraw = !isWin && !isLoss; // should never happen with current rules
 
   useEffect(() => {
     let cancelled = false;
@@ -124,12 +125,8 @@ export function H2HResult({
   const rankedUp = newRank.tier !== oldRank.tier && myPointsDelta > 0;
 
   // Header
-  const headerText = isDraw ? 'DRAW' : isWin ? 'VICTORY' : 'DEFEATED';
-  const headerColor = isDraw
-    ? 'text-[#ffaa00]'
-    : isWin
-      ? 'text-[var(--c-primary)]'
-      : 'text-[#ff3333]';
+  const headerText = isWin ? 'VICTORY' : 'DEFEATED';
+  const headerColor = isWin ? 'text-[var(--c-primary)]' : 'text-[#ff3333]';
 
   // Subtitle
   let subtitle = '';
