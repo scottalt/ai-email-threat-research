@@ -347,18 +347,25 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
           return;
         }
 
-        // Subscribe to realtime
-        subscribeToMatch(
-          matchId,
-          playerId,
-          (event: MatchProgressEvent) => {
-            setOpponentIndex(event.cardIndex + 1);
-            if (!event.correct) {
-              setOpponentEliminated(true);
-            }
-          },
-          handleMatchResult,
-        );
+        // Subscribe to realtime (skip for ghost matches — no opponent to listen to)
+        if (!isGhost) {
+          try {
+            subscribeToMatch(
+              matchId,
+              playerId,
+              (event: MatchProgressEvent) => {
+                setOpponentIndex(event.cardIndex + 1);
+                if (!event.correct) {
+                  setOpponentEliminated(true);
+                }
+              },
+              handleMatchResult,
+            );
+          } catch (rtErr) {
+            // Realtime failure is non-fatal — match still works, just no live opponent updates
+            console.warn('[H2H] Realtime subscription failed:', rtErr);
+          }
+        }
 
         setLoading(false);
       } catch (err) {
@@ -405,8 +412,10 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
           return;
         }
 
-        // Broadcast progress
-        broadcastProgress(matchId, playerId, cardIndex, data.correct);
+        // Broadcast progress (skip for ghost — no opponent listening)
+        if (!isGhost) {
+          try { broadcastProgress(matchId, playerId, cardIndex, data.correct); } catch { /* non-fatal */ }
+        }
 
         if (data.correct) {
           const nextIndex = cardIndex + 1;
