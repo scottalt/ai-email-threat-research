@@ -427,7 +427,7 @@ export default async function IntelPage() {
               <div className="term-border bg-[#060c06]">
                 <div className="border-b border-[rgba(0,255,65,0.35)] px-3 py-1.5 flex items-center justify-between">
                   <span className="text-[#00aa28] text-sm tracking-widest">PHASE COMPARISON</span>
-                  <span className="text-[#003a0e] text-sm font-mono">auth headers visible → removed</span>
+                  <span className="text-[#003a0e] text-sm font-mono">Phase 1 (headers visible) → Phase 2 (headers, reply-to, sent time removed)</span>
                 </div>
                 <div className="px-3 py-3">
                   {/* Phase overview table */}
@@ -644,54 +644,63 @@ export default async function IntelPage() {
                 </div>
               )}
 
-              {/* Tool usage */}
+              {/* Tool usage — URL inspection (active) */}
+              {data.toolUsage && data.toolUsage.urlInspectedSample >= 10 && (
+                <div className="term-border bg-[#060c06]">
+                  <SectionHeader title="URL INSPECTION CORRELATION" />
+                  <div className="px-3 py-3 space-y-3">
+                    <div className="term-border px-2 py-2 text-center">
+                      <div className="text-[#00ff41] text-lg font-mono font-bold">{data.toolUsage.urlInspectedPct}%</div>
+                      <div className="text-[#00aa28] text-sm font-mono mt-0.5">inspected URLs</div>
+                    </div>
+                    {data.toolUsage.urlInspectedAccuracy !== null && data.toolUsage.urlNotInspectedAccuracy !== null && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm font-mono">
+                          <span className="text-[#00aa28]">accuracy w/ URL inspected</span>
+                          <span className="text-[#00ff41]">{data.toolUsage.urlInspectedAccuracy}%</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-mono">
+                          <span className="text-[#00aa28]">accuracy w/o URL</span>
+                          <span className="text-[#ffaa00]">{data.toolUsage.urlNotInspectedAccuracy}%</span>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-[#003a0e] text-sm font-mono">Does inspecting URLs before answering improve detection accuracy?</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Header usage — Phase 1 only (headers removed in Phase 2) */}
               {data.toolUsage && data.toolUsage.headersOpenedSample >= 10 && (
                 <div className="term-border bg-[#060c06]">
-                  <SectionHeader title="TOOL USAGE CORRELATION" />
+                  <SectionHeader title="HEADER USAGE (PHASE 1 ONLY)" />
                   <div className="px-3 py-3 space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="term-border px-2 py-2 text-center">
-                        <div className="text-[#00ff41] text-lg font-mono font-bold">{data.toolUsage.headersOpenedPct}%</div>
-                        <div className="text-[#00aa28] text-sm font-mono mt-0.5">opened [HEADERS]</div>
-                      </div>
-                      <div className="term-border px-2 py-2 text-center">
-                        <div className="text-[#00ff41] text-lg font-mono font-bold">{data.toolUsage.urlInspectedPct}%</div>
-                        <div className="text-[#00aa28] text-sm font-mono mt-0.5">inspected URLs</div>
-                      </div>
+                    <div className="term-border px-2 py-2 text-center">
+                      <div className="text-[#00ff41] text-lg font-mono font-bold">{data.toolUsage.headersOpenedPct}%</div>
+                      <div className="text-[#00aa28] text-sm font-mono mt-0.5">opened headers</div>
                     </div>
                     {data.toolUsage.headersOpenedAccuracy !== null && data.toolUsage.headersNotOpenedAccuracy !== null && (
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm font-mono">
-                          <span className="text-[#00aa28]">accuracy w/ headers open</span>
+                          <span className="text-[#00aa28]">accuracy w/ headers</span>
                           <span className="text-[#00ff41]">{data.toolUsage.headersOpenedAccuracy}%</span>
                         </div>
                         <div className="flex justify-between text-sm font-mono">
                           <span className="text-[#00aa28]">accuracy w/o headers</span>
                           <span className="text-[#ffaa00]">{data.toolUsage.headersNotOpenedAccuracy}%</span>
                         </div>
-                        {data.toolUsage.urlInspectedAccuracy !== null && (
-                          <>
-                            <div className="flex justify-between text-sm font-mono">
-                              <span className="text-[#00aa28]">accuracy w/ URL inspected</span>
-                              <span className="text-[#00ff41]">{data.toolUsage.urlInspectedAccuracy}%</span>
-                            </div>
-                            <div className="flex justify-between text-sm font-mono">
-                              <span className="text-[#00aa28]">accuracy w/o URL</span>
-                              <span className="text-[#ffaa00]">{data.toolUsage.urlNotInspectedAccuracy}%</span>
-                            </div>
-                          </>
-                        )}
                       </div>
                     )}
+                    <p className="text-[#003a0e] text-sm font-mono">Phase 1 data only. Auth headers were removed in v1.9.0 to eliminate confound with difficulty.</p>
                   </div>
                 </div>
               )}
 
-              {/* Auth trap */}
+              {/* Auth trap — Phase 1 only */}
               {data.authTrap && data.authTrap.sample >= 10 && data.authTrap.bypassRate !== null && (
                 <div className="term-border bg-[#060c06]">
                   <div className="border-b border-[rgba(255,51,51,0.35)] px-3 py-1.5">
-                    <span className="text-[#ff3333] text-sm tracking-widest">AUTH_TRAP_FINDING</span>
+                    <span className="text-[#ff3333] text-sm tracking-widest">AUTH_TRAP_FINDING <span className="text-[#003a0e]">(PHASE 1)</span></span>
                   </div>
                   <div className="px-3 py-3">
                     <div className="text-center mb-2">
@@ -700,7 +709,10 @@ export default async function IntelPage() {
                       <div className="text-[#003a0e] text-sm font-mono">n={data.authTrap.sample} answers</div>
                     </div>
                     <p className="text-[#00aa28] text-sm font-mono leading-relaxed">
-                      Some phishing emails in the dataset have fully passing authentication headers (SPF, DKIM, DMARC all show PASS) — because the attacker set up valid DNS records on a lookalike domain. {data.authTrap.bypassRate}% of players incorrectly marked these as legitimate, trusting the green checkmarks.
+                      When auth headers were visible (Phase 1), some phishing emails had fully passing SPF/DKIM/DMARC — because the attacker registered a lookalike domain with valid DNS. {data.authTrap.bypassRate}% of players trusted the green checkmarks and marked these as legitimate.
+                    </p>
+                    <p className="text-[#003a0e] text-sm font-mono mt-2">
+                      Auth headers were removed in Phase 2 to eliminate this confound.
                     </p>
                   </div>
                 </div>
@@ -786,7 +798,7 @@ export default async function IntelPage() {
             {/* Methodology */}
             <div className="term-border bg-[#060c06] px-3 py-3 text-sm font-mono text-[#003a0e] space-y-1 leading-relaxed">
               <div className="text-[#00aa28]">METHODOLOGY</div>
-              <div>Research Mode only. Anonymous, voluntary. Text-based recognition task — visual cues stripped. Self-selected security-aware sample. All cards are AI-generated (Claude Haiku + Sonnet). Sample sizes shown as n=.</div>
+              <div>Research Mode only. Anonymous, voluntary. Text-based recognition task — no brand logos, images, or rendering. Auth headers, Reply-To, and Send Time removed to isolate content-based signals. Self-selected security-aware sample. All cards are AI-generated (Claude Haiku + Sonnet). Sample sizes shown as n=.</div>
               <div className="mt-2">
                 Full methodology:{' '}
                 <Link href="/methodology" className="text-[#00aa28] hover:underline">

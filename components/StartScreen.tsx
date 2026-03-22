@@ -368,7 +368,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   <div className="flex items-center gap-3">
                     {(profile.achievements?.length ?? 0) > 0 && (
                       <Link href="/profile#achievements" className="text-[var(--c-secondary)] text-sm font-mono hover:text-[var(--c-primary)] hidden lg:inline">
-                        ★ {profile.achievements?.length ?? 0}/20
+                        ★ BADGES {profile.achievements?.length ?? 0}/20
                       </Link>
                     )}
                     <button onClick={toggleSound} aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'} className={`lg:hidden text-sm font-mono transition-colors ${soundEnabled ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'}`}>{soundEnabled ? '[SFX]' : '[SFX OFF]'}</button>
@@ -384,7 +384,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     )}
                     {(profile.achievements?.length ?? 0) > 0 && (
                       <Link href="/profile#achievements" className="text-[var(--c-secondary)] text-sm font-mono hover:text-[var(--c-primary)]">
-                        ★ {profile.achievements?.length ?? 0}/20
+                        ★ BADGES {profile.achievements?.length ?? 0}/20
                       </Link>
                     )}
                   </div>
