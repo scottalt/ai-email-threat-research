@@ -49,8 +49,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'XP already awarded for this session' }, { status: 409 });
   }
 
-  // Rate limit XP awards for freeplay/expert/daily modes (research has its own caps)
-  if (gameMode !== 'research' && gameMode !== 'preview') {
+  // Rate limit XP awards for ALL modes (preview excluded — never awards XP anyway)
+  if (gameMode !== 'preview') {
     const nowHour = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
     const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     const hourlyKey = `ratelimit:xp:${authId}:h:${nowHour}`;
