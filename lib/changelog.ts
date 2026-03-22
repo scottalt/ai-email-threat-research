@@ -19,8 +19,8 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: '2026-03-22',
     category: 'milestone',
-    title: 'Phase 2 begins — authentication headers removed',
-    body: 'Email authentication headers (SPF/DKIM/DMARC) proved too specialized for most players, pulling focus from the core research question about phishing technique detection. Phase 1 data with headers visible is preserved and remains analytically valuable. Phase 2 isolates technique recognition without the authentication signal.',
+    title: 'Phase 2 begins — instrument refined',
+    body: 'Three signals removed from the game view to isolate technique recognition as the core variable. Authentication headers (SPF/DKIM/DMARC) created a near-deterministic shortcut on easier cards. Reply-To only appeared on phishing emails, acting as a binary giveaway. Send Time was inconsistently populated across the deck. Phase 1 data is preserved for comparison analysis. Phase 2 focuses purely on whether players can detect phishing from email content, sender details, and URLs.',
   },
 
   // Platform updates (chronological — page reverses for display)
