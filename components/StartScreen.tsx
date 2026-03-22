@@ -557,40 +557,96 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     [ LOG IN / SIGN UP TO PLAY ]
                   </button>
                 )}
-                {/* Pre-graduation: prominent research button */}
-                {!needsCallsign && signedIn && isResearch && (
-                  <button
-                    onClick={() => handleStart('research')}
-                    className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)]"
-                  >
-                    [ RESEARCH MODE ]
-                  </button>
+                {/* Clearance path + research button (visible until 30/30) */}
+                {!needsCallsign && signedIn && !researchCapped && (
+                  <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)]">
+                    <div className="border-b border-[color-mix(in_srgb,var(--c-accent)_25%,transparent)] px-4 py-2">
+                      <span className="text-[var(--c-accent)] text-sm font-mono tracking-widest font-bold">CLEARANCE_PATH</span>
+                    </div>
+                    <div className="px-4 py-3 space-y-3">
+                      {/* Step 1: H2H at 10 */}
+                      <div className="flex items-center gap-3 text-sm font-mono">
+                        {answers >= 10
+                          ? <span className="text-[var(--c-primary)] shrink-0">{'\u2713'}</span>
+                          : <span className="text-[var(--c-accent)] shrink-0">{'\u25B6'}</span>
+                        }
+                        <span className={answers >= 10 ? 'text-[var(--c-muted)] line-through' : 'text-[var(--c-accent)] font-bold'}>
+                          10 answers — Head-to-Head
+                        </span>
+                      </div>
+                      {/* Progress bar for step 1 if current */}
+                      {answers < 10 && (
+                        <div className="ml-6 flex items-center gap-2">
+                          <div className="flex-1 h-1 bg-[var(--c-dark)]">
+                            <div className="h-full bg-[var(--c-accent)] transition-all" style={{ width: `${(answers / 10) * 100}%` }} />
+                          </div>
+                          <span className="text-[var(--c-accent)] text-xs font-mono">{answers}/10</span>
+                        </div>
+                      )}
+
+                      {/* Step 2: Daily at 20 */}
+                      <div className="flex items-center gap-3 text-sm font-mono">
+                        {answers >= 20
+                          ? <span className="text-[var(--c-primary)] shrink-0">{'\u2713'}</span>
+                          : answers >= 10
+                            ? <span className="text-[var(--c-accent)] shrink-0">{'\u25B6'}</span>
+                            : <span className="text-[var(--c-muted)] shrink-0">{'\u25CB'}</span>
+                        }
+                        <span className={answers >= 20 ? 'text-[var(--c-muted)] line-through' : answers >= 10 ? 'text-[var(--c-accent)] font-bold' : 'text-[var(--c-muted)]'}>
+                          20 answers — Daily Challenge
+                        </span>
+                      </div>
+                      {/* Progress bar for step 2 if current */}
+                      {answers >= 10 && answers < 20 && (
+                        <div className="ml-6 flex items-center gap-2">
+                          <div className="flex-1 h-1 bg-[var(--c-dark)]">
+                            <div className="h-full bg-[var(--c-accent)] transition-all" style={{ width: `${((answers - 10) / 10) * 100}%` }} />
+                          </div>
+                          <span className="text-[var(--c-accent)] text-xs font-mono">{answers}/20</span>
+                        </div>
+                      )}
+
+                      {/* Step 3: Freeplay at 30 */}
+                      <div className="flex items-center gap-3 text-sm font-mono">
+                        {answers >= 30
+                          ? <span className="text-[var(--c-primary)] shrink-0">{'\u2713'}</span>
+                          : answers >= 20
+                            ? <span className="text-[var(--c-accent)] shrink-0">{'\u25B6'}</span>
+                            : <span className="text-[var(--c-muted)] shrink-0">{'\u25CB'}</span>
+                        }
+                        <span className={answers >= 30 ? 'text-[var(--c-muted)] line-through' : answers >= 20 ? 'text-[var(--c-accent)] font-bold' : 'text-[var(--c-muted)]'}>
+                          30 answers — Freeplay
+                        </span>
+                      </div>
+                      {/* Progress bar for step 3 if current */}
+                      {answers >= 20 && answers < 30 && (
+                        <div className="ml-6 flex items-center gap-2">
+                          <div className="flex-1 h-1 bg-[var(--c-dark)]">
+                            <div className="h-full bg-[var(--c-accent)] transition-all" style={{ width: `${((answers - 20) / 10) * 100}%` }} />
+                          </div>
+                          <span className="text-[var(--c-accent)] text-xs font-mono">{answers}/30</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Research button inside the clearance path */}
+                    <div className="border-t border-[color-mix(in_srgb,var(--c-accent)_25%,transparent)] px-4 py-3">
+                      <button
+                        onClick={() => handleStart('research')}
+                        className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)]"
+                      >
+                        [ RESEARCH MODE ]
+                      </button>
+                    </div>
+                  </div>
                 )}
-                {/* Freeplay — unlocked at 30 (research complete) */}
+                {/* Freeplay — visible only after 30/30 */}
                 {!needsCallsign && signedIn && freeplayUnlocked && (
                   <button
                     onClick={() => tryStart('freeplay')}
                     className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all text-[var(--c-secondary)] hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)]"
                   >
                     [ FREEPLAY ]
-                  </button>
-                )}
-                {/* Graduated (10-19): research is primary, next unlock = daily at 20 */}
-                {!needsCallsign && signedIn && graduated && !dailyUnlocked && (
-                  <button
-                    onClick={() => handleStart('research')}
-                    className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)]"
-                  >
-                    [ RESEARCH MODE — {answers}/20 to unlock Daily Challenge ]
-                  </button>
-                )}
-                {/* Daily unlocked (20-29): research continues, next unlock = freeplay at 30 */}
-                {!needsCallsign && signedIn && dailyUnlocked && !freeplayUnlocked && (
-                  <button
-                    onClick={() => handleStart('research')}
-                    className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)]"
-                  >
-                    [ RESEARCH MODE — {answers}/30 to unlock Freeplay ]
                   </button>
                 )}
                 {/* Inline onboarding: sign-in (State 1) or callsign setup (State 2) */}
@@ -665,12 +721,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 )}
                 {researchCapped && (
                   <p className="text-[var(--c-accent)] text-sm text-center font-mono">
-                    RESEARCH COMPLETE — 30/30 answers submitted. Thank you!
-                  </p>
-                )}
-                {isResearch && profile && (
-                  <p className="text-[var(--c-accent-dim)] text-sm text-center font-mono">
-                    {answers} of 10 answers to unlock Head-to-Head
+                    RESEARCH COMPLETE — 30/30. Thank you for contributing.
                   </p>
                 )}
               </>
@@ -728,11 +779,6 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 Early access. Ranks and rules may change at any time.
               </div>
             </div>
-          ) : signedIn ? (
-            <div className="w-full py-4 term-border border-[rgba(255,0,128,0.15)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] cursor-not-allowed select-none">
-              [ HEAD 2 HEAD — LOCKED ]
-              <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Submit 10 research answers to unlock</div>
-            </div>
           ) : null}
 
           {/* Rank tiers — visible to graduated players */}
@@ -740,27 +786,14 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             <H2HRankGuide currentPoints={h2hStats?.rankPoints ?? 0} />
           )}
 
-          {/* Daily challenge button — locked until 20 research answers */}
-          {signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20 ? (
+          {/* Daily challenge button — only visible when unlocked (20+) */}
+          {signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20 && (
             <button
               onClick={() => tryStart('daily')}
               className="w-full py-4 lg:py-5 term-border-bright text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] transition-all"
             >
               [ DAILY CHALLENGE — {dateLabel} ]
             </button>
-          ) : (
-            <div className="w-full py-4 term-border border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] cursor-not-allowed select-none">
-              [ DAILY CHALLENGE — LOCKED ]
-              <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Submit 20 research answers to unlock</div>
-            </div>
-          )}
-
-          {/* Freeplay locked state (unlocks at 30) */}
-          {signedIn && (profile?.researchAnswersSubmitted ?? 0) < 30 && profile?.researchGraduated && (
-            <div className="w-full py-3 term-border border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] cursor-not-allowed select-none">
-              [ FREEPLAY — LOCKED ]
-              <div className="text-[var(--c-muted)] text-xs mt-1 tracking-wide">Submit 30 research answers to unlock</div>
-            </div>
           )}
 
           {/* Stats + Intel (20+ answers) */}
