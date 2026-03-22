@@ -3,7 +3,53 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
-import { CURRENT_SEASON, H2H_QUEUE_TIMEOUT_MS } from '@/lib/h2h';
+import { CURRENT_SEASON, H2H_QUEUE_TIMEOUT_MS, H2H_CARDS_PER_MATCH, H2H_MATCH_TTL } from '@/lib/h2h';
+
+// ── Deal cards for a match ──
+
+async function dealMatchCards(matchId: string): Promise<string[]> {
+  const supabase = getSupabaseAdminClient();
+  const { data } = await supabase
+    .from('cards_generated')
+    .select('*')
+    .in('pool', ['freeplay', 'expert'])
+    .limit(500);
+
+  if (!data || data.length < H2H_CARDS_PER_MATCH) return [];
+
+  // Fisher-Yates shuffle
+  const arr = [...data];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  const deck = arr.slice(0, H2H_CARDS_PER_MATCH);
+
+  const cards = deck.map((row) => ({
+    id: row.card_id,
+    type: row.type,
+    isPhishing: row.is_phishing,
+    difficulty: row.difficulty ?? 'medium',
+    from: row.from_address,
+    subject: row.subject ?? undefined,
+    body: row.body,
+    clues: row.clues ?? [],
+    explanation: row.explanation ?? '',
+    highlights: row.highlights ?? [],
+    technique: row.technique,
+    authStatus: (row.auth_status ?? 'unverified') as 'verified' | 'unverified' | 'fail',
+    attachmentName: row.attachment_name ?? undefined,
+  }));
+
+  await redis.set(`match-cards:${matchId}`, JSON.stringify(cards), { ex: H2H_MATCH_TTL });
+
+  // Update match record with card IDs
+  await supabase.from('h2h_matches').update({
+    card_ids: cards.map((c) => c.id),
+  }).eq('id', matchId);
+
+  return cards.map((c) => c.id);
+}
 
 // ── Auth helper ──
 
@@ -146,6 +192,9 @@ export async function GET() {
         return NextResponse.json({ error: 'Failed to create match' }, { status: 500 });
       }
 
+      // Deal cards for the ghost match
+      await dealMatchCards(match.id);
+
       // Clean up queue
       await redis.zrem('h2h:queue', JSON.stringify(selfEntry));
       await redis.del(`h2h:queue:player:${playerId}`);
@@ -197,6 +246,9 @@ export async function GET() {
   }
 
   const matchId = match.id;
+
+  // Deal cards for the match
+  await dealMatchCards(matchId);
 
   // Set matched keys for both players (60s TTL so the other player sees it on next poll)
   await redis.set(`h2h:matched:${sortedIds[0]}`, matchId, { ex: 60 });
