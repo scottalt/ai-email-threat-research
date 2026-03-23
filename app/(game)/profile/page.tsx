@@ -478,23 +478,15 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Data deletion request */}
+        {/* Data deletion request — compact inline style */}
         {signedIn && profile && (
-          <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,#ff3333_15%,transparent)]">
-            <div className="border-b border-[color-mix(in_srgb,#ff3333_15%,transparent)] px-3 py-1.5">
-              <span className="text-[var(--c-muted)] text-sm tracking-widest">DATA_MANAGEMENT</span>
-            </div>
-            <div className="px-3 py-3 space-y-2">
-              <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed">
-                Request deletion of your account and data. Research answers may be retained in anonymized form.
-              </p>
-              <a
-                href={`mailto:scott@scottaltiparmak.com?subject=${encodeURIComponent(`[Data Deletion Request] ${profile.displayName}`)}&body=${encodeURIComponent(`I would like to request deletion of my Threat Terminal account.\n\nCallsign: ${profile.displayName}\nPlayer ID: ${profile.id}\n\nPlease delete:\n- [ ] My account and profile only (keep anonymized research answers)\n- [ ] Everything (account + all answers including research)\n`)}`}
-                className="block w-full py-2 border border-[color-mix(in_srgb,#ff3333_30%,transparent)] text-[#ff3333] font-mono text-sm tracking-widest hover:bg-[rgba(255,51,51,0.05)] transition-colors text-center"
-              >
-                [ REQUEST DATA DELETION ]
-              </a>
-            </div>
+          <div className="text-center space-y-1 px-2">
+            <a
+              href={`mailto:scott@scottaltiparmak.com?subject=${encodeURIComponent(`[Data Deletion Request] ${profile.displayName}`)}&body=${encodeURIComponent(`I would like to request deletion of my Threat Terminal account.\n\nCallsign: ${profile.displayName}\nPlayer ID: ${profile.id}\n\nPlease delete:\n- [ ] My account and profile only (keep anonymized research answers)\n- [ ] Everything (account + all answers including research)\n`)}`}
+              className="text-[var(--c-muted)] text-[11px] font-mono opacity-50 hover:opacity-80 hover:text-[#ff3333] transition-all"
+            >
+              Request data deletion
+            </a>
           </div>
         )}
 
