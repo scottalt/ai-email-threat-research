@@ -8,6 +8,17 @@ import { NavVisibilityProvider } from '@/lib/NavVisibilityContext';
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { NavBar } from '@/components/NavBar';
 
+/** One-time achievement backfill — fires once per deploy version */
+function BackfillTrigger() {
+  const triggered = useRef(false);
+  useEffect(() => {
+    if (triggered.current) return;
+    triggered.current = true;
+    fetch('/api/cron/backfill-achievements').catch(() => {});
+  }, []);
+  return null;
+}
+
 /** Syncs server-stored theme to ThemeContext when profile loads */
 function ThemeSync() {
   const { profile } = usePlayer();
@@ -32,6 +43,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
       <PlayerProvider>
         <ThemeProvider>
           <ThemeSync />
+          <BackfillTrigger />
           <NavVisibilityProvider>
             <NavBar />
             {children}
