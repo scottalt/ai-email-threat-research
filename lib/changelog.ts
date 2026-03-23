@@ -91,6 +91,12 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     title: 'v1.9.1 — Privacy policy and terms of use',
     body: 'Added privacy policy, terms of use, and educational disclaimer. Landing page footer now links to privacy, terms, and methodology.',
   },
+  {
+    date: '2026-03-23',
+    category: 'update',
+    title: 'v1.9.2 — Data deletion requests and consent',
+    body: 'Request data deletion from your profile page. Sign-up now requires agreement to Privacy Policy and Terms of Use.',
+  },
 ];
 
 /*
