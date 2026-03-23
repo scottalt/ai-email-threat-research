@@ -9,8 +9,6 @@ import { useNavVisibility } from '@/lib/NavVisibilityContext';
 import { AuthFlow } from './AuthFlow';
 import { LevelMeter } from './LevelMeter';
 import { playBootTick } from '@/lib/sounds';
-import { H2HRankGuide } from './H2HRankGuide';
-import { H2H_RANKS, getRankFromPoints } from '@/lib/h2h';
 import { ACHIEVEMENTS, RARITY_COLORS } from '@/lib/achievements';
 import { version } from '@/package.json';
 import { QUESTS } from '@/lib/quests';
@@ -38,12 +36,12 @@ const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
 const BOOT_LINES: { text: string; bright: boolean }[] = [
   { text: '> THREAT_TERMINAL ANALYZER',  bright: false },
   { text: '> RESEARCH PLATFORM v1.0',       bright: false },
-  { text: '> \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', bright: true  },
+  { text: '> ─────────────────────────────', bright: true  },
   { text: '> LOADING RESEARCH DATASET.....', bright: false },
   { text: '> DATASET: v1.0',                bright: false },
   { text: '> CONFIDENCE SCORING: ENABLED',  bright: false },
   { text: '> STREAK DETECTION: ONLINE',     bright: false },
-  { text: '> \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', bright: true  },
+  { text: '> ─────────────────────────────', bright: true  },
   { text: '> SYSTEM READY.',                bright: true  },
 ];
 
@@ -66,14 +64,6 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const [activeTab, setActiveTab] = useState<'daily' | 'xp' | 'h2h'>('xp');
   const [h2hStats, setH2HStats] = useState<{ rankLabel: string; rankIcon: string; rankPoints: number; rankColor: string; wins: number; losses: number; winStreak: number } | null>(null);
   const [h2hLeaderboard, setH2HLeaderboard] = useState<{ position: number; displayName: string; rankPoints: number; rankLabel: string; rankColor: string; wins: number; losses: number }[]>([]);
-  // Collapse HOW_TO_PLAY for returning players who've completed at least 1 session
-  const isExperiencedPlayer = !!profile && (profile.totalSessions ?? 0) >= 1;
-  const [showHowToPlay, setShowHowToPlay] = useState(true);
-  const [howToPlayManuallyToggled, setHowToPlayManuallyToggled] = useState(false);
-  // Auto-collapse when profile loads and player is experienced (unless they manually toggled)
-  const effectiveShowHowToPlay = howToPlayManuallyToggled ? showHowToPlay : !isExperiencedPlayer;
-  const [showGuide, setShowGuide] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
   const [lbExpanded, setLbExpanded] = useState(false);
   const [lbExpandLoading, setLbExpandLoading] = useState(false);
 
@@ -328,8 +318,18 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
 
   const dateLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
 
+  // ── Stage computation ──
+  const rawAnswers = profile?.researchAnswersSubmitted ?? 0;
+  const graduated = signedIn && (profile?.researchGraduated ?? false);
+  const answers = graduated ? Math.max(rawAnswers, 10) : rawAnswers;
+  const dailyUnlocked = signedIn && answers >= 20;
+  const researchCapped = answers >= 30;
+  const needsCallsign = signedIn && !profile?.displayName;
+
+  const stage: 1 | 2 | 3 | 4 = researchCapped ? 4 : dailyUnlocked ? 3 : graduated ? 2 : 1;
+
   return (
-    <div className={`w-full px-4 pb-safe flex flex-col gap-6 lg:gap-8 ${showButton ? 'max-w-sm lg:max-w-4xl' : 'max-w-md'}`}>
+    <div className={`w-full px-4 pb-safe flex flex-col gap-6 ${showButton ? 'max-w-lg' : 'max-w-md'}`}>
       {/* Terminal boot animation — fades out after loading */}
       {!bootHidden && (
         <div
@@ -368,7 +368,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
       )}
 
       {showButton && (
-        <div className="anim-fade-in-up space-y-4 lg:space-y-6">
+        <div className="anim-fade-in-up space-y-4">
           {/* SFX toggle — mobile only, visible when not signed in (signed-in users see it in profile header) */}
           {!signedIn && (
             <div className="flex justify-end lg:hidden">
@@ -461,362 +461,164 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             </div>
           )}
 
-          {/* Graduated desktop two-column layout */}
-          {(() => {
-            const isGraduated = signedIn && profile?.researchGraduated;
-
-            /* ── Shared content blocks (rendered in both layouts) ── */
-
-            const howToPlayPanel = (
-              <div className="term-border bg-[var(--c-bg)]">
-                <button
-                  onClick={() => { setHowToPlayManuallyToggled(true); setShowHowToPlay((o) => !o); }}
-                  className="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)] transition-colors"
-                >
-                  <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">HOW_TO_PLAY</span>
-                  <span className="text-[var(--c-secondary)]">{effectiveShowHowToPlay ? '▲' : '▼'}</span>
-                </button>
-                {effectiveShowHowToPlay && (
-                <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-3 space-y-2.5">
-                  {[
-                    ['[1]', 'Read each email carefully'],
-                    ['[2]', 'Set your confidence: GUESSING / LIKELY / CERTAIN'],
-                    ['[3]', 'Classify: PHISHING or LEGIT'],
-                    ['[4]', 'Correct + confident = more points. Wrong + confident = point penalty. GUESSING never penalises.'],
-                    ['[5]', 'GUESSING 1×, LIKELY 2× (−100 if wrong), CERTAIN 3× (−200 if wrong)'],
-                    ['[6]', '3-streak bonus: +50 pts per milestone'],
-                    ['[7]', 'Tap highlighted URLs to inspect the real destination'],
-                  ].map(([tag, desc]) => (
-                    <div key={tag} className="flex gap-3 text-sm lg:text-base">
-                      <span className="text-[var(--c-primary)] shrink-0">{tag}</span>
-                      <span className="text-[var(--c-secondary)] lg:leading-relaxed">{desc}</span>
+          {/* Inline auth flow — sign-in */}
+          {!signedIn && !needsCallsign && (
+            <>
+              <button
+                onClick={() => setShowInlineAuth(true)}
+                className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)]"
+              >
+                [ LOG IN / SIGN UP TO PLAY ]
+              </button>
+              {showInlineAuth && (
+                <div ref={inlineAuthRef} className="anim-slide-down term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)]">
+                  <div className="px-3 py-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[var(--c-accent)] text-sm font-mono font-bold tracking-widest">SIGN IN TO START</div>
+                      <button onClick={() => setShowInlineAuth(false)} aria-label="Close sign-in" className="text-[var(--c-accent)] text-sm font-mono hover:text-[var(--c-accent-dim)] p-1">✕</button>
                     </div>
-                  ))}
+                    <div className="text-[var(--c-secondary)] text-sm font-mono">New or returning — enter your email to begin or continue</div>
+                    <div className="space-y-1 text-sm font-mono">
+                      <div className="text-[var(--c-secondary)]"><span className="text-[var(--c-accent)]">▸</span> Track your XP + climb the leaderboard</div>
+                      <div className="text-[var(--c-secondary)]"><span className="text-[var(--c-accent)]">▸</span> Contribute to phishing research</div>
+                      <div className="text-[var(--c-secondary)]"><span className="text-[var(--c-accent)]">▸</span> Unlock Daily Challenge + Expert Mode</div>
+                    </div>
+                    <div className="text-[var(--c-accent-dim)] text-xs font-mono">Magic code · no password · 10 seconds</div>
+                    <AuthFlow headless onSignIn={signInWithEmail} onVerifyCode={verifyOtp} onCancel={() => setShowInlineAuth(false)} />
+                  </div>
                 </div>
-                )}
-              </div>
-            );
+              )}
+            </>
+          )}
 
-            const signalGuidePanel = (
-              <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)]">
-                <button
-                  onClick={() => setShowGuide((o) => !o)}
-                  className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[color-mix(in_srgb,var(--c-accent)_5%,transparent)] transition-colors"
-                >
-                  <span className="text-[var(--c-accent)] tracking-widest">[?] SIGNAL GUIDE</span>
-                  <span className="text-[var(--c-accent)]">{showGuide ? '▲' : '▼'}</span>
-                </button>
-                {showGuide && (
-                  <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] px-3 py-3 space-y-3">
-                    {[
-                      {
-                        label: 'FROM ADDRESS',
-                        body: 'The sender name shown is a display name — it can be set to anything and proves nothing. Tap [↗] next to it to reveal the actual email address. Check that the domain matches the organisation claimed in the email. Look for typosquatting (paypa1.com), wrong TLDs (.net instead of .com), and lookalike subdomains.',
-                      },
-                      {
-                        label: 'URL INSPECTOR',
-                        body: 'Click any underlined link to reveal the full URL before acting on it. Check: does the domain match the sender? Watch for typosquatting (paypa1.com), wrong TLDs (.net instead of .com), and subdomain tricks.',
-                      },
-                      {
-                        label: 'CONFIDENCE',
-                        body: 'GUESSING = 1x points (no penalty if wrong). LIKELY = 2x (−100 if wrong). CERTAIN = 3x (−200 if wrong). Only commit when the evidence is clear.',
-                      },
-                    ].map(({ label, body }) => (
-                      <div key={label} className="space-y-0.5">
-                        <div className="text-[var(--c-accent)] text-sm font-mono tracking-widest">{label}</div>
-                        <p className="text-[var(--c-secondary)] text-sm lg:text-base font-mono leading-relaxed">{body}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-
-            const aboutPanel = (
-              <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-primary)_30%,transparent)]">
-                <button
-                  onClick={() => setShowAbout((o) => !o)}
-                  className="w-full px-3 py-2 flex items-center justify-between text-sm font-mono hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] transition-colors"
-                >
-                  <span className="text-[var(--c-primary)] tracking-widest">[i] ABOUT_THIS_RESEARCH</span>
-                  <span className="text-[var(--c-primary)]">{showAbout ? '▲' : '▼'}</span>
-                </button>
-                {showAbout && (
-                  <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] px-3 py-3 space-y-3">
-                    <p className="text-[var(--c-secondary)] text-sm lg:text-base font-mono leading-relaxed">
-                      Threat Terminal is a research platform studying how humans detect AI-generated phishing emails. Every classification you make contributes to an empirical study on which phishing techniques are hardest to spot when AI eliminates traditional red flags like poor grammar.
-                    </p>
-                    <a
-                      href="https://scottaltiparmak.com/research"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-[var(--c-primary)] text-sm font-mono tracking-widest hover:underline"
-                    >
-                      {'>'} READ_FULL_RESEARCH →
-                    </a>
-                  </div>
-                )}
-              </div>
-            );
-
-            const actionButtons = (
-              <div className="space-y-4">
-              {(() => {
-                const rawAnswers = profile?.researchAnswersSubmitted ?? 0;
-                const graduated = signedIn && (profile?.researchGraduated ?? false); // 10+ = H2H unlocked
-                // If graduated but DB count is low (manually modified), treat as at least 10
-                const answers = graduated ? Math.max(rawAnswers, 10) : rawAnswers;
-                const dailyUnlocked = signedIn && answers >= 20; // 20+ = daily + stats + intel
-                const freeplayUnlocked = signedIn && answers >= 30; // 30 = freeplay (research complete)
-                const researchCapped = answers >= 30;
-                const isResearch = signedIn && !graduated && !researchCapped;
-                const needsCallsign = signedIn && !profile?.displayName;
-                return (
-                  <>
-                    {!needsCallsign && !signedIn && (
-                      <button
-                        onClick={() => setShowInlineAuth(true)}
-                        className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)]"
-                      >
-                        [ LOG IN / SIGN UP TO PLAY ]
-                      </button>
-                    )}
-                    {/* Quest cards + research button (visible until 30/30) */}
-                    {!needsCallsign && signedIn && !researchCapped && (
-                      <div className="space-y-3">
-                        {QUESTS.map((quest) => {
-                          const completed = answers >= quest.target;
-                          const prevQuest = QUESTS[QUESTS.indexOf(quest) - 1];
-                          const isCurrent = !completed && (quest.target === 10 ? true : answers >= (prevQuest?.target ?? 0));
-                          const progress = Math.min(answers, quest.target);
-
-                          return (
-                            <div
-                              key={quest.id}
-                              className={`term-border bg-[var(--c-bg)] transition-all ${
-                                completed
-                                  ? 'border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)] opacity-70'
-                                  : isCurrent
-                                    ? 'border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)]'
-                                    : 'border-[var(--c-dark)] opacity-40'
-                              }`}
-                            >
-                              <div className="px-4 py-3 flex items-start gap-3">
-                                <span className="text-lg shrink-0">{completed ? '\u2713' : quest.icon}</span>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <span className={`text-sm font-mono font-bold tracking-wide ${
-                                      completed ? 'text-[var(--c-primary)] line-through' : isCurrent ? 'text-[var(--c-accent)]' : 'text-[var(--c-muted)]'
-                                    }`}>
-                                      {quest.name}
-                                    </span>
-                                    <span className={`text-xs font-mono ${completed ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'}`}>
-                                      +{quest.xpReward} XP
-                                    </span>
-                                  </div>
-                                  <div className={`text-xs font-mono mt-1 ${completed ? 'text-[var(--c-muted)]' : 'text-[var(--c-secondary)]'}`}>
-                                    {completed ? quest.reward : quest.description}
-                                  </div>
-                                  {isCurrent && (
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <div className="flex-1 h-1.5 bg-[var(--c-dark)]">
-                                        <div
-                                          className="h-full bg-[var(--c-accent)] transition-all"
-                                          style={{ width: `${(progress / quest.target) * 100}%` }}
-                                        />
-                                      </div>
-                                      <span className="text-[var(--c-accent)] text-xs font-mono font-bold">{progress}/{quest.target}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        {/* Research button */}
+          {/* Callsign setup flow */}
+          {signedIn && profile && !profile.displayName && (
+            <div ref={inlineAuthRef} className="anim-slide-down term-border bg-[var(--c-bg)]">
+              <div className="px-3 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--c-secondary)] text-sm tracking-widest">SET_CALLSIGN</span>
+                  <button onClick={async () => { await signOut(); setShowInlineAuth(false); }} aria-label="Cancel setup" className="text-[var(--c-muted)] text-sm font-mono hover:text-[var(--c-secondary)] p-1">✕</button>
+                </div>
+                <div className="text-[var(--c-secondary)] text-sm font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
+                <form onSubmit={handleSetCallsign} className="space-y-2">
+                  <input
+                    ref={callsignInputRef}
+                    type="text"
+                    value={callsign}
+                    onChange={(e) => { setCallsign(e.target.value); setCallsignError(''); }}
+                    placeholder="ENTER CALLSIGN"
+                    maxLength={20}
+                    autoFocus
+                    className="w-full bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_30%,transparent)] text-[var(--c-primary)] font-mono text-sm px-2 py-1.5 placeholder:text-[var(--c-dark)] focus:outline-none focus:border-[color-mix(in_srgb,var(--c-primary)_70%,transparent)]"
+                  />
+                  <div ref={backgroundRef} className="space-y-1.5 pt-1">
+                    <div className="text-[var(--c-secondary)] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[var(--c-accent)]">*REQUIRED</span></div>
+                    <div className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {BACKGROUND_OPTIONS.map((opt) => (
                         <button
-                          onClick={() => handleStart('research')}
-                          className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)]"
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setBackground(background === opt.value ? null : opt.value)}
+                          className={`py-1.5 font-mono text-sm tracking-wider transition-all border ${
+                            background === opt.value
+                              ? 'text-[var(--c-primary)] border-[color-mix(in_srgb,var(--c-primary)_80%,transparent)] bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]'
+                              : 'text-[var(--c-secondary)] border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] hover:text-[var(--c-primary)] hover:border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)]'
+                          }`}
                         >
-                          [ RESEARCH MODE ]
+                          {opt.label}
                         </button>
-                      </div>
-                    )}
-                    {/* Freeplay — visible only after 30/30 */}
-                    {!needsCallsign && signedIn && freeplayUnlocked && (
-                      <button
-                        onClick={() => tryStart('freeplay')}
-                        className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all text-[var(--c-secondary)] hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)]"
-                      >
-                        [ FREEPLAY ]
-                      </button>
-                    )}
-                    {/* Inline onboarding: sign-in (State 1) or callsign setup (State 2) */}
-                    {!signedIn && showInlineAuth && (
-                      <div ref={inlineAuthRef} className="anim-slide-down term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)]">
-                        <div className="px-3 py-3 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="text-[var(--c-accent)] text-sm font-mono font-bold tracking-widest">SIGN IN TO START</div>
-                            <button onClick={() => setShowInlineAuth(false)} aria-label="Close sign-in" className="text-[var(--c-accent)] text-sm font-mono hover:text-[var(--c-accent-dim)] p-1">✕</button>
-                          </div>
-                          <div className="text-[var(--c-secondary)] text-sm font-mono">New or returning — enter your email to begin or continue</div>
-                          <div className="space-y-1 text-sm font-mono">
-                            <div className="text-[var(--c-secondary)]"><span className="text-[var(--c-accent)]">▸</span> Track your XP + climb the leaderboard</div>
-                            <div className="text-[var(--c-secondary)]"><span className="text-[var(--c-accent)]">▸</span> Contribute to phishing research</div>
-                            <div className="text-[var(--c-secondary)]"><span className="text-[var(--c-accent)]">▸</span> Unlock Daily Challenge + Expert Mode</div>
-                          </div>
-                          <div className="text-[var(--c-accent-dim)] text-xs font-mono">Magic code · no password · 10 seconds</div>
-                          <AuthFlow headless onSignIn={signInWithEmail} onVerifyCode={verifyOtp} onCancel={() => setShowInlineAuth(false)} />
-                        </div>
-                      </div>
-                    )}
-                    {signedIn && profile && !profile.displayName && (
-                      <div ref={inlineAuthRef} className="anim-slide-down term-border bg-[var(--c-bg)]">
-                        <div className="px-3 py-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[var(--c-secondary)] text-sm tracking-widest">SET_CALLSIGN</span>
-                            <button onClick={async () => { await signOut(); setShowInlineAuth(false); }} aria-label="Cancel setup" className="text-[var(--c-muted)] text-sm font-mono hover:text-[var(--c-secondary)] p-1">✕</button>
-                          </div>
-                          <div className="text-[var(--c-secondary)] text-sm font-mono">Choose a callsign. Shown on the XP leaderboard. 1–20 characters.</div>
-                          <form onSubmit={handleSetCallsign} className="space-y-2">
-                            <input
-                              ref={callsignInputRef}
-                              type="text"
-                              value={callsign}
-                              onChange={(e) => { setCallsign(e.target.value); setCallsignError(''); }}
-                              placeholder="ENTER CALLSIGN"
-                              maxLength={20}
-                              autoFocus
-                              className="w-full bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_30%,transparent)] text-[var(--c-primary)] font-mono text-sm px-2 py-1.5 placeholder:text-[var(--c-dark)] focus:outline-none focus:border-[color-mix(in_srgb,var(--c-primary)_70%,transparent)]"
-                            />
-                            <div ref={backgroundRef} className="space-y-1.5 pt-1">
-                              <div className="text-[var(--c-secondary)] text-sm font-mono tracking-wider">BACKGROUND <span className="text-[var(--c-accent)]">*REQUIRED</span></div>
-                              <div className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed opacity-70">Required for research. Helps us understand how expertise affects detection accuracy. Not stored with any personal information.</div>
-                              <div className="grid grid-cols-2 gap-1.5">
-                                {BACKGROUND_OPTIONS.map((opt) => (
-                                  <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() => setBackground(background === opt.value ? null : opt.value)}
-                                    className={`py-1.5 font-mono text-sm tracking-wider transition-all border ${
-                                      background === opt.value
-                                        ? 'text-[var(--c-primary)] border-[color-mix(in_srgb,var(--c-primary)_80%,transparent)] bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]'
-                                        : 'text-[var(--c-secondary)] border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] hover:text-[var(--c-primary)] hover:border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)]'
-                                    }`}
-                                  >
-                                    {opt.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            {callsignError && <div className="text-[#ff3333] text-sm font-mono">{callsignError}</div>}
-                            <button
-                              type="submit"
-                              disabled={callsignLoading}
-                              className="w-full py-2.5 term-border text-[var(--c-primary)] font-mono font-bold text-sm tracking-widest hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                            >
-                              {callsignLoading ? '...' : '[ SET ]'}
-                            </button>
-                          </form>
-                        </div>
-                      </div>
-                    )}
-                    {researchCapped && (
-                      <p className="text-[var(--c-accent)] text-sm text-center font-mono">
-                        RESEARCH COMPLETE — 30/30. Thank you for contributing.
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
+                      ))}
+                    </div>
+                  </div>
+                  {callsignError && <div className="text-[#ff3333] text-sm font-mono">{callsignError}</div>}
+                  <button
+                    type="submit"
+                    disabled={callsignLoading}
+                    className="w-full py-2.5 term-border text-[var(--c-primary)] font-mono font-bold text-sm tracking-widest hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    {callsignLoading ? '...' : '[ SET ]'}
+                  </button>
+                </form>
               </div>
+            </div>
+          )}
+
+          {/* ── Stage-based content (only for signed-in players with callsign) ── */}
+          {signedIn && profile?.displayName && (() => {
+            // Find the current quest
+            const currentQuest = QUESTS.find((quest) => {
+              const completed = answers >= quest.target;
+              const prevQuest = QUESTS[QUESTS.indexOf(quest) - 1];
+              return !completed && (quest.target === 10 ? true : answers >= (prevQuest?.target ?? 0));
+            });
+            const currentQuestProgress = currentQuest ? Math.min(answers, currentQuest.target) : 0;
+
+            // ── PvP button (shared across stages 2-4) ──
+            const pvpButton = (
+              <button
+                onClick={() => handleStart('h2h')}
+                className="flex-1 py-4 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-2 border-[rgba(255,0,128,0.5)] text-[#ff0080] hover:bg-[rgba(255,0,128,0.04)]"
+              >
+                {h2hStats ? (
+                  <>
+                    <div className="flex items-center justify-center gap-2">
+                      <span>[ PvP ]</span>
+                      <span className="text-xs px-1.5 py-0.5 border border-[rgba(255,0,128,0.4)] inline-flex items-center gap-1" style={{ color: h2hStats.rankColor }}>
+                        {h2hStats.rankIcon} {h2hStats.rankLabel}
+                      </span>
+                    </div>
+                    <div className="text-[var(--c-muted)] text-xs mt-0.5 font-normal tracking-wide">
+                      {h2hStats.rankPoints} pts
+                      {' · '}{h2hStats.wins}W {h2hStats.losses}L
+                      {h2hStats.winStreak >= 2 && <span className="text-[var(--c-primary)]"> · {h2hStats.winStreak} streak</span>}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <span>[ PvP ]</span>
+                  </div>
+                )}
+              </button>
             );
 
-            const h2hSection = signedIn && profile?.researchGraduated ? (
-              <div className="space-y-2">
-                {/* Season 0 info */}
-                <div className="w-full term-border border-[rgba(255,0,128,0.2)] px-3 py-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#ff0080] text-sm font-mono tracking-widest font-bold">SEASON 0</span>
-                    <span className="text-[var(--c-secondary)] text-xs font-mono">FOUNDING SEASON</span>
-                  </div>
-                  <div className="text-[var(--c-secondary)] text-sm font-mono mt-2 leading-relaxed">
-                    The inaugural season. Every match shapes the meta. Climb from Bronze to Elite. Top players will be remembered.
-                  </div>
-                </div>
-
-                {/* H2H button with BETA badge inline */}
-                <button
-                  onClick={() => handleStart('h2h')}
-                  className="w-full py-4 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-2 border-[rgba(255,0,128,0.5)] text-[#ff0080] hover:bg-[rgba(255,0,128,0.04)]"
-                >
-                  {h2hStats ? (
-                    <>
-                      <div className="flex items-center justify-center gap-2">
-                        <span>[ PvP MODE ]</span>
-                        <span className="text-xs px-1 py-0.5 border border-[rgba(255,170,0,0.5)] text-[#ffaa00] font-normal">BETA</span>
-                        <span className="text-xs px-1.5 py-0.5 border border-[rgba(255,0,128,0.4)] inline-flex items-center gap-1" style={{ color: h2hStats.rankColor }}>
-                          {h2hStats.rankIcon} {h2hStats.rankLabel}
-                        </span>
-                      </div>
-                      <div className="text-[var(--c-secondary)] text-xs mt-1 font-normal tracking-wide">
-                        1v1 RANKED MULTIPLAYER
-                      </div>
-                      <div className="text-[var(--c-muted)] text-xs mt-0.5 font-normal tracking-wide">
-                        {h2hStats.rankPoints} pts
-                        {' · '}{h2hStats.wins}W {h2hStats.losses}L
-                        {h2hStats.winStreak >= 2 && <span className="text-[var(--c-primary)]"> · {h2hStats.winStreak} streak</span>}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-center gap-2">
-                        <span>[ PvP MODE ]</span>
-                        <span className="text-xs px-1 py-0.5 border border-[rgba(255,170,0,0.5)] text-[#ffaa00] font-normal">BETA</span>
-                      </div>
-                      <div className="text-[var(--c-secondary)] text-xs mt-1 font-normal tracking-wide">1v1 RANKED MULTIPLAYER</div>
-                    </>
-                  )}
-                </button>
-                <div className="text-[var(--c-secondary)] text-xs font-mono text-center">
-                  Early access. Ranks and rules may change at any time.
-                </div>
-              </div>
-            ) : null;
-
-            const dailyButton = signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20 ? (
+            // ── Daily button (shared across stages 3-4) ──
+            const dailyButton = (
               <button
                 onClick={() => tryStart('daily')}
-                className="w-full py-4 lg:py-5 term-border-bright text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] transition-all"
+                className="flex-1 py-4 term-border-bright text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] transition-all"
               >
-                [ DAILY CHALLENGE — {dateLabel} ]
+                [ DAILY — {dateLabel} ]
               </button>
-            ) : null;
+            );
 
-            const intelLink = signedIn && (profile?.researchAnswersSubmitted ?? 0) >= 20 ? (
+            // ── Freeplay button (stage 4 only) ──
+            const freeplayButton = (
+              <button
+                onClick={() => tryStart('freeplay')}
+                className="flex-1 py-4 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all text-[var(--c-secondary)] hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)]"
+              >
+                [ FREEPLAY ]
+              </button>
+            );
+
+            // ── Intel button (stages 3-4) ──
+            const intelButton = (
               <Link
                 href="/intel/player"
                 className="block w-full py-3 term-border text-center text-[var(--c-secondary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] transition-all"
               >
                 [ INTEL BRIEFING ]
               </Link>
-            ) : (
-              <Link
-                href="/intel/player"
-                className="block w-full py-3 term-border border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] text-center font-mono text-sm tracking-widest text-[var(--c-muted)] select-none hover:bg-[color-mix(in_srgb,var(--c-primary)_2%,transparent)] transition-all"
-              >
-                [ INTEL — LOCKED ]
-                <span className="block text-xs mt-1 tracking-wide">Submit 20 research answers to unlock</span>
-              </Link>
             );
 
+            // ── Version link (all stages) ──
             const versionLink = (
               <div className="flex items-center justify-center font-mono">
                 <Link
                   href="/changelog"
                   onClick={() => { try { localStorage.setItem('lastSeenVersion', version); setHasUnreadChangelog(false); } catch {} }}
-                  className="relative text-[var(--c-secondary)] hover:text-[var(--c-primary)] transition-colors tracking-wider text-sm lg:text-base border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] px-2 py-0.5 hover:border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)] hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)]"
+                  className="relative text-[var(--c-secondary)] hover:text-[var(--c-primary)] transition-colors tracking-wider text-sm border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] px-2 py-0.5 hover:border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)] hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)]"
                 >
                   v{version}
                   {hasUnreadChangelog && (
@@ -826,6 +628,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               </div>
             );
 
+            // ── Leaderboard (stages 3-4) ──
             const leaderboard = (() => {
               const canSeeDailyLb = signedIn && profile?.researchGraduated;
               const canSeeH2HLb = signedIn && profile?.researchGraduated;
@@ -945,88 +748,156 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               );
             })();
 
-            const rankTiersDesktop = signedIn && profile?.researchGraduated ? (
-              <div className="hidden lg:block term-border bg-[var(--c-bg)]">
-                <div className="px-4 py-2 border-b border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)]">
-                  <span className="text-[var(--c-secondary)] text-sm tracking-widest">RANK_TIERS</span>
-                </div>
-                <div className="px-4 py-3 space-y-1">
-                  {H2H_RANKS.map((rank) => {
-                    const isCurrent = h2hStats && getRankFromPoints(h2hStats.rankPoints).tier === rank.tier;
-                    return (
-                      <div key={rank.tier} className={`flex items-center justify-between text-sm font-mono px-2 py-1 ${isCurrent ? 'border border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)] bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)]' : ''}`}>
-                        <span style={{ color: rank.color }}>{rank.icon} <span className="font-bold">{rank.label}</span>{isCurrent ? ' ◀ YOU' : ''}</span>
-                        <span className="text-[var(--c-secondary)]">{rank.minPoints}+</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null;
-
-            const rankTiersMobile = signedIn && profile?.researchGraduated ? (
-              <div className="lg:hidden">
-                <H2HRankGuide currentPoints={h2hStats?.rankPoints ?? 0} />
-              </div>
-            ) : null;
-
-            /* ── Layout: graduated desktop = two columns, otherwise old sidebar+main ── */
-
-            if (isGraduated) {
+            /* ── STAGE 1: New player (0-9 answers) ── */
+            if (stage === 1) {
               return (
                 <div className="space-y-4">
-                  {/* Mobile only: panels at top */}
-                  <div className="lg:hidden space-y-4">
-                    {howToPlayPanel}
-                    {signalGuidePanel}
-                    {aboutPanel}
-                  </div>
-
-                  {/* Desktop two-column layout for graduated players */}
-                  <div className="lg:flex lg:gap-5">
-                    {/* Left column */}
-                    <div className="lg:flex-1 lg:flex lg:flex-col space-y-4">
-                      {actionButtons}
-                      {h2hSection}
-                      {dailyButton}
-                      {intelLink}
-                      {/* Desktop: HOW_TO_PLAY / SIGNAL_GUIDE as collapsible panels */}
-                      <div className="hidden lg:block space-y-3 mt-auto pt-4">
-                        {howToPlayPanel}
-                        {signalGuidePanel}
+                  {/* Big quest card with research button inside */}
+                  {currentQuest && (
+                    <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)]">
+                      <div className="px-4 py-4 space-y-3">
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{currentQuest.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[var(--c-accent)] text-sm font-mono font-bold tracking-widest">{currentQuest.name}</div>
+                            <div className="text-[var(--c-secondary)] text-sm font-mono mt-1">{currentQuest.description}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-[var(--c-dark)]">
+                            <div
+                              className="h-full bg-[var(--c-accent)] transition-all"
+                              style={{ width: `${(currentQuestProgress / currentQuest.target) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-[var(--c-accent)] text-sm font-mono font-bold">{currentQuestProgress}/{currentQuest.target}</span>
+                        </div>
+                        <button
+                          onClick={() => handleStart('research')}
+                          className="w-full py-3 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)]"
+                        >
+                          [ RESEARCH MODE ]
+                        </button>
                       </div>
                     </div>
-                    {/* Right column */}
-                    <div className="lg:flex-1 space-y-4 mt-4 lg:mt-0">
-                      {leaderboard}
-                      {versionLink}
-                    </div>
-                  </div>
+                  )}
+                  {versionLink}
                 </div>
               );
             }
 
-            /* Non-graduated: original sidebar + main layout */
-            return (
-              <div className="flex flex-col gap-6 lg:flex-row lg:gap-0">
-                {/* Sidebar: reference content */}
-                <div className="contents lg:block lg:w-80 lg:shrink-0 lg:border-r lg:border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] lg:pr-6 lg:space-y-4">
-                  {howToPlayPanel}
-                  {signalGuidePanel}
-                  {aboutPanel}
-                </div>
-                {/* Main column: actions + leaderboard */}
-                <div className="contents lg:block lg:flex-1 lg:pl-6 lg:space-y-4">
-                  {actionButtons}
-                  {h2hSection}
-                  {dailyButton}
-                  {intelLink}
+            /* ── STAGE 2: PvP unlocked (10-19 answers) ── */
+            if (stage === 2) {
+              return (
+                <div className="space-y-4">
+                  {/* Compact quest card with inline research button */}
+                  {currentQuest && (
+                    <div className="term-border bg-[var(--c-bg)]">
+                      <div className="px-3 py-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{currentQuest.icon}</span>
+                            <span className="text-[var(--c-accent)] text-sm font-mono font-bold tracking-wide">{currentQuest.name}</span>
+                          </div>
+                          <span className="text-[var(--c-accent)] text-xs font-mono font-bold">{currentQuestProgress}/{currentQuest.target}</span>
+                        </div>
+                        <div className="h-1.5 bg-[var(--c-dark)]">
+                          <div
+                            className="h-full bg-[var(--c-accent)] transition-all"
+                            style={{ width: `${(currentQuestProgress / currentQuest.target) * 100}%` }}
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleStart('research')}
+                          className="w-full py-2 text-[var(--c-accent)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)] transition-all"
+                        >
+                          [ RESEARCH ]
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {pvpButton}
                   {versionLink}
-                  {leaderboard}
                 </div>
+              );
+            }
+
+            /* ── STAGE 3: Daily unlocked (20-29 answers) ── */
+            if (stage === 3) {
+              return (
+                <div className="space-y-4">
+                  {/* Compact quest one-liner */}
+                  {currentQuest && (
+                    <div className="term-border bg-[var(--c-bg)]">
+                      <div className="px-3 py-2.5 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{currentQuest.icon}</span>
+                            <span className="text-[var(--c-accent)] text-sm font-mono font-bold tracking-wide">{currentQuest.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[var(--c-accent)] text-xs font-mono font-bold">{currentQuestProgress}/{currentQuest.target}</span>
+                            <button
+                              onClick={() => handleStart('research')}
+                              className="text-[var(--c-accent)] font-mono font-bold tracking-widest text-xs hover:bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)] px-2 py-1 transition-all"
+                            >
+                              [ RESEARCH ]
+                            </button>
+                          </div>
+                        </div>
+                        <div className="h-1 bg-[var(--c-dark)]">
+                          <div
+                            className="h-full bg-[var(--c-accent)] transition-all"
+                            style={{ width: `${(currentQuestProgress / currentQuest.target) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-3">
+                    {pvpButton}
+                    {dailyButton}
+                  </div>
+                  {intelButton}
+                  {leaderboard}
+                  {versionLink}
+                </div>
+              );
+            }
+
+            /* ── STAGE 4: Fully unlocked (30+ answers) ── */
+            return (
+              <div className="space-y-4">
+                <p className="text-[var(--c-accent)] text-sm text-center font-mono">
+                  RESEARCH COMPLETE — 30/30. Thank you for contributing.
+                </p>
+                <div className="flex gap-3">
+                  {pvpButton}
+                  {dailyButton}
+                  {freeplayButton}
+                </div>
+                {intelButton}
+                {leaderboard}
+                {versionLink}
               </div>
             );
           })()}
+
+          {/* Version link for non-signed-in users */}
+          {(!signedIn || !profile?.displayName) && (
+            <div className="flex items-center justify-center font-mono">
+              <Link
+                href="/changelog"
+                onClick={() => { try { localStorage.setItem('lastSeenVersion', version); setHasUnreadChangelog(false); } catch {} }}
+                className="relative text-[var(--c-secondary)] hover:text-[var(--c-primary)] transition-colors tracking-wider text-sm border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] px-2 py-0.5 hover:border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)] hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)]"
+              >
+                v{version}
+                {hasUnreadChangelog && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[var(--c-accent)] animate-pulse" />
+                )}
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
