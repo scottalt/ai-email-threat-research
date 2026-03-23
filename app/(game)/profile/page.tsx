@@ -498,15 +498,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Legal links */}
-        <div className="flex items-center justify-center gap-4 text-[var(--c-muted)] text-xs font-mono opacity-60">
-          <Link href="/privacy" className="hover:text-[var(--c-secondary)] transition-colors">Privacy</Link>
-          <span>·</span>
-          <Link href="/terms" className="hover:text-[var(--c-secondary)] transition-colors">Terms</Link>
-          <span>·</span>
-          <Link href="/methodology" className="hover:text-[var(--c-secondary)] transition-colors">Methodology</Link>
-        </div>
-
         {/* Admin override panel — only visible to admin */}
         {isAdmin && (
           <div className="border border-[rgba(255,170,0,0.3)] bg-[var(--c-bg)]">
