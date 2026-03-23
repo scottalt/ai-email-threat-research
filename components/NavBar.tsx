@@ -43,16 +43,9 @@ export function NavBar() {
     <>
       {/* Desktop: top bar */}
       <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-50 bg-[var(--c-bg)] border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-6 py-2.5 items-center justify-between font-mono animate-[fadeIn_0.5s_ease-in_2s_both]" style={{ boxShadow: '0 2px 12px color-mix(in srgb, var(--c-primary) 6%, transparent)' }}>
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-[var(--c-primary)] text-[17px] font-bold tracking-widest" style={{ textShadow: '0 0 8px color-mix(in srgb, var(--c-primary) 40%, transparent)' }}>
-            THREAT TERMINAL
-          </Link>
-          <div className="flex items-center gap-2 text-[11px] text-[var(--c-muted)] opacity-50">
-            <Link href="/privacy" className="hover:text-[var(--c-secondary)] transition-colors">Privacy</Link>
-            <span>·</span>
-            <Link href="/terms" className="hover:text-[var(--c-secondary)] transition-colors">Terms</Link>
-          </div>
-        </div>
+        <Link href="/" className="text-[var(--c-primary)] text-[17px] font-bold tracking-widest" style={{ textShadow: '0 0 8px color-mix(in srgb, var(--c-primary) 40%, transparent)' }}>
+          THREAT TERMINAL
+        </Link>
         <div className="flex items-center gap-6">
           {links.map((link) => {
             const active = link.match(pathname);
