@@ -141,6 +141,19 @@ export async function POST(req: NextRequest) {
       : null;
     if (!displayName) return NextResponse.json({ error: 'Invalid display_name' }, { status: 400 });
     if (filter.check(displayName)) return NextResponse.json({ error: 'Keep it clean.' }, { status: 400 });
+
+    // Enforce unique callsigns (case-insensitive)
+    const adminCheck = getSupabaseAdminClient();
+    const { data: existing } = await adminCheck
+      .from('players')
+      .select('id')
+      .ilike('display_name', displayName)
+      .neq('auth_id', authId)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return NextResponse.json({ error: 'Callsign already taken.' }, { status: 409 });
+    }
+
     updates.display_name = displayName;
   }
 
