@@ -8,13 +8,17 @@ import { useTheme } from '@/lib/ThemeContext';
 import { getRankFromPoints } from '@/lib/h2h';
 import Link from 'next/link';
 
-type Tab = 'themes' | 'badges';
+import { RARITY_ORDER } from '@/lib/achievements';
+import type { AchievementRarity } from '@/lib/achievements';
+
+type Tab = 'themes' | 'badges' | 'shop';
 
 export default function InventoryPage() {
   const { profile, loading, signedIn, refreshProfile } = usePlayer();
   const { theme: activeTheme, setThemeId } = useTheme();
   const [tab, setTab] = useState<Tab>('themes');
   const [showPreview, setShowPreview] = useState(false);
+  const [rarityFilter, setRarityFilter] = useState<AchievementRarity | 'all'>('all');
   const [h2hRank, setH2HRank] = useState<{ rankLabel: string; rankPoints: number; rankColor: string } | null>(null);
   const researchComplete = (profile?.researchAnswersSubmitted ?? 0) >= 30;
 
@@ -110,7 +114,7 @@ export default function InventoryPage() {
 
         {/* Tab bar */}
         <div className="term-border bg-[var(--c-bg)] flex">
-          {(['themes', 'badges'] as Tab[]).map((t) => (
+          {(['themes', 'badges', 'shop'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -197,8 +201,24 @@ export default function InventoryPage() {
         )}
 
         {tab === 'badges' && (
+          <>
+          {/* Rarity filter */}
+          <div className="flex gap-2 flex-wrap mb-3">
+            <button
+              onClick={() => setRarityFilter('all')}
+              className={`text-xs font-mono px-2 py-1 border transition-all ${rarityFilter === 'all' ? 'text-[var(--c-primary)] border-[var(--c-primary)]' : 'text-[var(--c-muted)] border-[var(--c-dark)] hover:text-[var(--c-secondary)]'}`}
+            >ALL</button>
+            {RARITY_ORDER.map((r) => (
+              <button
+                key={r}
+                onClick={() => setRarityFilter(r)}
+                className={`text-xs font-mono px-2 py-1 border transition-all ${rarityFilter === r ? 'border-current' : 'border-[var(--c-dark)] hover:border-current'}`}
+                style={{ color: rarityFilter === r ? RARITY_COLORS[r] : 'var(--c-muted)' }}
+              >{r.toUpperCase()}</button>
+            ))}
+          </div>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            {ACHIEVEMENTS.map((achievement) => {
+            {ACHIEVEMENTS.filter((a) => rarityFilter === 'all' || a.rarity === rarityFilter).map((achievement) => {
               const earned = profile.achievements?.includes(achievement.id) ?? false;
               const featured = profile.featuredBadge === achievement.id;
               const rarityColor = RARITY_COLORS[achievement.rarity];
@@ -246,12 +266,19 @@ export default function InventoryPage() {
                     {earned || researchComplete ? achievement.description : '???'}
                   </div>
 
-                  {/* Rarity label */}
-                  <div
-                    className="text-[10px] font-mono tracking-widest text-center"
-                    style={{ color: earned ? rarityColor : '#555' }}
-                  >
-                    {achievement.rarity.toUpperCase()}
+                  {/* Rarity + season label */}
+                  <div className="flex items-center justify-center gap-1">
+                    <span
+                      className="text-[10px] font-mono tracking-widest"
+                      style={{ color: earned ? rarityColor : '#555' }}
+                    >
+                      {achievement.rarity.toUpperCase()}
+                    </span>
+                    {achievement.season && (
+                      <span className="text-[10px] font-mono text-[#ff0080]">
+                        S0
+                      </span>
+                    )}
                   </div>
 
                   {/* Featured badge */}
@@ -270,6 +297,18 @@ export default function InventoryPage() {
                 </button>
               );
             })}
+          </div>
+          </>
+        )}
+
+        {tab === 'shop' && (
+          <div className="term-border bg-[var(--c-bg)] px-4 py-8 text-center space-y-4">
+            <div className="text-4xl">🏪</div>
+            <div className="text-[#ff0080] text-lg font-mono font-bold tracking-widest">COMING SOON</div>
+            <div className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed max-w-sm mx-auto">
+              Earn coins through gameplay. Spend them on exclusive themes, badges, and cosmetics your opponents will see in Head-to-Head.
+            </div>
+            <div className="text-[var(--c-muted)] text-xs font-mono">Season 1</div>
           </div>
         )}
       </div>
