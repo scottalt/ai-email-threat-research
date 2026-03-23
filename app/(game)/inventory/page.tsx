@@ -308,7 +308,7 @@ export default function InventoryPage() {
                         backgroundColor: `color-mix(in srgb, ${rarityColor} 8%, transparent)`,
                       }}
                     >
-                      ON SHELF
+                      {profile.featuredBadges?.[0] === achievement.id ? 'PvP BADGE' : 'ON SHELF'}
                     </div>
                   )}
                 </button>

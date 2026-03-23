@@ -990,8 +990,6 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     </div>
                     {/* Right column */}
                     <div className="lg:flex-1 space-y-4 mt-4 lg:mt-0">
-                      {rankTiersDesktop}
-                      {rankTiersMobile}
                       {leaderboard}
                       {versionLink}
                     </div>
@@ -1013,7 +1011,6 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 <div className="contents lg:block lg:flex-1 lg:pl-6 lg:space-y-4">
                   {actionButtons}
                   {h2hSection}
-                  {rankTiersMobile}
                   {dailyButton}
                   {intelLink}
                   {versionLink}

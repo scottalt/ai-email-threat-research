@@ -651,20 +651,24 @@ export default function ProfilePage() {
               {(profile.featuredBadges?.length ?? 0) > 0 ? (
                 <div className="px-3 py-3">
                   <div className="flex flex-wrap justify-center gap-2">
-                    {profile.featuredBadges.map(id => {
+                    {profile.featuredBadges.map((id, idx) => {
                       const badge = ACHIEVEMENTS.find(a => a.id === id);
                       if (!badge) return null;
                       const color = RARITY_COLORS[badge.rarity];
+                      const isPvpBadge = idx === 0;
                       return (
                         <button
                           key={badge.id}
                           type="button"
                           disabled={shelfSaving}
                           onClick={() => handleToggleShelfBadge(badge.id)}
-                          className="flex flex-col items-center gap-1 px-3 py-2 border border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] min-w-[70px] hover:scale-[1.02] disabled:opacity-40 transition-all cursor-pointer"
-                          style={{ borderColor: `${color}40` }}
+                          className="relative flex flex-col items-center gap-1 px-3 py-2 border min-w-[70px] hover:scale-[1.02] disabled:opacity-40 transition-all cursor-pointer"
+                          style={{ borderColor: isPvpBadge ? color : `${color}40` }}
                           title={`Remove ${badge.name} from shelf`}
                         >
+                          {isPvpBadge && (
+                            <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold px-1 bg-[var(--c-bg)]" style={{ color }}>PvP</span>
+                          )}
                           <span className="text-xl font-mono" style={{ color }}>{badge.icon}</span>
                           <span className="text-xs font-mono font-bold tracking-wider" style={{ color }}>{badge.name}</span>
                         </button>
