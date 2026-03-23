@@ -49,8 +49,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: unknown) => {
-      if (session) refreshProfile();
-      else setProfile(null);
+      if (session) {
+        refreshProfile();
+        try { localStorage.setItem('terms_agreed', '1'); } catch {}
+      } else {
+        setProfile(null);
+      }
     });
     return () => subscription.unsubscribe();
   }, [refreshProfile]);
