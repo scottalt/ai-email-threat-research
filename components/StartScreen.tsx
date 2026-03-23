@@ -868,7 +868,11 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       {xpLeaderboard.map((row, i) => (
                         <div key={i} className="flex items-center gap-2 px-3 py-1.5 lg:py-2.5 text-sm lg:text-base font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
                           <span className="text-[var(--c-muted)] w-4">{i + 1}.</span>
-                          <span className="text-[var(--c-secondary)] flex-1 truncate">{row.display_name ?? 'ANON'}</span>
+                          {row.display_name ? (
+                            <Link href={`/player/${encodeURIComponent(row.display_name)}`} className="text-[var(--c-secondary)] flex-1 truncate hover:text-[var(--c-primary)] transition-colors">{row.display_name}</Link>
+                          ) : (
+                            <span className="text-[var(--c-muted)] flex-1 truncate">ANON</span>
+                          )}
                           {row.research_graduated && <span className="text-[var(--c-accent)] text-sm">★</span>}
                           {(() => { const r = getRankFromLevel(row.level); return (
                             <span className={`text-sm font-mono shrink-0`} style={{ color: r.color }}>
@@ -885,7 +889,11 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       {dailyLeaderboard.map((entry, i) => (
                         <div key={i} className="flex items-center gap-3 px-3 py-1.5 lg:py-2.5 anim-fade-in-up" style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
                           <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[var(--c-accent)]' : 'text-[var(--c-muted)]'}`}>{i + 1}</span>
-                          <span className="text-[var(--c-secondary)] text-sm font-mono flex-1 truncate">{entry.name}</span>
+                          {entry.name ? (
+                            <Link href={`/player/${encodeURIComponent(entry.name)}`} className="text-[var(--c-secondary)] text-sm font-mono flex-1 truncate hover:text-[var(--c-primary)] transition-colors">{entry.name}</Link>
+                          ) : (
+                            <span className="text-[var(--c-muted)] text-sm font-mono flex-1 truncate">ANON</span>
+                          )}
                           {(() => { const r = getRankFromLevel(entry.level ?? 1); return (
                             <span className={`text-sm font-mono shrink-0`} style={{ color: r.color }}>{r.label}</span>
                           ); })()}
@@ -905,7 +913,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       {h2hLeaderboard.map((row, i) => (
                         <div key={i} className="flex items-center gap-2 px-3 py-1.5 lg:py-2.5 text-sm lg:text-base font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
                           <span className="text-[var(--c-muted)] w-4">{row.position}.</span>
-                          <span className="text-[var(--c-secondary)] flex-1 truncate">{row.displayName}</span>
+                          <Link href={`/player/${encodeURIComponent(row.displayName)}`} className="text-[var(--c-secondary)] flex-1 truncate hover:text-[var(--c-primary)] transition-colors">{row.displayName}</Link>
                           <span className="text-sm font-mono shrink-0" style={{ color: row.rankColor }}>{row.rankLabel}</span>
                           <span className="text-[var(--c-primary)]">{row.rankPoints} pts</span>
                           <span className="text-[var(--c-muted)] text-xs">{row.wins}W/{row.losses}L</span>
