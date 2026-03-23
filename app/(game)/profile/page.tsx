@@ -66,7 +66,7 @@ export default function ProfilePage() {
   const [backgroundSaving, setBackgroundSaving] = useState(false);
   const [showRanks, setShowRanks] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
-  const [profileTab, setProfileTab] = useState<'info' | 'solo' | 'h2h'>('info');
+  const [profileTab, setProfileTab] = useState<'info' | 'solo' | 'h2h' | 'friends'>('info');
   const [editingBio, setEditingBio] = useState(false);
   const [bioValue, setBioValue] = useState('');
   const [bioSaving, setBioSaving] = useState(false);
@@ -80,6 +80,17 @@ export default function ProfilePage() {
   const [soloStats, setSoloStats] = useState<SoloStats | null>(null);
   const [soloStatsEmpty, setSoloStatsEmpty] = useState(false);
   const [soloStatsError, setSoloStatsError] = useState('');
+
+  // Friends
+  const [friendsData, setFriendsData] = useState<{
+    friends: { playerId: string; displayName: string; level: number; rankPoints: number; rankLabel: string }[];
+    incoming: { requestId: string; from: { playerId: string; displayName: string } }[];
+    outgoing: { requestId: string; to: { playerId: string; displayName: string } }[];
+  } | null>(null);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [addFriendCallsign, setAddFriendCallsign] = useState('');
+  const [addFriendStatus, setAddFriendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [addFriendMsg, setAddFriendMsg] = useState('');
 
   // Admin override panel
   const [isAdmin, setIsAdmin] = useState(false);
@@ -95,6 +106,66 @@ export default function ProfilePage() {
   useEffect(() => {
     fetch('/api/player/admin-check').then(r => { if (r.ok) setIsAdmin(true); });
   }, []);
+
+  // Lazy-load friends data when tab selected
+  useEffect(() => {
+    if (profileTab !== 'friends' || friendsData || friendsLoading) return;
+    setFriendsLoading(true);
+    fetch('/api/friends')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setFriendsData(data); })
+      .catch(() => {})
+      .finally(() => setFriendsLoading(false));
+  }, [profileTab, friendsData, friendsLoading]);
+
+  async function handleAddFriend() {
+    const callsign = addFriendCallsign.trim();
+    if (!callsign) return;
+    setAddFriendStatus('sending');
+    setAddFriendMsg('');
+    try {
+      const res = await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetCallsign: callsign }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAddFriendStatus('sent');
+        setAddFriendMsg('REQUEST SENT');
+        setAddFriendCallsign('');
+        setFriendsData(null); // refetch
+      } else {
+        setAddFriendStatus('error');
+        setAddFriendMsg(data.error ?? 'FAILED');
+      }
+    } catch {
+      setAddFriendStatus('error');
+      setAddFriendMsg('NETWORK ERROR');
+    }
+  }
+
+  async function handleFriendAction(requestId: string, action: 'accept' | 'reject') {
+    try {
+      const res = await fetch('/api/friends', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action }),
+      });
+      if (res.ok) setFriendsData(null); // refetch
+    } catch { /* ignore */ }
+  }
+
+  async function handleRemoveFriend(friendId: string) {
+    try {
+      const res = await fetch('/api/friends', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendId }),
+      });
+      if (res.ok) setFriendsData(null); // refetch
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     if (!signedIn) return;
@@ -453,6 +524,16 @@ export default function ProfilePage() {
             }`}
           >
             PvP STATS
+          </button>
+          <button
+            onClick={() => setProfileTab('friends')}
+            className={`flex-1 py-2 text-sm font-mono tracking-widest transition-colors ${
+              profileTab === 'friends'
+                ? 'text-[var(--c-primary)] bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] border-b-2 border-[var(--c-primary)]'
+                : 'text-[var(--c-secondary)] hover:text-[var(--c-primary)] border-b-2 border-transparent'
+            }`}
+          >
+            FRIENDS
           </button>
         </div>
 
@@ -1037,6 +1118,150 @@ export default function ProfilePage() {
                       <div className="h-full transition-all duration-500 bg-[#ff0080]" style={{ width: `${Math.min(100, (h2hStats.ratedMatchesToday / H2H_DAILY_RATED_CAP) * 100)}%` }} />
                     </div>
                   </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ═══════════════ FRIENDS TAB ═══════════════ */}
+        {profileTab === 'friends' && (
+          <>
+            {/* Add friend */}
+            <div className="term-border bg-[var(--c-bg)]">
+              <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                <span className="text-[var(--c-secondary)] text-sm tracking-widest">ADD_FRIEND</span>
+              </div>
+              <div className="px-3 py-3 space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={addFriendCallsign}
+                    onChange={e => setAddFriendCallsign(e.target.value.slice(0, 20))}
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddFriend(); }}
+                    placeholder="ENTER CALLSIGN"
+                    className="flex-1 bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-2 py-1.5 text-[var(--c-primary)] font-mono text-sm focus:outline-none focus:border-[color-mix(in_srgb,var(--c-primary)_70%,transparent)] placeholder:text-[var(--c-dark)]"
+                  />
+                  <button
+                    onClick={handleAddFriend}
+                    disabled={addFriendStatus === 'sending' || !addFriendCallsign.trim()}
+                    className="px-4 py-1.5 border border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)] text-[var(--c-primary)] font-mono text-sm tracking-widest hover:bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] disabled:opacity-40 transition-colors active:scale-95 transition-all"
+                  >
+                    {addFriendStatus === 'sending' ? '...' : 'ADD'}
+                  </button>
+                </div>
+                {addFriendMsg && (
+                  <div className={`text-sm font-mono ${addFriendStatus === 'sent' ? 'text-[var(--c-primary)]' : 'text-[#ff3333]'}`}>
+                    {addFriendMsg}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {friendsLoading && (
+              <div className="term-border bg-[var(--c-bg)] px-4 py-6 text-center">
+                <span className="text-[var(--c-secondary)] text-sm font-mono tracking-widest">LOADING...</span>
+              </div>
+            )}
+
+            {friendsData && (
+              <>
+                {/* Incoming requests */}
+                {friendsData.incoming.length > 0 && (
+                  <div className="term-border bg-[var(--c-bg)]">
+                    <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                      <span className="text-[var(--c-secondary)] text-sm tracking-widest">INCOMING_REQUESTS ({friendsData.incoming.length})</span>
+                    </div>
+                    <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                      {friendsData.incoming.map(req => (
+                        <div key={req.requestId} className="px-3 py-2 flex items-center justify-between">
+                          <span className="text-[var(--c-primary)] text-sm font-mono font-bold">{req.from.displayName}</span>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => handleFriendAction(req.requestId, 'accept')}
+                              className="px-3 py-1 border border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)] text-[var(--c-primary)] font-mono text-xs tracking-wider hover:bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] active:scale-95 transition-all"
+                            >
+                              ACCEPT
+                            </button>
+                            <button
+                              onClick={() => handleFriendAction(req.requestId, 'reject')}
+                              className="px-3 py-1 border border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] text-[var(--c-muted)] font-mono text-xs tracking-wider hover:text-[#ff3333] hover:border-[#ff333350] active:scale-95 transition-all"
+                            >
+                              REJECT
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Friends list */}
+                <div className="term-border bg-[var(--c-bg)]">
+                  <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                    <span className="text-[var(--c-secondary)] text-sm tracking-widest">FRIENDS ({friendsData.friends.length})</span>
+                  </div>
+                  {friendsData.friends.length === 0 ? (
+                    <div className="px-3 py-6 text-center">
+                      <div className="text-[var(--c-muted)] text-sm font-mono">No friends yet. Add one by callsign above.</div>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                      {friendsData.friends.map(f => {
+                        const rank = getRankFromPoints(f.rankPoints);
+                        return (
+                          <div key={f.playerId} className="px-3 py-2 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-[var(--c-primary)] text-sm font-mono font-bold truncate">{f.displayName}</span>
+                              <span className="text-[var(--c-muted)] text-xs font-mono shrink-0">LVL {f.level}</span>
+                              <span className="text-xs font-mono font-bold shrink-0" style={{ color: rank.color }}>{rank.icon} {f.rankLabel}</span>
+                            </div>
+                            <div className="flex gap-1.5 shrink-0">
+                              <Link
+                                href={`/player/${encodeURIComponent(f.displayName)}`}
+                                className="px-2 py-1 border border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] text-[var(--c-secondary)] font-mono text-xs tracking-wider hover:text-[var(--c-primary)] hover:border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)] active:scale-95 transition-all"
+                              >
+                                VIEW
+                              </Link>
+                              <button
+                                onClick={() => handleRemoveFriend(f.playerId)}
+                                className="px-2 py-1 border border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] text-[var(--c-muted)] font-mono text-xs tracking-wider hover:text-[#ff3333] hover:border-[#ff333350] active:scale-95 transition-all"
+                              >
+                                REMOVE
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Outgoing requests */}
+                {friendsData.outgoing.length > 0 && (
+                  <div className="term-border bg-[var(--c-bg)]">
+                    <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                      <span className="text-[var(--c-secondary)] text-sm tracking-widest">OUTGOING_REQUESTS ({friendsData.outgoing.length})</span>
+                    </div>
+                    <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                      {friendsData.outgoing.map(req => (
+                        <div key={req.requestId} className="px-3 py-2 flex items-center justify-between">
+                          <span className="text-[var(--c-secondary)] text-sm font-mono">{req.to.displayName}</span>
+                          <button
+                            onClick={() => handleRemoveFriend(req.to.playerId)}
+                            className="px-3 py-1 border border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] text-[var(--c-muted)] font-mono text-xs tracking-wider hover:text-[#ff3333] hover:border-[#ff333350] active:scale-95 transition-all"
+                          >
+                            CANCEL
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Privacy note */}
+                <div className="text-center">
+                  <span className="text-[var(--c-muted)] text-xs font-mono opacity-60">Research mode data is anonymous and never shared with friends.</span>
                 </div>
               </>
             )}

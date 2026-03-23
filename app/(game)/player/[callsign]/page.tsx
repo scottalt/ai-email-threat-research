@@ -3,6 +3,7 @@ import { ACHIEVEMENTS, RARITY_COLORS, CATEGORY_LABELS, type AchievementCategory 
 import { getRankFromPoints, CURRENT_SEASON } from '@/lib/h2h';
 import { getRankFromLevel } from '@/lib/rank';
 import Link from 'next/link';
+import { AddFriendButton } from './AddFriendButton';
 
 interface Props {
   params: Promise<{ callsign: string }>;
@@ -105,6 +106,7 @@ export default async function PublicProfilePage({ params }: Props) {
               {bio}
             </div>
           )}
+          <AddFriendButton callsign={displayName} />
         </div>
 
         {/* Featured badge shelf */}
