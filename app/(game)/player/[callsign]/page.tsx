@@ -1,4 +1,6 @@
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { ACHIEVEMENTS, RARITY_COLORS, CATEGORY_LABELS, type AchievementCategory } from '@/lib/achievements';
 import { getRankFromPoints, CURRENT_SEASON } from '@/lib/h2h';
 import { getRankFromLevel } from '@/lib/rank';
@@ -65,6 +67,22 @@ export default async function PublicProfilePage({ params }: Props) {
     );
   }
 
+  // Check if viewer is the profile owner
+  let isOwnProfile = false;
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: viewer } = await admin.from('players').select('id').eq('auth_id', user.id).single();
+      if (viewer && viewer.id === player.id) isOwnProfile = true;
+    }
+  } catch { /* not signed in — that's fine */ }
+
   // Public profile — fetch all data
   const playerId = player.id as string;
   const bio = (player.bio as string) ?? '';
@@ -110,7 +128,7 @@ export default async function PublicProfilePage({ params }: Props) {
               {bio}
             </div>
           )}
-          <AddFriendButton callsign={displayName} />
+          {!isOwnProfile && <AddFriendButton callsign={displayName} />}
         </div>
 
         {/* Featured badge shelf */}
