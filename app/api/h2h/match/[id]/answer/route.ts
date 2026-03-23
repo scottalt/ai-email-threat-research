@@ -394,13 +394,26 @@ export async function POST(
       .eq('id', matchId);
 
     if (newCards >= H2H_CARDS_PER_MATCH) {
+      // Re-read match for fresh opponent data (avoids race where both finish simultaneously)
+      const { data: freshMatch } = await admin
+        .from('h2h_matches')
+        .select('*')
+        .eq('id', matchId)
+        .single();
+
+      const freshOpponentCards = freshMatch
+        ? (freshMatch[opponentCardsField] ?? 0) as number
+        : opponentCards;
+
       // Player finished all cards — check if opponent also finished
-      if (opponentCards >= H2H_CARDS_PER_MATCH) {
+      if (freshOpponentCards >= H2H_CARDS_PER_MATCH) {
         // Both finished — compare total times
         const opponentTimeField = isPlayer1
           ? 'player2_time_ms'
           : 'player1_time_ms';
-        const opponentTime = (match[opponentTimeField] ?? 0) as number;
+        const opponentTime = freshMatch
+          ? (freshMatch[opponentTimeField] ?? 0) as number
+          : 0;
         const winnerId = newTime <= opponentTime ? playerId : opponentId;
         const loserId = winnerId === playerId ? opponentId : playerId;
         await finalizeMatch(matchId, winnerId, loserId!);
