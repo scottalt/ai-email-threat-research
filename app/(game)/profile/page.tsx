@@ -350,13 +350,8 @@ export default function ProfilePage() {
   }
 
   const bottomRows: { label: string; value: string | number }[] = [
-    { label: 'LEVEL',             value: profile.level },
     { label: 'TOTAL XP',          value: `${profile.xp.toLocaleString()} XP` },
     { label: 'CURRENT STREAK',    value: profile.currentStreak > 0 ? `${profile.currentStreak} days` : '—' },
-    { label: 'LONGEST STREAK',    value: profile.longestStreak > 0 ? `${profile.longestStreak} days` : '—' },
-    { label: 'SESSIONS',          value: profile.totalSessions },
-    { label: 'RESEARCH SESSIONS', value: profile.researchSessionsCompleted },
-    { label: 'GRADUATION',        value: profile.researchGraduated ? 'GRADUATED — EXPERT UNLOCKED' : `${profile.researchSessionsCompleted}/3 sessions` },
     { label: 'PERSONAL BEST',     value: `${profile.personalBestScore.toLocaleString()} pts` },
   ];
 
