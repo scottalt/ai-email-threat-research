@@ -93,18 +93,6 @@ export default function ProfilePage() {
   const [addFriendStatus, setAddFriendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [addFriendMsg, setAddFriendMsg] = useState('');
 
-  // Data deletion request
-  const [deleteStatus, setDeleteStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  async function handleDeleteRequest() {
-    setDeleteStatus('sending');
-    try {
-      const res = await fetch('/api/player/delete-request', { method: 'POST' });
-      setDeleteStatus(res.ok ? 'sent' : 'error');
-    } catch {
-      setDeleteStatus('error');
-    }
-  }
-
   // Admin override panel
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -1310,28 +1298,21 @@ export default function ProfilePage() {
         )}
 
         {/* Data deletion request */}
-        {signedIn && (
+        {signedIn && profile && (
           <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,#ff3333_15%,transparent)]">
             <div className="border-b border-[color-mix(in_srgb,#ff3333_15%,transparent)] px-3 py-1.5">
               <span className="text-[var(--c-muted)] text-sm tracking-widest">DATA_MANAGEMENT</span>
             </div>
             <div className="px-3 py-3 space-y-2">
               <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed">
-                Request deletion of your account and data. You&apos;ll receive a confirmation email. Research answers may be retained in anonymized form.
+                Request deletion of your account and data. Research answers may be retained in anonymized form.
               </p>
-              {deleteStatus === 'sent' ? (
-                <div className="text-[var(--c-primary)] text-sm font-mono">Request sent — check your email for confirmation.</div>
-              ) : deleteStatus === 'error' ? (
-                <div className="text-[#ff3333] text-sm font-mono">Failed to send request. Try again or email scott@scottaltiparmak.com directly.</div>
-              ) : (
-                <button
-                  onClick={handleDeleteRequest}
-                  disabled={deleteStatus === 'sending'}
-                  className="w-full py-2 border border-[color-mix(in_srgb,#ff3333_30%,transparent)] text-[#ff3333] font-mono text-sm tracking-widest hover:bg-[rgba(255,51,51,0.05)] disabled:opacity-40 transition-colors"
-                >
-                  {deleteStatus === 'sending' ? 'SENDING...' : '[ REQUEST DATA DELETION ]'}
-                </button>
-              )}
+              <a
+                href={`mailto:scott@scottaltiparmak.com?subject=${encodeURIComponent(`[Data Deletion Request] ${profile.displayName}`)}&body=${encodeURIComponent(`I would like to request deletion of my Threat Terminal account.\n\nCallsign: ${profile.displayName}\nPlayer ID: ${profile.id}\n\nPlease delete:\n- [ ] My account and profile only (keep anonymized research answers)\n- [ ] Everything (account + all answers including research)\n`)}`}
+                className="block w-full py-2 border border-[color-mix(in_srgb,#ff3333_30%,transparent)] text-[#ff3333] font-mono text-sm tracking-widest hover:bg-[rgba(255,51,51,0.05)] transition-colors text-center"
+              >
+                [ REQUEST DATA DELETION ]
+              </a>
             </div>
           </div>
         )}
