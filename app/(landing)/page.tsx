@@ -277,7 +277,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 pb-[100px] px-6 border-t border-white/[0.06] text-center">
+      <section className="py-20 pb-16 px-6 border-t border-white/[0.06] text-center">
         <h2 className="text-[32px] font-extrabold mb-3 tracking-tight">
           Think you&apos;d do better?
         </h2>
@@ -291,6 +291,28 @@ export default async function LandingPage() {
           Take the Challenge &rarr;
         </Link>
       </section>
+
+      {/* Footer */}
+      <footer className="py-8 px-6 border-t border-white/[0.06] text-center">
+        <p className="text-[12px] text-[#52525b] max-w-[500px] mx-auto leading-relaxed mb-3">
+          Threat Terminal is for educational and research purposes only. It is not
+          a substitute for professional cybersecurity training. All emails shown
+          are fictional and AI-generated.
+        </p>
+        <div className="flex items-center justify-center gap-4 text-[12px] text-[#52525b]">
+          <Link href="/privacy" className="hover:text-[#a1a1aa] transition-colors">
+            Privacy Policy
+          </Link>
+          <span className="text-[#3f3f46]">|</span>
+          <Link href="/terms" className="hover:text-[#a1a1aa] transition-colors">
+            Terms of Use
+          </Link>
+          <span className="text-[#3f3f46]">|</span>
+          <Link href="/methodology" className="hover:text-[#a1a1aa] transition-colors">
+            Methodology
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }

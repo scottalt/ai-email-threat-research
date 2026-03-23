@@ -72,6 +72,17 @@ export function ResearchIntro({ onBegin }: Props) {
           </div>
         </div>
 
+        <div className="text-center">
+          <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed mb-1">
+            For educational and research purposes only. All emails are fictional and AI-generated.
+          </p>
+          <p className="text-[var(--c-muted)] text-xs font-mono">
+            <Link href="/privacy" className="hover:text-[var(--c-secondary)] transition-colors underline">Privacy</Link>
+            {' · '}
+            <Link href="/terms" className="hover:text-[var(--c-secondary)] transition-colors underline">Terms</Link>
+          </p>
+        </div>
+
         <button
           onClick={() => { localStorage.setItem('research_intro_seen', '1'); onBegin(); }}
           className="w-full py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] transition-all"
