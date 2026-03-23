@@ -541,21 +541,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 onClick={() => handleStart('h2h')}
                 className="flex-1 py-4 term-border font-mono font-bold tracking-widest text-sm active:scale-95 transition-all border-2 border-[rgba(255,0,128,0.5)] text-[#ff0080] hover:bg-[rgba(255,0,128,0.04)]"
               >
-                <div className="flex items-center justify-center gap-2">
-                  <span>[ PvP MODE ]</span>
-                  {h2hStats && (
-                    <span className="text-xs px-1.5 py-0.5 border border-[rgba(255,0,128,0.4)] inline-flex items-center gap-1" style={{ color: h2hStats.rankColor }}>
-                      {h2hStats.rankIcon} {h2hStats.rankLabel}
-                    </span>
-                  )}
-                </div>
+                [ PvP MODE ]
                 <div className="text-[var(--c-secondary)] text-xs mt-1 font-normal tracking-wide">RANKED COMPETITIVE</div>
-                {h2hStats && (h2hStats.wins > 0 || h2hStats.losses > 0) && (
-                  <div className="text-[var(--c-muted)] text-xs mt-0.5 font-normal">
-                    {h2hStats.rankPoints} pts · {h2hStats.wins}W {h2hStats.losses}L
-                    {h2hStats.winStreak >= 2 && <span className="text-[var(--c-primary)]"> · {h2hStats.winStreak} streak</span>}
-                  </div>
-                )}
               </button>
             );
 
