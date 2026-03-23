@@ -93,6 +93,18 @@ export default function ProfilePage() {
   const [addFriendStatus, setAddFriendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [addFriendMsg, setAddFriendMsg] = useState('');
 
+  // Data deletion request
+  const [deleteStatus, setDeleteStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  async function handleDeleteRequest() {
+    setDeleteStatus('sending');
+    try {
+      const res = await fetch('/api/player/delete-request', { method: 'POST' });
+      setDeleteStatus(res.ok ? 'sent' : 'error');
+    } catch {
+      setDeleteStatus('error');
+    }
+  }
+
   // Admin override panel
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -1295,6 +1307,33 @@ export default function ProfilePage() {
               </>
             )}
           </>
+        )}
+
+        {/* Data deletion request */}
+        {signedIn && (
+          <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,#ff3333_15%,transparent)]">
+            <div className="border-b border-[color-mix(in_srgb,#ff3333_15%,transparent)] px-3 py-1.5">
+              <span className="text-[var(--c-muted)] text-sm tracking-widest">DATA_MANAGEMENT</span>
+            </div>
+            <div className="px-3 py-3 space-y-2">
+              <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed">
+                Request deletion of your account and data. You&apos;ll receive a confirmation email. Research answers may be retained in anonymized form.
+              </p>
+              {deleteStatus === 'sent' ? (
+                <div className="text-[var(--c-primary)] text-sm font-mono">Request sent — check your email for confirmation.</div>
+              ) : deleteStatus === 'error' ? (
+                <div className="text-[#ff3333] text-sm font-mono">Failed to send request. Try again or email scott@scottaltiparmak.com directly.</div>
+              ) : (
+                <button
+                  onClick={handleDeleteRequest}
+                  disabled={deleteStatus === 'sending'}
+                  className="w-full py-2 border border-[color-mix(in_srgb,#ff3333_30%,transparent)] text-[#ff3333] font-mono text-sm tracking-widest hover:bg-[rgba(255,51,51,0.05)] disabled:opacity-40 transition-colors"
+                >
+                  {deleteStatus === 'sending' ? 'SENDING...' : '[ REQUEST DATA DELETION ]'}
+                </button>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Admin override panel — only visible to admin */}

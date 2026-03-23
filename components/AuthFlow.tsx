@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 interface AuthFlowProps {
   onSignIn: (email: string) => Promise<{ error: string | null }>;
@@ -12,12 +13,14 @@ interface AuthFlowProps {
 export function AuthFlow({ onSignIn, onVerifyCode, onCancel, headless = false }: AuthFlowProps) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [state, setState] = useState<'idle' | 'loading' | 'sent' | 'verifying' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.includes('@')) { setErrorMsg('Enter a valid email'); setState('error'); return; }
+    if (!agreed) { setErrorMsg('You must agree to the Privacy Policy and Terms of Use'); setState('error'); return; }
     setState('loading');
     const { error } = await onSignIn(email);
     if (error) { setErrorMsg(error); setState('error'); }
@@ -97,6 +100,20 @@ export function AuthFlow({ onSignIn, onVerifyCode, onCancel, headless = false }:
         autoFocus
         className="w-full bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] px-3 py-2.5 text-[var(--c-primary)] font-mono text-base placeholder:text-[var(--c-dark)] focus:outline-none focus:border-[color-mix(in_srgb,var(--c-primary)_60%,transparent)]"
       />
+      <label className="flex items-start gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => { setAgreed(e.target.checked); setErrorMsg(''); }}
+          className="mt-0.5 accent-[var(--c-primary)]"
+        />
+        <span className="text-[var(--c-muted)] text-xs font-mono leading-relaxed">
+          I agree to the{' '}
+          <Link href="/privacy" target="_blank" className="text-[var(--c-secondary)] underline hover:text-[var(--c-primary)] transition-colors">Privacy Policy</Link>
+          {' '}and{' '}
+          <Link href="/terms" target="_blank" className="text-[var(--c-secondary)] underline hover:text-[var(--c-primary)] transition-colors">Terms of Use</Link>
+        </span>
+      </label>
       {state === 'error' && (
         <div className="text-[#ff3333] text-sm font-mono">{errorMsg}</div>
       )}
