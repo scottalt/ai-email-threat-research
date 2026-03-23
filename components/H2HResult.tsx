@@ -21,6 +21,7 @@ interface MatchData {
   oppName: string;
   myBadgeIcon: string | null;
   oppBadgeIcon: string | null;
+  oppThemeColor: string;
   myCards: number;
   oppCards: number;
   myTimeMs: number;
@@ -107,6 +108,7 @@ export function H2HResult({
             oppName: oppPlayer?.displayName ?? 'OPPONENT',
             myBadgeIcon: myBadgeId ? (ACHIEVEMENTS.find(a => a.id === myBadgeId)?.icon ?? null) : null,
             oppBadgeIcon: oppBadgeId ? (ACHIEVEMENTS.find(a => a.id === oppBadgeId)?.icon ?? null) : null,
+            oppThemeColor: oppPlayer?.themeColor ?? '#00ff41',
             myCards,
             oppCards,
             myTimeMs,
@@ -199,7 +201,7 @@ export function H2HResult({
             {matchData.myBadgeIcon && <span className="mr-1">{matchData.myBadgeIcon}</span>}
             {playerSummary('YOU', matchData.myCards, matchData.myTimeMs, matchData.myEliminated)}
           </p>
-          <p className="text-[var(--c-muted)] mt-1">
+          <p className="mt-1" style={{ color: matchData.oppThemeColor }}>
             {matchData.oppBadgeIcon && <span className="mr-1">{matchData.oppBadgeIcon}</span>}
             {playerSummary('OPP', matchData.oppCards, matchData.oppTimeMs, matchData.oppEliminated)}
           </p>

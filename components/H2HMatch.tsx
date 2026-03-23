@@ -234,6 +234,7 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
   const [opponentIndex, setOpponentIndex] = useState(0);
   const [opponentEliminated, setOpponentEliminated] = useState(false);
   const [opponentBadgeIcon, setOpponentBadgeIcon] = useState<string | null>(null);
+  const [opponentThemeColor, setOpponentThemeColor] = useState<string>('#00ff41');
   const [myBadgeIcon, setMyBadgeIcon] = useState<string | null>(null);
 
   // ── Ready-up lobby ──
@@ -318,6 +319,7 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
         if (opponentId && matchData.players[opponentId]) {
           const opp = matchData.players[opponentId];
           setOpponentName(opp.displayName);
+          if (opp.themeColor) setOpponentThemeColor(opp.themeColor);
           if (opp.featuredBadge) {
             setOpponentBadgeIcon(ACHIEVEMENTS.find(a => a.id === opp.featuredBadge)?.icon ?? null);
           }
@@ -704,8 +706,8 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
             </div>
             <div className="text-[var(--c-secondary)] text-sm font-mono">
               {myBadgeIcon && <span className="text-[var(--c-primary)] mr-1">{myBadgeIcon}</span>}
-              YOU vs {opponentName}
-              {opponentBadgeIcon && <span className="text-[var(--c-primary)] ml-1">{opponentBadgeIcon}</span>}
+              YOU vs <span style={{ color: opponentThemeColor }}>{opponentName}</span>
+              {opponentBadgeIcon && <span style={{ color: opponentThemeColor }} className="ml-1">{opponentBadgeIcon}</span>}
             </div>
 
             {/* Ready status */}
@@ -769,7 +771,7 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
         <div className="w-full term-border px-3 py-2">
           <div className="flex items-center justify-between text-sm font-mono">
             <span className="text-[var(--c-secondary)]">
-              OPP: {opponentBadgeIcon && <span className="text-[var(--c-primary)]">{opponentBadgeIcon} </span>}<span className="text-[var(--c-primary)]">{opponentName}</span>
+              <span style={{ color: opponentThemeColor }}>OPP:</span> {opponentBadgeIcon && <span style={{ color: opponentThemeColor }}>{opponentBadgeIcon} </span>}<span style={{ color: opponentThemeColor }}>{opponentName}</span>
             </span>
             <div className="flex items-center gap-2">
               <ProgressSquares completed={opponentIndex} total={H2H_CARDS_PER_MATCH} />
@@ -850,7 +852,7 @@ export function H2HMatch({ matchId, playerId, isGhost, onMatchEnd }: Props) {
       <div className="w-full term-border px-3 py-2">
         <div className="flex items-center justify-between text-sm font-mono">
           <span className="text-[var(--c-secondary)]">
-            OPP: {opponentBadgeIcon && <span className="text-[var(--c-primary)]">{opponentBadgeIcon} </span>}<span className="text-[var(--c-primary)]">{opponentName}</span>
+            <span style={{ color: opponentThemeColor }}>OPP:</span> {opponentBadgeIcon && <span style={{ color: opponentThemeColor }}>{opponentBadgeIcon} </span>}<span style={{ color: opponentThemeColor }}>{opponentName}</span>
           </span>
           <div className="flex items-center gap-2">
             <ProgressSquares completed={opponentIndex} total={H2H_CARDS_PER_MATCH} />

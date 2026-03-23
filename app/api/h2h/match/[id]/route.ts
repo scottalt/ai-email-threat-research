@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { THEMES } from '@/lib/themes';
 
 // ── GET /api/h2h/match/[id] — Return match state for initial load / reconnection ──
 
@@ -69,12 +70,16 @@ export async function GET(
   const playerIds = [match.player1_id, match.player2_id].filter(Boolean);
   const { data: players } = await admin
     .from('players')
-    .select('id, display_name, featured_badge')
+    .select('id, display_name, featured_badge, theme_id')
     .in('id', playerIds);
 
-  const playerMap: Record<string, { displayName: string; featuredBadge: string | null }> = {};
+  const playerMap: Record<string, { displayName: string; featuredBadge: string | null; themeColor: string }> = {};
   for (const p of players ?? []) {
-    playerMap[p.id] = { displayName: p.display_name, featuredBadge: p.featured_badge ?? null };
+    playerMap[p.id] = {
+      displayName: p.display_name,
+      featuredBadge: p.featured_badge ?? null,
+      themeColor: THEMES.find(t => t.id === (p.theme_id ?? 'phosphor'))?.colors.primary ?? '#00ff41',
+    };
   }
 
   // For completed matches, include full card data for review (safe to reveal post-match)

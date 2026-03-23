@@ -17,10 +17,18 @@ export function H2HLobby({ profile, onSearch, onBack }: Props) {
     wins: number; losses: number; winStreak: number; bestWinStreak: number;
     peakRankPoints: number;
   } | null>(null);
+  const [leaderboard, setLeaderboard] = useState<{ position: number; displayName: string; rankPoints: number; rankLabel: string; rankColor: string; wins: number; losses: number }[]>([]);
 
   useEffect(() => {
     fetch('/api/h2h/stats').then(async (res) => {
       if (res.ok) setH2HStats(await res.json());
+    }).catch(() => {});
+
+    fetch('/api/h2h/leaderboard').then(async (res) => {
+      if (res.ok) {
+        const data = await res.json();
+        setLeaderboard(data.leaderboard ?? []);
+      }
     }).catch(() => {});
   }, []);
 
@@ -191,6 +199,45 @@ export function H2HLobby({ profile, onSearch, onBack }: Props) {
         </div>
         <div className="px-4 py-2 border-t border-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] text-xs font-mono text-[var(--c-secondary)]">
           Win: +8 to +40 · Loss: -8 to -35
+        </div>
+      </div>
+
+      {/* PvP Leaderboard */}
+      <div className="w-full term-border bg-[var(--c-bg)]">
+        <div className="px-4 py-2 border-b border-[rgba(255,0,128,0.2)]">
+          <span className="text-[#ff0080] text-sm tracking-widest">PvP_LEADERBOARD</span>
+        </div>
+        <div className="px-3 py-2">
+          {leaderboard.length === 0 ? (
+            <div className="text-[var(--c-muted)] text-sm font-mono text-center py-3">
+              No ranked matches yet
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              {leaderboard.slice(0, 10).map((entry) => {
+                const rank = getRankFromPoints(entry.rankPoints);
+                return (
+                  <div
+                    key={entry.position}
+                    className="flex items-center justify-between text-sm font-mono px-2 py-1"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[var(--c-muted)] w-5 text-right shrink-0">{entry.position}.</span>
+                      <span className="text-[var(--c-secondary)] truncate">{entry.displayName}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span style={{ color: entry.rankColor }} className="text-xs">
+                        {rank.icon} {entry.rankLabel}
+                      </span>
+                      <span className="text-[var(--c-muted)] text-xs w-12 text-right">
+                        {entry.rankPoints}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

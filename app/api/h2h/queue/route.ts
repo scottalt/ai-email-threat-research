@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import { CURRENT_SEASON, H2H_QUEUE_TIMEOUT_MS, H2H_CARDS_PER_MATCH, H2H_MATCH_TTL, getRankFromPoints, getRankIndex } from '@/lib/h2h';
+import { THEMES } from '@/lib/themes';
 
 // ── Deal cards for a match ──
 
@@ -64,6 +65,7 @@ interface AuthenticatedPlayer {
   display_name: string;
   research_graduated: boolean;
   featured_badge: string | null;
+  theme_id: string | null;
 }
 
 async function getAuthenticatedPlayer(): Promise<AuthenticatedPlayer | null> {
@@ -79,7 +81,7 @@ async function getAuthenticatedPlayer(): Promise<AuthenticatedPlayer | null> {
   const admin = getSupabaseAdminClient();
   const { data: player } = await admin
     .from('players')
-    .select('id, display_name, research_graduated, featured_badge')
+    .select('id, display_name, research_graduated, featured_badge, theme_id')
     .eq('auth_id', user.id)
     .single();
 
@@ -93,6 +95,7 @@ interface QueueEntry {
   displayName: string;
   rankPoints: number;
   featuredBadge: string | null;
+  themeColor: string;
   joinedAt: number;
 }
 
@@ -127,11 +130,14 @@ export async function POST() {
   const rankPoints = stats?.rank_points ?? 0;
   const now = Date.now();
 
+  const themeColor = THEMES.find(t => t.id === (player.theme_id ?? 'phosphor'))?.colors.primary ?? '#00ff41';
+
   const entry: QueueEntry = {
     playerId,
     displayName: player.display_name,
     rankPoints,
     featuredBadge: player.featured_badge ?? null,
+    themeColor,
     joinedAt: now,
   };
 
