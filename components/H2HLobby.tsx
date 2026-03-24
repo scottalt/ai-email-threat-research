@@ -42,7 +42,10 @@ export function H2HLobby({ profile, onSearch, onBack }: Props) {
       <div className="term-border bg-[var(--c-bg)]">
         <div className="border-b border-[rgba(255,0,128,0.3)] px-4 py-3 flex items-center justify-between">
           <h2 className="text-[#ff0080] text-sm font-mono tracking-widest font-bold">PvP_MODE</h2>
-          <span className="text-[var(--c-muted)] text-xs font-mono tracking-widest">SEASON 0</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[#ffaa00] text-[10px] font-mono tracking-widest border border-[#ffaa0050] px-1.5 py-0.5">BETA</span>
+            <span className="text-[var(--c-muted)] text-xs font-mono tracking-widest">SEASON 0</span>
+          </div>
         </div>
 
         <div className="px-4 py-5 space-y-4">

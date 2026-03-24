@@ -203,7 +203,10 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
           <h2 className="text-[#ff0080] text-sm tracking-widest font-bold">
             PvP_MODE
           </h2>
-          <span className="text-[var(--c-muted)] text-xs tracking-widest">SEASON 0</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[#ffaa00] text-[10px] tracking-widest border border-[#ffaa0050] px-1.5 py-0.5">BETA</span>
+            <span className="text-[var(--c-muted)] text-xs tracking-widest">SEASON 0</span>
+          </div>
         </div>
 
         {/* Body */}
