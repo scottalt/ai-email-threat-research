@@ -169,7 +169,7 @@ function CardDisplay({ card }: { card: SafeDealCard }) {
       <div className="relative">
         <div
           ref={bodyRef}
-          className={`px-3 py-3 text-sm text-[var(--c-secondary)] leading-relaxed whitespace-pre-wrap font-mono ${bodyExpanded ? '' : 'max-h-52 lg:max-h-none momentum-scroll lg:overflow-auto scroll-fade-bottom lg:scroll-fade-none'}`}
+          className={`px-3 py-3 text-sm text-[var(--c-secondary)] leading-relaxed whitespace-pre-wrap break-words font-mono ${bodyExpanded ? '' : 'max-h-52 lg:max-h-none momentum-scroll lg:overflow-auto scroll-fade-bottom lg:scroll-fade-none'}`}
         >
           {segments.map((seg, i) =>
             seg.type === 'url' ? (

@@ -359,12 +359,23 @@ export async function POST(
     return NextResponse.json({ error: 'Match not found' }, { status: 404 });
   }
 
+  // Reject answers after match is already finished
+  if (match.status !== 'active') {
+    return NextResponse.json({ error: 'Match is no longer active' }, { status: 409 });
+  }
+
   // Verify submitter is a participant in this match
   if (playerId !== match.player1_id && playerId !== match.player2_id) {
     return NextResponse.json({ error: 'Not a participant in this match' }, { status: 403 });
   }
 
+  // Validate card index sequence — must answer in order
   const isPlayer1 = playerId === match.player1_id;
+  const expectedIndex = (match[isPlayer1 ? 'player1_cards_completed' : 'player2_cards_completed'] ?? 0) as number;
+  if (cardIndex !== expectedIndex) {
+    return NextResponse.json({ error: `Expected card index ${expectedIndex}, got ${cardIndex}` }, { status: 400 });
+  }
+
   const playerCardsField = isPlayer1
     ? 'player1_cards_completed'
     : 'player2_cards_completed';

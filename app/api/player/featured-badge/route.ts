@@ -88,7 +88,13 @@ export async function PATCH(req: NextRequest) {
     if (badgeId === null) {
       return NextResponse.json({ error: 'badgeId required for shelf action' }, { status: 400 });
     }
-    const currentShelf: string[] = (player.featured_badges as string[]) ?? [];
+    // Re-read shelf from DB to prevent race conditions (rapid clicks)
+    const { data: freshPlayer } = await admin
+      .from('players')
+      .select('featured_badges')
+      .eq('id', playerId)
+      .single();
+    const currentShelf: string[] = (freshPlayer?.featured_badges as string[]) ?? [];
     let newShelf: string[];
     if (currentShelf.includes(badgeId)) {
       // Remove from shelf
@@ -111,6 +117,13 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Default: update single featured_badge (for PvP display)
+  // Must be on shelf (or null to clear)
+  if (badgeId !== null) {
+    const currentShelf: string[] = (player.featured_badges as string[]) ?? [];
+    if (!currentShelf.includes(badgeId)) {
+      return NextResponse.json({ error: 'Badge must be on shelf before setting as featured' }, { status: 400 });
+    }
+  }
   const { error: updateError } = await admin
     .from('players')
     .update({ featured_badge: badgeId, updated_at: new Date().toISOString() })

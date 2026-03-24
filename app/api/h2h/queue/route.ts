@@ -112,8 +112,15 @@ export async function POST() {
 
   const playerId = player.id;
 
-  // Clean up stale match key from previous matches
+  // Clean up stale match key and any previous queue entry (handles browser crash/reconnect)
   await redis.del(`h2h:matched:${playerId}`);
+  await redis.del(`h2h:queue:player:${playerId}`);
+  // Remove any stale entry from the sorted set for this player
+  const existingRaw = await redis.zrange('h2h:queue', 0, -1);
+  for (const raw of existingRaw) {
+    const entry: { playerId?: string } = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (entry.playerId === playerId) await redis.zrem('h2h:queue', typeof raw === 'string' ? raw : JSON.stringify(raw));
+  }
 
   // Check if player is already in an active match
   const admin0 = getSupabaseAdminClient();

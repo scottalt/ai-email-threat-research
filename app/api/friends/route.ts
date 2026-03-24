@@ -222,15 +222,28 @@ export async function PATCH(req: NextRequest) {
 
   if (action === 'accept') {
     // Update existing row to accepted
-    await admin
+    const { error: updateErr } = await admin
       .from('player_friends')
       .update({ status: 'accepted' })
       .eq('id', requestId);
 
-    // Insert reverse row so the relationship is bidirectional
-    await admin
+    if (updateErr) {
+      return NextResponse.json({ error: 'Failed to accept request' }, { status: 500 });
+    }
+
+    // Upsert reverse row so the relationship is bidirectional (upsert prevents race/duplicate errors)
+    const { error: reverseErr } = await admin
       .from('player_friends')
-      .insert({ player_id: request.friend_id, friend_id: request.player_id, status: 'accepted' });
+      .upsert(
+        { player_id: request.friend_id, friend_id: request.player_id, status: 'accepted' },
+        { onConflict: 'player_id,friend_id' },
+      );
+
+    if (reverseErr) {
+      // Rollback: revert the accept if reverse insert fails
+      await admin.from('player_friends').update({ status: 'pending' }).eq('id', requestId);
+      return NextResponse.json({ error: 'Failed to create reverse relationship' }, { status: 500 });
+    }
   } else {
     // Reject — delete the row
     await admin

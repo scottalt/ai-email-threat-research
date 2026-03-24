@@ -11,7 +11,7 @@ export async function GET() {
     .select('player_id, rank_points, wins, losses, players!player_id(display_name)')
     .eq('season', CURRENT_SEASON)
     .order('rank_points', { ascending: false })
-    .limit(20);
+    .limit(100);
 
   if (error) {
     return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 });

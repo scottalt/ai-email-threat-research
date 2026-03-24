@@ -45,30 +45,9 @@ export default async function PublicProfilePage({ params }: Props) {
     );
   }
 
-  const privacyLevel = (player.privacy_level as string) ?? 'public';
-
-  // Private or friends (friends not implemented yet — treat as private)
-  if (privacyLevel === 'private' || privacyLevel === 'friends') {
-    return (
-      <main className="min-h-screen bg-[var(--c-bg-alt)] flex items-center justify-center px-4 lg:pt-16 pb-20 lg:pb-8">
-        <div className="w-full max-w-sm space-y-4">
-          <div className="term-border bg-[var(--c-bg)] px-4 py-8 text-center space-y-3">
-            <div className="text-[var(--c-primary)] text-lg font-mono font-bold tracking-widest">
-              {player.display_name as string}
-            </div>
-            <div className="text-[var(--c-secondary)] text-sm font-mono tracking-widest mt-4">PROFILE_IS_PRIVATE</div>
-            <div className="text-[var(--c-muted)] text-sm font-mono">This operator&apos;s profile is not public.</div>
-            <Link href="/" className="inline-block mt-4 text-[var(--c-secondary)] text-sm font-mono hover:text-[var(--c-primary)] transition-colors tracking-widest">
-              &lt; RETURN_TO_BASE
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  // Check if viewer is the profile owner
+  // Identify viewer (for own-profile check and friends-only privacy)
   let isOwnProfile = false;
+  let viewerId: string | null = null;
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -79,12 +58,53 @@ export default async function PublicProfilePage({ params }: Props) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data: viewer } = await admin.from('players').select('id').eq('auth_id', user.id).single();
-      if (viewer && viewer.id === player.id) isOwnProfile = true;
+      if (viewer) {
+        viewerId = viewer.id;
+        if (viewer.id === player.id) isOwnProfile = true;
+      }
     }
   } catch { /* not signed in — that's fine */ }
 
-  // Public profile — fetch all data
+  const privacyLevel = (player.privacy_level as string) ?? 'public';
   const playerId = player.id as string;
+
+  // Privacy check — own profile always visible
+  if (!isOwnProfile && (privacyLevel === 'private' || privacyLevel === 'friends')) {
+    let isFriend = false;
+    if (privacyLevel === 'friends' && viewerId) {
+      const { data: friendship } = await admin
+        .from('player_friends')
+        .select('id')
+        .eq('player_id', viewerId)
+        .eq('friend_id', playerId)
+        .eq('status', 'accepted')
+        .maybeSingle();
+      isFriend = !!friendship;
+    }
+
+    if (!isFriend) {
+      return (
+        <main className="min-h-screen bg-[var(--c-bg-alt)] flex items-center justify-center px-4 lg:pt-16 pb-20 lg:pb-8">
+          <div className="w-full max-w-sm space-y-4">
+            <div className="term-border bg-[var(--c-bg)] px-4 py-8 text-center space-y-3">
+              <div className="text-[var(--c-primary)] text-lg font-mono font-bold tracking-widest">
+                {player.display_name as string}
+              </div>
+              <div className="text-[var(--c-secondary)] text-sm font-mono tracking-widest mt-4">PROFILE_IS_PRIVATE</div>
+              <div className="text-[var(--c-muted)] text-sm font-mono">
+                {privacyLevel === 'friends' ? 'This operator\'s profile is visible to friends only.' : 'This operator\'s profile is not public.'}
+              </div>
+              <Link href="/" className="inline-block mt-4 text-[var(--c-secondary)] text-sm font-mono hover:text-[var(--c-primary)] transition-colors tracking-widest">
+                &lt; RETURN_TO_BASE
+              </Link>
+            </div>
+          </div>
+        </main>
+      );
+    }
+  }
+
+  // Public profile — fetch all data
   const bio = (player.bio as string) ?? '';
   const featuredBadgeIds: string[] = (player.featured_badges as string[]) ?? [];
   const xp = player.xp as number;
