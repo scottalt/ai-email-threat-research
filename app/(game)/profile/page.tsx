@@ -1147,73 +1147,85 @@ export default function ProfilePage() {
         )}
 
         {/* ═══════════════ QUESTS TAB ═══════════════ */}
-        {profileTab === 'quests' && (
-          <>
-            {QUESTS.map((quest, i) => {
-              const answers = profile.researchAnswersSubmitted ?? 0;
-              const completed = answers >= quest.target;
-              const prevTarget = i > 0 ? QUESTS[i - 1].target : 0;
-              const active = !completed && answers >= prevTarget;
-              const progress = completed ? 100 : Math.min(100, Math.round(((answers - prevTarget) / (quest.target - prevTarget)) * 100));
+        {profileTab === 'quests' && (() => {
+          const answers = profile.researchAnswersSubmitted ?? 0;
+          const questsWithState = QUESTS.map((quest, i) => {
+            const completed = answers >= quest.target;
+            const prevTarget = i > 0 ? QUESTS[i - 1].target : 0;
+            const active = !completed && answers >= prevTarget;
+            const progress = completed ? 100 : active ? Math.min(100, Math.round(((answers - prevTarget) / (quest.target - prevTarget)) * 100)) : 0;
+            return { quest, completed, active, progress, i };
+          });
+          // Active first, then upcoming, then completed at bottom
+          const activeQuests = questsWithState.filter(q => q.active);
+          const upcomingQuests = questsWithState.filter(q => !q.active && !q.completed);
+          const completedQuests = questsWithState.filter(q => q.completed);
+          const sorted = [...activeQuests, ...upcomingQuests, ...completedQuests];
 
-              return (
+          return (
+            <>
+              {sorted.map(({ quest, completed, active, progress }) => (
                 <div
                   key={quest.id}
-                  className={`term-border bg-[var(--c-bg)] ${completed ? 'border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)]' : active ? 'border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)]' : ''}`}
+                  className={`term-border bg-[var(--c-bg)] transition-opacity ${completed ? 'opacity-50 border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)]' : active ? 'border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)]' : ''}`}
                 >
-                  <div className={`border-b px-3 py-2 flex items-center justify-between ${completed ? 'border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)]' : 'border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)]'}`}>
+                  <div className={`border-b px-3 py-2 flex items-center justify-between ${active ? 'border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)]' : 'border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)]'}`}>
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{quest.icon}</span>
-                      <span className={`text-sm font-mono tracking-widest font-bold ${completed ? 'text-[var(--c-primary)]' : active ? 'text-[var(--c-accent)]' : 'text-[var(--c-muted)]'}`}>
+                      <span className={`text-lg ${completed ? 'opacity-60' : ''}`}>{quest.icon}</span>
+                      <span className={`text-sm font-mono tracking-widest font-bold ${active ? 'text-[var(--c-accent)]' : completed ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'}`}>
                         {quest.name}
                       </span>
                     </div>
                     {completed && (
                       <span className="text-[var(--c-primary)] text-xs font-mono tracking-widest">COMPLETE</span>
                     )}
-                    {active && !completed && (
-                      <span className="text-[var(--c-accent)] text-xs font-mono tracking-widest">{answers}/{quest.target}</span>
+                    {active && (
+                      <span className="text-[var(--c-accent)] text-xs font-mono tracking-widest font-bold">{answers}/{quest.target}</span>
                     )}
                   </div>
-                  <div className="px-3 py-3 space-y-2">
-                    <p className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed">
-                      {quest.description}
-                    </p>
-                    <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed">
-                      {quest.detail}
-                    </p>
 
-                    {/* Progress bar */}
-                    {(active || completed) && (
-                      <div className="space-y-1">
-                        <div className="w-full h-1.5 bg-[#0a140a]">
+                  {/* Expanded content for active + upcoming, collapsed for completed */}
+                  {!completed ? (
+                    <div className="px-3 py-3 space-y-2">
+                      <p className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed">
+                        {quest.description}
+                      </p>
+                      {active && (
+                        <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed">
+                          {quest.detail}
+                        </p>
+                      )}
+
+                      {/* Progress bar */}
+                      {active && (
+                        <div className="w-full h-2 bg-[#0a140a]">
                           <div
                             className="h-full transition-all duration-500"
-                            style={{
-                              width: `${progress}%`,
-                              backgroundColor: completed ? 'var(--c-primary)' : 'var(--c-accent)',
-                            }}
+                            style={{ width: `${progress}%`, backgroundColor: 'var(--c-accent)' }}
                           />
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Reward */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[var(--c-muted)] text-xs font-mono">REWARD</span>
-                      <div className="flex items-center gap-3">
-                        <span className={`text-xs font-mono font-bold ${completed ? 'text-[var(--c-primary)]' : 'text-[var(--c-secondary)]'}`}>
-                          {quest.reward}
-                        </span>
-                        <span className="text-[var(--c-accent)] text-xs font-mono">+{quest.xpReward} XP</span>
+                      {/* Reward */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[var(--c-muted)] text-xs font-mono">REWARD</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[var(--c-secondary)] text-xs font-mono font-bold">{quest.reward}</span>
+                          <span className="text-[var(--c-accent)] text-xs font-mono">+{quest.xpReward} XP</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="px-3 py-2 flex items-center justify-between">
+                      <span className="text-[var(--c-muted)] text-xs font-mono">{quest.description}</span>
+                      <span className="text-[var(--c-accent)] text-xs font-mono">+{quest.xpReward} XP</span>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </>
-        )}
+              ))}
+            </>
+          );
+        })()}
 
         {/* ═══════════════ FRIENDS TAB ═══════════════ */}
         {profileTab === 'friends' && (
