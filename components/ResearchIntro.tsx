@@ -74,7 +74,7 @@ export function ResearchIntro({ onBegin }: Props) {
 
         <div className="text-center">
           <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed mb-1">
-            For educational and research purposes only. All emails are fictional and AI-generated.
+            For educational and research purposes only. All emails are fictional and AI-generated. Brand names are used for realism and do not imply endorsement.
           </p>
           <p className="text-[var(--c-muted)] text-xs font-mono">
             <Link href="/privacy" className="hover:text-[var(--c-secondary)] transition-colors underline">Privacy</Link>

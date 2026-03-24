@@ -297,7 +297,8 @@ export default async function LandingPage() {
         <p className="text-[12px] text-[#52525b] max-w-[500px] mx-auto leading-relaxed mb-3">
           Threat Terminal is for educational and research purposes only. It is not
           a substitute for professional cybersecurity training. All emails shown
-          are fictional and AI-generated.
+          are fictional and AI-generated. Brand names are used for realism and
+          do not imply endorsement or affiliation.
         </p>
         <div className="flex items-center justify-center gap-4 text-[12px] text-[#52525b]">
           <Link href="/privacy" className="hover:text-[#a1a1aa] transition-colors">
