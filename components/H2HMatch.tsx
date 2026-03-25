@@ -256,6 +256,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
 
   // ── Refs for callbacks that need latest state ──
   const matchEndedRef = useRef(false);
+  const isPlayer1Ref = useRef(true);
 
   // Reset render timer when card changes
   useEffect(() => {
@@ -270,8 +271,8 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
 
       onMatchEnd({
         winnerId: event.winnerId,
-        myPointsDelta: event.player1PointsDelta,
-        opponentPointsDelta: event.player2PointsDelta,
+        myPointsDelta: isPlayer1Ref.current ? event.player1PointsDelta : event.player2PointsDelta,
+        opponentPointsDelta: isPlayer1Ref.current ? event.player2PointsDelta : event.player1PointsDelta,
         reason: event.reason,
       });
     },
@@ -312,6 +313,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
 
         // Determine opponent name and badges
         const isPlayer1 = playerId === matchData.match.player1Id;
+        isPlayer1Ref.current = isPlayer1;
         const opponentId = isPlayer1
           ? matchData.match.player2Id
           : matchData.match.player1Id;
@@ -553,6 +555,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
           const nextIndex = cardIndex + 1;
           // Small delay so the flash is visible before card changes
           setTimeout(() => {
+            setSubmitting(false);
             setCardIndex(nextIndex);
             if (nextIndex >= H2H_CARDS_PER_MATCH) {
               if (isBot) {
@@ -574,8 +577,8 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
         } else {
           // Wrong answer — match over immediately
           setFlash('wrong');
-          // Brief red flash then go to result screen
           setTimeout(() => {
+            setSubmitting(false);
             if (!matchEndedRef.current) {
               matchEndedRef.current = true;
               onMatchEnd({
@@ -589,14 +592,23 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
         }
     } catch {
       // Network error — allow retry
+      setSubmitting(false);
     }
-    setSubmitting(false);
   }
 
   // ── Forfeit ──
-  function handleForfeit() {
+  async function handleForfeit() {
     if (matchEndedRef.current) return;
     matchEndedRef.current = true;
+
+    // Notify server to cancel the match (opponent wins if present)
+    try {
+      await fetch(`/api/h2h/match/${matchId}/answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardIndex: -1, userAnswer: 'forfeit', timeFromRenderMs: 0 }),
+      });
+    } catch { /* best effort */ }
 
     broadcastResult(matchId, {
       winnerId: null,

@@ -273,6 +273,28 @@ export async function POST(
 
   const { cardIndex, userAnswer, timeFromRenderMs } = body;
 
+  // Handle forfeit — cancel the match, opponent wins
+  if (userAnswer === 'forfeit') {
+    const admin = getSupabaseAdminClient();
+    const { data: match } = await admin.from('h2h_matches').select('*').eq('id', matchId).single();
+    if (!match || match.status !== 'active') {
+      return NextResponse.json({ error: 'Match not active' }, { status: 409 });
+    }
+    if (playerId !== match.player1_id && playerId !== match.player2_id) {
+      return NextResponse.json({ error: 'Not a participant' }, { status: 403 });
+    }
+    const opponentId = playerId === match.player1_id ? match.player2_id : match.player1_id;
+    if (opponentId) {
+      await finalizeMatch(matchId, opponentId, playerId);
+    } else {
+      // Bot match — just cancel
+      await admin.from('h2h_matches')
+        .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+        .eq('id', matchId).eq('status', 'active');
+    }
+    return NextResponse.json({ ok: true, forfeited: true });
+  }
+
   // Validate inputs
   if (
     typeof cardIndex !== 'number' ||
@@ -289,6 +311,36 @@ export async function POST(
       { error: 'Invalid timeFromRenderMs' },
       { status: 400 },
     );
+  }
+
+  // ── Validate match state BEFORE any DB writes ──
+
+  const admin = getSupabaseAdminClient();
+
+  // Get match to determine player role and validate state
+  const { data: match } = await admin
+    .from('h2h_matches')
+    .select('*')
+    .eq('id', matchId)
+    .single();
+
+  if (!match) {
+    return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+  }
+
+  if (match.status !== 'active') {
+    return NextResponse.json({ error: 'Match is no longer active' }, { status: 409 });
+  }
+
+  if (playerId !== match.player1_id && playerId !== match.player2_id) {
+    return NextResponse.json({ error: 'Not a participant in this match' }, { status: 403 });
+  }
+
+  // Validate card index sequence — must answer in order
+  const isPlayer1 = playerId === match.player1_id;
+  const expectedIndex = (match[isPlayer1 ? 'player1_cards_completed' : 'player2_cards_completed'] ?? 0) as number;
+  if (cardIndex !== expectedIndex) {
+    return NextResponse.json({ error: `Expected card index ${expectedIndex}, got ${cardIndex}` }, { status: 400 });
   }
 
   // Prevent duplicate submission
@@ -317,28 +369,26 @@ export async function POST(
     return NextResponse.json({ error: 'Card not found' }, { status: 404 });
   }
 
-  // Verify answer
+  // ── All validation passed — now write to DB ──
+
   const correct = (userAnswer === 'phishing') === card.isPhishing;
 
-  // Server-side timing: compute real elapsed time since card was shown
-  // Card render time is set when previous answer was submitted (or match start for card 0)
+  // Server-side timing
   const renderKey = `match-render:${matchId}:${playerId}:${cardIndex}`;
   const renderTimestamp = await redis.get<number>(renderKey);
   const now = Date.now();
-  // Use server-computed time if available, fall back to client time (with a floor of 500ms)
   const serverTimeMs = renderTimestamp ? now - renderTimestamp : null;
   const verifiedTimeMs = serverTimeMs ?? Math.min(Math.max(timeFromRenderMs, 500), 60000);
 
   // Mark as checked in Redis (30 min TTL)
   await redis.set(checkedKey, '1', { ex: 1800 });
 
-  // Set render timestamp for the NEXT card (so server can compute their time too)
+  // Set render timestamp for the NEXT card
   if (correct && cardIndex + 1 < H2H_CARDS_PER_MATCH) {
     await redis.set(`match-render:${matchId}:${playerId}:${cardIndex + 1}`, now, { ex: 1800 });
   }
 
-  // Insert answer record with server-verified time
-  const admin = getSupabaseAdminClient();
+  // Insert answer record
   await admin.from('h2h_match_answers').insert({
     match_id: matchId,
     player_id: playerId,
@@ -347,34 +397,6 @@ export async function POST(
     correct,
     time_from_render_ms: verifiedTimeMs,
   });
-
-  // Get match to determine player role
-  const { data: match } = await admin
-    .from('h2h_matches')
-    .select('*')
-    .eq('id', matchId)
-    .single();
-
-  if (!match) {
-    return NextResponse.json({ error: 'Match not found' }, { status: 404 });
-  }
-
-  // Reject answers after match is already finished
-  if (match.status !== 'active') {
-    return NextResponse.json({ error: 'Match is no longer active' }, { status: 409 });
-  }
-
-  // Verify submitter is a participant in this match
-  if (playerId !== match.player1_id && playerId !== match.player2_id) {
-    return NextResponse.json({ error: 'Not a participant in this match' }, { status: 403 });
-  }
-
-  // Validate card index sequence — must answer in order
-  const isPlayer1 = playerId === match.player1_id;
-  const expectedIndex = (match[isPlayer1 ? 'player1_cards_completed' : 'player2_cards_completed'] ?? 0) as number;
-  if (cardIndex !== expectedIndex) {
-    return NextResponse.json({ error: `Expected card index ${expectedIndex}, got ${cardIndex}` }, { status: 400 });
-  }
 
   const playerCardsField = isPlayer1
     ? 'player1_cards_completed'

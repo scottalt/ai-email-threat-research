@@ -29,6 +29,7 @@ interface MatchData {
   myEliminated: boolean;
   oppEliminated: boolean;
   oppPointsDelta: number | null;
+  myPointsDeltaFromServer: number | null;
 }
 
 interface StatsData {
@@ -97,6 +98,7 @@ export function H2HResult({
           const oppTimeMs = isP1 ? m.player2TimeMs : m.player1TimeMs;
           const oppId = isP1 ? m.player2Id : m.player1Id;
           const oppPointsDelta = isP1 ? m.player2PointsDelta : m.player1PointsDelta;
+          const serverMyDelta = isP1 ? m.player1PointsDelta : m.player2PointsDelta;
 
           const myPlayer = data.players[playerId];
           const oppPlayer = data.players[oppId];
@@ -116,6 +118,7 @@ export function H2HResult({
             myEliminated: !isWin && reason === 'eliminated',
             oppEliminated: isWin && oppCards < H2H_CARDS_PER_MATCH,
             oppPointsDelta: oppPointsDelta ?? null,
+            myPointsDeltaFromServer: serverMyDelta ?? null,
           });
 
           // Store review cards and player's answers
@@ -146,11 +149,12 @@ export function H2HResult({
     return () => { cancelled = true; };
   }, [matchId, playerId, isWin, reason]);
 
-  // Derive old rank from current points minus delta
-  const oldPoints = stats ? stats.rankPoints - myPointsDelta : 0;
+  // Derive old rank from current points minus delta (prefer server-computed delta)
+  const effectiveDelta = matchData?.myPointsDeltaFromServer ?? myPointsDelta;
+  const oldPoints = stats ? stats.rankPoints - effectiveDelta : 0;
   const oldRank = getRankFromPoints(Math.max(0, oldPoints));
   const newRank = stats?.rank ?? getRankFromPoints(0);
-  const rankedUp = newRank.tier !== oldRank.tier && myPointsDelta > 0;
+  const rankedUp = newRank.tier !== oldRank.tier && effectiveDelta > 0;
 
   // Header
   const headerText = isWin ? 'VICTORY' : noResult ? 'MATCH OVER' : 'DEFEATED';

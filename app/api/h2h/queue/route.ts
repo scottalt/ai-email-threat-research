@@ -194,7 +194,6 @@ export async function POST() {
   };
 
   await addToQueue(entry);
-  console.log(`[h2h:queue:POST] added ${playerId.slice(0,8)} to queue, joinedAt=${now}`);
 
   return NextResponse.json({ queued: true });
 }
@@ -223,7 +222,7 @@ export async function GET() {
   // Find self
   const selfEntry = allEntries.find((e) => e.playerId === playerId);
   if (!selfEntry) {
-    console.log(`[h2h:queue:GET] player NOT in queue. entries: ${allEntries.length}, ids: [${allEntries.map(e => e.playerId.slice(0,8)).join(',')}], looking for: ${playerId.slice(0,8)}`);
+    // Player not in queue — entry may have expired
     return NextResponse.json({ matched: false });
   }
 
@@ -243,37 +242,7 @@ export async function GET() {
   );
 
   if (activeEntries.length < 2) {
-    // Solo in queue — check for bot timeout
-    const waitMs = now - selfEntry.joinedAt;
-    console.log(`[h2h:queue:GET] solo, waitMs=${waitMs}, threshold=${H2H_QUEUE_TIMEOUT_MS}, active=${activeEntries.length}`);
-    if (waitMs >= H2H_QUEUE_TIMEOUT_MS) {
-      const admin = getSupabaseAdminClient();
-      const { data: match, error } = await admin
-        .from('h2h_matches')
-        .insert({
-          season: CURRENT_SEASON,
-          player1_id: playerId,
-          player2_id: null,
-          card_ids: [],
-          status: 'active',
-          is_ghost_match: true,
-          is_rated: false,
-          started_at: new Date().toISOString(),
-        })
-        .select('id')
-        .single();
-
-      if (error || !match) {
-        console.error('[h2h:queue] Failed to create bot match:', error?.message);
-        return NextResponse.json({ error: 'Failed to create match' }, { status: 500 });
-      }
-
-      await dealMatchCards(match.id, [playerId]);
-      await removeFromQueue(playerId);
-
-      return NextResponse.json({ matched: true, matchId: match.id, isBot: true });
-    }
-
+    // Solo in queue — bot match creation is handled client-side via POST /api/h2h/queue/bot
     return NextResponse.json({ matched: false });
   }
 
