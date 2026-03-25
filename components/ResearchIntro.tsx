@@ -58,7 +58,7 @@ export function ResearchIntro({ onBegin }: Props) {
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
                 <span className="text-[var(--c-secondary)]">Recorded:</span>{' '}
-                answer, confidence, response time, URL inspection, session position, self-reported background.
+                answer, confidence, response time, scroll depth, URL inspection, session position, self-reported background.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
                 <span className="text-[var(--c-secondary)]">Not recorded:</span>{' '}

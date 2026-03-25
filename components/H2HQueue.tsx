@@ -279,7 +279,7 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
           </div>
 
           {/* Info bar */}
-          <div className="flex items-center justify-between text-sm font-mono">
+          <div className="flex flex-wrap items-center justify-between gap-1 text-xs sm:text-sm font-mono">
             <span className="text-[var(--c-muted)]">
               Queue: <span className="text-[var(--c-primary)]">{elapsed}s</span>
             </span>
@@ -291,7 +291,7 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
             </span>
             {ratedMatchesLeft !== null && (
               <span className="text-[var(--c-muted)]">
-                Rated: <span className={ratedMatchesLeft > 0 ? 'text-[var(--c-secondary)]' : 'text-[#ffaa00]'}>{ratedMatchesLeft} left</span>
+                Rated: <span className={ratedMatchesLeft > 0 ? 'text-[var(--c-secondary)]' : 'text-[#ffaa00]'}>{ratedMatchesLeft}</span>
               </span>
             )}
           </div>

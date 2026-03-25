@@ -104,6 +104,9 @@ export default async function LandingPage() {
               Sign in
             </Link>
           </div>
+          <div className="mt-2 text-[11px] text-[#52525b]">
+            You must be 16 or older to participate.
+          </div>
 
           {/* Terminal Preview */}
           <div className="mt-[60px] max-w-[420px] mx-auto bg-[#060c06] border border-[rgba(0,255,65,0.15)] rounded-xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5),0_0_40px_rgba(0,255,65,0.05)]">

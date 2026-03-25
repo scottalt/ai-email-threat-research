@@ -59,20 +59,24 @@ export function H2HLobby({ profile, onSearch, onBack }: Props) {
             </div>
 
             {/* Rank */}
-            <div className="flex items-center justify-center gap-3 text-sm font-mono">
-              {(() => {
-                const rank = getRankFromPoints(h2hStats?.rankPoints ?? 0);
-                return (
-                  <>
-                    <span className="text-lg" style={{ color: rank.color }}>{rank.icon}</span>
-                    <span className="font-bold" style={{ color: rank.color }}>{rank.label}</span>
-                  </>
-                );
-              })()}
-              <span className="text-[var(--c-muted)]">
-                {h2hStats?.rankPoints ?? 0} pts
-              </span>
-            </div>
+            {h2hStats === null ? (
+              <div className="text-[var(--c-muted)] text-sm font-mono animate-pulse text-center">Loading rank...</div>
+            ) : (
+              <div className="flex items-center justify-center gap-3 text-sm font-mono">
+                {(() => {
+                  const rank = getRankFromPoints(h2hStats.rankPoints ?? 0);
+                  return (
+                    <>
+                      <span className="text-lg" style={{ color: rank.color }}>{rank.icon}</span>
+                      <span className="font-bold" style={{ color: rank.color }}>{rank.label}</span>
+                    </>
+                  );
+                })()}
+                <span className="text-[var(--c-muted)]">
+                  {h2hStats.rankPoints ?? 0} pts
+                </span>
+              </div>
+            )}
 
             {/* Featured badge */}
             {featuredBadge ? (

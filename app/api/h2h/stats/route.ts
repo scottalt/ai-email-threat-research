@@ -32,13 +32,15 @@ export async function GET() {
 
   const { data: stats } = await admin
     .from('h2h_player_stats')
-    .select('rank_points, wins, losses, win_streak, best_win_streak, peak_rank_points, rated_matches_today')
+    .select('rank_points, wins, losses, win_streak, best_win_streak, peak_rank_points, rated_matches_today, last_match_date')
     .eq('player_id', player.id)
     .eq('season', CURRENT_SEASON)
     .single();
 
   const rankPoints = stats?.rank_points ?? 0;
   const rank = getRankFromPoints(rankPoints);
+  const today = new Date().toISOString().slice(0, 10);
+  const ratedMatchesToday = stats?.last_match_date === today ? (stats?.rated_matches_today ?? 0) : 0;
 
   return NextResponse.json({
     season: CURRENT_SEASON,
@@ -52,6 +54,6 @@ export async function GET() {
     winStreak: stats?.win_streak ?? 0,
     bestWinStreak: stats?.best_win_streak ?? 0,
     peakRankPoints: stats?.peak_rank_points ?? 0,
-    ratedMatchesToday: stats?.rated_matches_today ?? 0,
+    ratedMatchesToday,
   }, { headers: { 'Cache-Control': 'no-store' } });
 }

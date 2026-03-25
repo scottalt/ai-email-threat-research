@@ -473,11 +473,7 @@ export default function ProfilePage() {
               {bottomRows.map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between lg:flex-col lg:items-center lg:text-center px-3 py-2 lg:py-3 bg-[var(--c-bg)]">
                   <span className="text-[var(--c-secondary)] text-sm lg:text-xs font-mono tracking-wider">{label}</span>
-                  <span className={`text-sm font-mono font-bold ${
-                    label === 'GRADUATION' && profile.researchGraduated
-                      ? 'text-[var(--c-accent)]'
-                      : 'text-[var(--c-primary)]'
-                  }`}>
+                  <span className="text-sm font-mono font-bold text-[var(--c-primary)]">
                     {value}
                   </span>
                 </div>
@@ -491,7 +487,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Tab bar */}
-        <div className="term-border bg-[var(--c-bg)] flex">
+        <div className="term-border bg-[var(--c-bg)] flex overflow-x-auto">
           <button
             onClick={() => setProfileTab('info')}
             className={`flex-1 py-2 text-sm font-mono tracking-widest transition-colors ${
@@ -510,7 +506,7 @@ export default function ProfilePage() {
                 : 'text-[var(--c-secondary)] hover:text-[var(--c-primary)] border-b-2 border-transparent'
             }`}
           >
-            SOLO STATS
+            <span className="hidden sm:inline">SOLO </span>STATS
           </button>
           <button
             onClick={() => setProfileTab('h2h')}
@@ -520,7 +516,7 @@ export default function ProfilePage() {
                 : 'text-[var(--c-secondary)] hover:text-[#ff0080] border-b-2 border-transparent'
             }`}
           >
-            PvP STATS
+            PvP
           </button>
           <button
             onClick={() => setProfileTab('quests')}

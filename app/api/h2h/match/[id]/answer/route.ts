@@ -223,6 +223,14 @@ async function finalizeMatch(
       awardH2HXp(admin, winnerId, winnerCorrect ?? 0, true),
       awardH2HXp(admin, loserId, loserCorrect ?? 0, false),
     ]);
+
+    // Award h2h_perfect achievement if winner got all cards correct
+    if ((winnerCorrect ?? 0) >= H2H_CARDS_PER_MATCH) {
+      await admin.from('player_achievements').upsert(
+        { player_id: winnerId, achievement_id: 'h2h_perfect', unlocked_at: new Date().toISOString() },
+        { onConflict: 'player_id,achievement_id' },
+      );
+    }
   } else {
     // Unrated / bot match — atomically mark complete only if still active
     const { data: updated } = await admin

@@ -242,6 +242,7 @@ export default function InventoryPage() {
                     if (!earned) return;
                     await fetch('/api/player/featured-badge', {
                       method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ badgeId: achievement.id, action: 'shelf' }),
                     });
                     refreshProfile();

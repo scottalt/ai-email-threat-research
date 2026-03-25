@@ -55,7 +55,7 @@ export function NavBar() {
                 href={link.path}
                 aria-current={active ? 'page' : undefined}
                 className={`text-[17px] tracking-wider transition-colors ${
-                  active ? 'text-[var(--c-primary)]' : 'text-[var(--c-secondary)] hover:text-[var(--c-secondary)]'
+                  active ? 'text-[var(--c-primary)]' : 'text-[var(--c-secondary)] hover:text-[var(--c-primary)]'
                 }`}
               >
                 {link.label}

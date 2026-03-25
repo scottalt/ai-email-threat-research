@@ -26,11 +26,14 @@ When you play, we record:
 
 ### What we do NOT collect
 
-- IP address
 - Geographic location
 - Device fingerprints
 - Browser history
 - Cookies beyond the authentication session
+
+### Transient processing
+
+- **IP addresses** are temporarily processed for rate limiting (to prevent abuse) and are automatically discarded within 1 hour. IP addresses are not stored in our database or linked to your account.
 
 ### Analytics
 

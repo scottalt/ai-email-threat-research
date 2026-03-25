@@ -278,6 +278,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                 <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
                 <button
                   onClick={() => setInspectedUrl(null)}
+                  aria-label="Close URL inspector"
                   className="text-[var(--c-dark)] text-sm font-mono hover:text-[var(--c-secondary)] transition-colors"
                 >
                   [ × ]

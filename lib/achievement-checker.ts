@@ -184,11 +184,20 @@ export async function backfillPlayerAchievements(
   // Daily session count
   const dailySessionCount = (sessions ?? []).filter((s: { game_mode: string }) => s.game_mode === 'daily').length;
 
+  // Fetch longest streak for daily-streak achievements
+  const { data: streakRow } = await admin
+    .from('player_streaks')
+    .select('longest_streak')
+    .eq('player_id', player.id)
+    .maybeSingle();
+  const longestStreak = (streakRow?.longest_streak as number) ?? 0;
+
   // Check profile-based achievements first (no per-session data needed)
   const profileChecks = [
     'first_blood', 'veteran', 'graduate', 'apex',
     'xp_1000', 'xp_5000', 'xp_20000', 'pb_2500', 'daily_3',
     'research_20', 'research_30',
+    'streak_3d', 'streak_7d', 'streak_30d',
     'founder', 's0_silver', 's0_gold', 's0_platinum', 's0_diamond', 's0_master', 's0_elite',
     'h2h_first_win', 'h2h_10_wins', 'h2h_50_wins', 'h2h_streak_5',
   ];
@@ -198,7 +207,7 @@ export async function backfillPlayerAchievements(
     if (earned.has(id)) continue;
     const check = CHECKS[id];
     if (!check) continue;
-    if (check(player, [], '', { dailySessionCount })) {
+    if (check(player, [], '', { dailySessionCount, currentStreak: longestStreak })) {
       newlyEarned.push(id);
     }
   }

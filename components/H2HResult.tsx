@@ -200,8 +200,8 @@ export function H2HResult({
 
       {/* Scoreboard */}
       {matchData && (
-        <div className="w-full border border-[var(--c-border)] p-3 text-sm">
-          <p className="text-[var(--c-fg)]">
+        <div className="w-full term-border p-3 text-sm">
+          <p className="text-[var(--c-primary)]">
             {matchData.myBadgeIcon && <span className="mr-1">{matchData.myBadgeIcon}</span>}
             {playerSummary('YOU', matchData.myCards, matchData.myTimeMs, matchData.myEliminated)}
           </p>
@@ -228,7 +228,7 @@ export function H2HResult({
           <p className="mt-1">
             <span className="text-[var(--c-muted)]">{Math.max(0, oldPoints)} pts</span>
             {' → '}
-            <span className="text-[var(--c-fg)]">{stats.rankPoints} pts</span>
+            <span className="text-[var(--c-secondary)]">{stats.rankPoints} pts</span>
             {' '}
             <span className={deltaColor}>({deltaSign}{effectiveDelta})</span>
           </p>
