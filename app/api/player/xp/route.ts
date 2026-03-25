@@ -199,7 +199,7 @@ export async function PATCH(req: NextRequest) {
     for (const milestone of questMilestones) {
       if (total >= milestone.threshold) {
         // SET NX — only awards if key doesn't exist (prevents double-award)
-        const awarded = await redis.set(milestone.key, '1', { nx: true });
+        const awarded = await redis.set(milestone.key, '1', { nx: true, ex: 365 * 24 * 3600 });
         if (awarded) {
           questBonusXp += milestone.reward;
         }

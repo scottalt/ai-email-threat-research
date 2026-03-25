@@ -43,15 +43,16 @@ export async function GET(req: NextRequest) {
       { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
     );
     const { data: { user } } = await authClient.auth.getUser();
-    if (user) {
-      const admin = getSupabaseAdminClient();
-      const { data: player } = await admin.from('players').select('id').eq('auth_id', user.id).single();
-      if (player) {
-        const { count } = await admin.from('answers').select('id', { count: 'exact', head: true })
-          .eq('player_id', player.id).eq('game_mode', 'research');
-        if ((count ?? 0) < DAILY_UNLOCK_ANSWERS) {
-          return NextResponse.json({ error: 'Complete 20 research answers to unlock daily challenge' }, { status: 403 });
-        }
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const admin = getSupabaseAdminClient();
+    const { data: player } = await admin.from('players').select('id').eq('auth_id', user.id).single();
+    if (player) {
+      const { count } = await admin.from('answers').select('id', { count: 'exact', head: true })
+        .eq('player_id', player.id).eq('game_mode', 'research');
+      if ((count ?? 0) < DAILY_UNLOCK_ANSWERS) {
+        return NextResponse.json({ error: 'Complete 20 research answers to unlock daily challenge' }, { status: 403 });
       }
     }
   } catch {

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis, getClientIp } from '@/lib/redis';
 
@@ -22,6 +24,16 @@ export async function PATCH(req: NextRequest) {
     if (rlCount > 20) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
+
+    // Verify auth — session finalization requires an authenticated player
+    const cookieStore = await cookies();
+    const authClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+    );
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) return NextResponse.json({ ok: true }); // silent reject
 
     const { sessionId, finalScore, finalRank, completedAt, cardsAnswered } = await req.json();
     if (!sessionId || typeof sessionId !== 'string') return NextResponse.json({ ok: true });
