@@ -161,6 +161,37 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
     };
   }, [joined, pollForMatch, cleanup]);
 
+  // ── Bot match trigger — called once when countdown expires ──
+  const botTriggered = useRef(false);
+  useEffect(() => {
+    if (!joined || matchedRef.current || botTriggered.current) return;
+    if (elapsed < BOT_TIMEOUT_S) return;
+
+    botTriggered.current = true;
+    cleanup(); // stop polling
+
+    (async () => {
+      try {
+        const res = await fetch('/api/h2h/queue/bot', { method: 'POST' });
+        if (!mountedRef.current) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (data.matchId) {
+            matchedRef.current = true;
+            onMatchFound(data.matchId, true);
+            return;
+          }
+        }
+        // If bot creation fails, resume polling as fallback
+        botTriggered.current = false;
+        pollRef.current = setInterval(pollForMatch, POLL_INTERVAL_MS);
+      } catch {
+        botTriggered.current = false;
+        pollRef.current = setInterval(pollForMatch, POLL_INTERVAL_MS);
+      }
+    })();
+  }, [elapsed, joined, cleanup, onMatchFound, pollForMatch]);
+
   // ── Cancel handler ──
   const handleCancel = useCallback(async () => {
     matchedRef.current = true; // prevent further polling
