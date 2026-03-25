@@ -463,34 +463,33 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
   }, [matchId, playerId, isBot, loading, onMatchEnd]);
 
   // ── Bot opponent simulation ──
-  // Bot speed and failure chance scale with card complexity (body length as proxy)
+  // Bot has realistic speed, can make mistakes, and CAN beat the player
   useEffect(() => {
     if (!isBot || loading || eliminated || finished || cards.length === 0) return;
 
-    // Use card body length as a difficulty proxy — longer = harder = slower bot
+    // Bot speed scales with card complexity (body length as proxy)
+    // Faster than before — bots are competitive
     const botTimes = cards.map((card) => {
       const len = card.body.length;
-      // Short emails (<300 chars): 6-12s, Medium (300-600): 10-18s, Long (600+): 15-25s
-      if (len < 300) return 6000 + Math.random() * 6000;
-      if (len < 600) return 10000 + Math.random() * 8000;
-      return 15000 + Math.random() * 10000;
+      // Short emails (<300 chars): 4-9s, Medium (300-600): 7-14s, Long (600+): 10-20s
+      if (len < 300) return 4000 + Math.random() * 5000;
+      if (len < 600) return 7000 + Math.random() * 7000;
+      return 10000 + Math.random() * 10000;
     });
 
-    // Failure chance also scales with card complexity
-    // Short: 2%, Medium: 6%, Long: 12%
+    // Failure chance: ~25% chance the bot gets eliminated somewhere in the match
+    // Per-card: Short: 5%, Medium: 8%, Long: 12%
     let botEliminationCard = -1;
     for (let i = 0; i < cards.length; i++) {
       const len = cards[i].body.length;
-      const failChance = len < 300 ? 0.02 : len < 600 ? 0.06 : 0.12;
+      const failChance = len < 300 ? 0.05 : len < 600 ? 0.08 : 0.12;
       if (Math.random() < failChance) {
         botEliminationCard = i;
         break;
       }
     }
 
-    let botCard = 0;
     let totalElapsed = 0;
-
     const timers: ReturnType<typeof setTimeout>[] = [];
 
     for (let i = 0; i < H2H_CARDS_PER_MATCH; i++) {
@@ -509,8 +508,23 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
       const capturedIndex = i;
       const capturedElapsed = totalElapsed;
       const t = setTimeout(() => {
-        botCard = capturedIndex + 1;
-        setOpponentIndex(botCard);
+        setOpponentIndex(capturedIndex + 1);
+
+        // Bot finished all cards — if player hasn't finished yet, bot wins
+        if (capturedIndex + 1 >= H2H_CARDS_PER_MATCH && !matchEndedRef.current) {
+          // Give player a brief moment to see "bot finished" before ending
+          setTimeout(() => {
+            if (!matchEndedRef.current) {
+              matchEndedRef.current = true;
+              onMatchEnd({
+                winnerId: null, // result screen will show loss
+                myPointsDelta: 0,
+                opponentPointsDelta: 0,
+                reason: 'completed',
+              });
+            }
+          }, 1500);
+        }
       }, capturedElapsed);
       timers.push(t);
     }
@@ -568,11 +582,11 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
             setCardIndex(nextIndex);
             if (nextIndex >= H2H_CARDS_PER_MATCH) {
               if (isBot) {
-                // Bot match — end immediately, player wins (unrated)
+                // Bot match — player finished all cards, they win (beat the bot)
                 if (!matchEndedRef.current) {
                   matchEndedRef.current = true;
                   onMatchEnd({
-                    winnerId: playerId, // bot matches always show as win for the player
+                    winnerId: playerId,
                     myPointsDelta: 0,
                     opponentPointsDelta: 0,
                     reason: 'completed',

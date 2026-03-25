@@ -157,8 +157,8 @@ export function H2HResult({
   const rankedUp = newRank.tier !== oldRank.tier && effectiveDelta > 0;
 
   // Header
-  const headerText = isWin ? 'VICTORY' : noResult ? 'MATCH OVER' : 'DEFEATED';
-  const headerColor = isWin ? 'text-[var(--c-primary)]' : noResult ? 'text-[var(--c-muted)]' : 'text-[#ff3333]';
+  const headerText = isWin ? 'VICTORY' : (isBot || isLoss) ? 'DEFEATED' : 'MATCH OVER';
+  const headerColor = isWin ? 'text-[var(--c-primary)]' : (isBot || isLoss) ? 'text-[#ff3333]' : 'text-[var(--c-muted)]';
 
   // Subtitle
   let subtitle = '';
