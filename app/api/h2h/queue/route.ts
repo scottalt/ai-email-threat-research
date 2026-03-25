@@ -186,6 +186,7 @@ export async function POST() {
   };
 
   await addToQueue(entry);
+  console.log(`[h2h:queue:POST] added ${playerId.slice(0,8)} to queue, joinedAt=${now}`);
 
   return NextResponse.json({ queued: true });
 }
@@ -214,6 +215,7 @@ export async function GET() {
   // Find self
   const selfEntry = allEntries.find((e) => e.playerId === playerId);
   if (!selfEntry) {
+    console.log(`[h2h:queue:GET] player NOT in queue. entries: ${allEntries.length}, ids: [${allEntries.map(e => e.playerId.slice(0,8)).join(',')}], looking for: ${playerId.slice(0,8)}`);
     return NextResponse.json({ matched: false });
   }
 
@@ -235,6 +237,7 @@ export async function GET() {
   if (activeEntries.length < 2) {
     // Solo in queue — check for bot timeout
     const waitMs = now - selfEntry.joinedAt;
+    console.log(`[h2h:queue:GET] solo, waitMs=${waitMs}, threshold=${H2H_QUEUE_TIMEOUT_MS}, active=${activeEntries.length}`);
     if (waitMs >= H2H_QUEUE_TIMEOUT_MS) {
       const admin = getSupabaseAdminClient();
       const { data: match, error } = await admin
