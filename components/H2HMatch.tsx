@@ -532,7 +532,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
     return () => {
       timers.forEach(clearTimeout);
     };
-  }, [isBot, loading, eliminated, finished]);
+  }, [isBot, loading, eliminated, finished, cards.length]);
 
   // ── Submit answer ──
   async function submitAnswer(userAnswer: 'phishing' | 'legit') {
