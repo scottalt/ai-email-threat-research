@@ -88,7 +88,7 @@ async function getAuthenticatedPlayer(): Promise<AuthenticatedPlayer | null> {
   return player ?? null;
 }
 
-// ── Queue entry shape stored in the sorted set ──
+// ── Queue entry stored in a separate Redis key per player ──
 
 interface QueueEntry {
   playerId: string;
@@ -97,6 +97,38 @@ interface QueueEntry {
   featuredBadge: string | null;
   themeColor: string;
   joinedAt: number;
+}
+
+// Queue uses sorted set with player ID as member (score = join timestamp).
+// Entry data stored separately at h2h:queue:entry:{playerId}.
+// This avoids Upstash JSON serialization issues with sorted set members.
+
+const QUEUE_KEY = 'h2h:queue:v2';
+const QUEUE_ENTRY_PREFIX = 'h2h:queue:entry:';
+const QUEUE_MARKER_PREFIX = 'h2h:queue:player:';
+const STALE_THRESHOLD_MS = 45_000;
+
+async function getQueueEntries(): Promise<QueueEntry[]> {
+  // Get all player IDs from sorted set with scores (joinedAt timestamps)
+  const members = await redis.zrange(QUEUE_KEY, 0, -1, { withScores: true }) as (string | number)[];
+
+  // Parse pairs: [member, score, member, score, ...]
+  const entries: QueueEntry[] = [];
+  for (let i = 0; i < members.length; i += 2) {
+    const playerId = String(members[i]);
+    const joinedAt = Number(members[i + 1]);
+    const data = await redis.get<QueueEntry>(`${QUEUE_ENTRY_PREFIX}${playerId}`);
+    if (data) {
+      entries.push({ ...data, playerId, joinedAt });
+    }
+  }
+  return entries;
+}
+
+async function removeFromQueue(playerId: string) {
+  await redis.zrem(QUEUE_KEY, playerId);
+  await redis.del(`${QUEUE_ENTRY_PREFIX}${playerId}`);
+  await redis.del(`${QUEUE_MARKER_PREFIX}${playerId}`);
 }
 
 // ── POST — Join the matchmaking queue ──
@@ -114,13 +146,7 @@ export async function POST() {
 
   // Clean up stale match key and any previous queue entry (handles browser crash/reconnect)
   await redis.del(`h2h:matched:${playerId}`);
-  await redis.del(`h2h:queue:player:${playerId}`);
-  // Remove any stale entry from the sorted set for this player
-  const existingRaw = await redis.zrange('h2h:queue', 0, -1);
-  for (const raw of existingRaw) {
-    const entry: { playerId?: string } = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    if (entry.playerId === playerId) await redis.zrem('h2h:queue', typeof raw === 'string' ? raw : JSON.stringify(raw));
-  }
+  await removeFromQueue(playerId);
 
   // Check if player is already in an active match
   const admin0 = getSupabaseAdminClient();
@@ -137,7 +163,7 @@ export async function POST() {
   }
 
   // Prevent double-queue
-  const alreadyQueued = await redis.get(`h2h:queue:player:${playerId}`);
+  const alreadyQueued = await redis.get(`${QUEUE_MARKER_PREFIX}${playerId}`);
   if (alreadyQueued) {
     return NextResponse.json({ error: 'Already in queue' }, { status: 409 });
   }
@@ -165,11 +191,12 @@ export async function POST() {
     joinedAt: now,
   };
 
-  // Add to sorted set (score = timestamp for FIFO ordering)
-  await redis.zadd('h2h:queue', { score: now, member: JSON.stringify(entry) });
+  // Store entry data separately, add player ID to sorted set
+  await redis.set(`${QUEUE_ENTRY_PREFIX}${playerId}`, JSON.stringify(entry), { ex: 120 });
+  await redis.zadd(QUEUE_KEY, { score: now, member: playerId });
 
   // Mark player as queued with 60s TTL
-  await redis.set(`h2h:queue:player:${playerId}`, '1', { ex: 60 });
+  await redis.set(`${QUEUE_MARKER_PREFIX}${playerId}`, '1', { ex: 60 });
 
   return NextResponse.json({ queued: true });
 }
@@ -185,55 +212,42 @@ export async function GET() {
   const playerId = player.id;
 
   // Refresh queue marker TTL on each poll (proves player is still online)
-  await redis.expire(`h2h:queue:player:${playerId}`, 15);
+  await redis.expire(`${QUEUE_MARKER_PREFIX}${playerId}`, 15);
 
   // Check if already matched
   const existingMatchId = await redis.get<string>(`h2h:matched:${playerId}`);
   if (existingMatchId) {
     // Clean up queue keys
-    await redis.del(`h2h:queue:player:${playerId}`);
+    await removeFromQueue(playerId);
     return NextResponse.json({ matched: true, matchId: existingMatchId });
   }
 
-  // Get all queue entries (sorted by score/timestamp ascending)
-  const rawEntries = await redis.zrange('h2h:queue', 0, -1);
-  const allEntries: QueueEntry[] = rawEntries.map((raw) =>
-    typeof raw === 'string' ? JSON.parse(raw) : raw as QueueEntry,
-  );
-
+  // Get all queue entries
+  const allEntries = await getQueueEntries();
   const now = Date.now();
-  const STALE_THRESHOLD_MS = 45_000; // entries older than 45s are stale (bot timeout is 30s)
 
   // Clean up stale entries — players who left without cancelling
-  const staleEntries = allEntries.filter((e) => now - e.joinedAt > STALE_THRESHOLD_MS && e.playerId !== playerId);
-  if (staleEntries.length > 0) {
-    for (const stale of staleEntries) {
-      await redis.zrem('h2h:queue', JSON.stringify(stale));
-      await redis.del(`h2h:queue:player:${stale.playerId}`);
+  for (const e of allEntries) {
+    if (now - e.joinedAt > STALE_THRESHOLD_MS && e.playerId !== playerId) {
+      await removeFromQueue(e.playerId);
     }
   }
 
   // Re-read after cleanup
-  const freshRaw = staleEntries.length > 0 ? await redis.zrange('h2h:queue', 0, -1) : rawEntries;
-  const entries: QueueEntry[] = (staleEntries.length > 0
-    ? freshRaw.map((raw) => typeof raw === 'string' ? JSON.parse(raw) : raw as QueueEntry)
-    : allEntries
-  ).filter((e) => now - e.joinedAt <= STALE_THRESHOLD_MS || e.playerId === playerId);
+  const entries = await getQueueEntries();
 
   // Find self in queue
-  const selfIdx = entries.findIndex((e) => e.playerId === playerId);
-  if (selfIdx === -1) {
-    // Player not in queue — nothing to do
-    console.log(`[h2h:queue] player ${playerId} NOT found in queue, entries: ${entries.length}`);
+  const selfEntry = entries.find((e) => e.playerId === playerId);
+  if (!selfEntry) {
     return NextResponse.json({ matched: false });
   }
 
-  const selfEntry = entries[selfIdx];
+  // Filter to non-stale entries
+  const activeEntries = entries.filter((e) => now - e.joinedAt <= STALE_THRESHOLD_MS || e.playerId === playerId);
 
-  if (entries.length < 2) {
+  if (activeEntries.length < 2) {
     // Not enough players — check for timeout → bot match
     const waitMs = now - selfEntry.joinedAt;
-    console.log(`[h2h:queue] solo in queue, waited ${waitMs}ms / ${H2H_QUEUE_TIMEOUT_MS}ms, entries: ${entries.length}, selfIdx: ${selfIdx}`);
     if (waitMs >= H2H_QUEUE_TIMEOUT_MS) {
       const admin = getSupabaseAdminClient();
       const { data: match, error } = await admin
@@ -252,6 +266,7 @@ export async function GET() {
         .single();
 
       if (error || !match) {
+        console.error('[h2h:queue] Failed to create bot match:', error?.message);
         return NextResponse.json({ error: 'Failed to create match' }, { status: 500 });
       }
 
@@ -259,8 +274,7 @@ export async function GET() {
       await dealMatchCards(match.id, [playerId]);
 
       // Clean up queue
-      await redis.zrem('h2h:queue', JSON.stringify(selfEntry));
-      await redis.del(`h2h:queue:player:${playerId}`);
+      await removeFromQueue(playerId);
 
       return NextResponse.json({ matched: true, matchId: match.id, isBot: true });
     }
@@ -279,15 +293,15 @@ export async function GET() {
 
   // Find best opponent within tier range (closest rank first)
   // Only consider opponents whose queue marker key still exists (they're still polling)
-  const candidateEntries = entries.filter((e) => e.playerId !== playerId);
-  const activeCandidates: typeof candidateEntries = [];
+  const candidateEntries = activeEntries.filter((e) => e.playerId !== playerId);
+  const activeCandidates: QueueEntry[] = [];
   for (const c of candidateEntries) {
-    const stillQueued = await redis.get(`h2h:queue:player:${c.playerId}`);
+    const stillQueued = await redis.get(`${QUEUE_MARKER_PREFIX}${c.playerId}`);
     if (stillQueued) {
       activeCandidates.push(c);
     } else {
       // Stale entry — clean up
-      await redis.zrem('h2h:queue', JSON.stringify(c));
+      await removeFromQueue(c.playerId);
     }
   }
 
@@ -349,10 +363,8 @@ export async function GET() {
   await redis.set(`h2h:matched:${sortedIds[1]}`, matchId, { ex: 60 });
 
   // Remove both from queue
-  await redis.zrem('h2h:queue', JSON.stringify(selfEntry));
-  await redis.zrem('h2h:queue', JSON.stringify(opponentEntry));
-  await redis.del(`h2h:queue:player:${sortedIds[0]}`);
-  await redis.del(`h2h:queue:player:${sortedIds[1]}`);
+  await removeFromQueue(sortedIds[0]);
+  await removeFromQueue(sortedIds[1]);
 
   return NextResponse.json({ matched: true, matchId });
 }
@@ -365,20 +377,6 @@ export async function DELETE() {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const playerId = player.id;
-
-  // Find and remove the player's entry from the sorted set
-  const rawEntries = await redis.zrange('h2h:queue', 0, -1);
-  for (const raw of rawEntries) {
-    const entry: QueueEntry = typeof raw === 'string' ? JSON.parse(raw) : raw as QueueEntry;
-    if (entry.playerId === playerId) {
-      await redis.zrem('h2h:queue', typeof raw === 'string' ? raw : JSON.stringify(raw));
-      break;
-    }
-  }
-
-  // Remove the player-queue marker
-  await redis.del(`h2h:queue:player:${playerId}`);
-
+  await removeFromQueue(player.id);
   return NextResponse.json({ ok: true });
 }
