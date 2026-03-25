@@ -635,7 +635,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   {activeTab === 'xp' && xpLeaderboard.length > 0 && (
                     <div key={`xp-${xpLeaderboard.length}`} className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
                       {xpLeaderboard.map((row, i) => (
-                        <div key={i} className="flex items-center gap-2 px-3 py-1.5 lg:py-2.5 text-sm lg:text-base font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+                        <div key={i} className="flex items-center gap-2 px-3 py-1.5 lg:py-2.5 text-sm lg:text-base font-mono anim-fade-in-up" style={{ opacity: 0, animationDelay: `${i * 60}ms` }}>
                           <span className="text-[var(--c-muted)] w-4">{i + 1}.</span>
                           {row.display_name ? (
                             <Link href={`/player/${encodeURIComponent(row.display_name)}`} className="text-[var(--c-secondary)] flex-1 truncate hover:text-[var(--c-primary)] transition-colors">{row.display_name}</Link>
@@ -656,7 +656,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   {canSeeDailyLb && activeTab === 'daily' && dailyLeaderboard.length > 0 && (
                     <div key={`daily-${dailyLeaderboard.length}`} className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
                       {dailyLeaderboard.map((entry, i) => (
-                        <div key={i} className="flex items-center gap-3 px-3 py-1.5 lg:py-2.5 anim-fade-in-up" style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
+                        <div key={i} className="flex items-center gap-3 px-3 py-1.5 lg:py-2.5 anim-fade-in-up" style={{ opacity: 0, animationDelay: `${Math.min(i, 10) * 60}ms` }}>
                           <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[var(--c-accent)]' : 'text-[var(--c-muted)]'}`}>{i + 1}</span>
                           {entry.name ? (
                             <Link href={`/player/${encodeURIComponent(entry.name)}`} className="text-[var(--c-secondary)] text-sm font-mono flex-1 truncate hover:text-[var(--c-primary)] transition-colors">{entry.name}</Link>
@@ -680,7 +680,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   {canSeeH2HLb && activeTab === 'h2h' && h2hLeaderboard.length > 0 && (
                     <div key={`h2h-${h2hLeaderboard.length}`} className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
                       {h2hLeaderboard.map((row, i) => (
-                        <div key={i} className="flex items-center gap-2 px-3 py-1.5 lg:py-2.5 text-sm lg:text-base font-mono anim-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+                        <div key={i} className="flex items-center gap-2 px-3 py-1.5 lg:py-2.5 text-sm lg:text-base font-mono anim-fade-in-up" style={{ opacity: 0, animationDelay: `${i * 60}ms` }}>
                           <span className="text-[var(--c-muted)] w-4">{row.position}.</span>
                           <Link href={`/player/${encodeURIComponent(row.displayName)}`} className="text-[var(--c-secondary)] flex-1 truncate hover:text-[var(--c-primary)] transition-colors">{row.displayName}</Link>
                           <span className="text-sm font-mono shrink-0" style={{ color: row.rankColor }}>{row.rankLabel}</span>

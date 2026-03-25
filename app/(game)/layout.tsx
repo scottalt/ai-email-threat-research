@@ -7,6 +7,7 @@ import { usePlayer } from '@/lib/usePlayer';
 import { NavVisibilityProvider } from '@/lib/NavVisibilityContext';
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { NavBar } from '@/components/NavBar';
+import { DataStream } from '@/components/DataStream';
 import Link from 'next/link';
 
 /** One-time achievement backfill — fires once per deploy version */
@@ -41,6 +42,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     <div className="crt-active">
       <TerminalSounds />
       <div className="scanline-sweep" aria-hidden="true" />
+      <DataStream />
       <PlayerProvider>
         <ThemeProvider>
           <ThemeSync />

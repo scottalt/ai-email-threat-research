@@ -13,6 +13,8 @@ import {
 } from '@/lib/h2h-realtime';
 import type { MatchProgressEvent, MatchResultEvent } from '@/lib/h2h-realtime';
 import { ACHIEVEMENTS } from '@/lib/achievements';
+import { playOpponentDown } from '@/lib/sounds';
+import { useSoundEnabled } from '@/lib/useSoundEnabled';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -223,6 +225,7 @@ function CardDisplay({ card }: { card: SafeDealCard }) {
 // ---------------------------------------------------------------------------
 
 export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
+  const { soundEnabled } = useSoundEnabled();
   // ── Card / match state ──
   const [cards, setCards] = useState<SafeDealCard[]>([]);
   const [cardIndex, setCardIndex] = useState(0);
@@ -386,6 +389,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
                 setOpponentIndex(event.cardIndex + 1);
                 if (!event.correct) {
                   setOpponentEliminated(true);
+                  if (soundEnabled) playOpponentDown();
                   // Opponent eliminated — we win! End match immediately.
                   if (!matchEndedRef.current) {
                     matchEndedRef.current = true;

@@ -1,12 +1,23 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ACHIEVEMENT_MAP, RARITY_COLORS } from '@/lib/achievements';
+import { playAchievement } from '@/lib/sounds';
+import { useSoundEnabled } from '@/lib/useSoundEnabled';
 
 interface Props {
   achievementIds: string[];
 }
 
 export function AchievementToast({ achievementIds }: Props) {
+  const { soundEnabled } = useSoundEnabled();
+
+  useEffect(() => {
+    if (achievementIds.length > 0 && soundEnabled) {
+      playAchievement();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (achievementIds.length === 0) return null;
 
   return (

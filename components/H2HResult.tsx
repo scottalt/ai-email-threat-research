@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { getRankFromPoints, H2H_CARDS_PER_MATCH } from '@/lib/h2h';
 import type { H2HRank } from '@/lib/h2h';
 import { ACHIEVEMENTS } from '@/lib/achievements';
+import { playVictory, playDefeat } from '@/lib/sounds';
+import { useSoundEnabled } from '@/lib/useSoundEnabled';
 
 interface Props {
   matchId: string;
@@ -71,10 +73,20 @@ export function H2HResult({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [myAnswers, setMyAnswers] = useState<any[]>([]);
 
+  const { soundEnabled } = useSoundEnabled();
+
   // winnerId is the source of truth — reason is just for display flavor
   const isWin = winnerId === playerId;
   const isLoss = winnerId !== null && winnerId !== playerId;
   const noResult = winnerId === null; // bot match wrong answer
+
+  // Play victory/defeat sound on mount
+  useEffect(() => {
+    if (soundEnabled) {
+      if (isWin) playVictory();
+      else if (!isBot) playDefeat();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let cancelled = false;

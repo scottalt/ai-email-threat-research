@@ -462,6 +462,56 @@ body {
     0 0 calc(var(--streak, 1) * 6px) color-mix(in srgb, var(--c-accent) 40%, transparent);
 }
 
+/* Answer commit — scanning sweep across the card */
+@keyframes analyze-sweep {
+  from { background-position: 0 -100%; }
+  to   { background-position: 0 200%; }
+}
+.card-processing {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--c-primary) 8%, transparent) 48%,
+    color-mix(in srgb, var(--c-primary) 15%, transparent) 50%,
+    color-mix(in srgb, var(--c-primary) 8%, transparent) 52%,
+    transparent 100%
+  );
+  background-size: 100% 300%;
+  animation: analyze-sweep 0.5s linear;
+}
+
+/* Countdown number bounce */
+@keyframes countdown-bounce {
+  0%   { transform: scale(1.4); opacity: 0; }
+  60%  { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes countdown-go {
+  0%   { transform: scale(0.5); opacity: 0; }
+  50%  { transform: scale(1.25); opacity: 1; text-shadow: 0 0 30px currentColor; }
+  100% { transform: scale(1); opacity: 1; text-shadow: 0 0 12px currentColor; }
+}
+.anim-countdown-bounce {
+  animation: countdown-bounce 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.anim-countdown-go {
+  animation: countdown-go 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Data stream background — ambient scrolling hex text */
+@keyframes data-scroll {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-50%); }
+}
+.data-stream {
+  animation: data-scroll 30s linear infinite;
+  opacity: 0.03;
+  color: var(--c-primary);
+  font-size: 10px;
+  line-height: 1.8;
+  font-family: var(--font-geist-mono), monospace;
+}
+
 /* Card scanlines — slightly more visible */
 .scanline::after {
   background: repeating-linear-gradient(
@@ -479,13 +529,19 @@ body {
   .anim-level-up,
   .anim-achievement-burst,
   .anim-glow-ring,
-  .anim-square-fill {
+  .anim-square-fill,
+  .anim-countdown-bounce,
+  .anim-countdown-go,
+  .card-processing {
     animation-duration: 0.01ms !important;
   }
   .crt-active {
     animation: none !important;
   }
   .level-flash-overlay {
+    display: none !important;
+  }
+  .data-stream {
     display: none !important;
   }
 }

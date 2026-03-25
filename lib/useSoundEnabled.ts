@@ -2,8 +2,12 @@ import { useState, useCallback, useRef } from 'react';
 
 const STORAGE_KEY = 'sfx_enabled';
 
+function readInitial(): boolean {
+  try { return sessionStorage.getItem(STORAGE_KEY) === 'true'; } catch { return false; }
+}
+
 export function useSoundEnabled() {
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(readInitial);
   const sfxEnabledRef = useRef(soundEnabled);
 
   const toggleSound = useCallback(() => {

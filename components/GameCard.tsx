@@ -5,6 +5,7 @@ import type { DealCard, Answer, Confidence, GameMode } from '@/lib/types';
 import type { SafeDealCard } from '@/lib/card-utils';
 
 import { parseFrom } from '@/lib/parseFrom';
+import { playCommit } from '@/lib/sounds';
 
 interface Props {
   card: DealCard | SafeDealCard;
@@ -282,6 +283,7 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
 
   function handleButton(answer: Answer) {
     if (!confidence || answered.current) return;
+    if (soundEnabled) playCommit();
     answered.current = true;
     setFlying(true);
     const now = Date.now();

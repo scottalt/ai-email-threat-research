@@ -9,6 +9,8 @@ import { LevelMeter } from './LevelMeter';
 import { AuthFlow } from './AuthFlow';
 import { AchievementToast } from './AchievementToast';
 import { getXpForRound } from '@/lib/xp';
+import { playLevelUp } from '@/lib/sounds';
+import { useSoundEnabled } from '@/lib/useSoundEnabled';
 
 interface Props {
   score: number;
@@ -55,6 +57,7 @@ function buildShareText(opts: {
 }
 
 export function RoundSummary({ score, total, totalScore, results, mode, sessionId, onPlayAgain }: Props) {
+  const { soundEnabled } = useSoundEnabled();
   const tier = getTier(score, total);
   const [displayScore, setDisplayScore] = useState(0);
   useEffect(() => {
@@ -146,6 +149,13 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
       .catch((err) => { console.error('[player/xp] award failed:', err); });
   }, [signedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Play level-up sound when XP result arrives with a level up
+  useEffect(() => {
+    if (xpResult?.levelUp && soundEnabled) {
+      playLevelUp();
+    }
+  }, [xpResult?.levelUp]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const phishingCaught = results.filter((r) => r.card.isPhishing && r.correct).length;
   const legitCorrect = results.filter((r) => !r.card.isPhishing && r.correct).length;
   const phishingTotal = results.filter((r) => r.card.isPhishing).length;
@@ -204,7 +214,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
         </div>
       )}
       {/* Score header */}
-      <div className="term-border bg-[var(--c-bg)]">
+      <div className="term-border bg-[var(--c-bg)] anim-fade-in-up" style={{ opacity: 0, animationDelay: '0ms' }}>
         <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 flex items-center justify-between">
           <span className="text-[var(--c-secondary)] text-sm tracking-widest">
             {mode === 'daily' ? 'DAILY_COMPLETE' : 'SESSION_COMPLETE'}
@@ -246,7 +256,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
       </div>
 
       {/* Breakdown */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 anim-fade-in-up" style={{ opacity: 0, animationDelay: '150ms' }}>
         <div className="term-border bg-[var(--c-bg)] border-[rgba(255,51,51,0.3)] text-center px-3 py-3">
           <div className="text-[#ff3333] text-2xl font-black font-mono">{phishingCaught}/{phishingTotal}</div>
           <div className="text-sm font-mono text-[var(--c-secondary)] mt-1 tracking-wider">PHISHING CAUGHT</div>
@@ -258,7 +268,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
       </div>
 
       {/* Round log */}
-      <div className="term-border bg-[var(--c-bg)]">
+      <div className="term-border bg-[var(--c-bg)] anim-fade-in-up" style={{ opacity: 0, animationDelay: '300ms' }}>
         <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
           <span className="text-[var(--c-secondary)] text-sm tracking-widest">ROUND_LOG</span>
         </div>
@@ -299,7 +309,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
 
       {/* Weakness tracking — research mode only */}
       {mode === 'research' && weakPoints.length > 0 && (
-        <div className="term-border bg-[var(--c-bg)]">
+        <div className="term-border bg-[var(--c-bg)] anim-fade-in-up" style={{ opacity: 0, animationDelay: '450ms' }}>
           <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
             <span className="text-[var(--c-secondary)] text-sm tracking-widest">COGNITIVE_BLIND_SPOTS</span>
           </div>
