@@ -860,7 +860,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                 <p className="text-[var(--c-accent)] text-sm text-center font-mono">
                   RESEARCH COMPLETE — 30/30. Thank you for contributing.
                 </p>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   {pvpButton}
                   {dailyButton}
                   {freeplayButton}
