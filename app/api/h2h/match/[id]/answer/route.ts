@@ -238,14 +238,7 @@ async function finalizeMatch(
 
     if (!updated || updated.length === 0) return; // already finalized by another thread
 
-    // Award XP even for bot matches (still practiced)
-    if (match.player1_id) {
-      const { count: p1Correct } = await admin.from('h2h_match_answers')
-        .select('id', { count: 'exact', head: true })
-        .eq('match_id', matchId).eq('player_id', match.player1_id).eq('correct', true);
-      const isP1Winner = winnerId === match.player1_id;
-      await awardH2HXp(admin, match.player1_id, p1Correct ?? 0, isP1Winner);
-    }
+    // Bot matches do not award XP — prevents bot farming exploits
   }
 }
 

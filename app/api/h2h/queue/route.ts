@@ -116,17 +116,35 @@ async function removeFromQueue(playerId: string) {
 
 async function getQueueEntries(): Promise<QueueEntry[]> {
   const playerIds = await redis.smembers(QUEUE_REGISTRY);
-  const entries: QueueEntry[] = [];
+  if (playerIds.length === 0) return [];
 
+  // Pipeline all GETs into a single Redis round-trip — O(1) instead of O(n)
+  const pipe = redis.pipeline();
   for (const pid of playerIds) {
-    const raw = await redis.get<string | QueueEntry>(`${QUEUE_PREFIX}${pid}`);
+    pipe.get(`${QUEUE_PREFIX}${pid}`);
+  }
+  const results = await pipe.exec();
+
+  const entries: QueueEntry[] = [];
+  const staleIds: string[] = [];
+
+  for (let i = 0; i < playerIds.length; i++) {
+    const raw = results[i] as string | QueueEntry | null;
     if (!raw) {
-      // Entry expired but ID still in registry — clean up
-      await redis.srem(QUEUE_REGISTRY, pid);
+      staleIds.push(playerIds[i]);
       continue;
     }
     const entry: QueueEntry = typeof raw === 'string' ? JSON.parse(raw) : raw;
     entries.push(entry);
+  }
+
+  // Clean up stale registry entries in a single pipeline
+  if (staleIds.length > 0) {
+    const cleanPipe = redis.pipeline();
+    for (const pid of staleIds) {
+      cleanPipe.srem(QUEUE_REGISTRY, pid);
+    }
+    await cleanPipe.exec();
   }
 
   return entries;
@@ -144,6 +162,14 @@ export async function POST() {
   }
 
   const playerId = player.id;
+
+  // Rate limit: max 5 queue joins per 30 seconds per player
+  const joinRlKey = `ratelimit:h2h-join:${playerId}`;
+  const joinCount = await redis.incr(joinRlKey);
+  if (joinCount === 1) await redis.expire(joinRlKey, 30);
+  if (joinCount > 5) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
 
   // Clean up stale state
   await redis.del(`h2h:matched:${playerId}`);
@@ -275,6 +301,10 @@ export async function GET() {
     return NextResponse.json({ matched: false });
   }
 
+  // Remove BOTH players from queue BEFORE creating match (prevents double-matching)
+  await removeFromQueue(sortedIds[0]);
+  await removeFromQueue(sortedIds[1]);
+
   // Create the match
   const admin = getSupabaseAdminClient();
   const { data: match, error } = await admin
@@ -293,6 +323,9 @@ export async function GET() {
     .single();
 
   if (error || !match) {
+    // Match creation failed — re-add both players to queue so they can retry
+    await addToQueue(selfEntry);
+    await addToQueue(opponentEntry);
     await redis.del(lockKey);
     return NextResponse.json({ error: 'Failed to create match' }, { status: 500 });
   }
@@ -302,9 +335,6 @@ export async function GET() {
 
   await redis.set(`h2h:matched:${sortedIds[0]}`, matchId, { ex: 60 });
   await redis.set(`h2h:matched:${sortedIds[1]}`, matchId, { ex: 60 });
-
-  await removeFromQueue(sortedIds[0]);
-  await removeFromQueue(sortedIds[1]);
 
   return NextResponse.json({ matched: true, matchId });
 }

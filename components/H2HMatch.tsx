@@ -257,6 +257,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
   // ── Refs for callbacks that need latest state ──
   const matchEndedRef = useRef(false);
   const isPlayer1Ref = useRef(true);
+  const opponentIdRef = useRef<string | null>(null);
 
   // Reset render timer when card changes
   useEffect(() => {
@@ -317,6 +318,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
         const opponentId = isPlayer1
           ? matchData.match.player2Id
           : matchData.match.player1Id;
+        opponentIdRef.current = opponentId;
 
         if (opponentId && matchData.players[opponentId]) {
           const opp = matchData.players[opponentId];
@@ -379,6 +381,8 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
               matchId,
               playerId,
               (event: MatchProgressEvent) => {
+                // Validate event is from the actual opponent (prevents spoofed events)
+                if (opponentIdRef.current && event.playerId !== opponentIdRef.current) return;
                 setOpponentIndex(event.cardIndex + 1);
                 if (!event.correct) {
                   setOpponentEliminated(true);
@@ -539,6 +543,11 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
 
         if (!res.ok) {
           setSubmitting(false);
+          // Match ended while we were submitting — go to result screen
+          if (res.status === 409 && !matchEndedRef.current) {
+            matchEndedRef.current = true;
+            onMatchEnd({ winnerId: null, myPointsDelta: 0, opponentPointsDelta: 0, reason: 'completed' });
+          }
           return;
         }
 
@@ -657,9 +666,14 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
       setReadyTimer((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          // Neither player wins — match cancelled
+          // Neither player wins — cancel match server-side then show result
           if (!matchEndedRef.current) {
             matchEndedRef.current = true;
+            fetch(`/api/h2h/match/${matchId}/answer`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ cardIndex: -1, userAnswer: 'forfeit', timeFromRenderMs: 0 }),
+            }).catch(() => {});
             onMatchEnd({
               winnerId: null,
               myPointsDelta: 0,

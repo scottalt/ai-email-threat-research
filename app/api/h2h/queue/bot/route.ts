@@ -37,9 +37,18 @@ export async function POST() {
   }
   const playerId = player.id as string;
 
-  // Prevent creating multiple bot matches
+  // Daily bot match cap: max 10 per day
+  const today = new Date().toISOString().slice(0, 10);
+  const botDailyKey = `h2h:bot-daily:${playerId}:${today}`;
+  const botCount = await redis.incr(botDailyKey);
+  if (botCount === 1) await redis.expire(botDailyKey, 24 * 60 * 60);
+  if (botCount > 10) {
+    return NextResponse.json({ error: 'Daily bot match limit reached (10)' }, { status: 429 });
+  }
+
+  // Prevent creating multiple bot matches concurrently
   const lockKey = `h2h:bot-lock:${playerId}`;
-  const acquired = await redis.set(lockKey, '1', { ex: 30, nx: true });
+  const acquired = await redis.set(lockKey, '1', { ex: 120, nx: true });
   if (!acquired) {
     return NextResponse.json({ error: 'Bot match already in progress' }, { status: 409 });
   }
@@ -129,8 +138,8 @@ export async function POST() {
   await redis.set(`match-render:${match.id}:${playerId}:0`, Date.now(), { ex: H2H_MATCH_TTL });
   await admin.from('h2h_matches').update({ card_ids: cards.map((c) => c.id) }).eq('id', match.id);
 
-  // Release bot lock so player can rematch immediately
-  await redis.del(lockKey);
+  // Lock stays until TTL expires (120s) — prevents rapid bot farming
+  // Lock is also effectively cleared when the stale match cleanup runs on next queue join
 
   return NextResponse.json({ matchId: match.id });
 }
