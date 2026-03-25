@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import { redis } from '@/lib/redis';
+import { redis, getClientIp } from '@/lib/redis';
 
 const VALID_RANKS = new Set([
   'CLICK_HAPPY', 'PHISH_BAIT', 'LINK_CHECKER', 'HEADER_READER', 'SOC_ANALYST',
@@ -15,7 +15,7 @@ const MAX_CARDS = 10;
 export async function PATCH(req: NextRequest) {
   try {
     // Rate limit: 20 session finalizations per IP per minute
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const ip = getClientIp(req);
     const rlKey = `ratelimit:sessions:${ip}`;
     const rlCount = await redis.incr(rlKey);
     if (rlCount === 1) await redis.expire(rlKey, 60);

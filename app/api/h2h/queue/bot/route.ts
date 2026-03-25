@@ -7,7 +7,7 @@ import { CURRENT_SEASON, H2H_CARDS_PER_MATCH, H2H_MATCH_TTL } from '@/lib/h2h';
 
 // POST /api/h2h/queue/bot — Create a bot match directly (called by client after queue timeout)
 
-async function getAuthPlayerId(): Promise<string | null> {
+async function getAuthPlayerId(): Promise<{ id: string; research_graduated: boolean } | null> {
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,18 +20,22 @@ async function getAuthPlayerId(): Promise<string | null> {
   const admin = getSupabaseAdminClient();
   const { data: player } = await admin
     .from('players')
-    .select('id')
+    .select('id, research_graduated')
     .eq('auth_id', user.id)
     .single();
 
-  return player?.id ?? null;
+  return player ?? null;
 }
 
 export async function POST() {
-  const playerId = await getAuthPlayerId();
-  if (!playerId) {
+  const player = await getAuthPlayerId();
+  if (!player) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
+  if (!player.research_graduated) {
+    return NextResponse.json({ error: 'Complete research to unlock PvP' }, { status: 403 });
+  }
+  const playerId = player.id as string;
 
   // Prevent creating multiple bot matches
   const lockKey = `h2h:bot-lock:${playerId}`;

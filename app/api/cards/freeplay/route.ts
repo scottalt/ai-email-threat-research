@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { redis } from '@/lib/redis';
+import { redis, getClientIp } from '@/lib/redis';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { toSafeCard } from '@/lib/card-utils';
 import type { Card } from '@/lib/types';
@@ -11,7 +11,7 @@ const ROUND_SIZE = 10;
 const FREEPLAY_UNLOCK_ANSWERS = 30;
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ip = getClientIp(req);
   const rlKey = `ratelimit:cards-freeplay:${ip}`;
   const rlCount = await redis.incr(rlKey);
   if (rlCount === 1) await redis.expire(rlKey, 60);
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       }
     }
   } catch {
-    // If auth check fails, allow through (graceful degradation)
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
   const sessionId = req.nextUrl.searchParams.get('sessionId');

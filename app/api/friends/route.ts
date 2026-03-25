@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { redis } from '@/lib/redis';
 import { CURRENT_SEASON, getRankFromPoints } from '@/lib/h2h';
 
 // ── Auth helper (same pattern as other endpoints) ──
@@ -123,6 +124,14 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const authId = await getAuthId();
   if (!authId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+  // Rate limit: 10 friend requests per hour per player
+  const rlKey = `ratelimit:friend-request:${authId}`;
+  const rlCount = await redis.incr(rlKey);
+  if (rlCount === 1) await redis.expire(rlKey, 60 * 60);
+  if (rlCount > 10) {
+    return NextResponse.json({ error: 'Too many friend requests' }, { status: 429 });
+  }
 
   const admin = getSupabaseAdminClient();
   const player = await getPlayer(admin, authId);

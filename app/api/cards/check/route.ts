@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redis } from '@/lib/redis';
+import { redis, getClientIp } from '@/lib/redis';
 import type { Card } from '@/lib/types';
 
 const BASE_POINTS = 100;
@@ -17,7 +17,7 @@ const STREAK_BONUS = 50;
 
 export async function POST(req: NextRequest) {
   // Rate limit: 30 checks per IP per minute
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ip = getClientIp(req);
   const rlKey = `ratelimit:cards-check:${ip}`;
   const rlCount = await redis.incr(rlKey);
   if (rlCount === 1) await redis.expire(rlKey, 60);

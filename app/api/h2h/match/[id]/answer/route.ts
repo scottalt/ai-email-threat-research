@@ -48,7 +48,6 @@ async function awardH2HXp(
   correctCount: number,
   isWinner: boolean,
 ) {
-  // XP: 10 per correct + completion bonus + win bonus
   let xpEarned = correctCount * XP_PER_CORRECT;
   if (correctCount >= H2H_CARDS_PER_MATCH) {
     xpEarned += (correctCount === H2H_CARDS_PER_MATCH) ? H2H_PERFECT_BONUS_XP : H2H_COMPLETION_BONUS_XP;
@@ -57,23 +56,30 @@ async function awardH2HXp(
 
   if (xpEarned <= 0) return;
 
-  // Fetch current player XP
-  const { data: player } = await admin
-    .from('players')
-    .select('xp, level')
-    .eq('id', playerId)
-    .single();
+  // Atomic read-modify-write with optimistic concurrency:
+  // Read current XP, compute new values, update only if XP hasn't changed (retry once on conflict)
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data: player } = await admin
+      .from('players')
+      .select('xp, level')
+      .eq('id', playerId)
+      .single();
 
-  if (!player) return;
+    if (!player) return;
 
-  const newXp = (player.xp as number) + xpEarned;
-  const newLevel = getLevelFromXp(newXp);
+    const currentXp = player.xp as number;
+    const newXp = currentXp + xpEarned;
+    const newLevel = getLevelFromXp(newXp);
 
-  await admin.from('players').update({
-    xp: newXp,
-    level: newLevel,
-    updated_at: new Date().toISOString(),
-  }).eq('id', playerId);
+    const { data: updated } = await admin.from('players').update({
+      xp: newXp,
+      level: newLevel,
+      updated_at: new Date().toISOString(),
+    }).eq('id', playerId).eq('xp', currentXp).select('id');
+
+    if (updated && updated.length > 0) return; // success
+    // XP changed between read and write — retry
+  }
 }
 
 // ── Finalize a completed match ──
@@ -373,12 +379,14 @@ export async function POST(
 
   const correct = (userAnswer === 'phishing') === card.isPhishing;
 
-  // Server-side timing
+  // Server-side timing — reject if render timestamp expired (match is stale)
   const renderKey = `match-render:${matchId}:${playerId}:${cardIndex}`;
   const renderTimestamp = await redis.get<number>(renderKey);
   const now = Date.now();
-  const serverTimeMs = renderTimestamp ? now - renderTimestamp : null;
-  const verifiedTimeMs = serverTimeMs ?? Math.min(Math.max(timeFromRenderMs, 500), 60000);
+  if (!renderTimestamp) {
+    return NextResponse.json({ error: 'Match expired — render timestamp missing' }, { status: 410 });
+  }
+  const verifiedTimeMs = now - renderTimestamp;
 
   // Mark as checked in Redis (30 min TTL)
   await redis.set(checkedKey, '1', { ex: 1800 });

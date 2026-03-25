@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import { redis } from '@/lib/redis';
+import { redis, getClientIp } from '@/lib/redis';
 import type { AnswerEvent, SessionPayload } from '@/lib/types';
 
 async function getPlayerId(): Promise<string | null> {
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       typeof a.correct !== 'boolean' ||
       typeof a.isPhishing !== 'boolean'
     ) {
-      console.warn('[answers] reject: validation failed', { ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() });
+      console.warn('[answers] reject: validation failed', { ip: getClientIp(req) });
       return NextResponse.json({ ok: true }); // silent reject — don't break the game
     }
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 30 answer submissions per IP per minute (across all modes)
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const ip = getClientIp(req);
     const answerRlKey = `ratelimit:answers:${ip}`;
     const answerRlCount = await redis.incr(answerRlKey);
     if (answerRlCount === 1) await redis.expire(answerRlKey, 60);
@@ -182,14 +182,15 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 5. Per-player daily rate limit: use Redis counter to avoid O(n) DB scan each submission
+      // 5. Per-player daily rate limit: atomic increment-then-check to prevent race conditions
       if (playerId) {
         const todayStr = new Date().toISOString().slice(0, 10);
         const dailyKey = `ratelimit:research:${playerId}:${todayStr}`;
-        const dailyCount = await redis.get<number>(dailyKey);
+        const newCount = await redis.incr(dailyKey);
+        if (newCount === 1) await redis.expire(dailyKey, 24 * 60 * 60);
 
-        if ((dailyCount ?? 0) >= MAX_RESEARCH_ANSWERS_PER_PLAYER_PER_DAY) {
-          console.warn('[answers] reject: daily research limit', { playerId, count: dailyCount });
+        if (newCount > MAX_RESEARCH_ANSWERS_PER_PLAYER_PER_DAY) {
+          console.warn('[answers] reject: daily research limit', { playerId, count: newCount });
           return NextResponse.json({ ok: true }); // silent reject — daily limit
         }
       }
@@ -261,13 +262,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'answer_insert_failed' }, { status: 500 });
     }
 
-    // Increment Redis daily counter after successful insert (research mode only)
-    if (a.gameMode === 'research' && playerId) {
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const dailyKey = `ratelimit:research:${playerId}:${todayStr}`;
-      const newCount = await redis.incr(dailyKey);
-      if (newCount === 1) await redis.expire(dailyKey, 24 * 60 * 60);
-    }
+    // (Daily counter already incremented atomically before insert — see rate limit check above)
 
     // Upsert session only after answer insert succeeds
     const s = body.session;
