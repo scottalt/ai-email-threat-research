@@ -601,7 +601,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
     if (matchEndedRef.current) return;
     matchEndedRef.current = true;
 
-    // Notify server to cancel the match (opponent wins if present)
+    // Notify server to finalize the match (opponent wins if present)
     try {
       await fetch(`/api/h2h/match/${matchId}/answer`, {
         method: 'POST',
@@ -610,15 +610,11 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
       });
     } catch { /* best effort */ }
 
-    broadcastResult(matchId, {
-      winnerId: null,
-      player1PointsDelta: 0,
-      player2PointsDelta: 0,
-      reason: 'forfeit',
-    });
+    // Don't broadcast — let opponent's polling detect the finalized match server-side
+    // Broadcasting null winnerId would show "MATCH OVER" instead of "VICTORY" to opponent
 
     onMatchEnd({
-      winnerId: null,
+      winnerId: null, // result screen fetches real winner from server
       myPointsDelta: 0,
       opponentPointsDelta: 0,
       reason: 'forfeit',

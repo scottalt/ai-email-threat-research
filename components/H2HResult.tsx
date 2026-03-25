@@ -175,8 +175,8 @@ export function H2HResult({
   }
 
   // Points display
-  const deltaSign = myPointsDelta >= 0 ? '+' : '';
-  const deltaColor = myPointsDelta >= 0 ? 'text-[var(--c-primary)]' : 'text-[#ff3333]';
+  const deltaSign = effectiveDelta >= 0 ? '+' : '';
+  const deltaColor = effectiveDelta >= 0 ? 'text-[var(--c-primary)]' : 'text-[#ff3333]';
 
   if (loading) {
     return (
@@ -230,7 +230,7 @@ export function H2HResult({
             {' → '}
             <span className="text-[var(--c-fg)]">{stats.rankPoints} pts</span>
             {' '}
-            <span className={deltaColor}>({deltaSign}{myPointsDelta})</span>
+            <span className={deltaColor}>({deltaSign}{effectiveDelta})</span>
           </p>
           {rankedUp && (
             <p className="mt-2 text-sm font-bold" style={{ color: newRank.color }}>

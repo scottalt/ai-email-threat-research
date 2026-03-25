@@ -125,5 +125,8 @@ export async function POST() {
   await redis.set(`match-render:${match.id}:${playerId}:0`, Date.now(), { ex: H2H_MATCH_TTL });
   await admin.from('h2h_matches').update({ card_ids: cards.map((c) => c.id) }).eq('id', match.id);
 
+  // Release bot lock so player can rematch immediately
+  await redis.del(lockKey);
+
   return NextResponse.json({ matchId: match.id });
 }
