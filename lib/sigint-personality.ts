@@ -31,15 +31,19 @@ export interface SigintDialogue {
 /** Generate a dynamic dialogue with player name inserted */
 export function dynamicDialogue(id: string, callsign: string): SigintDialogue | null {
   switch (id) {
-    case 'welcome_back':
-      return {
-        lines: [
-          `${callsign}. You're back.`,
-          "Miss me? Don't answer that.",
-          "New emails in the queue. Let's get to work.",
-        ],
-        buttonText: "LET'S GO",
-      };
+    case 'welcome_back': {
+      const greetings: SigintDialogue[] = [
+        { lines: [`${callsign}. You're back.`, "Miss me? Don't answer that."], buttonText: "LET'S GO" },
+        { lines: [`Hey ${callsign}.`, "Emails piling up. You know the drill."], buttonText: "ON IT" },
+        { lines: [`${callsign}. Right on time.`, "I've got fresh threats queued up."], buttonText: "SHOW ME" },
+        { lines: ["Look who decided to show up.", `Welcome back, ${callsign}.`], buttonText: "MISSED YOU TOO" },
+        { lines: [`${callsign}. Good timing.`, "New data just came in. Let's go."], buttonText: "READY" },
+        { lines: ["Terminal's been quiet without you.", `Let's fix that, ${callsign}.`], buttonText: "LET'S GO" },
+        { lines: [`${callsign}. Status: operational.`, "Mine, not yours. Yours is TBD."], buttonText: "WATCH ME" },
+        { lines: ["Ah. My favorite operative.", `...you're my only operative, ${callsign}. Don't let it go to your head.`], buttonText: "TOO LATE" },
+      ];
+      return greetings[Math.floor(Math.random() * greetings.length)];
+    }
     case 'v2_intro':
       return {
         lines: [

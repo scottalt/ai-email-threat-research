@@ -238,7 +238,9 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   useEffect(() => {
     if (!showButton || greetingShownThisSession.current) return;
     if (!signedIn || !profile) return;
-    if (sessionStorage.getItem('sigint_greeted')) return;
+    // Skip if already greeted recently (within 2 hours)
+    const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
+    if (lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) return;
 
     const answers = profile.researchAnswersSubmitted ?? 0;
     const callsign = profile.displayName ?? 'operative';
@@ -412,8 +414,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           buttonText={handlerButton}
           onDismiss={() => {
             const answers = profile?.researchAnswersSubmitted ?? 0;
-            // Always dismiss for this session
-            try { sessionStorage.setItem('sigint_greeted', '1'); } catch {}
+            // Mark greeted with timestamp
+            try { sessionStorage.setItem('sigint_greeted', String(Date.now())); } catch {}
             // Only mark permanently seen if player has actually done research
             if (answers > 0 && !hasSeenMoment('v2_intro')) markMomentSeen('v2_intro');
             setShowHandlerGreeting(false);
