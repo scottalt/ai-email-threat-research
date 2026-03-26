@@ -264,7 +264,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     const pendingMilestone =
       (answers >= 30 && !seen.includes('freeplay_unlock')) ? 'freeplay_unlock' :
       (answers >= 20 && !seen.includes('daily_unlock')) ? 'daily_unlock' :
-      (answers >= 15 && !seen.includes('research_halfway')) ? 'research_halfway' :
+      (answers >= 15 && answers < 20 && !seen.includes('research_halfway')) ? 'research_halfway' :
       ((graduated || answers >= 10) && !seen.includes('pvp_unlock')) ? 'pvp_unlock' :
       null;
 
