@@ -12,6 +12,8 @@ import { playBootTick } from '@/lib/sounds';
 import { ACHIEVEMENTS, RARITY_COLORS } from '@/lib/achievements';
 import { version } from '@/package.json';
 import { QUESTS } from '@/lib/quests';
+import { Handler } from './Handler';
+import { HANDLER_DIALOGUES, hasSeenMoment, markMomentSeen } from '@/lib/handler-dialogues';
 
 interface LeaderboardEntry {
   name: string;
@@ -49,6 +51,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   const bootSeen = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bootSeen') === '1';
   const [visibleCount, setVisibleCount] = useState(bootSeen ? BOOT_LINES.length : 0);
   const [showButton, setShowButton] = useState(bootSeen);
+  const [showHandlerGreeting, setShowHandlerGreeting] = useState(false);
   const [bootDone, setBootDone] = useState(bootSeen);
   const [bootHidden, setBootHidden] = useState(bootSeen);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -215,16 +218,21 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     }
   }, [visibleCount]);
 
-  // After boot fades out, show main content
+  // After boot fades out, show main content (or handler greeting for new players)
   useEffect(() => {
     if (bootDone && !bootHidden) {
       const fallback = setTimeout(() => {
         setBootHidden(true);
-        setShowButton(true);
-      }, 400); // slightly longer than the 300ms transition
+        // Show handler greeting for unsigned-in players who haven't seen it
+        if (!signedIn && !hasSeenMoment('boot_greeting')) {
+          setShowHandlerGreeting(true);
+        } else {
+          setShowButton(true);
+        }
+      }, 400);
       return () => clearTimeout(fallback);
     }
-  }, [bootDone, bootHidden]);
+  }, [bootDone, bootHidden, signedIn]);
 
   // Hide nav bar during boot and until player profile is fully set up
   useLayoutEffect(() => {
@@ -366,6 +374,19 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             )}
           </div>
         </div>
+      )}
+
+      {/* SIGINT handler greeting — new players only, after boot */}
+      {showHandlerGreeting && !showButton && (
+        <Handler
+          lines={HANDLER_DIALOGUES.boot_greeting.lines}
+          buttonText={HANDLER_DIALOGUES.boot_greeting.buttonText}
+          onDismiss={() => {
+            markMomentSeen('boot_greeting');
+            setShowHandlerGreeting(false);
+            setShowButton(true);
+          }}
+        />
       )}
 
       {showButton && (

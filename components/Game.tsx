@@ -40,6 +40,8 @@ import { RoundSummary } from './RoundSummary';
 import { StartScreen } from './StartScreen';
 import { ResearchIntro } from './ResearchIntro';
 import { TutorialCard } from './TutorialCard';
+import { Handler } from './Handler';
+import { HANDLER_DIALOGUES, hasSeenMoment, markMomentSeen } from '@/lib/handler-dialogues';
 import { H2HLobby } from './H2HLobby';
 import { H2HQueue } from './H2HQueue';
 import { H2HCountdown } from './H2HCountdown';
@@ -70,6 +72,7 @@ const CONFIDENCE_PENALTY: Record<Confidence, number> = {
 type GamePhase = 'start' | 'playing' | 'checking' | 'feedback'
   | 'summary' | 'daily_complete' | 'loading'
   | 'research_intro' | 'research_unavailable' | 'tutorial'
+  | 'handler_research_brief' | 'handler_tutorial_intro' | 'handler_tutorial_complete' | 'handler_first_research'
   | 'h2h_lobby' | 'h2h_queue' | 'h2h_countdown' | 'h2h_match' | 'h2h_result';
 
 export function Game({ previewMode = false }: { previewMode?: boolean }) {
@@ -584,14 +587,73 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       <ResearchIntro
         onBegin={() => {
           const isFirstTime = !profile || (profile.researchAnswersSubmitted ?? 0) === 0;
-          setPhase(isFirstTime ? 'tutorial' : 'playing');
+          if (isFirstTime && !hasSeenMoment('research_brief')) {
+            setPhase('handler_research_brief');
+          } else {
+            setPhase(isFirstTime ? 'tutorial' : 'playing');
+          }
         }}
       />
     );
   }
 
+  // Handler: research brief → tutorial intro → tutorial → tutorial complete → first research → playing
+  if (phase === 'handler_research_brief') {
+    const d = HANDLER_DIALOGUES.research_brief;
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <Handler lines={d.lines} buttonText={d.buttonText} onDismiss={() => {
+          markMomentSeen('research_brief');
+          setPhase('handler_tutorial_intro');
+        }} />
+      </div>
+    );
+  }
+
+  if (phase === 'handler_tutorial_intro') {
+    const d = HANDLER_DIALOGUES.tutorial_intro;
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <Handler lines={d.lines} buttonText={d.buttonText} onDismiss={() => {
+          markMomentSeen('tutorial_intro');
+          setPhase('tutorial');
+        }} />
+      </div>
+    );
+  }
+
   if (phase === 'tutorial') {
-    return <TutorialCard onComplete={() => setPhase('playing')} />;
+    return <TutorialCard onComplete={() => {
+      if (!hasSeenMoment('tutorial_complete')) {
+        setPhase('handler_tutorial_complete');
+      } else {
+        setPhase('playing');
+      }
+    }} />;
+  }
+
+  if (phase === 'handler_tutorial_complete') {
+    const d = HANDLER_DIALOGUES.tutorial_complete;
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <Handler lines={d.lines} buttonText={d.buttonText} onDismiss={() => {
+          markMomentSeen('tutorial_complete');
+          setPhase('handler_first_research');
+        }} />
+      </div>
+    );
+  }
+
+  if (phase === 'handler_first_research') {
+    const d = HANDLER_DIALOGUES.first_research_start;
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <Handler lines={d.lines} buttonText={d.buttonText} onDismiss={() => {
+          markMomentSeen('first_research_start');
+          setPhase('playing');
+        }} />
+      </div>
+    );
   }
 
   if (phase === 'research_unavailable') {
