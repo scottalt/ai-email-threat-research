@@ -85,9 +85,11 @@ export function H2HResult({
   const isLoss = resolvedWinnerId !== null && resolvedWinnerId !== playerId;
   const noResult = resolvedWinnerId === null;
 
-  // SIGINT: first PvP win (non-bot only)
+  // SIGINT: first PvP win (non-bot only, fire once per mount)
+  const sigintFired = useRef(false);
   useEffect(() => {
-    if (matchData && isWin && !isBot) {
+    if (matchData && isWin && !isBot && !sigintFired.current) {
+      sigintFired.current = true;
       triggerSigint('first_pvp_win');
     }
   }, [matchData, isWin, isBot, triggerSigint]);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ACHIEVEMENTS, RARITY_COLORS } from '@/lib/achievements';
 import { getRankFromPoints, H2H_RANKS } from '@/lib/h2h';
 import { useSigint } from '@/lib/SigintContext';
@@ -15,9 +15,13 @@ interface Props {
 export function H2HLobby({ profile, onSearch, onBack }: Props) {
   const { triggerSigint } = useSigint();
 
-  // SIGINT: first time opening PvP
+  // SIGINT: first time opening PvP (fire once per mount)
+  const sigintFired = useRef(false);
   useEffect(() => {
-    triggerSigint('first_pvp_open');
+    if (!sigintFired.current) {
+      sigintFired.current = true;
+      triggerSigint('first_pvp_open');
+    }
   }, [triggerSigint]);
 
   const [h2hStats, setH2HStats] = useState<{

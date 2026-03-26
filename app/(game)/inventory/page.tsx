@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '@/lib/usePlayer';
 import { useSigint } from '@/lib/SigintContext';
 import { THEMES, isThemeUnlocked } from '@/lib/themes';
@@ -19,9 +19,13 @@ export default function InventoryPage() {
   const { theme: activeTheme, setThemeId } = useTheme();
   const { triggerSigint } = useSigint();
 
-  // SIGINT: first inventory visit
+  // SIGINT: first inventory visit (fire once per mount)
+  const sigintFired = useRef(false);
   useEffect(() => {
-    if (signedIn && profile) triggerSigint('first_inventory');
+    if (signedIn && profile && !sigintFired.current) {
+      sigintFired.current = true;
+      triggerSigint('first_inventory');
+    }
   }, [signedIn, profile, triggerSigint]);
   const [tab, setTab] = useState<Tab>('themes');
   const [showPreview, setShowPreview] = useState(false);

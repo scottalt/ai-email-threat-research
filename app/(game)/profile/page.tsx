@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '@/lib/usePlayer';
 import { useSigint } from '@/lib/SigintContext';
 import { LevelMeter } from '@/components/LevelMeter';
@@ -111,9 +111,13 @@ export default function ProfilePage() {
     fetch('/api/player/admin-check').then(r => { if (r.ok) setIsAdmin(true); });
   }, []);
 
-  // SIGINT: first profile visit
+  // SIGINT: first profile visit (fire once per mount)
+  const sigintFired = useRef(false);
   useEffect(() => {
-    if (signedIn && profile) triggerSigint('first_profile');
+    if (signedIn && profile && !sigintFired.current) {
+      sigintFired.current = true;
+      triggerSigint('first_profile');
+    }
   }, [signedIn, profile, triggerSigint]);
 
   // Eagerly fetch incoming friend request count for notification badge
