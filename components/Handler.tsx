@@ -19,17 +19,11 @@ interface Props {
 export function Handler({ lines, buttonText = 'CONTINUE', onDismiss }: Props) {
   const [currentLine, setCurrentLine] = useState(0);
   const [typingDone, setTypingDone] = useState(false);
-  const [started, setStarted] = useState(false);
   const { soundEnabled } = useSoundEnabled();
-  const playedEntry = useRef(false);
 
-  // Start after entrance animation settles
+  // Play entry sound on mount
   useEffect(() => {
-    if (playedEntry.current) return;
-    playedEntry.current = true;
     if (soundEnabled) playBootTick();
-    const t = setTimeout(() => setStarted(true), 300);
-    return () => clearTimeout(t);
   }, [soundEnabled]);
 
   function handleNext() {
@@ -57,17 +51,16 @@ export function Handler({ lines, buttonText = 'CONTINUE', onDismiss }: Props) {
 
         {/* Single message */}
         <div className="px-4 py-4">
-          {started && (
-            <div key={currentLine} className="border-l-2 border-[var(--c-accent)] pl-3 min-h-[3rem]">
-              <Typewriter
-                text={lines[currentLine]}
-                speed={20}
-                onComplete={() => setTypingDone(true)}
-                className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed"
-                sound={soundEnabled}
-              />
-            </div>
-          )}
+          <div key={currentLine} className="border-l-2 border-[var(--c-accent)] pl-3 min-h-[3rem]">
+            <Typewriter
+              text={lines[currentLine]}
+              speed={20}
+              delay={200}
+              onComplete={() => setTypingDone(true)}
+              className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed"
+              sound={soundEnabled}
+            />
+          </div>
         </div>
 
         {/* Next / Final button */}
