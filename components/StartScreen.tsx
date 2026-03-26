@@ -50,8 +50,10 @@ const BOOT_LINES: { text: string; bright: boolean }[] = [
 export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound }: Props) {
   const bootSeen = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bootSeen') === '1';
   const [visibleCount, setVisibleCount] = useState(bootSeen ? BOOT_LINES.length : 0);
+  // Handler greeting shows alongside main content (not instead of it)
+  const needsGreeting = typeof window !== 'undefined' && !hasSeenMoment('boot_greeting');
   const [showButton, setShowButton] = useState(bootSeen);
-  const [showHandlerGreeting, setShowHandlerGreeting] = useState(false);
+  const [showHandlerGreeting, setShowHandlerGreeting] = useState(bootSeen && needsGreeting);
   const [bootDone, setBootDone] = useState(bootSeen);
   const [bootHidden, setBootHidden] = useState(bootSeen);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -218,21 +220,19 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     }
   }, [visibleCount]);
 
-  // After boot fades out, show main content (or handler greeting for new players)
+  // After boot fades out, show main content + handler greeting if needed
   useEffect(() => {
     if (bootDone && !bootHidden) {
       const fallback = setTimeout(() => {
         setBootHidden(true);
-        // Show handler greeting for unsigned-in players who haven't seen it
-        if (!signedIn && !hasSeenMoment('boot_greeting')) {
+        setShowButton(true);
+        if (!hasSeenMoment('boot_greeting')) {
           setShowHandlerGreeting(true);
-        } else {
-          setShowButton(true);
         }
       }, 400);
       return () => clearTimeout(fallback);
     }
-  }, [bootDone, bootHidden, signedIn]);
+  }, [bootDone, bootHidden]);
 
   // Hide nav bar during boot and until player profile is fully set up
   useLayoutEffect(() => {
@@ -376,15 +376,14 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
         </div>
       )}
 
-      {/* SIGINT handler greeting — new players only, after boot */}
-      {showHandlerGreeting && !showButton && (
+      {/* SIGINT handler greeting — new players only, above main content */}
+      {showHandlerGreeting && (
         <Handler
           lines={HANDLER_DIALOGUES.boot_greeting.lines}
           buttonText={HANDLER_DIALOGUES.boot_greeting.buttonText}
           onDismiss={() => {
             markMomentSeen('boot_greeting');
             setShowHandlerGreeting(false);
-            setShowButton(true);
           }}
         />
       )}
@@ -813,9 +812,10 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       <div className="px-4 pb-3">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleStart('research'); }}
-                          className="w-full py-4 term-border font-mono font-bold tracking-widest text-base active:scale-95 transition-all border-2 border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)] btn-glow"
+                          className="w-full py-4 term-border font-mono font-bold tracking-widest text-base active:scale-95 transition-all border-2 border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)] btn-glow anim-pulse-glow"
                         >
                           [ RESEARCH MODE ]
+                          <div className="text-[var(--c-secondary)] text-xs mt-1 font-normal tracking-wide">Analyze emails. Earn clearance.</div>
                         </button>
                       </div>
                     </div>

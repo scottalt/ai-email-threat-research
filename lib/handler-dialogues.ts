@@ -12,10 +12,10 @@ export const HANDLER_DIALOGUES: Record<string, HandlerDialogue> = {
   boot_greeting: {
     lines: [
       "Welcome to the terminal, operative. I'm SIGINT — your threat analysis assistant.",
-      "You've been assigned to classify incoming emails. Some are legitimate. Some are phishing attempts.",
-      "The AI that wrote them doesn't make grammar mistakes. So you'll need to look deeper.",
+      "Incoming emails need classification. Some are legitimate. Some are AI-generated phishing. The writing quality is perfect in both — so you'll need to look deeper.",
+      "Start with Research Mode below. Complete 10 classifications and I'll unlock PvP ranked matches for you.",
     ],
-    buttonText: "GOT IT",
+    buttonText: "LET'S GO",
   },
 
   research_brief: {
