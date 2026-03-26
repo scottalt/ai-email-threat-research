@@ -627,7 +627,6 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
                 // Bot match — player finished all cards
                 if (!matchEndedRef.current) {
                   matchEndedRef.current = true;
-                  // Fire PATCH to mark complete (for review cards) — use keepalive so it survives unmount
                   try {
                     fetch(`/api/h2h/match/${matchId}`, {
                       method: 'PATCH',
@@ -643,6 +642,21 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
                     reason: 'completed',
                   });
                 }
+              } else if (data.matchOver && !matchEndedRef.current) {
+                // Server finalized — first to finish wins, notify opponent
+                matchEndedRef.current = true;
+                broadcastResult(matchId, {
+                  winnerId: data.winnerId ?? playerId,
+                  player1PointsDelta: isPlayer1Ref.current ? (data.myPointsDelta ?? 0) : 0,
+                  player2PointsDelta: isPlayer1Ref.current ? 0 : (data.myPointsDelta ?? 0),
+                  reason: 'completed',
+                });
+                onMatchEnd({
+                  winnerId: data.winnerId ?? playerId,
+                  myPointsDelta: 0,
+                  opponentPointsDelta: 0,
+                  reason: 'completed',
+                });
               } else {
                 setFinished(true);
               }

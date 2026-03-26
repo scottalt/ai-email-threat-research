@@ -485,11 +485,17 @@ export async function POST(
         });
       }
 
-      // Only this player finished — match stays active for opponent
+      // First player to finish all cards wins — finalize immediately
+      if (opponentId) {
+        await finalizeMatch(matchId, playerId, opponentId);
+      }
+
       return NextResponse.json({
         correct: true,
         eliminated: false,
         finished: true,
+        matchOver: true,
+        winnerId: playerId,
         cardIndex,
         totalTimeMs: newTime,
       });
