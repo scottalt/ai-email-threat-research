@@ -283,7 +283,9 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
   useEffect(() => {
     // Only auto-fire milestones when no greeting is showing
     if (!showButton || showHandlerGreeting || !signedIn || !profile) return;
-    fireMilestones();
+    // Small delay so the greeting Handler fully unmounts before milestone Handler mounts
+    const t = setTimeout(fireMilestones, 300);
+    return () => clearTimeout(t);
   }, [showButton, showHandlerGreeting, signedIn, profile, fireMilestones]);
 
   // Hide nav bar during boot and until player profile is fully set up
@@ -440,8 +442,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             // Only mark permanently seen if player has actually done research
             if (answers > 0 && !hasSeenMoment('v2_intro')) markMomentSeen('v2_intro');
             setShowHandlerGreeting(false);
-            // After greeting dismissed, show any unseen milestone dialogues
-            fireMilestones();
+            // Milestones fire via useEffect when showHandlerGreeting becomes false
           }}
         />
       )}
