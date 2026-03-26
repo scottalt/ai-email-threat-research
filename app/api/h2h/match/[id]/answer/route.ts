@@ -403,6 +403,7 @@ export async function POST(
     match_id: matchId,
     player_id: playerId,
     card_index: cardIndex,
+    card_id: card.id,
     user_answer: userAnswer,
     correct,
     time_from_render_ms: verifiedTimeMs,
