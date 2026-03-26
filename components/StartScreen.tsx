@@ -237,18 +237,6 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   // SIGINT milestone unlocks — fire when player crosses answer thresholds
   const { triggerSigint } = useSigint();
 
-  /** Check if any unseen milestone dialogue is pending */
-  const hasPendingMilestone = useCallback(() => {
-    if (!profile) return false;
-    const seen = profile.seenMoments ?? [];
-    const answers = profile.researchAnswersSubmitted ?? 0;
-    const graduated = profile.researchGraduated ?? false;
-    if (answers >= 30 && !seen.includes('freeplay_unlock')) return true;
-    if (answers >= 20 && !seen.includes('daily_unlock')) return true;
-    if ((graduated || answers >= 10) && !seen.includes('pvp_unlock')) return true;
-    return false;
-  }, [profile]);
-
   const fireMilestones = useCallback(() => {
     if (!signedIn || !profile) return;
     const answers = profile.researchAnswersSubmitted ?? 0;
@@ -262,7 +250,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
 
   // Show SIGINT greeting — different dialogue based on player state
   // Greetings are recurring (every login with 2hr cooldown).
-  // Skipped if a milestone dialogue is pending — milestones take priority.
+  // After greeting is dismissed, any pending milestones fire via separate useEffect.
   const greetingShownThisSession = useRef(false);
   useEffect(() => {
     if (!showButton || greetingShownThisSession.current) return;
@@ -270,9 +258,6 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     // Skip if already greeted recently (within 2 hours)
     const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
     if (lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) return;
-
-    // Skip greeting if a milestone dialogue is pending — show milestone instead
-    if (hasPendingMilestone()) return;
 
     const answers = profile.researchAnswersSubmitted ?? 0;
     const callsign = profile.displayName ?? 'operative';
@@ -295,7 +280,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
       setHandlerButton(dialogue.buttonText ?? 'CONTINUE');
       setShowHandlerGreeting(true);
     }
-  }, [showButton, signedIn, profile, hasPendingMilestone]);
+  }, [showButton, signedIn, profile]);
 
   useEffect(() => {
     // Fire milestones when no greeting is showing
