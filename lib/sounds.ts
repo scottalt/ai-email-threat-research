@@ -1,7 +1,7 @@
 // Shared AudioContext for low-latency UI sounds (click, keypress)
 let _ctx: AudioContext | null = null;
 
-function getCtx(): AudioContext {
+export function getCtx(): AudioContext {
   if (!_ctx || _ctx.state === 'closed') _ctx = new AudioContext();
   if (_ctx.state === 'suspended') _ctx.resume().catch(() => {});
   return _ctx;

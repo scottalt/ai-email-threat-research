@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { getCtx } from '@/lib/sounds';
 
 interface Props {
   text: string;
@@ -44,12 +45,11 @@ export function Typewriter({ text, speed = 30, delay = 0, onComplete, className,
       // Play typing sound every 3rd character (not every char — too rapid)
       if (sound && nextChar !== ' ' && charCount.current % 3 === 0) {
         try {
-          const ctx = new AudioContext();
+          const ctx = getCtx(); // Shared context — works on Safari
           const t = ctx.currentTime;
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'square';
-          // Slight pitch variation for natural feel
           osc.frequency.value = 600 + Math.random() * 200;
           gain.gain.setValueAtTime(0.04, t);
           gain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
