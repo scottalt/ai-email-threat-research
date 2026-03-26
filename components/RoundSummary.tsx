@@ -184,7 +184,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
               <div className="text-[var(--c-dark)] text-sm font-mono mt-0.5">1v1 ranked matches unlocked! Submit 20 research answers to unlock all game modes.</div>
             </div>
           )}
-          {profile && <LevelMeter xp={profile.xp} level={profile.level} />}
+          {profile && <LevelMeter xp={profile.xp} level={profile.level} xpEarned={xpResult.xpEarned} />}
           {/* Daily streak */}
           {(xpResult.streakDay ?? 0) > 0 && (
             <div className="flex justify-between gap-2 text-sm font-mono">
