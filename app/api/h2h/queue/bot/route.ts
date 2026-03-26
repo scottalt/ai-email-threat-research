@@ -58,9 +58,9 @@ export async function POST() {
   const admin = getSupabaseAdminClient();
 
   // Cancel any stale active matches before checking
-  // Bot matches: 3 minutes (they never last longer than ~60s)
+  // Bot matches: 90 seconds (they never last longer than ~60s)
   // Real matches: 10 minutes
-  const botStale = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+  const botStale = new Date(Date.now() - 90 * 1000).toISOString();
   const realStale = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   await admin.from('h2h_matches')
     .update({ status: 'cancelled', ended_at: new Date().toISOString() })
