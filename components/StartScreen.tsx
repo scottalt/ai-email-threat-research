@@ -448,12 +448,18 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
           buttonText={handlerButton}
           onDismiss={() => {
             const answers = profile?.researchAnswersSubmitted ?? 0;
+            const graduated = profile?.researchGraduated ?? false;
             // Mark greeted with timestamp (2hr cooldown for recurring greetings)
             try { sessionStorage.setItem('sigint_greeted', String(Date.now())); } catch {}
-            // Mark v2_intro permanently seen (one-time dialogue)
-            if (answers > 0 && !hasSeenMoment('v2_intro')) markMomentSeen('v2_intro');
+            // v2_intro: mark seen + pre-mark all milestones the player already earned
+            // so v1 veterans don't get milestone dialogues for things they already had
+            if (answers > 0 && !hasSeenMoment('v2_intro')) {
+              markMomentSeen('v2_intro');
+              if (graduated || answers >= 10) markMomentSeen('pvp_unlock');
+              if (answers >= 20) markMomentSeen('daily_unlock');
+              if (answers >= 30) markMomentSeen('freeplay_unlock');
+            }
             setShowHandlerGreeting(false);
-            // Milestones fire via useEffect when showHandlerGreeting becomes false
           }}
         />
       )}
