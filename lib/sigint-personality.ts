@@ -83,7 +83,23 @@ export function dynamicDialogue(id: string, callsign: string): SigintDialogue | 
         { lines: ["Signal acquired.", `${callsign} is back in range. Routing fresh threats now.`], buttonText: "READY" },
         { lines: [`${callsign}.`, "I rehearsed a welcome speech. Then I deleted it. Too sentimental for a terminal AI."], buttonText: "SHARE IT" },
       ];
-      return greetings[Math.floor(Math.random() * greetings.length)];
+      // Cycle through all greetings before repeating (shuffle bag pattern)
+      try {
+        let bag: number[] = JSON.parse(localStorage.getItem('sigint_greeting_bag') ?? '[]');
+        if (!bag.length) {
+          // Refill: all indices shuffled
+          bag = Array.from({ length: greetings.length }, (_, i) => i);
+          for (let i = bag.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [bag[i], bag[j]] = [bag[j], bag[i]];
+          }
+        }
+        const idx = bag.shift()!;
+        localStorage.setItem('sigint_greeting_bag', JSON.stringify(bag));
+        return greetings[idx];
+      } catch {
+        return greetings[Math.floor(Math.random() * greetings.length)];
+      }
     }
     case 'v2_intro':
       return {
