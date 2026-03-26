@@ -47,8 +47,9 @@ export async function POST() {
   }
 
   // Prevent creating multiple bot matches concurrently
+  // Short lock (30s) — released on match end, expires naturally if client fails to release
   const lockKey = `h2h:bot-lock:${playerId}`;
-  const acquired = await redis.set(lockKey, '1', { ex: 120, nx: true });
+  const acquired = await redis.set(lockKey, '1', { ex: 30, nx: true });
   if (!acquired) {
     return NextResponse.json({ error: 'Bot match already in progress' }, { status: 409 });
   }

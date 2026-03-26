@@ -161,7 +161,7 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
     };
   }, [joined, pollForMatch, cleanup]);
 
-  // ── Bot match trigger — called once when countdown expires ──
+  // ── Bot match trigger — retries every 3s until successful ──
   const botTriggered = useRef(false);
   useEffect(() => {
     if (!joined || matchedRef.current || botTriggered.current) return;
@@ -170,7 +170,10 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
     botTriggered.current = true;
     cleanup(); // stop polling
 
-    (async () => {
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function tryCreateBot() {
+      if (matchedRef.current || !mountedRef.current) return;
       try {
         const res = await fetch('/api/h2h/queue/bot', { method: 'POST' });
         if (!mountedRef.current) return;
@@ -182,15 +185,18 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
             return;
           }
         }
-        // If bot creation fails, resume polling as fallback
-        botTriggered.current = false;
-        pollRef.current = setInterval(pollForMatch, POLL_INTERVAL_MS);
+        // Failed (409 lock, stale match, etc.) — retry in 3s
+        retryTimer = setTimeout(tryCreateBot, 3000);
       } catch {
-        botTriggered.current = false;
-        pollRef.current = setInterval(pollForMatch, POLL_INTERVAL_MS);
+        // Network error — retry in 3s
+        retryTimer = setTimeout(tryCreateBot, 3000);
       }
-    })();
-  }, [elapsed, joined, cleanup, onMatchFound, pollForMatch]);
+    }
+
+    tryCreateBot();
+
+    return () => { if (retryTimer) clearTimeout(retryTimer); };
+  }, [elapsed, joined, cleanup, onMatchFound]);
 
   // ── Cancel handler ──
   const handleCancel = useCallback(async () => {

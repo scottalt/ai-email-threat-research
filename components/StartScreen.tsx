@@ -399,6 +399,9 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       const color = RARITY_COLORS[badge.rarity];
                       return <span style={{ color }}>{badge.icon}</span>;
                     })()}
+                    <button onClick={toggleSound} className={`text-sm font-mono ${soundEnabled ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'} hover:text-[var(--c-secondary)]`}>
+                      SFX {soundEnabled ? '[ON]' : '[OFF]'}
+                    </button>
                     <button onClick={async () => { await signOut(); }} className="text-[var(--c-muted)] text-sm font-mono hover:text-[var(--c-secondary)]">SIGN OUT</button>
                   </div>
                 </div>
