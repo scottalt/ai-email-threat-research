@@ -81,6 +81,7 @@ export function Handler({ lines, buttonText = 'CONTINUE', onDismiss }: Props) {
                 speed={25}
                 onComplete={handleMessageComplete}
                 className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed"
+                sound={soundEnabled}
               />
             </div>
           )}
