@@ -20,7 +20,7 @@ const VALID_MOMENTS = new Set([
   'tutorial_complete', 'first_research_start', 'first_correct',
   'pvp_unlock', 'daily_unlock', 'freeplay_unlock', 'first_pvp_win',
   'first_pvp_open', 'first_inventory', 'first_profile', 'first_shop',
-  'first_pvp_loss', 'loss_streak_3', 'win_streak_3', 'win_streak_5',
+  'first_pvp_loss', 'win_streak_3', 'win_streak_5',
   'first_elimination', 'perfect_match', 'research_halfway',
 ]);
 

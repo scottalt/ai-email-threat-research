@@ -173,15 +173,6 @@ export const MILESTONES = {
     buttonText: "REMATCH",
   } as SigintDialogue,
 
-  loss_streak_3: {
-    lines: [
-      "Three in a row. I'm not going to sugarcoat it.",
-      "But I've seen your data. You're better than this.",
-      "Take a breath. Reset. The next one's yours.",
-    ],
-    buttonText: "WATCH ME",
-  } as SigintDialogue,
-
   win_streak_3: {
     lines: [
       "Three straight wins. Opponents are starting to notice.",

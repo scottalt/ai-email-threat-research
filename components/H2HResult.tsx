@@ -102,8 +102,6 @@ export function H2HResult({
     } else if (isLoss) {
       if (reason === 'eliminated') triggerSigint('first_elimination');
       triggerSigint('first_pvp_loss');
-      // winStreak resets to 0 on loss — if 0 and 3+ losses total, they're on a bad run
-      if (stats.winStreak === 0 && stats.losses >= 3) triggerSigint('loss_streak_3');
     }
   }, [matchData, stats, isWin, isLoss, isBot, reason, triggerSigint]);
 
