@@ -234,41 +234,21 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     }
   }, [bootDone, bootHidden]);
 
-  // Show SIGINT greeting — different dialogue based on player state
-  const greetingShownThisSession = useRef(false);
-  useEffect(() => {
-    if (!showButton || greetingShownThisSession.current) return;
-    if (!signedIn || !profile) return;
-    // Skip if already greeted recently (within 2 hours)
-    const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
-    if (lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) return;
-
-    const answers = profile.researchAnswersSubmitted ?? 0;
-    const callsign = profile.displayName ?? 'operative';
-    let dialogue: { lines: string[]; buttonText?: string } | null = null;
-
-    if (answers === 0 && !hasSeenMoment('boot_greeting')) {
-      // Brand new player — full intro (only once)
-      dialogue = HANDLER_DIALOGUES.boot_greeting;
-    } else if (!(profile.seenMoments ?? []).includes('v2_intro') && !hasSeenMoment('v2_intro')) {
-      // v1 veteran seeing SIGINT for the first time (check DB + localStorage fallback)
-      dialogue = dynamicDialogue('v2_intro', callsign);
-    } else {
-      // Returning player — brief personalized welcome
-      dialogue = dynamicDialogue('welcome_back', callsign);
-    }
-
-    if (dialogue) {
-      greetingShownThisSession.current = true;
-      setHandlerLines(dialogue.lines);
-      setHandlerButton(dialogue.buttonText ?? 'CONTINUE');
-      setShowHandlerGreeting(true);
-    }
-  }, [showButton, signedIn, profile]);
-
   // SIGINT milestone unlocks — fire when player crosses answer thresholds
-  // Guard: don't fire while greeting is active (milestones fire after greeting dismiss instead)
   const { triggerSigint } = useSigint();
+
+  /** Check if any unseen milestone dialogue is pending */
+  const hasPendingMilestone = useCallback(() => {
+    if (!profile) return false;
+    const seen = profile.seenMoments ?? [];
+    const answers = profile.researchAnswersSubmitted ?? 0;
+    const graduated = profile.researchGraduated ?? false;
+    if (answers >= 30 && !seen.includes('freeplay_unlock')) return true;
+    if (answers >= 20 && !seen.includes('daily_unlock')) return true;
+    if ((graduated || answers >= 10) && !seen.includes('pvp_unlock')) return true;
+    return false;
+  }, [profile]);
+
   const fireMilestones = useCallback(() => {
     if (!signedIn || !profile) return;
     const answers = profile.researchAnswersSubmitted ?? 0;
@@ -280,8 +260,45 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     else if (graduated || answers >= 10) triggerSigint('pvp_unlock');
   }, [signedIn, profile, triggerSigint]);
 
+  // Show SIGINT greeting — different dialogue based on player state
+  // Greetings are recurring (every login with 2hr cooldown).
+  // Skipped if a milestone dialogue is pending — milestones take priority.
+  const greetingShownThisSession = useRef(false);
   useEffect(() => {
-    // Only auto-fire milestones when no greeting is showing
+    if (!showButton || greetingShownThisSession.current) return;
+    if (!signedIn || !profile) return;
+    // Skip if already greeted recently (within 2 hours)
+    const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
+    if (lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) return;
+
+    // Skip greeting if a milestone dialogue is pending — show milestone instead
+    if (hasPendingMilestone()) return;
+
+    const answers = profile.researchAnswersSubmitted ?? 0;
+    const callsign = profile.displayName ?? 'operative';
+    let dialogue: { lines: string[]; buttonText?: string } | null = null;
+
+    if (answers === 0) {
+      // Brand new player — full intro (repeats until they start playing)
+      dialogue = HANDLER_DIALOGUES.boot_greeting;
+    } else if (!(profile.seenMoments ?? []).includes('v2_intro') && !hasSeenMoment('v2_intro')) {
+      // v1 veteran seeing SIGINT for the first time (one-time)
+      dialogue = dynamicDialogue('v2_intro', callsign);
+    } else {
+      // Returning player — rotating personalized welcome
+      dialogue = dynamicDialogue('welcome_back', callsign);
+    }
+
+    if (dialogue) {
+      greetingShownThisSession.current = true;
+      setHandlerLines(dialogue.lines);
+      setHandlerButton(dialogue.buttonText ?? 'CONTINUE');
+      setShowHandlerGreeting(true);
+    }
+  }, [showButton, signedIn, profile, hasPendingMilestone]);
+
+  useEffect(() => {
+    // Fire milestones when no greeting is showing
     if (!showButton || showHandlerGreeting || !signedIn || !profile) return;
     // Small delay so the greeting Handler fully unmounts before milestone Handler mounts
     const t = setTimeout(fireMilestones, 300);
@@ -437,11 +454,9 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
           buttonText={handlerButton}
           onDismiss={() => {
             const answers = profile?.researchAnswersSubmitted ?? 0;
-            // Mark greeted with timestamp
+            // Mark greeted with timestamp (2hr cooldown for recurring greetings)
             try { sessionStorage.setItem('sigint_greeted', String(Date.now())); } catch {}
-            // Mark boot_greeting as seen so new players don't see it every session
-            if (answers === 0) markMomentSeen('boot_greeting');
-            // Mark v2_intro permanently seen if player has done research
+            // Mark v2_intro permanently seen (one-time dialogue)
             if (answers > 0 && !hasSeenMoment('v2_intro')) markMomentSeen('v2_intro');
             setShowHandlerGreeting(false);
             // Milestones fire via useEffect when showHandlerGreeting becomes false
