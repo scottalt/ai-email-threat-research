@@ -12,74 +12,57 @@ interface Props {
 }
 
 /**
- * SIGINT — Terminal AI handler chat box.
- * Messages appear one by one with typewriter effect in a chat-log style.
+ * SIGINT — Terminal AI handler overlay.
+ * Shows one message at a time. Player taps NEXT to advance.
+ * Final message shows a custom button to dismiss.
  */
 export function Handler({ lines, buttonText = 'CONTINUE', onDismiss }: Props) {
-  const [visibleCount, setVisibleCount] = useState(0); // how many messages are fully shown
-  const [typing, setTyping] = useState(false);
-  const [showButton, setShowButton] = useState(false);
+  const [currentLine, setCurrentLine] = useState(0);
+  const [typingDone, setTypingDone] = useState(false);
+  const [started, setStarted] = useState(false);
   const { soundEnabled } = useSoundEnabled();
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
+  const playedEntry = useRef(false);
 
-  // Start showing first message after entrance animation
+  // Start after entrance animation settles
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
+    if (playedEntry.current) return;
+    playedEntry.current = true;
     if (soundEnabled) playBootTick();
-    // Small delay for entrance animation to settle
-    const t = setTimeout(() => setTyping(true), 400);
+    const t = setTimeout(() => setStarted(true), 300);
     return () => clearTimeout(t);
   }, [soundEnabled]);
 
-  // When a message finishes typing, show next one after a pause
-  function handleMessageComplete() {
-    setTyping(false);
-    const nextIdx = visibleCount + 1;
-    setVisibleCount(nextIdx);
-
-    if (nextIdx >= lines.length) {
-      // All messages done — show button after brief pause
-      setTimeout(() => setShowButton(true), 300);
+  function handleNext() {
+    if (currentLine < lines.length - 1) {
+      setTypingDone(false);
+      setCurrentLine(currentLine + 1);
     } else {
-      // Show next message after pause
-      setTimeout(() => setTyping(true), 400);
+      onDismiss();
     }
   }
 
-  // Auto-scroll to bottom as new messages appear
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [visibleCount, typing]);
+  const isLastLine = currentLine >= lines.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-16 lg:pt-20 px-4 anim-fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
-      <div className="w-full max-w-md anim-fade-in-up term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)]" style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 30px color-mix(in srgb, var(--c-accent) 10%, transparent)' }}>
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 lg:pt-24 px-4 anim-fade-in" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+      <div
+        className="w-full max-w-sm anim-fade-in-up term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)]"
+        style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 30px color-mix(in srgb, var(--c-accent) 10%, transparent)' }}
+      >
         {/* Header */}
         <div className="border-b border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)] px-3 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-[var(--c-accent)] text-sm font-mono tracking-widest font-bold">&gt; SIGINT</span>
-          </div>
+          <span className="text-[var(--c-accent)] text-sm font-mono tracking-widest font-bold">&gt; SIGINT</span>
           <span className="text-[var(--c-muted)] text-[10px] font-mono tracking-widest border border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)] px-1.5 py-0.5">AI</span>
         </div>
 
-        {/* Chat messages */}
-        <div ref={scrollRef} className="px-4 py-4 space-y-3 max-h-[50vh] overflow-y-auto">
-          {/* Already shown messages */}
-          {lines.slice(0, visibleCount).map((line, i) => (
-            <div key={i} className="border-l-2 border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)] pl-3">
-              <p className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed">{line}</p>
-            </div>
-          ))}
-
-          {/* Currently typing message */}
-          {typing && visibleCount < lines.length && (
-            <div className="border-l-2 border-[var(--c-accent)] pl-3">
+        {/* Single message */}
+        <div className="px-4 py-4">
+          {started && (
+            <div key={currentLine} className="border-l-2 border-[var(--c-accent)] pl-3 min-h-[3rem]">
               <Typewriter
-                text={lines[visibleCount]}
-                speed={25}
-                onComplete={handleMessageComplete}
+                text={lines[currentLine]}
+                speed={20}
+                onComplete={() => setTypingDone(true)}
                 className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed"
                 sound={soundEnabled}
               />
@@ -87,14 +70,14 @@ export function Handler({ lines, buttonText = 'CONTINUE', onDismiss }: Props) {
           )}
         </div>
 
-        {/* Continue button */}
-        {showButton && (
+        {/* Next / Final button */}
+        {typingDone && (
           <div className="px-4 pb-4">
             <button
-              onClick={onDismiss}
-              className="w-full py-3 term-border text-[var(--c-accent)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)] active:scale-95 transition-all anim-fade-in btn-glow"
+              onClick={handleNext}
+              className="w-full py-2.5 term-border text-[var(--c-accent)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)] active:scale-95 transition-all anim-fade-in btn-glow"
             >
-              [ {buttonText} ]
+              [ {isLastLine ? buttonText : 'NEXT'} ]
             </button>
           </div>
         )}
