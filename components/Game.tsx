@@ -482,6 +482,10 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           }),
         }).then((r) => { if (!r.ok) console.error('[sessions] finalize failed:', r.status); }).catch((err) => { console.error('[sessions] finalize failed:', err); });
       }
+      // SIGINT: round completion moments
+      triggerSigint('first_session_complete');
+      if (mode === 'daily') triggerSigint('first_daily');
+
       setPhase('summary');
     } else {
       setCurrentIndex(nextIndex);

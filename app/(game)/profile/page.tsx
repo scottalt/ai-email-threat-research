@@ -163,6 +163,7 @@ export default function ProfilePage() {
         setAddFriendMsg('REQUEST SENT');
         setAddFriendCallsign('');
         setFriendsData(null); // refetch
+        triggerSigint('first_friend');
       } else {
         setAddFriendStatus('error');
         setAddFriendMsg(data.error ?? 'FAILED');

@@ -271,13 +271,23 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     if (pendingMilestone) {
       // Show milestone via SigintContext (renders from layout, not StartScreen)
       triggerSigint(pendingMilestone);
+      // Queue bonus milestones behind it (level, sessions)
+      if (profile.level >= 20) triggerSigint('level_20');
+      else if (profile.level >= 10) triggerSigint('level_10');
+      if (profile.totalSessions >= 7) triggerSigint('played_7_days');
       return;
     }
 
     // No pending milestone — show greeting
     // Skip if already greeted recently (within 2 hours)
     const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
-    if (lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) return;
+    if (lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) {
+      // Even without greeting, check bonus milestones
+      if (profile.level >= 20) triggerSigint('level_20');
+      else if (profile.level >= 10) triggerSigint('level_10');
+      if (profile.totalSessions >= 7) triggerSigint('played_7_days');
+      return;
+    }
 
     const callsign = profile.displayName ?? 'operative';
     let dialogue: { lines: string[]; buttonText?: string } | null = null;
@@ -460,8 +470,19 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
               if (answers >= 15) markMomentSeen('research_halfway');
               if (answers >= 20) markMomentSeen('daily_unlock');
               if (answers >= 30) markMomentSeen('freeplay_unlock');
+              // Pre-mark level/session milestones too
+              if (profile && profile.level >= 10) markMomentSeen('level_10');
+              if (profile && profile.level >= 20) markMomentSeen('level_20');
+              if (profile && profile.totalSessions >= 7) markMomentSeen('played_7_days');
+              markMomentSeen('first_session_complete');
             }
             setShowHandlerGreeting(false);
+            // After greeting, fire bonus milestones (level, sessions) via SigintContext queue
+            setTimeout(() => {
+              if (profile && profile.level >= 20) triggerSigint('level_20');
+              else if (profile && profile.level >= 10) triggerSigint('level_10');
+              if (profile && profile.totalSessions >= 7) triggerSigint('played_7_days');
+            }, 300);
           }}
         />
       )}

@@ -216,6 +216,54 @@ export const MILESTONES = {
     ],
     buttonText: "HALFWAY THERE",
   } as SigintDialogue,
+
+  first_session_complete: {
+    lines: [
+      "First round in the books.",
+      "Most people quit after three cards. You're not most people.",
+    ],
+    buttonText: "JUST WARMING UP",
+  } as SigintDialogue,
+
+  first_daily: {
+    lines: [
+      "First daily in the books. Same emails, global leaderboard.",
+      "See where you stack up. Tomorrow there'll be new ones.",
+    ],
+    buttonText: "SEE YOU TOMORROW",
+  } as SigintDialogue,
+
+  first_friend: {
+    lines: [
+      "Friend request sent.",
+      "Now you have someone to blame when you lose.",
+    ],
+    buttonText: "FAIR POINT",
+  } as SigintDialogue,
+
+  level_10: {
+    lines: [
+      "Level 10. Double digits.",
+      "Your clearance level just went from 'intern' to 'maybe competent.'",
+    ],
+    buttonText: "I'LL TAKE IT",
+  } as SigintDialogue,
+
+  level_20: {
+    lines: [
+      "Level 20.",
+      "At this point I'm just running diagnostics to make sure you're human.",
+    ],
+    buttonText: "STILL HERE",
+  } as SigintDialogue,
+
+  played_7_days: {
+    lines: [
+      "Seven sessions logged. Most operatives ghost after two.",
+      "You're built different. Or stubborn. Either works.",
+    ],
+    buttonText: "BOTH",
+  } as SigintDialogue,
 };
 
 // ── Page visit dialogues ──
