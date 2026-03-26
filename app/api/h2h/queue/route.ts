@@ -175,26 +175,26 @@ export async function POST() {
   await redis.del(`h2h:matched:${playerId}`);
   await removeFromQueue(playerId);
 
-  // Cancel stale active matches (older than 10 minutes)
+  // Check for active matches — cancel stale ones, block if recent one exists
   const admin0 = getSupabaseAdminClient();
-  const staleThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  await admin0.from('h2h_matches')
-    .update({ status: 'cancelled', ended_at: new Date().toISOString() })
-    .eq('status', 'active')
-    .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
-    .lt('started_at', staleThreshold);
-
-  // Check if player is already in an active match (recent only)
   const { data: activeMatch } = await admin0
     .from('h2h_matches')
-    .select('id')
+    .select('id, started_at')
     .eq('status', 'active')
     .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
     .limit(1)
     .maybeSingle();
 
   if (activeMatch) {
-    return NextResponse.json({ error: 'Already in an active match' }, { status: 409 });
+    const matchAge = Date.now() - new Date(activeMatch.started_at).getTime();
+    if (matchAge > 10 * 60 * 1000) {
+      // Stale match — cancel it
+      await admin0.from('h2h_matches')
+        .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+        .eq('id', activeMatch.id);
+    } else {
+      return NextResponse.json({ error: 'Already in an active match' }, { status: 409 });
+    }
   }
 
   // Get player's rank points for current season
@@ -252,10 +252,12 @@ export async function GET() {
     return NextResponse.json({ matched: false });
   }
 
-  // Clean stale entries (older than 45s, not self)
-  for (const e of allEntries) {
-    if (now - e.joinedAt > 45_000 && e.playerId !== playerId) {
-      await removeFromQueue(e.playerId);
+  // Clean stale entries — only ~20% of polls to reduce Redis ops
+  if (Math.random() < 0.2) {
+    for (const e of allEntries) {
+      if (now - e.joinedAt > 45_000 && e.playerId !== playerId) {
+        await removeFromQueue(e.playerId);
+      }
     }
   }
 
