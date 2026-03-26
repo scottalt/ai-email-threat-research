@@ -264,6 +264,54 @@ export const MILESTONES = {
     ],
     buttonText: "BOTH",
   } as SigintDialogue,
+
+  comeback_win: {
+    lines: [
+      "Lost one, won one. That's called composure.",
+      "Most people tilt. You recalibrated. Respect.",
+    ],
+    buttonText: "ALWAYS",
+  } as SigintDialogue,
+
+  first_changelog: {
+    lines: [
+      "Reading the patch notes?",
+      "You're the kind of operative I can work with.",
+    ],
+    buttonText: "OBVIOUSLY",
+  } as SigintDialogue,
+
+  rank_up_silver: {
+    lines: [
+      "Silver rank. You're above average now.",
+      "Statistically speaking. Don't let it go to your head.",
+    ],
+    buttonText: "TOO LATE",
+  } as SigintDialogue,
+
+  rank_up_gold: {
+    lines: [
+      "Gold. Top tier.",
+      "The threats are scared of you now. Probably.",
+    ],
+    buttonText: "THEY SHOULD BE",
+  } as SigintDialogue,
+
+  night_owl: {
+    lines: [
+      "It's past midnight. Most operatives are asleep.",
+      "But threats don't sleep. Neither do we, apparently.",
+    ],
+    buttonText: "NO REST",
+  } as SigintDialogue,
+
+  weekend_warrior: {
+    lines: [
+      "Weekend shift. Voluntary.",
+      "I'd put that on your performance review if I had one.",
+    ],
+    buttonText: "NOTED",
+  } as SigintDialogue,
 };
 
 // ── Page visit dialogues ──

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePlayer } from '@/lib/usePlayer';
+import { useSigint } from '@/lib/SigintContext';
 import { CHANGELOG_ENTRIES } from '@/lib/changelog';
 import { version } from '@/package.json';
 
@@ -16,6 +17,16 @@ function formatDate(iso: string): string {
 
 export default function ChangelogPage() {
   const { signedIn } = usePlayer();
+  const { triggerSigint } = useSigint();
+
+  // SIGINT: first changelog visit (fire once per mount)
+  const sigintFired = useRef(false);
+  useEffect(() => {
+    if (signedIn && !sigintFired.current) {
+      sigintFired.current = true;
+      triggerSigint('first_changelog');
+    }
+  }, [signedIn, triggerSigint]);
   const [showArchive, setShowArchive] = useState(false);
 
   const milestones = CHANGELOG_ENTRIES.filter((e) => e.category === 'milestone');

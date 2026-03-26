@@ -308,6 +308,12 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
       setHandlerButton(dialogue.buttonText ?? 'CONTINUE');
       setShowHandlerGreeting(true);
     }
+
+    // Time-based one-time moments — fire via SigintContext (queue behind greeting)
+    const hour = new Date().getHours();
+    const day = new Date().getDay(); // 0=Sun, 6=Sat
+    if (hour >= 0 && hour < 5) triggerSigint('night_owl');
+    if (day === 0 || day === 6) triggerSigint('weekend_warrior');
   }, [showButton, signedIn, profile, triggerSigint]);
 
   // Hide nav bar during boot and until player profile is fully set up

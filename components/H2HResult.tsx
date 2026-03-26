@@ -99,6 +99,11 @@ export function H2HResult({
       triggerSigint('first_pvp_win');
       if (stats.winStreak >= 5) triggerSigint('win_streak_5');
       else if (stats.winStreak >= 3) triggerSigint('win_streak_3');
+      // Comeback: won this one with winStreak === 1 (just broke a losing run)
+      if (stats.winStreak === 1 && stats.losses > 0) triggerSigint('comeback_win');
+      // Rank milestones
+      if (stats.rankPoints >= 250) triggerSigint('rank_up_gold');
+      else if (stats.rankPoints >= 100) triggerSigint('rank_up_silver');
     } else if (isLoss) {
       if (reason === 'eliminated') triggerSigint('first_elimination');
       triggerSigint('first_pvp_loss');
