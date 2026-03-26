@@ -537,6 +537,26 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
         const t = setTimeout(() => {
           setOpponentIndex(i + 1);
           setOpponentEliminated(true);
+          // Bot eliminated — player wins, end match after brief pause
+          setTimeout(() => {
+            if (!matchEndedRef.current) {
+              matchEndedRef.current = true;
+              try {
+                fetch(`/api/h2h/match/${matchId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'complete', winnerId: playerId }),
+                  keepalive: true,
+                });
+              } catch { /* best effort */ }
+              onMatchEnd({
+                winnerId: playerId,
+                myPointsDelta: 0,
+                opponentPointsDelta: 0,
+                reason: 'eliminated',
+              });
+            }
+          }, 1500);
         }, totalElapsed + thinkDelay);
         timers.push(t);
         break;
