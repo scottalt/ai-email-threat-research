@@ -208,9 +208,11 @@ export async function PATCH(
     .select('id');
 
   if (!updated || updated.length === 0) {
+    console.log(`[bot-complete] PATCH failed for match ${id}, player ${player.id.slice(0,8)} — already complete or not found`);
     return NextResponse.json({ error: 'Match not found or already complete' }, { status: 409 });
   }
 
+  console.log(`[bot-complete] match ${id} marked complete, lock released for ${player.id.slice(0,8)}`);
   // Release bot lock so player can queue again immediately
   await redis.del(`h2h:bot-lock:${player.id}`);
 

@@ -536,11 +536,18 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
           setTimeout(() => {
             if (!matchEndedRef.current) {
               matchEndedRef.current = true;
-              onMatchEnd({
-                winnerId: null,
-                myPointsDelta: 0,
-                opponentPointsDelta: 0,
-                reason: 'completed',
+              // Mark match complete server-side (bot wins, no real winner ID)
+              fetch(`/api/h2h/match/${matchId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'complete', winnerId: null }),
+              }).finally(() => {
+                onMatchEnd({
+                  winnerId: null,
+                  myPointsDelta: 0,
+                  opponentPointsDelta: 0,
+                  reason: 'completed',
+                });
               });
             }
           }, 1500);
@@ -602,20 +609,21 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
             setCardIndex(nextIndex);
             if (nextIndex >= H2H_CARDS_PER_MATCH) {
               if (isBot) {
-                // Bot match — player finished all cards, mark complete server-side (enables review)
+                // Bot match — player finished all cards, mark complete server-side then navigate
                 if (!matchEndedRef.current) {
                   matchEndedRef.current = true;
-                  // Mark match complete with player as winner
+                  // Await the PATCH to ensure match is marked complete before result screen loads
                   fetch(`/api/h2h/match/${matchId}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'complete', winnerId: playerId }),
-                  }).catch(() => {});
-                  onMatchEnd({
-                    winnerId: playerId,
-                    myPointsDelta: 0,
-                    opponentPointsDelta: 0,
-                    reason: 'completed',
+                  }).finally(() => {
+                    onMatchEnd({
+                      winnerId: playerId,
+                      myPointsDelta: 0,
+                      opponentPointsDelta: 0,
+                      reason: 'completed',
+                    });
                   });
                 }
               } else {

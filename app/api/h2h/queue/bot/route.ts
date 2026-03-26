@@ -43,6 +43,7 @@ export async function POST() {
   const botCount = await redis.incr(botDailyKey);
   if (botCount === 1) await redis.expire(botDailyKey, 24 * 60 * 60);
   if (botCount > 10) {
+    console.log(`[bot] daily cap hit for ${playerId.slice(0,8)}`);
     return NextResponse.json({ error: 'Daily bot match limit reached (10)' }, { status: 429 });
   }
 
@@ -51,18 +52,29 @@ export async function POST() {
   const lockKey = `h2h:bot-lock:${playerId}`;
   const acquired = await redis.set(lockKey, '1', { ex: 30, nx: true });
   if (!acquired) {
+    console.log(`[bot] lock blocked for ${playerId.slice(0,8)}`);
     return NextResponse.json({ error: 'Bot match already in progress' }, { status: 409 });
   }
 
   const admin = getSupabaseAdminClient();
 
-  // Cancel any stale active matches (older than 10 minutes) before checking
-  const staleThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  // Cancel any stale active matches before checking
+  // Bot matches: 3 minutes (they never last longer than ~60s)
+  // Real matches: 10 minutes
+  const botStale = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+  const realStale = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   await admin.from('h2h_matches')
     .update({ status: 'cancelled', ended_at: new Date().toISOString() })
     .eq('status', 'active')
+    .eq('is_ghost_match', true)
     .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
-    .lt('started_at', staleThreshold);
+    .lt('started_at', botStale);
+  await admin.from('h2h_matches')
+    .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+    .eq('status', 'active')
+    .eq('is_ghost_match', false)
+    .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
+    .lt('started_at', realStale);
 
   // Check no active match already (recent ones only, stale ones just cleaned)
   const { data: activeMatch } = await admin
@@ -74,9 +86,11 @@ export async function POST() {
     .maybeSingle();
 
   if (activeMatch) {
+    console.log(`[bot] active match blocked for ${playerId.slice(0,8)}: ${activeMatch.id}`);
     await redis.del(lockKey);
     return NextResponse.json({ error: 'Already in an active match' }, { status: 409 });
   }
+  console.log(`[bot] creating match for ${playerId.slice(0,8)}`);
 
   // Create bot match
   const { data: match, error } = await admin
