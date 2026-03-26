@@ -571,15 +571,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
               </button>
             );
 
-            // ── Intel button (stages 3-4) ──
-            const intelButton = (
-              <Link
-                href="/intel/player"
-                className="block w-full py-3 term-border text-center text-[var(--c-secondary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] transition-all"
-              >
-                [ INTEL BRIEFING ]
-              </Link>
-            );
+            // Intel button removed from home — now in the game layout footer
 
             // ── Version link (all stages) ──
             const versionLink = (
@@ -863,7 +855,6 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                     {pvpButton}
                     {dailyButton}
                   </div>
-                  {intelButton}
                   {leaderboard}
                   {versionLink}
                 </div>
@@ -881,7 +872,6 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                   {dailyButton}
                   {freeplayButton}
                 </div>
-                {intelButton}
                 {leaderboard}
                 {versionLink}
               </div>

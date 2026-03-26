@@ -50,7 +50,13 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
           <NavVisibilityProvider>
             <NavBar />
             {children}
-            <footer className="py-6 pb-24 lg:pb-6 text-center">
+            <footer className="py-6 pb-24 lg:pb-6 text-center space-y-2">
+              <Link
+                href="/intel/player"
+                className="inline-block text-[var(--c-secondary)] text-xs font-mono tracking-widest opacity-50 hover:opacity-100 transition-opacity"
+              >
+                Intel Briefing
+              </Link>
               <div className="flex items-center justify-center gap-3 text-[var(--c-muted)] text-xs font-mono opacity-60">
                 <Link href="/privacy" className="hover:opacity-100 transition-opacity">Privacy</Link>
                 <span>·</span>
