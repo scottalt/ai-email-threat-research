@@ -736,20 +736,22 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
     return () => clearTimeout(t);
   }, [countdown, matchStarted, soundEnabled]);
 
-  // Ready timeout — 30s for both players to accept, otherwise forfeit (no winner/loser)
+  // Ready timeout — 30s to accept, otherwise cancel match (no rank point cost)
   useEffect(() => {
     if (loading || matchStarted || isBot || countdown !== null) return;
     const interval = setInterval(() => {
       setReadyTimer((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          // Neither player wins — cancel match server-side then show result
+          // Cancel match — no winner, no rank changes (just cancel, don't forfeit)
           if (!matchEndedRef.current) {
             matchEndedRef.current = true;
-            fetch(`/api/h2h/match/${matchId}/answer`, {
-              method: 'POST',
+            // Cancel — no rank changes (not forfeit which triggers finalizeMatch)
+            fetch(`/api/h2h/match/${matchId}`, {
+              method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ cardIndex: -1, userAnswer: 'forfeit', timeFromRenderMs: 0 }),
+              body: JSON.stringify({ action: 'cancel' }),
+              keepalive: true,
             }).catch(() => {});
             onMatchEnd({
               winnerId: null,
@@ -859,15 +861,31 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
                 </div>
 
                 {!ready ? (
-                  <button
-                    onClick={handleReady}
-                    className="w-full py-3 term-border border-2 border-[rgba(255,0,128,0.5)] text-[#ff0080] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,0,128,0.06)] active:scale-95 transition-all"
-                  >
-                    [ ACCEPT MATCH ]
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleReady}
+                      className="w-full py-3 term-border border-2 border-[rgba(255,0,128,0.5)] text-[#ff0080] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,0,128,0.06)] active:scale-95 transition-all"
+                    >
+                      [ ACCEPT MATCH ]
+                    </button>
+                    <button
+                      onClick={handleForfeit}
+                      className="w-full py-2 text-[var(--c-muted)] font-mono text-xs tracking-widest hover:text-[#ff3333] transition-colors"
+                    >
+                      [ DECLINE ]
+                    </button>
+                  </div>
                 ) : (
-                  <div className="text-[var(--c-muted)] text-sm font-mono animate-pulse">
-                    Waiting for opponent...
+                  <div className="space-y-2">
+                    <div className="text-[var(--c-muted)] text-sm font-mono animate-pulse">
+                      Waiting for opponent...
+                    </div>
+                    <button
+                      onClick={handleForfeit}
+                      className="w-full py-2 text-[var(--c-muted)] font-mono text-xs tracking-widest hover:text-[#ff3333] transition-colors"
+                    >
+                      [ CANCEL ]
+                    </button>
                   </div>
                 )}
               </>

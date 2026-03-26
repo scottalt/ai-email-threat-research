@@ -71,14 +71,17 @@ export async function GET(
   const playerIds = [match.player1_id, match.player2_id].filter(Boolean);
   const { data: players } = await admin
     .from('players')
-    .select('id, display_name, featured_badge, theme_id')
+    .select('id, display_name, featured_badge, featured_badges, theme_id')
     .in('id', playerIds);
 
   const playerMap: Record<string, { displayName: string; featuredBadge: string | null; themeColor: string }> = {};
   for (const p of players ?? []) {
+    // PvP badge: first item in featured_badges array, falling back to legacy featured_badge column
+    const badges = p.featured_badges as string[] | null;
+    const pvpBadge = badges?.[0] ?? p.featured_badge ?? null;
     playerMap[p.id] = {
       displayName: p.display_name,
-      featuredBadge: p.featured_badge ?? null,
+      featuredBadge: pvpBadge,
       themeColor: THEMES.find(t => t.id === (p.theme_id ?? 'phosphor'))?.colors.primary ?? '#00ff41',
     };
   }
@@ -189,11 +192,27 @@ export async function PATCH(
   if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
 
   const body = await req.json().catch(() => null);
-  if (body?.action !== 'complete') {
+  if (!body?.action || !['complete', 'cancel'].includes(body.action)) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   }
 
-  // Only allow completing bot matches (is_ghost_match = true) that the player is in
+  if (body.action === 'cancel') {
+    // Cancel match without rank changes — used for ready timeout, decline
+    const { data: updated } = await admin
+      .from('h2h_matches')
+      .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('status', 'active')
+      .or(`player1_id.eq.${player.id},player2_id.eq.${player.id}`)
+      .select('id');
+
+    if (updated && updated.length > 0) {
+      await redis.del(`h2h:bot-lock:${player.id}`);
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  // Complete action — for bot matches marking as done
   const { data: updated } = await admin
     .from('h2h_matches')
     .update({
@@ -208,13 +227,9 @@ export async function PATCH(
     .select('id');
 
   if (!updated || updated.length === 0) {
-    console.log(`[bot-complete] PATCH failed for match ${id}, player ${player.id.slice(0,8)} — already complete or not found`);
     return NextResponse.json({ error: 'Match not found or already complete' }, { status: 409 });
   }
 
-  console.log(`[bot-complete] match ${id} marked complete, lock released for ${player.id.slice(0,8)}`);
-  // Release bot lock so player can queue again immediately
   await redis.del(`h2h:bot-lock:${player.id}`);
-
   return NextResponse.json({ ok: true });
 }
