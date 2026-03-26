@@ -500,7 +500,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
                 setPhase('h2h_countdown');
               });
             } else {
-              // Real PvP — skip countdown, go straight to match lobby (which has its own accept + countdown)
+              // Real PvP — go straight to match lobby (accept first, then countdown plays after)
               setPhase('h2h_match');
             }
           }}

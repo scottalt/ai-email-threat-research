@@ -13,7 +13,7 @@ import {
 } from '@/lib/h2h-realtime';
 import type { MatchProgressEvent, MatchResultEvent } from '@/lib/h2h-realtime';
 import { ACHIEVEMENTS } from '@/lib/achievements';
-import { playOpponentDown } from '@/lib/sounds';
+import { playOpponentDown, playCountdownBeep, playCountdownGo } from '@/lib/sounds';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 
 // ---------------------------------------------------------------------------
@@ -706,21 +706,27 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
     }
   }, [isBot, loading, cards.length]);
 
-  // Both ready → start 5-second countdown, then begin match
+  // Both ready → start dramatic countdown (3, 2, 1, GO), then begin match
   useEffect(() => {
     if (!ready || !opponentReady || matchStarted || countdown !== null) return;
-    setCountdown(5);
+    setCountdown(3);
   }, [ready, opponentReady, matchStarted, countdown]);
 
   useEffect(() => {
     if (countdown === null || matchStarted) return;
-    if (countdown <= 0) {
-      setMatchStarted(true);
-      return;
+    // Play sounds on each tick
+    if (soundEnabled) {
+      if (countdown > 0) playCountdownBeep();
+      if (countdown === 0) playCountdownGo();
     }
-    const t = setTimeout(() => setCountdown(countdown - 1), 1000);
+    if (countdown <= 0) {
+      // Brief pause after "GO" before match starts
+      const t = setTimeout(() => setMatchStarted(true), 500);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setCountdown(countdown - 1), 700);
     return () => clearTimeout(t);
-  }, [countdown, matchStarted]);
+  }, [countdown, matchStarted, soundEnabled]);
 
   // Ready timeout — 30s for both players to accept, otherwise forfeit (no winner/loser)
   useEffect(() => {
@@ -821,12 +827,17 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
             </div>
 
             {countdown !== null ? (
-              /* Both ready — countdown to start */
+              /* Both ready — dramatic countdown */
               <div className="space-y-3">
-                <div className="text-[#ff0080] text-4xl font-mono font-black">{countdown}</div>
-                <div className="text-[var(--c-primary)] text-sm font-mono font-bold tracking-widest">
-                  MATCH STARTING
-                </div>
+                {countdown > 0 ? (
+                  <div key={countdown} className="text-8xl font-black text-[var(--c-primary)] anim-countdown-bounce text-glow">
+                    {countdown}
+                  </div>
+                ) : (
+                  <div className="text-8xl font-black text-[var(--c-accent)] anim-countdown-go">
+                    GO
+                  </div>
+                )}
               </div>
             ) : (
               <>
