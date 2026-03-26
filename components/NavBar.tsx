@@ -120,6 +120,16 @@ export function NavBar() {
               </Link>
             );
           })}
+          <button
+            onClick={toggleSound}
+            aria-label={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
+            className="text-sm tracking-wider transition-colors px-2 py-1.5"
+          >
+            {soundEnabled
+              ? <span className="text-[var(--c-primary)]">SFX</span>
+              : <span className="text-[var(--c-muted)]">SFX</span>
+            }
+          </button>
         </div>
       </nav>
     </>

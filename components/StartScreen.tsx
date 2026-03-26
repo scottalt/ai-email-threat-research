@@ -762,28 +762,41 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             if (stage === 2) {
               return (
                 <div className="space-y-4">
-                  {/* Quest + research button */}
+                  {/* Quest + research button — expandable for detail */}
                   {currentQuest && (
                     <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)]">
-                      <div className="border-b border-[color-mix(in_srgb,var(--c-accent)_20%,transparent)] px-4 py-2">
-                        <span className="text-[var(--c-accent)] text-xs font-mono tracking-widest">ACTIVE_QUEST</span>
-                      </div>
-                      <div className="px-4 py-3 space-y-3">
+                      <button
+                        onClick={() => setQuestExpanded(v => !v)}
+                        className="w-full px-4 py-3 text-left hover:bg-[color-mix(in_srgb,var(--c-accent)_3%,transparent)] transition-colors"
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span>{currentQuest.icon}</span>
                             <span className="text-[var(--c-accent)] text-sm font-mono font-bold tracking-wide">{currentQuest.name}</span>
+                            <span className="text-[var(--c-muted)] text-xs font-mono">+{currentQuest.xpReward} XP</span>
                           </div>
-                          <span className="text-[var(--c-accent)] text-sm font-mono font-bold">{currentQuestProgress}/{currentQuest.target}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[var(--c-accent)] text-sm font-mono font-bold">{currentQuestProgress}/{currentQuest.target}</span>
+                            <span className="text-[var(--c-accent)] text-xs">{questExpanded ? '▲' : '▼'}</span>
+                          </div>
                         </div>
-                        <div className="h-2 bg-[var(--c-dark)]">
+                        <p className="text-[var(--c-muted)] text-xs font-mono mt-1">{currentQuest.description}</p>
+                        <div className="h-2 bg-[var(--c-dark)] mt-2">
                           <div
                             className="h-full bg-[var(--c-accent)] transition-all"
                             style={{ width: `${(currentQuestProgress / currentQuest.target) * 100}%` }}
                           />
                         </div>
+                      </button>
+                      {questExpanded && (
+                        <div className="px-4 pb-3 space-y-3 border-t border-[color-mix(in_srgb,var(--c-accent)_15%,transparent)]">
+                          <div className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed pt-3">{currentQuest.detail}</div>
+                          <div className="text-[var(--c-accent)] text-xs font-mono">Reward: +{currentQuest.xpReward} XP · Unlocks: {currentQuest.reward}</div>
+                        </div>
+                      )}
+                      <div className="px-4 pb-3">
                         <button
-                          onClick={() => handleStart('research')}
+                          onClick={(e) => { e.stopPropagation(); handleStart('research'); }}
                           className="w-full py-4 term-border font-mono font-bold tracking-widest text-base active:scale-95 transition-all border-2 border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] text-[var(--c-accent)] hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)] btn-glow"
                         >
                           [ RESEARCH MODE ]
@@ -843,7 +856,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
                       </div>
                     </div>
                   )}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     {pvpButton}
                     {dailyButton}
                   </div>
