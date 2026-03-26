@@ -238,8 +238,10 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
   const [opponentIndex, setOpponentIndex] = useState(0);
   const [opponentEliminated, setOpponentEliminated] = useState(false);
   const [opponentBadgeIcon, setOpponentBadgeIcon] = useState<string | null>(null);
+  const [opponentBadgeName, setOpponentBadgeName] = useState<string | null>(null);
   const [opponentThemeColor, setOpponentThemeColor] = useState<string>('#00ff41');
   const [myBadgeIcon, setMyBadgeIcon] = useState<string | null>(null);
+  const [myBadgeName, setMyBadgeName] = useState<string | null>(null);
 
   // ── Ready-up lobby ──
   const [ready, setReady] = useState(false);
@@ -329,7 +331,9 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
           setOpponentName(opp.displayName);
           if (opp.themeColor) setOpponentThemeColor(opp.themeColor);
           if (opp.featuredBadge) {
-            setOpponentBadgeIcon(ACHIEVEMENTS.find(a => a.id === opp.featuredBadge)?.icon ?? null);
+            const oppAch = ACHIEVEMENTS.find(a => a.id === opp.featuredBadge);
+            setOpponentBadgeIcon(oppAch?.icon ?? null);
+            setOpponentBadgeName(oppAch?.name ?? null);
           }
         } else if (isBot) {
           const { getRandomBotName } = await import('@/lib/h2h');
@@ -340,7 +344,9 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
         const me = matchData.players[playerId];
         if (me?.displayName) setMyName(me.displayName);
         if (me?.featuredBadge) {
-          setMyBadgeIcon(ACHIEVEMENTS.find(a => a.id === me.featuredBadge)?.icon ?? null);
+          const myAch = ACHIEVEMENTS.find(a => a.id === me.featuredBadge);
+          setMyBadgeIcon(myAch?.icon ?? null);
+          setMyBadgeName(myAch?.name ?? null);
         }
 
         // Restore progress if reconnecting
@@ -798,9 +804,10 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
             {/* VS display — prominent names with badges */}
             <div className="flex items-stretch gap-3 font-mono">
               {/* You */}
-              <div className="flex-1 term-border p-3 space-y-2">
+              <div className="flex-1 term-border p-3 space-y-1">
                 {myBadgeIcon && <div className="text-[var(--c-primary)] text-2xl">{myBadgeIcon}</div>}
                 <div className="text-[var(--c-primary)] text-base font-black tracking-wide truncate">{myName}</div>
+                {myBadgeName && <div className="text-[var(--c-accent)] text-[10px] tracking-widest">{myBadgeName}</div>}
                 <div className={`text-xs tracking-widest ${ready ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'}`}>
                   {ready ? '✓ READY' : 'NOT READY'}
                 </div>
@@ -812,9 +819,10 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
               </div>
 
               {/* Opponent */}
-              <div className="flex-1 term-border p-3 space-y-2" style={{ borderColor: `color-mix(in srgb, ${opponentThemeColor} 35%, transparent)` }}>
+              <div className="flex-1 term-border p-3 space-y-1" style={{ borderColor: `color-mix(in srgb, ${opponentThemeColor} 35%, transparent)` }}>
                 {opponentBadgeIcon && <div className="text-2xl" style={{ color: opponentThemeColor }}>{opponentBadgeIcon}</div>}
                 <div className="text-base font-black tracking-wide truncate" style={{ color: opponentThemeColor }}>{opponentName}</div>
+                {opponentBadgeName && <div className="text-[10px] tracking-widest" style={{ color: opponentThemeColor, opacity: 0.7 }}>{opponentBadgeName}</div>}
                 <div className={`text-xs tracking-widest ${opponentReady ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)] animate-pulse'}`}>
                   {opponentReady ? '✓ READY' : 'WAITING...'}
                 </div>

@@ -24,7 +24,9 @@ interface MatchData {
   myName: string;
   oppName: string;
   myBadgeIcon: string | null;
+  myBadgeName: string | null;
   oppBadgeIcon: string | null;
+  oppBadgeName: string | null;
   oppThemeColor: string;
   myCards: number;
   oppCards: number;
@@ -154,7 +156,9 @@ export function H2HResult({
             myName: myPlayer?.displayName ?? 'YOU',
             oppName: oppPlayer?.displayName ?? 'OPPONENT',
             myBadgeIcon: myBadgeId ? (ACHIEVEMENTS.find(a => a.id === myBadgeId)?.icon ?? null) : null,
+            myBadgeName: myBadgeId ? (ACHIEVEMENTS.find(a => a.id === myBadgeId)?.name ?? null) : null,
             oppBadgeIcon: oppBadgeId ? (ACHIEVEMENTS.find(a => a.id === oppBadgeId)?.icon ?? null) : null,
+            oppBadgeName: oppBadgeId ? (ACHIEVEMENTS.find(a => a.id === oppBadgeId)?.name ?? null) : null,
             oppThemeColor: oppPlayer?.themeColor ?? '#00ff41',
             myCards,
             oppCards,
@@ -253,11 +257,14 @@ export function H2HResult({
         <div className="w-full term-border p-4 space-y-3">
           {/* You */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               {matchData.myBadgeIcon && <span className="text-lg text-[var(--c-primary)]">{matchData.myBadgeIcon}</span>}
-              <span className="text-[var(--c-primary)] font-bold text-sm">{matchData.myName}</span>
+              <div className="min-w-0">
+                <div className="text-[var(--c-primary)] font-bold text-sm truncate">{matchData.myName}</div>
+                {matchData.myBadgeName && <div className="text-[var(--c-accent)] text-[10px] tracking-widest">{matchData.myBadgeName}</div>}
+              </div>
             </div>
-            <span className={`text-xs font-mono ${matchData.myEliminated ? 'text-[#ff3333]' : 'text-[var(--c-primary)]'}`}>
+            <span className={`text-xs font-mono shrink-0 ${matchData.myEliminated ? 'text-[#ff3333]' : 'text-[var(--c-primary)]'}`}>
               {matchData.myEliminated
                 ? `${matchData.myCards}/${H2H_CARDS_PER_MATCH} eliminated`
                 : `${matchData.myCards}/${H2H_CARDS_PER_MATCH} · ${formatTime(matchData.myTimeMs)}`
@@ -267,11 +274,14 @@ export function H2HResult({
           {/* Opponent */}
           {!isBot ? (
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 {matchData.oppBadgeIcon && <span className="text-lg" style={{ color: matchData.oppThemeColor }}>{matchData.oppBadgeIcon}</span>}
-                <span className="font-bold text-sm" style={{ color: matchData.oppThemeColor }}>{matchData.oppName}</span>
+                <div className="min-w-0">
+                  <div className="font-bold text-sm truncate" style={{ color: matchData.oppThemeColor }}>{matchData.oppName}</div>
+                  {matchData.oppBadgeName && <div className="text-[10px] tracking-widest" style={{ color: matchData.oppThemeColor, opacity: 0.7 }}>{matchData.oppBadgeName}</div>}
+                </div>
               </div>
-              <span className={`text-xs font-mono ${matchData.oppEliminated ? 'text-[#ff3333]' : 'text-[var(--c-secondary)]'}`}>
+              <span className={`text-xs font-mono shrink-0 ${matchData.oppEliminated ? 'text-[#ff3333]' : 'text-[var(--c-secondary)]'}`}>
                 {matchData.oppEliminated
                   ? `${matchData.oppCards}/${H2H_CARDS_PER_MATCH} eliminated`
                   : `${matchData.oppCards}/${H2H_CARDS_PER_MATCH} · ${formatTime(matchData.oppTimeMs)}`
