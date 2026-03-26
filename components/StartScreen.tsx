@@ -250,8 +250,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     } else if (!hasSeenMoment('v2_intro')) {
       // v1 veteran seeing SIGINT for the first time
       dialogue = dynamicDialogue('v2_intro', callsign);
-    } else if (!sessionStorage.getItem('sigint_greeted')) {
-      // Returning v2 player — personalized welcome back
+    } else {
+      // Returning player — brief personalized welcome
       dialogue = dynamicDialogue('welcome_back', callsign);
     }
 
