@@ -328,8 +328,10 @@ export default function ProfilePage() {
     }
   }
 
+  const [bioError, setBioError] = useState('');
   async function handleSaveBio() {
     setBioSaving(true);
+    setBioError('');
     try {
       const res = await fetch('/api/player/profile', {
         method: 'PATCH',
@@ -339,6 +341,9 @@ export default function ProfilePage() {
       if (res.ok) {
         await refreshProfile();
         setEditingBio(false);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setBioError(data.error ?? 'Failed to save bio');
       }
     } finally {
       setBioSaving(false);
@@ -609,6 +614,9 @@ export default function ProfilePage() {
                       className="w-full bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-2 py-1.5 text-[var(--c-primary)] font-mono text-sm focus:outline-none focus:border-[color-mix(in_srgb,var(--c-primary)_70%,transparent)] placeholder:text-[var(--c-dark)] resize-none"
                       placeholder="Write something about yourself..."
                     />
+                    {bioError && (
+                      <div className="text-[#ff3333] text-xs font-mono">{bioError}</div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-[var(--c-muted)] text-xs font-mono">{bioValue.length}/200</span>
                       <button
