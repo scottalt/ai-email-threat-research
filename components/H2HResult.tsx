@@ -46,6 +46,8 @@ interface StatsData {
   rankPoints: number;
   rank: H2HRank;
   winStreak: number;
+  wins: number;
+  losses: number;
 }
 
 function formatTime(ms: number): string {
@@ -85,14 +87,25 @@ export function H2HResult({
   const isLoss = resolvedWinnerId !== null && resolvedWinnerId !== playerId;
   const noResult = resolvedWinnerId === null;
 
-  // SIGINT: first PvP win (non-bot only, fire once per mount)
+  // SIGINT: PvP result moments (non-bot only, fire once per mount)
+  // Multiple can fire — SigintContext queue shows them one at a time.
   const sigintFired = useRef(false);
   useEffect(() => {
-    if (matchData && isWin && !isBot && !sigintFired.current) {
-      sigintFired.current = true;
+    if (!matchData || !stats || isBot || sigintFired.current) return;
+    sigintFired.current = true;
+
+    if (isWin) {
+      if (matchData.myCards === H2H_CARDS_PER_MATCH) triggerSigint('perfect_match');
       triggerSigint('first_pvp_win');
+      if (stats.winStreak >= 5) triggerSigint('win_streak_5');
+      else if (stats.winStreak >= 3) triggerSigint('win_streak_3');
+    } else if (isLoss) {
+      if (reason === 'eliminated') triggerSigint('first_elimination');
+      triggerSigint('first_pvp_loss');
+      // winStreak resets to 0 on loss — if 0 and 3+ losses total, they're on a bad run
+      if (stats.winStreak === 0 && stats.losses >= 3) triggerSigint('loss_streak_3');
     }
-  }, [matchData, isWin, isBot, triggerSigint]);
+  }, [matchData, stats, isWin, isLoss, isBot, reason, triggerSigint]);
 
   // Play victory/defeat sound when server data resolves the winner
   const soundPlayed = useRef(false);
@@ -173,6 +186,8 @@ export function H2HResult({
             rankPoints: s.rankPoints,
             rank: getRankFromPoints(s.rankPoints),
             winStreak: s.winStreak ?? 0,
+            wins: s.wins ?? 0,
+            losses: s.losses ?? 0,
           });
         }
       } catch {

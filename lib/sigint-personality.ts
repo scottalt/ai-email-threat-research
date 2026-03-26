@@ -163,6 +163,68 @@ export const MILESTONES = {
     ],
     buttonText: "GG",
   } as SigintDialogue,
+
+  first_pvp_loss: {
+    lines: [
+      "First loss. Had to happen eventually.",
+      "I ran diagnostics. Your hardware is fine. Software needs updating.",
+      "Queue again. Show them that was a fluke.",
+    ],
+    buttonText: "REMATCH",
+  } as SigintDialogue,
+
+  loss_streak_3: {
+    lines: [
+      "Three in a row. I'm not going to sugarcoat it.",
+      "But I've seen your data. You're better than this.",
+      "Take a breath. Reset. The next one's yours.",
+    ],
+    buttonText: "WATCH ME",
+  } as SigintDialogue,
+
+  win_streak_3: {
+    lines: [
+      "Three straight wins. Opponents are starting to notice.",
+      "I'd tell you not to get cocky, but honestly? Get a little cocky.",
+    ],
+    buttonText: "UNSTOPPABLE",
+  } as SigintDialogue,
+
+  win_streak_5: {
+    lines: [
+      "Five in a row. I'm logging this as a security incident.",
+      "You're not supposed to be this good. I checked the spec.",
+      "Keep going. I want to see what happens at ten.",
+    ],
+    buttonText: "LET'S FIND OUT",
+  } as SigintDialogue,
+
+  first_elimination: {
+    lines: [
+      "Eliminated. Wrong answer, instant out.",
+      "PvP doesn't forgive. Neither do I.",
+      "...okay, I forgive a little. Queue again.",
+    ],
+    buttonText: "AGAIN",
+  } as SigintDialogue,
+
+  perfect_match: {
+    lines: [
+      "5 for 5. Flawless.",
+      "I checked my threat model. You weren't supposed to do that.",
+      "Opponent is probably uninstalling right now.",
+    ],
+    buttonText: "TOO EASY",
+  } as SigintDialogue,
+
+  research_halfway: {
+    lines: [
+      "15 classifications. Halfway through the research protocol.",
+      "Your data is already contributing to real threat intelligence.",
+      "15 more and you unlock everything. Keep pushing.",
+    ],
+    buttonText: "HALFWAY THERE",
+  } as SigintDialogue,
 };
 
 // ── Page visit dialogues ──
