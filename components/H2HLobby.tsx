@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ACHIEVEMENTS, RARITY_COLORS } from '@/lib/achievements';
 import { getRankFromPoints, H2H_RANKS } from '@/lib/h2h';
+import { useSigint } from '@/lib/SigintContext';
 import type { PlayerProfile } from '@/lib/types';
 
 interface Props {
@@ -12,6 +13,13 @@ interface Props {
 }
 
 export function H2HLobby({ profile, onSearch, onBack }: Props) {
+  const { triggerSigint } = useSigint();
+
+  // SIGINT: first time opening PvP
+  useEffect(() => {
+    triggerSigint('first_pvp_open');
+  }, [triggerSigint]);
+
   const [h2hStats, setH2HStats] = useState<{
     rankLabel: string; rankPoints: number; rankColor: string;
     wins: number; losses: number; winStreak: number; bestWinStreak: number;

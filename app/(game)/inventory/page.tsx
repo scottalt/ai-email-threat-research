@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePlayer } from '@/lib/usePlayer';
+import { useSigint } from '@/lib/SigintContext';
 import { THEMES, isThemeUnlocked } from '@/lib/themes';
 import { ACHIEVEMENTS, RARITY_COLORS, RARITY_BADGE_CLASS } from '@/lib/achievements';
 import { useTheme } from '@/lib/ThemeContext';
@@ -16,6 +17,12 @@ type Tab = 'themes' | 'badges' | 'shop';
 export default function InventoryPage() {
   const { profile, loading, signedIn, refreshProfile } = usePlayer();
   const { theme: activeTheme, setThemeId } = useTheme();
+  const { triggerSigint } = useSigint();
+
+  // SIGINT: first inventory visit
+  useEffect(() => {
+    if (signedIn && profile) triggerSigint('first_inventory');
+  }, [signedIn, profile, triggerSigint]);
   const [tab, setTab] = useState<Tab>('themes');
   const [showPreview, setShowPreview] = useState(false);
   const [rarityFilter, setRarityFilter] = useState<AchievementRarity | 'all'>('all');

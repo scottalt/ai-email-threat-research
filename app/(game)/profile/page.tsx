@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePlayer } from '@/lib/usePlayer';
+import { useSigint } from '@/lib/SigintContext';
 import { LevelMeter } from '@/components/LevelMeter';
 import { getRankFromLevel } from '@/lib/rank';
 import { ACHIEVEMENTS, RARITY_COLORS, RARITY_BADGE_CLASS, CATEGORY_LABELS, type AchievementCategory } from '@/lib/achievements';
@@ -59,6 +60,7 @@ const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
 
 export default function ProfilePage() {
   const { profile, loading, signedIn, applyProfile, refreshProfile } = usePlayer();
+  const { triggerSigint } = useSigint();
   const [editingCallsign, setEditingCallsign] = useState(false);
   const [callsignValue, setCallsignValue] = useState('');
   const [callsignSaving, setCallsignSaving] = useState(false);
@@ -108,6 +110,11 @@ export default function ProfilePage() {
   useEffect(() => {
     fetch('/api/player/admin-check').then(r => { if (r.ok) setIsAdmin(true); });
   }, []);
+
+  // SIGINT: first profile visit
+  useEffect(() => {
+    if (signedIn && profile) triggerSigint('first_profile');
+  }, [signedIn, profile, triggerSigint]);
 
   // Eagerly fetch incoming friend request count for notification badge
   const [incomingCount, setIncomingCount] = useState(0);

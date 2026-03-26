@@ -6,6 +6,7 @@ import { PlayerProvider } from '@/lib/PlayerContext';
 import { usePlayer } from '@/lib/usePlayer';
 import { NavVisibilityProvider } from '@/lib/NavVisibilityContext';
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
+import { SigintProvider } from '@/lib/SigintContext';
 import { NavBar } from '@/components/NavBar';
 import { DataStream } from '@/components/DataStream';
 import Link from 'next/link';
@@ -47,6 +48,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <ThemeSync />
           <BackfillTrigger />
+          <SigintProvider>
           <NavVisibilityProvider>
             <NavBar />
             {children}
@@ -66,6 +68,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               </div>
             </footer>
           </NavVisibilityProvider>
+          </SigintProvider>
         </ThemeProvider>
       </PlayerProvider>
     </div>

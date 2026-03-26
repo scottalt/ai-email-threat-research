@@ -124,27 +124,30 @@ export const MILESTONES = {
 
   pvp_unlock: {
     lines: [
-      "10 classifications. PvP mode is online.",
-      "Real opponents. Real rankings. Real embarrassment potential.",
-      "Try not to make me look bad.",
+      "10 classifications logged. Not bad.",
+      "You just unlocked PvP mode. Real opponents. Real rankings.",
+      "Hit that PvP button on the main screen. I dare you.",
     ],
+    buttonText: "BRING IT",
   } as SigintDialogue,
 
   daily_unlock: {
     lines: [
-      "Daily Challenge unlocked.",
-      "Same 10 emails for everyone. Once per day.",
-      "Think of it as your morning security briefing. Except it's actually interesting.",
+      "20 classifications. Daily Challenge just came online.",
+      "Same 10 emails for everyone, once per day. Global leaderboard.",
+      "Check the Daily button on the home screen. Show them what you've got.",
     ],
+    buttonText: "ON IT",
   } as SigintDialogue,
 
   freeplay_unlock: {
     lines: [
       "30 classifications. Research protocol complete.",
-      "You've contributed to real threat intelligence. I've updated your clearance.",
-      "Full access. Freeplay. Expert cards. The whole terminal.",
+      "Full clearance granted. Freeplay, Expert cards — the whole terminal is yours.",
+      "You've earned it. The Freeplay button is on the home screen now.",
       "Welcome to the inner circle, operative.",
     ],
+    buttonText: "FINALLY",
   } as SigintDialogue,
 
   first_pvp_win: {
@@ -153,6 +156,48 @@ export const MILESTONES = {
       "I'd celebrate but I don't have emotions. Terms of service.",
       "...that was pretty good though.",
     ],
+    buttonText: "GG",
+  } as SigintDialogue,
+};
+
+// ── Page visit dialogues ──
+
+export const PAGE_VISITS = {
+  first_pvp_open: {
+    lines: [
+      "So you found the war room.",
+      "Ranked matches. 5 emails each. First wrong answer and you're out.",
+      "Your rank goes up when you win, down when you lose. Simple math.",
+      "Queue up when you're ready. I'll find you an opponent.",
+    ],
+    buttonText: "UNDERSTOOD",
+  } as SigintDialogue,
+
+  first_inventory: {
+    lines: [
+      "Welcome to your locker.",
+      "Themes change the whole terminal aesthetic. Badges go on your shelf — opponents see them in PvP.",
+      "Cosmetics only. Nothing here makes you better. That part's on you.",
+    ],
+    buttonText: "GOT IT",
+  } as SigintDialogue,
+
+  first_profile: {
+    lines: [
+      "Your dossier.",
+      "Stats, quests, friends — it's all here. The badges on your shelf show up in PvP lobbies.",
+      "Try not to stare at your own win rate too long.",
+    ],
+    buttonText: "NOTED",
+  } as SigintDialogue,
+
+  first_shop: {
+    lines: [
+      "Shop's not open yet. Season 1.",
+      "Coins, exclusive cosmetics, limited-time drops. The works.",
+      "For now, enjoy the free stuff. You'll miss it when it's gone.",
+    ],
+    buttonText: "CAN'T WAIT",
   } as SigintDialogue,
 };
 
@@ -161,4 +206,5 @@ export const MILESTONES = {
 export const ALL_DIALOGUES: Record<string, SigintDialogue> = {
   ...ONBOARDING,
   ...MILESTONES,
+  ...PAGE_VISITS,
 };

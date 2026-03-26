@@ -52,6 +52,7 @@ import type { SafeDealCard } from '@/lib/card-utils';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { usePlayer } from '@/lib/usePlayer';
 import { useNavVisibility } from '@/lib/NavVisibilityContext';
+import { useSigint } from '@/lib/SigintContext';
 import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
 import { getRankFromLevel } from '@/lib/rank';
 
@@ -100,6 +101,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const [flashClass, setFlashClass] = useState<string | null>(null);
   const sessionFinalized = useRef<Promise<void>>(Promise.resolve());
   const { setNavHidden } = useNavVisibility();
+  const { triggerSigint } = useSigint();
 
   // Refresh profile when returning to start screen (updates clearance path, XP, etc.)
   const prevPhase = useRef<GamePhase>('start');
@@ -365,6 +367,11 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       if (streakBonus > 0) playStreak();
       else if (correct) playCorrect();
       else playWrong();
+    }
+
+    // SIGINT: first correct answer ever
+    if (correct && correctCount === 0) {
+      triggerSigint('first_correct');
     }
 
     // Log answer event (fire and forget — skip in preview mode)

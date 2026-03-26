@@ -1,8 +1,16 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
+import { useSigint } from '@/lib/SigintContext';
 
 export default function ShopPage() {
+  const { triggerSigint } = useSigint();
+
+  // SIGINT: first shop visit
+  useEffect(() => {
+    triggerSigint('first_shop');
+  }, [triggerSigint]);
   return (
     <main className="min-h-screen bg-[var(--c-bg-alt)] flex items-start justify-center px-4 py-8 lg:pt-16 pb-20 lg:pb-8">
       <div className="w-full max-w-2xl space-y-4">

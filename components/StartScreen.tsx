@@ -15,6 +15,7 @@ import { QUESTS } from '@/lib/quests';
 import { Handler } from './Handler';
 import { HANDLER_DIALOGUES, hasSeenMoment, markMomentSeen } from '@/lib/handler-dialogues';
 import { dynamicDialogue } from '@/lib/sigint-personality';
+import { useSigint } from '@/lib/SigintContext';
 
 interface LeaderboardEntry {
   name: string;
@@ -265,6 +266,26 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     }
   }, [showButton, signedIn, profile]);
 
+  // SIGINT milestone unlocks — fire when player crosses answer thresholds
+  // Guard: don't fire while greeting is active (milestones fire after greeting dismiss instead)
+  const { triggerSigint } = useSigint();
+  const fireMilestones = useCallback(() => {
+    if (!signedIn || !profile) return;
+    const answers = profile.researchAnswersSubmitted ?? 0;
+    const graduated = profile.researchGraduated ?? false;
+
+    // Check milestones in reverse order (highest first) — only one fires per visit
+    if (answers >= 30) triggerSigint('freeplay_unlock');
+    else if (answers >= 20) triggerSigint('daily_unlock');
+    else if (graduated || answers >= 10) triggerSigint('pvp_unlock');
+  }, [signedIn, profile, triggerSigint]);
+
+  useEffect(() => {
+    // Only auto-fire milestones when no greeting is showing
+    if (!showButton || showHandlerGreeting || !signedIn || !profile) return;
+    fireMilestones();
+  }, [showButton, showHandlerGreeting, signedIn, profile, fireMilestones]);
+
   // Hide nav bar during boot and until player profile is fully set up
   useLayoutEffect(() => {
     const profileReady = signedIn && !!profile?.displayName;
@@ -419,6 +440,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
             // Only mark permanently seen if player has actually done research
             if (answers > 0 && !hasSeenMoment('v2_intro')) markMomentSeen('v2_intro');
             setShowHandlerGreeting(false);
+            // After greeting dismissed, show any unseen milestone dialogues
+            fireMilestones();
           }}
         />
       )}

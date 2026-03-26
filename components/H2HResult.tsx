@@ -8,6 +8,7 @@ import { LevelMeter } from './LevelMeter';
 import { playVictory, playDefeat, playLevelUp } from '@/lib/sounds';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { usePlayer } from '@/lib/usePlayer';
+import { useSigint } from '@/lib/SigintContext';
 
 interface Props {
   matchId: string;
@@ -76,12 +77,20 @@ export function H2HResult({
   const [myAnswers, setMyAnswers] = useState<any[]>([]);
 
   const { soundEnabled } = useSoundEnabled();
+  const { triggerSigint } = useSigint();
 
   // Prefer server-fetched winnerId over client prop (client passes null for eliminations/forfeits)
   const resolvedWinnerId = matchData?.serverWinnerId ?? winnerId;
   const isWin = resolvedWinnerId === playerId;
   const isLoss = resolvedWinnerId !== null && resolvedWinnerId !== playerId;
   const noResult = resolvedWinnerId === null;
+
+  // SIGINT: first PvP win (non-bot only)
+  useEffect(() => {
+    if (matchData && isWin && !isBot) {
+      triggerSigint('first_pvp_win');
+    }
+  }, [matchData, isWin, isBot, triggerSigint]);
 
   // Play victory/defeat sound when server data resolves the winner
   const soundPlayed = useRef(false);
