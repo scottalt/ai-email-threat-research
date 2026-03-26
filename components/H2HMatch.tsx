@@ -792,6 +792,15 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
     broadcastReady(playerId);
   }
 
+  // Re-broadcast ready every 2s until match starts (handles missed initial broadcast)
+  useEffect(() => {
+    if (!ready || matchStarted || isBot || countdown !== null) return;
+    const interval = setInterval(() => {
+      broadcastReady(playerId);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [ready, matchStarted, isBot, countdown, playerId]);
+
   // ── Loading / error states ──
   if (loading) {
     return (
