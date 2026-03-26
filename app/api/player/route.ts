@@ -25,7 +25,7 @@ async function getAuthId(): Promise<string | null> {
   return user?.id ?? null;
 }
 
-function toProfile(row: Record<string, unknown>, researchAnswersSubmitted = 0, achievements: string[] = [], streakData?: { current_streak: number; longest_streak: number } | null): PlayerProfile {
+function toProfile(row: Record<string, unknown>, researchAnswersSubmitted = 0, achievements: string[] = [], streakData?: { current_streak: number; longest_streak: number } | null, seenMoments: string[] = []): PlayerProfile {
   return {
     id: row.id as string,
     authId: row.auth_id as string,
@@ -46,6 +46,7 @@ function toProfile(row: Record<string, unknown>, researchAnswersSubmitted = 0, a
     privacyLevel: (row.privacy_level as string as 'public' | 'friends' | 'private') ?? 'public',
     featuredBadges: (row.featured_badges as string[]) ?? [],
     themeId: (row.theme_id as string | null) ?? 'phosphor',
+    seenMoments,
   };
 }
 
@@ -75,18 +76,21 @@ export async function GET(req: NextRequest) {
   const nowHour = new Date().toISOString().slice(0, 13);
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  const [{ count: researchAnswersSubmitted }, { data: achievementRows }, { data: streakData }, hourlyCount, dailyCount] = await Promise.all([
+  const [{ count: researchAnswersSubmitted }, { data: achievementRows }, { data: streakData }, { data: momentRows }, hourlyCount, dailyCount] = await Promise.all([
     admin.from('answers').select('*', { count: 'exact', head: true })
       .eq('player_id', row.id as string).eq('game_mode', 'research'),
     admin.from('player_achievements').select('achievement_id')
       .eq('player_id', row.id as string),
     admin.from('player_streaks').select('current_streak, longest_streak')
       .eq('player_id', row.id as string).maybeSingle(),
+    admin.from('player_seen_moments').select('moment_id')
+      .eq('player_id', row.id as string),
     redis.get<number>(`ratelimit:xp:${authId}:h:${nowHour}`),
     redis.get<number>(`ratelimit:xp:${authId}:d:${todayStr}`),
   ]);
 
   const achievements = (achievementRows ?? []).map((r: { achievement_id: string }) => r.achievement_id);
+  const seenMoments = (momentRows ?? []).map((r: { moment_id: string }) => r.moment_id);
 
   // Retroactive graduation: if player has enough research answers but flag is false, update it
   if (!(row.research_graduated as boolean) && (researchAnswersSubmitted ?? 0) >= RESEARCH_GRADUATION_ANSWERS) {
@@ -104,7 +108,7 @@ export async function GET(req: NextRequest) {
   const nextDay = new Date(todayStr + 'T00:00:00.000Z');
   nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
-  const profile = toProfile(row, researchAnswersSubmitted ?? 0, achievements, streakData);
+  const profile = toProfile(row, researchAnswersSubmitted ?? 0, achievements, streakData, seenMoments);
 
   return NextResponse.json({
     ...profile,

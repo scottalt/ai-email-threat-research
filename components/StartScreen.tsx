@@ -250,8 +250,8 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     if (answers === 0) {
       // Brand new player — full intro
       dialogue = HANDLER_DIALOGUES.boot_greeting;
-    } else if (!hasSeenMoment('v2_intro')) {
-      // v1 veteran seeing SIGINT for the first time
+    } else if (!(profile.seenMoments ?? []).includes('v2_intro') && !hasSeenMoment('v2_intro')) {
+      // v1 veteran seeing SIGINT for the first time (check DB + localStorage fallback)
       dialogue = dynamicDialogue('v2_intro', callsign);
     } else {
       // Returning player — brief personalized welcome

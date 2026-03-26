@@ -3,10 +3,10 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { Handler } from '@/components/Handler';
 import { ALL_DIALOGUES } from '@/lib/sigint-personality';
-import { hasSeenMoment, markMomentSeen } from '@/lib/handler-dialogues';
+import { usePlayer } from '@/lib/usePlayer';
 
 interface SigintContextValue {
-  /** Trigger a SIGINT dialogue by moment ID. Only shows once per player (tracked in localStorage). */
+  /** Trigger a SIGINT dialogue by moment ID. Only shows once per player (tracked in DB). */
   triggerSigint: (momentId: string) => void;
   /** Whether SIGINT is currently showing */
   isShowing: boolean;
@@ -22,13 +22,14 @@ export function useSigint() {
 }
 
 export function SigintProvider({ children }: { children: ReactNode }) {
+  const { profile, refreshProfile } = usePlayer();
   const [activeMoment, setActiveMoment] = useState<string | null>(null);
   const [lines, setLines] = useState<string[]>([]);
   const [buttonText, setButtonText] = useState('CONTINUE');
 
   const triggerSigint = useCallback((momentId: string) => {
-    // Only show each moment once
-    if (hasSeenMoment(momentId)) return;
+    // Check DB-backed seen list from profile
+    if (profile?.seenMoments?.includes(momentId)) return;
 
     const dialogue = ALL_DIALOGUES[momentId];
     if (!dialogue) return;
@@ -36,15 +37,20 @@ export function SigintProvider({ children }: { children: ReactNode }) {
     setLines(dialogue.lines);
     setButtonText(dialogue.buttonText ?? 'CONTINUE');
     setActiveMoment(momentId);
-  }, []);
+  }, [profile?.seenMoments]);
 
   const handleDismiss = useCallback(() => {
     if (activeMoment) {
-      markMomentSeen(activeMoment);
+      // Persist to DB (fire and forget)
+      fetch('/api/player/moments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ momentId: activeMoment }),
+      }).then(() => refreshProfile()).catch(() => {});
     }
     setActiveMoment(null);
     setLines([]);
-  }, [activeMoment]);
+  }, [activeMoment, refreshProfile]);
 
   return (
     <SigintContext.Provider value={{ triggerSigint, isShowing: activeMoment !== null }}>

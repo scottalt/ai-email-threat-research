@@ -132,4 +132,5 @@ export interface PlayerProfile {
   privacyLevel: 'public' | 'friends' | 'private';
   featuredBadges: string[];
   themeId: string;
+  seenMoments?: string[];
 }
