@@ -411,9 +411,11 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           lines={handlerLines}
           buttonText={handlerButton}
           onDismiss={() => {
+            const answers = profile?.researchAnswersSubmitted ?? 0;
+            // Always dismiss for this session
             try { sessionStorage.setItem('sigint_greeted', '1'); } catch {}
-            // Mark v2_intro as permanently seen (so they get welcome_back next time)
-            if (!hasSeenMoment('v2_intro')) markMomentSeen('v2_intro');
+            // Only mark permanently seen if player has actually done research
+            if (answers > 0 && !hasSeenMoment('v2_intro')) markMomentSeen('v2_intro');
             setShowHandlerGreeting(false);
           }}
         />
