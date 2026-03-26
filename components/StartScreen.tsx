@@ -50,10 +50,9 @@ const BOOT_LINES: { text: string; bright: boolean }[] = [
 export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound }: Props) {
   const bootSeen = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bootSeen') === '1';
   const [visibleCount, setVisibleCount] = useState(bootSeen ? BOOT_LINES.length : 0);
-  // Handler greeting shows alongside main content (not instead of it)
-  const needsGreeting = typeof window !== 'undefined' && !hasSeenMoment('boot_greeting');
+  // Handler greeting shows for new players (0 answers) who haven't dismissed it this session
   const [showButton, setShowButton] = useState(bootSeen);
-  const [showHandlerGreeting, setShowHandlerGreeting] = useState(bootSeen && needsGreeting);
+  const [showHandlerGreeting, setShowHandlerGreeting] = useState(false);
   const [bootDone, setBootDone] = useState(bootSeen);
   const [bootHidden, setBootHidden] = useState(bootSeen);
   const [dailyLeaderboard, setDailyLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -220,19 +219,28 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
     }
   }, [visibleCount]);
 
-  // After boot fades out, show main content + handler greeting if needed
+  // After boot fades out, show main content
   useEffect(() => {
     if (bootDone && !bootHidden) {
       const fallback = setTimeout(() => {
         setBootHidden(true);
         setShowButton(true);
-        if (!hasSeenMoment('boot_greeting')) {
-          setShowHandlerGreeting(true);
-        }
       }, 400);
       return () => clearTimeout(fallback);
     }
   }, [bootDone, bootHidden]);
+
+  // Show SIGINT greeting for signed-in players with 0 research answers (once per session)
+  const greetingShownThisSession = useRef(false);
+  useEffect(() => {
+    if (!showButton || greetingShownThisSession.current) return;
+    if (!signedIn || !profile) return;
+    const answers = profile.researchAnswersSubmitted ?? 0;
+    if (answers === 0 && !sessionStorage.getItem('sigint_greeted')) {
+      greetingShownThisSession.current = true;
+      setShowHandlerGreeting(true);
+    }
+  }, [showButton, signedIn, profile]);
 
   // Hide nav bar during boot and until player profile is fully set up
   useLayoutEffect(() => {
@@ -382,7 +390,7 @@ export function StartScreen({ onStart, soundEnabled, onToggleSound: toggleSound 
           lines={HANDLER_DIALOGUES.boot_greeting.lines}
           buttonText={HANDLER_DIALOGUES.boot_greeting.buttonText}
           onDismiss={() => {
-            markMomentSeen('boot_greeting');
+            try { sessionStorage.setItem('sigint_greeted', '1'); } catch {}
             setShowHandlerGreeting(false);
           }}
         />
