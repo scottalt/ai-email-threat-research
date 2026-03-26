@@ -224,6 +224,11 @@ async function finalizeMatch(
       awardH2HXp(admin, loserId, loserCorrect ?? 0, false),
     ]);
 
+    // Release bot lock if this was a ghost match
+    if (match.is_ghost_match && match.player1_id) {
+      await redis.del(`h2h:bot-lock:${match.player1_id}`);
+    }
+
     // Award h2h_perfect achievement if winner got all cards correct
     if ((winnerCorrect ?? 0) >= H2H_CARDS_PER_MATCH) {
       await admin.from('player_achievements').upsert(
@@ -247,6 +252,10 @@ async function finalizeMatch(
     if (!updated || updated.length === 0) return; // already finalized by another thread
 
     // Bot matches do not award XP — prevents bot farming exploits
+    // Release bot lock so player can queue again immediately
+    if (match.is_ghost_match && match.player1_id) {
+      await redis.del(`h2h:bot-lock:${match.player1_id}`);
+    }
   }
 }
 
@@ -504,6 +513,9 @@ export async function POST(
       status: 'complete',
       ended_at: new Date().toISOString(),
     }).eq('id', matchId).eq('status', 'active');
+
+    // Release bot lock so player can queue again immediately
+    await redis.del(`h2h:bot-lock:${playerId}`);
 
     return NextResponse.json({
       correct: false,
