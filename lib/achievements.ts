@@ -69,6 +69,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 's0_diamond',     name: 'S0: DIAMOND',         description: 'Reached Diamond rank in Season 0', category: 'season', rarity: 'legendary', icon: '⬡⬡', season: 'season-0' },
   { id: 's0_master',      name: 'S0: MASTER',          description: 'Reached Master rank in Season 0',  category: 'season', rarity: 'legendary', icon: '★',  season: 'season-0' },
   { id: 's0_elite',       name: 'S0: ELITE',           description: 'Reached Elite rank in Season 0',   category: 'season', rarity: 'mythic',    icon: '★★', season: 'season-0' },
+
+  // ── Promo Exclusive ──
+  { id: 'thought_leader', name: 'THOUGHT_LEADER',     description: 'Redeemed a promo code. Certified thought leader. Endorsed by SIGINT.', category: 'season', rarity: 'mythic', icon: '🧠' },
 ];
 
 export const ACHIEVEMENT_MAP = new Map(ACHIEVEMENTS.map(a => [a.id, a]));

@@ -415,6 +415,59 @@ export const PAGE_VISITS = {
     ],
     buttonText: "CAN'T WAIT",
   } as SigintDialogue,
+
+  first_codes: {
+    lines: [
+      "Promo codes. Limited drops. If you have one, enter it here.",
+      "If you don't have one... well, maybe follow the right people.",
+    ],
+    buttonText: "GOT IT",
+  } as SigintDialogue,
+};
+
+// ── Promo code result dialogues (not one-time, triggered inline) ──
+
+export const PROMO_DIALOGUES = {
+  code_success: {
+    lines: [
+      "Code accepted. Badge unlocked.",
+      "You're officially a Thought Leader now. I'd congratulate you, but you probably already posted about it.",
+      "Only 100 of these exist. Wear it in PvP. Let them know.",
+    ],
+    buttonText: "FLEXING",
+  } as SigintDialogue,
+
+  code_invalid: {
+    lines: [
+      "Invalid code. I checked twice.",
+      "Either it's wrong or you made it up. I'm not judging. Actually, I am.",
+    ],
+    buttonText: "LET ME TRY AGAIN",
+  } as SigintDialogue,
+
+  code_expired: {
+    lines: [
+      "That code expired. You missed the window.",
+      "In cyber, timing is everything.",
+    ],
+    buttonText: "NEXT TIME",
+  } as SigintDialogue,
+
+  code_exhausted: {
+    lines: [
+      "All codes claimed. You were too slow.",
+      "100 people got there first. Should've moved faster, operative.",
+    ],
+    buttonText: "PAIN",
+  } as SigintDialogue,
+
+  code_already: {
+    lines: [
+      "You already redeemed this one. Check your badges.",
+      "Trying to double-dip? I see you.",
+    ],
+    buttonText: "WORTH A SHOT",
+  } as SigintDialogue,
 };
 
 // ── All dialogues combined for lookup ──

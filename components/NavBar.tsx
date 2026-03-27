@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { label: 'PROFILE', path: '/profile', match: (p: string) => p.startsWith('/profile') },
   { label: 'INVENTORY', path: '/inventory', match: (p: string) => p.startsWith('/inventory') },
   { label: 'SHOP', path: '/shop', match: (p: string) => p.startsWith('/shop') },
+  { label: 'CODES', path: '/codes', match: (p: string) => p.startsWith('/codes') },
 ];
 
 const HIDDEN_PATHS = ['/admin', '/auth', '/intel'];
