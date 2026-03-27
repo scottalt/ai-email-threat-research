@@ -601,8 +601,11 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           const isFirstTime = !profile || (profile.researchAnswersSubmitted ?? 0) === 0;
           if (isFirstTime && !hasSeenMoment('research_brief')) {
             setPhase('handler_research_brief');
+          } else if (isFirstTime) {
+            // Always show tutorial for players with 0 answers, even if they saw it before
+            setPhase('tutorial');
           } else {
-            setPhase(isFirstTime ? 'tutorial' : 'playing');
+            setPhase('playing');
           }
         }}
       />
