@@ -560,7 +560,8 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
         const t = setTimeout(() => {
           setOpponentIndex(i + 1);
           setOpponentEliminated(true);
-          // Bot eliminated — player wins, end match after brief pause
+          if (soundEnabled) playOpponentDown();
+          // Bot eliminated — player wins, show banner for 3s then end match
           setTimeout(() => {
             if (!matchEndedRef.current) {
               matchEndedRef.current = true;
@@ -568,7 +569,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
                 fetch(`/api/h2h/match/${matchId}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ action: 'complete', winnerId: playerId }),
+                  body: JSON.stringify({ action: 'complete' }),
                   keepalive: true,
                 });
               } catch { /* best effort */ }
@@ -579,7 +580,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
                 reason: 'eliminated',
               });
             }
-          }, 1500);
+          }, 3000);
         }, totalElapsed + thinkDelay);
         timers.push(t);
         break;
@@ -1082,6 +1083,14 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
           </div>
         )}
       </div>
+
+      {/* Bot eliminated overlay */}
+      {opponentEliminated && isBot && (
+        <div className="w-full term-border border-[var(--c-primary)] bg-[var(--c-bg)] px-4 py-3 text-center font-mono animate-pulse">
+          <div className="text-[var(--c-primary)] text-lg font-bold tracking-widest">OPPONENT ELIMINATED</div>
+          <div className="text-[var(--c-muted)] text-xs mt-1">YOU WIN — loading results...</div>
+        </div>
+      )}
 
       {/* Card */}
       <div className={`w-full anim-card-entry transition-all duration-200 ${
