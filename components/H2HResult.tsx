@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { getRankFromPoints, H2H_CARDS_PER_MATCH } from '@/lib/h2h';
+import { XP_PER_CORRECT } from '@/lib/xp';
 import type { H2HRank } from '@/lib/h2h';
 import { ACHIEVEMENTS, RARITY_BADGE_CLASS, type AchievementRarity } from '@/lib/achievements';
 import { LevelMeter } from './LevelMeter';
@@ -331,9 +332,20 @@ export function H2HResult({
       ) : null}
 
       {/* XP Bar */}
-      {profile && !isBot && (
+      {profile && !isBot && matchData && (
         <div className="w-full term-border p-3">
-          <LevelMeter xp={profile.xp} level={profile.level} />
+          <LevelMeter
+            xp={profile.xp}
+            level={profile.level}
+            xpEarned={(() => {
+              const correct = matchData.myCards;
+              let earned = correct * XP_PER_CORRECT;
+              if (correct >= H2H_CARDS_PER_MATCH) earned += 50; // perfect bonus
+              else if (correct >= H2H_CARDS_PER_MATCH - 1) earned += 25; // completion bonus
+              if (isWin) earned += 20; // win bonus
+              return earned > 0 ? earned : undefined;
+            })()}
+          />
         </div>
       )}
 
