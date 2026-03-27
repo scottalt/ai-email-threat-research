@@ -279,10 +279,20 @@ export const MILESTONES = {
 
   first_daily: {
     lines: [
-      "First daily in the books. Same emails, global leaderboard.",
-      "See where you stack up. Tomorrow there'll be new ones.",
+      "Daily Challenge. 10 emails. Same ones for everyone, worldwide.",
+      "Your score goes on the global leaderboard. Resets every 24 hours.",
+      "No practice runs. One shot per day. Make it count.",
     ],
-    buttonText: "SEE YOU TOMORROW",
+    buttonText: "LET'S GO",
+  } as SigintDialogue,
+
+  first_freeplay: {
+    lines: [
+      "Freeplay. No rules. No rankings. Just you and the inbox.",
+      "Difficulty is random. Some are easy. Some will make you second-guess everything.",
+      "Think of it as the shooting range. Sharpen up before you go ranked.",
+    ],
+    buttonText: "READY",
   } as SigintDialogue,
 
   first_friend: {

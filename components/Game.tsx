@@ -233,6 +233,9 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       .then((r) => r.json())
       .then((cards: Card[]) => {
         setDeck(cards);
+        // SIGINT: explain the mode on first play (before cards appear)
+        if (newMode === 'daily') triggerSigint('first_daily');
+        else if (newMode === 'freeplay') triggerSigint('first_freeplay');
         setPhase('playing');
       })
       .catch(() => setPhase('start'));
@@ -475,7 +478,6 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       // SIGINT: round completion moments (deferred to summary, not mid-card)
       if (correctCount > 0) triggerSigint('first_correct');
       triggerSigint('first_session_complete');
-      if (mode === 'daily') triggerSigint('first_daily');
 
       setPhase('summary');
     } else {

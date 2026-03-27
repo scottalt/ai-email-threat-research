@@ -22,7 +22,7 @@ const VALID_MOMENTS = new Set([
   'first_pvp_open', 'first_inventory', 'first_profile', 'first_shop',
   'first_pvp_loss', 'win_streak_3', 'win_streak_5',
   'first_elimination', 'perfect_match', 'research_halfway',
-  'first_session_complete', 'first_daily', 'first_friend',
+  'first_session_complete', 'first_daily', 'first_freeplay', 'first_friend',
   'level_10', 'level_20', 'played_7_days',
   'comeback_win', 'first_changelog',
   'rank_up_silver', 'rank_up_gold',
