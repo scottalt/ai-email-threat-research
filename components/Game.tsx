@@ -661,7 +661,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       ? HANDLER_DIALOGUES.tutorial_complete_correct
       : HANDLER_DIALOGUES.tutorial_complete_wrong;
     // Fall back to generic if variant doesn't exist
-    const dialogue = d ?? HANDLER_DIALOGUES.tutorial_complete;
+    const dialogue = d ?? HANDLER_DIALOGUES.tutorial_complete ?? { lines: ['Good work. You\'re ready.'], buttonText: 'GO' };
     return (
       <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
         <Handler lines={dialogue.lines} buttonText={dialogue.buttonText} onDismiss={() => {

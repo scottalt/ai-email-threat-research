@@ -197,7 +197,7 @@ const ONBOARDING_EXTRA = {
   tutorial_complete_wrong: {
     lines: [
       "You missed that one. It happens.",
-      "The sender domain was typosquatted and the URL didn't match. Those were the tells.",
+      "The feedback screen showed you what to look for. Pay attention to those.",
       "Real emails will be harder. But you'll get better. Everyone does.",
       "10 answers gets you into PvP. 30 unlocks everything.",
       "Go. Learn. I'll be watching.",
