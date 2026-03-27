@@ -359,6 +359,68 @@ export const MILESTONES = {
     buttonText: "THEY SHOULD BE",
   } as SigintDialogue,
 
+  rank_up_platinum: {
+    lines: [
+      "Platinum. You're in the top quarter of active operatives.",
+      "I'm recalibrating the matchmaking. You're making it difficult.",
+    ],
+    buttonText: "GOOD",
+  } as SigintDialogue,
+
+  rank_up_diamond: {
+    lines: [
+      "Diamond rank. Four tiers from where you started.",
+      "The queue gets quieter at this level. Fewer people make it here.",
+    ],
+    buttonText: "FEWER. NOT ZERO.",
+  } as SigintDialogue,
+
+  rank_up_master: {
+    lines: [
+      "Master rank. I don't say this often. You've earned it.",
+      "Top 5% of all operatives who've touched this terminal.",
+      "...I made that stat up. But it sounds right.",
+    ],
+    buttonText: "I'LL TAKE IT",
+  } as SigintDialogue,
+
+  rank_up_elite: {
+    lines: [
+      "Elite. That's the top of the ladder.",
+      "I've been waiting to show you this screen. There is no next tier.",
+      "The queue is short up here and the opponents are dangerous.",
+      "You belong here.",
+    ],
+    buttonText: "UNDERSTOOD",
+  } as SigintDialogue,
+
+  win_streak_10: {
+    lines: [
+      "Ten in a row. I said I wanted to see it. I didn't expect to see it.",
+      "Running anomaly detection. You're the anomaly.",
+    ],
+    buttonText: "KEEP GOING",
+  } as SigintDialogue,
+
+  loss_streak_3: {
+    lines: [
+      "Three losses. I've run the numbers.",
+      "Your pattern recognition is fine. Decision timing is off.",
+      "Take a breath. Queue when you're ready, not when you're angry.",
+    ],
+    buttonText: "GIVE ME A MINUTE",
+  } as SigintDialogue,
+
+  max_level: {
+    lines: [
+      "Level 30. You hit the ceiling.",
+      "I could tell you there's nothing left to unlock.",
+      "Or I could tell you the real score is your rank.",
+      "Either way -- you've put in the work. My logs confirm it.",
+    ],
+    buttonText: "WHAT'S NEXT",
+  } as SigintDialogue,
+
   night_owl: {
     lines: [
       "It's past midnight. Most operatives are asleep.",

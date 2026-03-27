@@ -290,7 +290,8 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
       // Show milestone via SigintContext (renders from layout, not StartScreen)
       triggerSigint(pendingMilestone);
       // Queue bonus milestones behind it (level, sessions)
-      if (profile.level >= 20) triggerSigint('level_20');
+      if (profile.level >= 30) triggerSigint('max_level');
+      else if (profile.level >= 20) triggerSigint('level_20');
       else if (profile.level >= 10) triggerSigint('level_10');
       if (profile.totalSessions >= 7) triggerSigint('played_7_days');
       return;
@@ -301,7 +302,8 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
     if (lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) {
       // Even without greeting, check bonus milestones
-      if (profile.level >= 20) triggerSigint('level_20');
+      if (profile.level >= 30) triggerSigint('max_level');
+      else if (profile.level >= 20) triggerSigint('level_20');
       else if (profile.level >= 10) triggerSigint('level_10');
       if (profile.totalSessions >= 7) triggerSigint('played_7_days');
       return;
@@ -503,7 +505,8 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
             setShowHandlerGreeting(false);
             // After greeting, fire bonus milestones (level, sessions) via SigintContext queue
             setTimeout(() => {
-              if (profile && profile.level >= 20) triggerSigint('level_20');
+              if (profile && profile.level >= 30) triggerSigint('max_level');
+              else if (profile && profile.level >= 20) triggerSigint('level_20');
               else if (profile && profile.level >= 10) triggerSigint('level_10');
               if (profile && profile.totalSessions >= 7) triggerSigint('played_7_days');
             }, 300);

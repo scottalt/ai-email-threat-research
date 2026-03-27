@@ -6,7 +6,7 @@ import { XP_PER_CORRECT } from '@/lib/xp';
 import type { H2HRank } from '@/lib/h2h';
 import { ACHIEVEMENTS, RARITY_BADGE_CLASS, type AchievementRarity } from '@/lib/achievements';
 import { LevelMeter } from './LevelMeter';
-import { playVictory, playDefeat, playLevelUp } from '@/lib/sounds';
+import { playVictory, playDefeat, playLevelUp, playStreak } from '@/lib/sounds';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { usePlayer } from '@/lib/usePlayer';
 import { useSigint } from '@/lib/SigintContext';
@@ -72,6 +72,7 @@ export function H2HResult({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [displayPoints, setDisplayPoints] = useState<number | null>(null);
 
   // XP bar
   const { profile, refreshProfile } = usePlayer();
@@ -99,16 +100,23 @@ export function H2HResult({
     if (isWin) {
       if (matchData.myCards === H2H_CARDS_PER_MATCH) triggerSigint('perfect_match');
       triggerSigint('first_pvp_win');
-      if (stats.winStreak >= 5) triggerSigint('win_streak_5');
+      if (stats.winStreak >= 10) triggerSigint('win_streak_10');
+      else if (stats.winStreak >= 5) triggerSigint('win_streak_5');
       else if (stats.winStreak >= 3) triggerSigint('win_streak_3');
       // Comeback: won this one with winStreak === 1 (just broke a losing run)
       if (stats.winStreak === 1 && stats.losses > 0) triggerSigint('comeback_win');
-      // Rank milestones
-      if (stats.rankPoints >= 250) triggerSigint('rank_up_gold');
+      // Rank milestones (highest first — SIGINT shows each only once)
+      if (stats.rankPoints >= 1400) triggerSigint('rank_up_elite');
+      else if (stats.rankPoints >= 1000) triggerSigint('rank_up_master');
+      else if (stats.rankPoints >= 700) triggerSigint('rank_up_diamond');
+      else if (stats.rankPoints >= 450) triggerSigint('rank_up_platinum');
+      else if (stats.rankPoints >= 250) triggerSigint('rank_up_gold');
       else if (stats.rankPoints >= 100) triggerSigint('rank_up_silver');
     } else if (isLoss) {
       if (reason === 'eliminated') triggerSigint('first_elimination');
       triggerSigint('first_pvp_loss');
+      // Loss streak empathy
+      if (stats.winStreak === 0 && stats.losses >= 3) triggerSigint('loss_streak_3');
     }
   }, [matchData, stats, isWin, isLoss, isBot, reason, triggerSigint]);
 
@@ -116,12 +124,19 @@ export function H2HResult({
   const soundPlayed = useRef(false);
   useEffect(() => {
     if (soundPlayed.current || !soundEnabled) return;
-    // Wait for server data before playing sound (resolvedWinnerId may change)
     if (!matchData && !isBot) return;
     soundPlayed.current = true;
     if (isWin) playVictory();
     else if (!isBot) playDefeat();
   }, [matchData, isWin, isBot, soundEnabled]);
+
+  // Play bonus sounds (rank-up, streak) after stats load
+  const bonusSoundPlayed = useRef(false);
+  useEffect(() => {
+    if (bonusSoundPlayed.current || !soundEnabled || !stats || isBot) return;
+    bonusSoundPlayed.current = true;
+    if (isWin && stats.winStreak >= 3) setTimeout(() => playStreak(), 400);
+  }, [stats, isWin, isBot, soundEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -219,6 +234,34 @@ export function H2HResult({
   const newRank = stats?.rank ?? getRankFromPoints(0);
   const rankedUp = newRank.tier !== oldRank.tier && effectiveDelta > 0;
 
+  // Animate rank points counter (count from old to new over 1s)
+  useEffect(() => {
+    if (!stats || isBot || displayPoints !== null) return;
+    const start = Math.max(0, oldPoints);
+    const end = stats.rankPoints;
+    if (start === end) { setDisplayPoints(end); return; }
+    const duration = 1000;
+    const startTime = performance.now();
+    function tick(now: number) {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setDisplayPoints(Math.round(start + (end - start) * eased));
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    // Delay start to sync with staged reveal
+    const timer = setTimeout(() => requestAnimationFrame(tick), 400);
+    return () => clearTimeout(timer);
+  }, [stats, isBot, oldPoints, displayPoints]);
+
+  // Rank-up fanfare sound (delayed to land after points counter finishes)
+  const rankUpSoundPlayed = useRef(false);
+  useEffect(() => {
+    if (rankUpSoundPlayed.current || !soundEnabled || !rankedUp) return;
+    rankUpSoundPlayed.current = true;
+    setTimeout(() => playLevelUp(), 1200);
+  }, [rankedUp, soundEnabled]);
+
   // Header
   const headerText = isWin ? 'VICTORY' : (isBot || isLoss) ? 'DEFEATED' : 'MATCH OVER';
   const headerColor = isWin ? 'text-[var(--c-primary)]' : (isBot || isLoss) ? 'text-[#ff3333]' : 'text-[var(--c-muted)]';
@@ -270,20 +313,23 @@ export function H2HResult({
   }
 
   return (
-    <div className="flex flex-col items-center gap-5 p-6 font-mono max-w-md mx-auto">
+    <div className="flex flex-col items-center gap-5 p-6 font-mono max-w-md mx-auto anim-fade-in-up">
       {/* Header */}
       <div className="text-center">
-        <h2 className={`text-2xl font-bold tracking-wider ${headerColor}`}>
+        <h2
+          className={`text-2xl font-bold tracking-wider ${headerColor} ${isWin ? 'anim-level-up' : ''}`}
+          style={isWin ? { textShadow: '0 0 12px var(--c-primary), 0 0 30px rgba(0,255,65,0.3)' } : undefined}
+        >
           {headerText}
         </h2>
         {subtitle && (
-          <p className="text-sm text-[var(--c-muted)] mt-1">{subtitle}</p>
+          <p className="text-sm text-[var(--c-muted)] font-mono mt-1">{subtitle}</p>
         )}
       </div>
 
       {/* Scoreboard */}
       {matchData && (
-        <div className="w-full term-border p-4 space-y-3">
+        <div className="w-full term-border p-4 space-y-3 anim-fade-in-up" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
           {/* You */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
@@ -333,21 +379,22 @@ export function H2HResult({
           <p className="text-xs text-[var(--c-muted)] font-mono">No XP, rank points, or stats awarded. Play against a real opponent for ranked rewards.</p>
         </div>
       ) : stats ? (
-        <div className="text-center text-sm">
+        <div className="text-center text-sm font-mono anim-fade-in-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
           <p>
             <span style={{ color: oldRank.color }}>{oldRank.label.toUpperCase()}</span>
             {' → '}
-            <span style={{ color: newRank.color }}>{newRank.label.toUpperCase()}</span>
+            <span className="font-bold" style={{ color: newRank.color }}>{newRank.label.toUpperCase()}</span>
           </p>
           <p className="mt-1">
-            <span className="text-[var(--c-muted)]">{Math.max(0, oldPoints)} pts</span>
-            {' → '}
-            <span className="text-[var(--c-secondary)]">{stats.rankPoints} pts</span>
+            <span className="text-[var(--c-secondary)] font-bold text-base">{displayPoints ?? Math.max(0, oldPoints)} pts</span>
             {' '}
             <span className={deltaColor}>({deltaSign}{effectiveDelta})</span>
           </p>
           {rankedUp && (
-            <p className="mt-2 text-sm font-bold" style={{ color: newRank.color }}>
+            <p
+              className="mt-2 text-base font-bold anim-level-up"
+              style={{ color: newRank.color, textShadow: `0 0 12px ${newRank.color}, 0 0 30px ${newRank.color}40` }}
+            >
               RANK UP! {newRank.label.toUpperCase()}
             </p>
           )}
@@ -356,7 +403,7 @@ export function H2HResult({
 
       {/* XP Bar */}
       {profile && !isBot && matchData && (
-        <div className="w-full term-border p-3">
+        <div className="w-full term-border p-3 anim-fade-in-up" style={{ animationDelay: '500ms', animationFillMode: 'both' }}>
           <LevelMeter
             xp={profile.xp}
             level={profile.level}
@@ -448,8 +495,13 @@ export function H2HResult({
 
       {/* Win streak */}
       {isWin && stats && stats.winStreak >= 2 && (
-        <div className="text-center">
-          <span className="text-[var(--c-primary)] text-sm font-mono font-bold">{stats.winStreak}-WIN STREAK</span>
+        <div className="text-center anim-fade-in-up" style={{ animationDelay: '600ms', animationFillMode: 'both' }}>
+          <span
+            className="text-[var(--c-primary)] text-sm font-mono font-bold streak-glow"
+            style={{ '--streak': stats.winStreak } as React.CSSProperties}
+          >
+            {stats.winStreak}-WIN STREAK
+          </span>
         </div>
       )}
 
