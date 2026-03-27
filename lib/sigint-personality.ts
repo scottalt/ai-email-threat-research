@@ -129,7 +129,22 @@ export const ONBOARDING = {
     ],
     buttonText: "LET'S GO",
   } as SigintDialogue,
+};
 
+/** Dynamic boot greeting that addresses the player by callsign */
+export function bootGreetingNamed(callsign: string): SigintDialogue {
+  return {
+    lines: [
+      `${callsign}. Good name. I'm SIGINT. Short for Signals Intelligence. If that means nothing to you, don't worry. You'll learn.`,
+      "I'm the AI that runs this terminal. Threat analysis, pattern detection, unsolicited commentary. The full package.",
+      "Emails are coming in. Some are real. Some are phishing. All of them are written by AI, so don't expect typos to save you.",
+      "Hit Research Mode and classify 10. Then we'll talk about the fun stuff.",
+    ],
+    buttonText: "LET'S GO",
+  };
+}
+
+const ONBOARDING_EXTRA = {
   research_brief: {
     lines: [
       "Quick heads up. This isn't a game. Well, it is. But also it's a real research study.",
@@ -625,6 +640,7 @@ export const PROMO_DIALOGUES = {
 
 export const ALL_DIALOGUES: Record<string, SigintDialogue> = {
   ...ONBOARDING,
+  ...ONBOARDING_EXTRA,
   ...MILESTONES,
   ...PAGE_VISITS,
 };

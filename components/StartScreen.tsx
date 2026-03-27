@@ -14,6 +14,7 @@ import { version } from '@/package.json';
 import { QUESTS } from '@/lib/quests';
 import { Handler } from './Handler';
 import { HANDLER_DIALOGUES, hasSeenMoment, markMomentSeen } from '@/lib/handler-dialogues';
+import { bootGreetingNamed } from '@/lib/sigint-personality';
 import { dynamicDialogue } from '@/lib/sigint-personality';
 import { useSigint } from '@/lib/SigintContext';
 
@@ -262,6 +263,8 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   useEffect(() => {
     if (!showButton || greetingShownThisSession.current) return;
     if (!signedIn || !profile) return;
+    // Wait until callsign + background are set before showing SIGINT
+    if (!profile.displayName) return;
     greetingShownThisSession.current = true;
 
     const seen = profile.seenMoments ?? [];
@@ -330,8 +333,8 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     let dialogue: { lines: string[]; buttonText?: string } | null = null;
 
     if (answers === 0) {
-      // Brand new player — full intro (repeats until they start playing)
-      dialogue = HANDLER_DIALOGUES.boot_greeting;
+      // Brand new player — greet by callsign (always set at this point, guarded above)
+      dialogue = bootGreetingNamed(callsign);
     } else {
       // Returning player — rotating personalized welcome
       dialogue = dynamicDialogue('welcome_back', callsign);
