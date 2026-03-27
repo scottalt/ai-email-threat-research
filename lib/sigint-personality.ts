@@ -433,10 +433,11 @@ export const PROMO_DIALOGUES = {
   code_success: {
     lines: [
       "Code accepted. Badge unlocked.",
-      "You're officially a Thought Leader now. I'd congratulate you, but you probably already posted about it.",
-      "Only 100 of these exist. Wear it in PvP. Let them know.",
+      "You're officially a Thought Leader now. No 500-word post about your morning routine required.",
+      "I'm told this badge pairs well with humblebrags and unsolicited career advice.",
+      "Only 100 of these exist. Wear it in PvP. Let them know you're open to opportunities.",
     ],
-    buttonText: "FLEXING",
+    buttonText: "AGREE?",
   } as SigintDialogue,
 
   code_invalid: {
