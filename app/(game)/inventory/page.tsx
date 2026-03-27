@@ -7,12 +7,14 @@ import { THEMES, isThemeUnlocked } from '@/lib/themes';
 import { ACHIEVEMENTS, RARITY_COLORS, RARITY_BADGE_CLASS } from '@/lib/achievements';
 import { useTheme } from '@/lib/ThemeContext';
 import { getRankFromPoints } from '@/lib/h2h';
+import { Handler } from '@/components/Handler';
+import { PROMO_DIALOGUES } from '@/lib/sigint-personality';
 import Link from 'next/link';
 
 import { RARITY_ORDER } from '@/lib/achievements';
 import type { AchievementRarity } from '@/lib/achievements';
 
-type Tab = 'themes' | 'badges' | 'shop';
+type Tab = 'themes' | 'badges' | 'codes' | 'shop';
 
 export default function InventoryPage() {
   const { profile, loading, signedIn, refreshProfile } = usePlayer();
@@ -133,7 +135,7 @@ export default function InventoryPage() {
 
         {/* Tab bar */}
         <div className="term-border bg-[var(--c-bg)] flex">
-          {(['themes', 'badges', 'shop'] as Tab[]).map((t) => (
+          {(['themes', 'badges', 'codes', 'shop'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -342,6 +344,10 @@ export default function InventoryPage() {
           </>
         )}
 
+        {tab === 'codes' && (
+          <CodesTab refreshProfile={refreshProfile} />
+        )}
+
         {tab === 'shop' && (
           <div className="term-border bg-[var(--c-bg)] px-4 py-8 text-center space-y-4">
             <div className="text-4xl">🏪</div>
@@ -354,5 +360,130 @@ export default function InventoryPage() {
         )}
       </div>
     </main>
+  );
+}
+
+// ── Codes Tab (inline component) ──
+
+function CodesTab({ refreshProfile }: { refreshProfile: () => Promise<void> }) {
+  const [code, setCode] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [resultDialogue, setResultDialogue] = useState<{ lines: string[]; buttonText?: string } | null>(null);
+  const [unlockedBadgeId, setUnlockedBadgeId] = useState<string | null>(null);
+
+  async function handleRedeem(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (!trimmed || submitting) return;
+
+    setSubmitting(true);
+    setResultDialogue(null);
+    setUnlockedBadgeId(null);
+
+    try {
+      const res = await fetch('/api/promo/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: trimmed }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setUnlockedBadgeId(data.badgeId);
+        setResultDialogue(PROMO_DIALOGUES.code_success);
+        refreshProfile();
+        setCode('');
+      } else if (data.error === 'ALREADY_REDEEMED') {
+        setResultDialogue(PROMO_DIALOGUES.code_already);
+      } else if (data.error === 'EXHAUSTED' || data.error === 'EXPIRED') {
+        setResultDialogue(data.error === 'EXPIRED' ? PROMO_DIALOGUES.code_expired : PROMO_DIALOGUES.code_exhausted);
+      } else if (res.status === 429) {
+        setResultDialogue({ lines: ["Slow down. Too many attempts.", "Try again in a minute."], buttonText: "OK" });
+      } else {
+        setResultDialogue(PROMO_DIALOGUES.code_invalid);
+      }
+    } catch {
+      setResultDialogue({ lines: ["Network error. Couldn't verify the code.", "Check your connection and try again."], buttonText: "OK" });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const unlockedBadge = unlockedBadgeId ? ACHIEVEMENTS.find(a => a.id === unlockedBadgeId) : null;
+
+  return (
+    <div className="space-y-3">
+      {/* Code input */}
+      <div className="term-border bg-[var(--c-bg)]">
+        <div className="border-b border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)] px-3 py-2">
+          <span className="text-[var(--c-accent)] text-sm font-mono tracking-widest">PROMO_CODE</span>
+        </div>
+        <form onSubmit={handleRedeem} className="px-4 py-4 space-y-3">
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 30))}
+            placeholder="ENTER CODE..."
+            className="w-full bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-3 text-[var(--c-primary)] font-mono text-sm tracking-widest text-center focus:outline-none focus:border-[var(--c-accent)] placeholder:text-[var(--c-dark)] transition-colors"
+            disabled={submitting}
+          />
+          <button
+            type="submit"
+            disabled={submitting || !code.trim()}
+            className="w-full py-3 term-border text-[var(--c-accent)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)] active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none btn-glow"
+          >
+            {submitting ? '[ VERIFYING... ]' : '[ REDEEM ]'}
+          </button>
+        </form>
+      </div>
+
+      {/* Unlocked badge showcase */}
+      {unlockedBadge && (
+        <div className="term-border bg-[var(--c-bg)] px-4 py-6 text-center space-y-3 anim-fade-in-up">
+          <div className="text-xs font-mono tracking-widest text-[var(--c-muted)]">BADGE UNLOCKED</div>
+          <div
+            className={`text-5xl ${RARITY_BADGE_CLASS[unlockedBadge.rarity]}`}
+            style={{ color: RARITY_COLORS[unlockedBadge.rarity] }}
+          >
+            {unlockedBadge.icon}
+          </div>
+          <div
+            className="text-lg font-mono font-black tracking-widest"
+            style={{ color: RARITY_COLORS[unlockedBadge.rarity] }}
+          >
+            {unlockedBadge.name}
+          </div>
+          <div className="text-sm font-mono text-[var(--c-secondary)]">
+            {unlockedBadge.description}
+          </div>
+          <div
+            className="text-xs font-mono tracking-widest font-bold"
+            style={{ color: RARITY_COLORS[unlockedBadge.rarity] }}
+          >
+            {unlockedBadge.rarity.toUpperCase()}
+          </div>
+        </div>
+      )}
+
+      {/* Info */}
+      <div className="text-center space-y-1">
+        <p className="text-[var(--c-muted)] text-xs font-mono">
+          Promo codes are case-insensitive and limited quantity.
+        </p>
+        <p className="text-[var(--c-muted)] text-xs font-mono">
+          Unlocked badges appear in the BADGES tab.
+        </p>
+      </div>
+
+      {/* SIGINT result dialogue */}
+      {resultDialogue && (
+        <Handler
+          lines={resultDialogue.lines}
+          buttonText={resultDialogue.buttonText}
+          onDismiss={() => setResultDialogue(null)}
+        />
+      )}
+    </div>
   );
 }
