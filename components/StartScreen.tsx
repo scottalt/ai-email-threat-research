@@ -257,10 +257,21 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     if (!signedIn || !profile) return;
     greetingShownThisSession.current = true;
 
-    // Check for pending milestones first — they take priority over greetings
     const seen = profile.seenMoments ?? [];
     const answers = profile.researchAnswersSubmitted ?? 0;
     const graduated = profile.researchGraduated ?? false;
+    const callsign = profile.displayName ?? 'operative';
+
+    // v2_intro ALWAYS takes priority for v1 veterans who haven't seen SIGINT yet.
+    // Milestones get pre-marked on dismiss so they don't fire after.
+    if (answers > 0 && !seen.includes('v2_intro') && !hasSeenMoment('v2_intro')) {
+      setHandlerLines(dynamicDialogue('v2_intro', callsign)!.lines);
+      setHandlerButton(dynamicDialogue('v2_intro', callsign)!.buttonText ?? 'GOT IT');
+      setShowHandlerGreeting(true);
+      return;
+    }
+
+    // Check for pending milestones — they take priority over recurring greetings
     const pendingMilestone =
       (answers >= 30 && !seen.includes('freeplay_unlock')) ? 'freeplay_unlock' :
       (answers >= 20 && !seen.includes('daily_unlock')) ? 'daily_unlock' :
@@ -289,15 +300,11 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
       return;
     }
 
-    const callsign = profile.displayName ?? 'operative';
     let dialogue: { lines: string[]; buttonText?: string } | null = null;
 
     if (answers === 0) {
       // Brand new player — full intro (repeats until they start playing)
       dialogue = HANDLER_DIALOGUES.boot_greeting;
-    } else if (!seen.includes('v2_intro') && !hasSeenMoment('v2_intro')) {
-      // v1 veteran seeing SIGINT for the first time (one-time)
-      dialogue = dynamicDialogue('v2_intro', callsign);
     } else {
       // Returning player — rotating personalized welcome
       dialogue = dynamicDialogue('welcome_back', callsign);
