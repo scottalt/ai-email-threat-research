@@ -603,6 +603,10 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
             setPhase('handler_research_brief');
           } else if (isFirstTime) {
             // Always show tutorial for players with 0 answers, even if they saw it before
+            // If they've seen the tutorial intro before, SIGINT acknowledges their return
+            if (hasSeenMoment('tutorial_intro')) {
+              triggerSigint('tutorial_return');
+            }
             setPhase('tutorial');
           } else {
             setPhase('playing');

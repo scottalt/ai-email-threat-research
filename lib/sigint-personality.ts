@@ -163,6 +163,15 @@ const ONBOARDING_EXTRA = {
     buttonText: "GOT IT",
   } as SigintDialogue,
 
+  tutorial_return: {
+    lines: [
+      "You're back. Good.",
+      "The training sim is still loaded. Same email. Same clues.",
+      "This time, try finishing it.",
+    ],
+    buttonText: "FINE",
+  } as SigintDialogue,
+
   tutorial_complete: {
     lines: [
       "Not bad for a first run.",
