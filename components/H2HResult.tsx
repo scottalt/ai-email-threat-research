@@ -70,6 +70,7 @@ export function H2HResult({
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showReview, setShowReview] = useState(false);
 
   // XP bar
@@ -194,8 +195,9 @@ export function H2HResult({
             losses: s.losses ?? 0,
           });
         }
-      } catch {
-        // silently handle — UI will show what it can
+      } catch (err) {
+        console.error('[H2HResult] Failed to load match results:', err);
+        if (!cancelled) setLoadError(true);
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -207,7 +209,8 @@ export function H2HResult({
 
     load();
     return () => { cancelled = true; };
-  }, [matchId, playerId, isWin, reason]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId, playerId, isWin, reason, loading]);
 
   // Derive old rank from current points minus delta (prefer server-computed delta)
   const effectiveDelta = matchData?.myPointsDeltaFromServer ?? myPointsDelta;
@@ -242,6 +245,26 @@ export function H2HResult({
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8 font-mono">
         <p className="text-[var(--c-muted)] animate-pulse">LOADING RESULTS...</p>
+      </div>
+    );
+  }
+
+  if (loadError && !matchData) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-8 font-mono">
+        <p className="text-[var(--c-danger)]">FAILED TO LOAD RESULTS</p>
+        <button
+          onClick={() => { setLoadError(false); setLoading(true); }}
+          className="px-4 py-2 border border-[var(--c-primary)] text-[var(--c-primary)] text-sm tracking-widest hover:bg-[var(--c-primary)]/10"
+        >
+          RETRY
+        </button>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 text-[var(--c-muted)] text-sm tracking-widest hover:text-[var(--c-secondary)]"
+        >
+          BACK
+        </button>
       </div>
     );
   }

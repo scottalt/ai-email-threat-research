@@ -75,6 +75,7 @@ export interface AnswerEvent {
   correct: boolean;
   confidence: Confidence;
   timeFromRenderMs: number | null;
+  verifiedTimeMs?: number | null; // server-verified response time (from Redis render timestamp)
   timeFromConfidenceMs: number | null;
   confidenceSelectionTimeMs: number | null;
   scrollDepthPct: number;

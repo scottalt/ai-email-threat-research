@@ -37,6 +37,16 @@ export async function POST() {
   }
   const playerId = player.id as string;
 
+  // Enforce minimum queue wait time server-side (prevents bypassing the 30s client timer)
+  const queueJoinKey = `h2h:queue-joined:${playerId}`;
+  const joinedAt = await redis.get<number>(queueJoinKey);
+  if (joinedAt) {
+    const waitedMs = Date.now() - joinedAt;
+    if (waitedMs < 25_000) { // 25s (slightly less than client 30s to account for network latency)
+      return NextResponse.json({ error: 'Queue timeout not reached' }, { status: 429 });
+    }
+  }
+
   // Prevent creating multiple bot matches concurrently
   // Short lock (30s) — released on match end, expires naturally if client fails to release
   const lockKey = `h2h:bot-lock:${playerId}`;
@@ -112,6 +122,10 @@ export async function POST() {
     .limit(500);
 
   if (!cardData || cardData.length < H2H_CARDS_PER_MATCH) {
+    // Cancel the zombie match row before releasing lock
+    await admin.from('h2h_matches')
+      .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+      .eq('id', match.id);
     await redis.del(lockKey);
     return NextResponse.json({ error: 'Not enough cards' }, { status: 500 });
   }

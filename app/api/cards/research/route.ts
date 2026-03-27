@@ -128,6 +128,10 @@ export async function GET(req: NextRequest) {
     if (sessionId && /^[0-9a-f-]{36}$/.test(sessionId)) {
       await redis.set(`session-cards:${sessionId}`, JSON.stringify(cards), { ex: SESSION_TTL, nx: true });
       await redis.set(`session-streak:${sessionId}`, 0, { ex: SESSION_TTL });
+      // Set render timestamp for the first card (server-side response timing)
+      if (cards.length > 0) {
+        await redis.set(`session-render:${sessionId}:0`, Date.now(), { ex: SESSION_TTL, nx: true });
+      }
     }
 
     // Return cards with answer-revealing fields stripped

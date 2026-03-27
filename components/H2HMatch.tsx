@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import type { SafeDealCard } from '@/lib/card-utils';
 import { parseFrom } from '@/lib/parseFrom';
 import { H2H_CARDS_PER_MATCH } from '@/lib/h2h';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import {
   subscribeToMatch,
   broadcastProgress,
@@ -269,6 +270,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
   const matchEndedRef = useRef(false);
   const isPlayer1Ref = useRef(true);
   const opponentIdRef = useRef<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   // Reset render timer + scroll to top when card changes
   useEffect(() => {
@@ -396,27 +398,13 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
         // Subscribe to realtime (skip for bot matches — no opponent to listen to)
         if (!isBot) {
           try {
-            subscribeToMatch(
+            channelRef.current = subscribeToMatch(
               matchId,
               playerId,
               (event: MatchProgressEvent) => {
                 // Validate event is from the actual opponent (prevents spoofed events)
                 if (opponentIdRef.current && event.playerId !== opponentIdRef.current) return;
                 setOpponentIndex(event.cardIndex + 1);
-                if (!event.correct) {
-                  setOpponentEliminated(true);
-                  if (soundEnabled) playOpponentDown();
-                  // Opponent eliminated — we win! End match immediately.
-                  if (!matchEndedRef.current) {
-                    matchEndedRef.current = true;
-                    onMatchEnd({
-                      winnerId: playerId,
-                      myPointsDelta: 0, // will be fetched from result screen
-                      opponentPointsDelta: 0,
-                      reason: 'completed', // we won — reason is from our perspective
-                    });
-                  }
-                }
               },
               handleMatchResult,
               () => setOpponentReady(true), // opponent ready callback
@@ -440,7 +428,8 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
 
     return () => {
       cancelled = true;
-      unsubscribeFromMatch();
+      unsubscribeFromMatch(channelRef.current);
+      channelRef.current = null;
     };
   }, [matchId, playerId, isBot, onMatchEnd, handleMatchResult]);
 
@@ -632,7 +621,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
 
         // Broadcast progress (skip for bot — no opponent listening)
         if (!isBot) {
-          try { broadcastProgress(matchId, playerId, cardIndex, data.correct); } catch { /* non-fatal */ }
+          try { broadcastProgress(channelRef.current, playerId, cardIndex); } catch { /* non-fatal */ }
         }
 
         if (data.correct) {
@@ -668,7 +657,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
               } else if (data.matchOver && !matchEndedRef.current) {
                 // Server finalized — first to finish wins, notify opponent
                 matchEndedRef.current = true;
-                broadcastResult(matchId, {
+                broadcastResult(channelRef.current, {
                   winnerId: data.winnerId ?? playerId,
                   player1PointsDelta: isPlayer1Ref.current ? (data.myPointsDelta ?? 0) : 0,
                   player2PointsDelta: isPlayer1Ref.current ? 0 : (data.myPointsDelta ?? 0),
@@ -812,14 +801,14 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
 
   function handleReady() {
     setReady(true);
-    broadcastReady(playerId);
+    broadcastReady(channelRef.current, playerId);
   }
 
   // Re-broadcast ready every 2s until match starts (handles missed initial broadcast)
   useEffect(() => {
     if (!ready || matchStarted || isBot || countdown !== null) return;
     const interval = setInterval(() => {
-      broadcastReady(playerId);
+      broadcastReady(channelRef.current, playerId);
     }, 2000);
     return () => clearInterval(interval);
   }, [ready, matchStarted, isBot, countdown, playerId]);

@@ -134,7 +134,14 @@ async function getQueueEntries(): Promise<QueueEntry[]> {
       staleIds.push(playerIds[i]);
       continue;
     }
-    const entry: QueueEntry = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    let entry: QueueEntry;
+    try {
+      entry = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch {
+      console.error(`[H2H Queue] Corrupted queue data for player ${playerIds[i]}, removing`);
+      staleIds.push(playerIds[i]);
+      continue;
+    }
     entries.push(entry);
   }
 
@@ -164,9 +171,12 @@ export async function POST() {
   const playerId = player.id;
 
   // Rate limit: max 5 queue joins per 30 seconds per player
+  // Use atomic INCR + EXPIRE together to prevent orphaned keys without TTL
   const joinRlKey = `ratelimit:h2h-join:${playerId}`;
-  const joinCount = await redis.incr(joinRlKey);
-  if (joinCount === 1) await redis.expire(joinRlKey, 30);
+  const [joinCount] = await Promise.all([
+    redis.incr(joinRlKey),
+    redis.expire(joinRlKey, 30, 'NX'),
+  ]);
   if (joinCount > 5) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
@@ -220,6 +230,9 @@ export async function POST() {
   };
 
   await addToQueue(entry);
+
+  // Record join time for bot endpoint server-side wait enforcement
+  await redis.set(`h2h:queue-joined:${playerId}`, now, { ex: 120 });
 
   return NextResponse.json({ queued: true });
 }
@@ -295,11 +308,18 @@ export async function GET() {
     return NextResponse.json({ matched: false });
   }
 
-  // Deterministic lock
+  // Per-player locks — prevents the same player being matched into two matches simultaneously
   const sortedIds = [playerId, opponentEntry.playerId].sort();
-  const lockKey = `h2h:matching:${sortedIds[0]}:${sortedIds[1]}`;
-  const acquired = await redis.set(lockKey, '1', { ex: 10, nx: true });
-  if (!acquired) {
+  const lockA = `h2h:player-lock:${sortedIds[0]}`;
+  const lockB = `h2h:player-lock:${sortedIds[1]}`;
+  const [acquiredA, acquiredB] = await Promise.all([
+    redis.set(lockA, '1', { ex: 10, nx: true }),
+    redis.set(lockB, '1', { ex: 10, nx: true }),
+  ]);
+  if (!acquiredA || !acquiredB) {
+    // Release any lock we did acquire
+    if (acquiredA) await redis.del(lockA);
+    if (acquiredB) await redis.del(lockB);
     return NextResponse.json({ matched: false });
   }
 
@@ -328,15 +348,29 @@ export async function GET() {
     // Match creation failed — re-add both players to queue so they can retry
     await addToQueue(selfEntry);
     await addToQueue(opponentEntry);
-    await redis.del(lockKey);
+    await redis.del(lockA);
+    await redis.del(lockB);
     return NextResponse.json({ error: 'Failed to create match' }, { status: 500 });
   }
 
   const matchId = match.id;
-  await dealMatchCards(matchId, sortedIds);
+  const dealtCardIds = await dealMatchCards(matchId, sortedIds);
 
-  await redis.set(`h2h:matched:${sortedIds[0]}`, matchId, { ex: 60 });
-  await redis.set(`h2h:matched:${sortedIds[1]}`, matchId, { ex: 60 });
+  if (dealtCardIds.length === 0) {
+    // Card dealing failed — cancel the zombie match and re-queue players
+    await admin.from('h2h_matches')
+      .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+      .eq('id', matchId);
+    await addToQueue(selfEntry);
+    await addToQueue(opponentEntry);
+    await redis.del(lockA);
+    await redis.del(lockB);
+    console.error(`[H2H] dealMatchCards failed for match ${matchId} — cancelled`);
+    return NextResponse.json({ error: 'Failed to deal cards' }, { status: 500 });
+  }
+
+  await redis.set(`h2h:matched:${sortedIds[0]}`, matchId, { ex: 300 });
+  await redis.set(`h2h:matched:${sortedIds[1]}`, matchId, { ex: 300 });
 
   return NextResponse.json({ matched: true, matchId });
 }

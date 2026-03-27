@@ -278,6 +278,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           grammarQuality?: number | null; proseFluency?: number | null;
           personalizationLevel?: number | null; contextualCoherence?: number | null;
           datasetVersion?: string | null;
+          verifiedTimeMs?: number | null;
         }) => {
           // Hydrate the card with server-provided answer data (post-answer, no leak)
           const fullCard: Card = {
@@ -332,7 +333,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
 
           // Log answer event (fire and forget — skip in preview mode)
           if (typeof window !== 'undefined' && mode !== 'preview') {
-            logAnswerEvent(fullCard, answer, data.correct, confidence, data.streak, newCorrectCount, timing);
+            logAnswerEvent(fullCard, answer, data.correct, confidence, data.streak, newCorrectCount, timing, data.verifiedTimeMs ?? null);
           }
 
           setPhase('feedback');
@@ -389,7 +390,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     answerMethod: 'button';
     headersOpened: boolean;
     urlInspected: boolean;
-  }) {
+  }, serverVerifiedTimeMs?: number | null) {
     const researchCard = card as Card & Record<string, unknown>;
     const answerEvent: AnswerEvent = {
       sessionId: sessionId.current,
@@ -410,6 +411,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       correct,
       confidence,
       timeFromRenderMs: timing?.timeFromRenderMs ?? null,
+      verifiedTimeMs: serverVerifiedTimeMs ?? null,
       timeFromConfidenceMs: timing?.timeFromConfidenceMs ?? null,
       confidenceSelectionTimeMs: timing?.confidenceSelectionTimeMs ?? null,
       scrollDepthPct: timing?.scrollDepthPct ?? 0,

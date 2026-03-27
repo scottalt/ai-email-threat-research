@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    // Allow unauthenticated calls (from client fire-and-forget) but rate limit
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   // Check if this version's backfill already ran

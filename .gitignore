@@ -70,6 +70,9 @@ backups/
 /test-results/
 /playwright-report/
 
+# promo code seeds (contain secret codes)
+temp-seed-*.sql
+
 # card data contains answers — never commit
 supabase/seed.sql
 data/cards.ts

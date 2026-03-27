@@ -8,7 +8,6 @@ import { getSupabaseBrowserClient } from './supabase-browser';
 export interface MatchProgressEvent {
   playerId: string;
   cardIndex: number;
-  correct: boolean;
   timestamp: number;
 }
 
@@ -20,13 +19,7 @@ export interface MatchResultEvent {
 }
 
 // ---------------------------------------------------------------------------
-// Module-level channel state
-// ---------------------------------------------------------------------------
-
-let channel: RealtimeChannel | null = null;
-
-// ---------------------------------------------------------------------------
-// subscribeToMatch
+// subscribeToMatch — returns the channel for the caller to manage
 // ---------------------------------------------------------------------------
 
 export function subscribeToMatch(
@@ -36,12 +29,6 @@ export function subscribeToMatch(
   onMatchResult: (event: MatchResultEvent) => void,
   onOpponentReady?: () => void,
 ): RealtimeChannel {
-  // Tear down any existing subscription before creating a new one
-  if (channel) {
-    channel.unsubscribe();
-    channel = null;
-  }
-
   const supabase = getSupabaseBrowserClient();
 
   const ch = supabase.channel(`match:${matchId}`, {
@@ -69,26 +56,23 @@ export function subscribeToMatch(
     })
     .subscribe();
 
-  channel = ch;
   return ch;
 }
 
 // ---------------------------------------------------------------------------
-// broadcastProgress
+// broadcastProgress — no longer includes `correct` to prevent info leaks
 // ---------------------------------------------------------------------------
 
 export function broadcastProgress(
-  _matchId: string,
+  channel: RealtimeChannel | null,
   playerId: string,
   cardIndex: number,
-  correct: boolean,
 ): void {
   if (!channel) return;
 
   const event: MatchProgressEvent = {
     playerId,
     cardIndex,
-    correct,
     timestamp: Date.now(),
   };
 
@@ -100,7 +84,7 @@ export function broadcastProgress(
 // ---------------------------------------------------------------------------
 
 export function broadcastResult(
-  _matchId: string,
+  channel: RealtimeChannel | null,
   result: MatchResultEvent,
 ): void {
   if (!channel) return;
@@ -109,17 +93,20 @@ export function broadcastResult(
 }
 
 // ---------------------------------------------------------------------------
-// unsubscribeFromMatch
+// broadcastReady
 // ---------------------------------------------------------------------------
 
-export function broadcastReady(playerId: string): void {
+export function broadcastReady(channel: RealtimeChannel | null, playerId: string): void {
   if (!channel) return;
   channel.send({ type: 'broadcast', event: 'ready', payload: { playerId } });
 }
 
-export function unsubscribeFromMatch(): void {
+// ---------------------------------------------------------------------------
+// unsubscribeFromMatch — accepts channel directly, no module singleton
+// ---------------------------------------------------------------------------
+
+export function unsubscribeFromMatch(channel: RealtimeChannel | null): void {
   if (channel) {
     channel.unsubscribe();
-    channel = null;
   }
 }

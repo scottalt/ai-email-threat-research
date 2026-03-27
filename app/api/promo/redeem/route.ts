@@ -78,23 +78,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ALREADY_REDEEMED', message: 'You already redeemed this code.' }, { status: 409 });
   }
 
-  // Atomically increment uses (check cap again to prevent race)
-  const { data: updated } = await admin
-    .from('promo_codes')
-    .update({ current_uses: promo.current_uses + 1 })
-    .eq('id', promo.id)
-    .lt('current_uses', promo.max_uses)
-    .select('id');
+  // Atomically increment uses via SQL (prevents race where concurrent requests read same value)
+  const { data: incremented, error: incrErr } = await admin.rpc('increment_promo_uses', {
+    p_id: promo.id,
+    p_max: promo.max_uses,
+  });
 
-  if (!updated || updated.length === 0) {
+  if (incrErr || !incremented) {
     return NextResponse.json({ error: 'EXHAUSTED', message: 'All codes have been claimed.' }, { status: 410 });
   }
 
-  // Record redemption
-  await admin.from('promo_redemptions').insert({
+  // Record redemption (unique constraint prevents double-redemption)
+  const { error: redemptionErr } = await admin.from('promo_redemptions').insert({
     promo_code_id: promo.id,
     player_id: player.id,
   });
+
+  if (redemptionErr) {
+    console.error(`[promo] Redemption insert failed for player ${player.id}:`, redemptionErr.message);
+    return NextResponse.json({ error: 'ALREADY_REDEEMED', message: 'You already redeemed this code.' }, { status: 409 });
+  }
 
   // Award the badge
   await admin.from('player_achievements').upsert(
@@ -105,6 +108,5 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     badgeId: promo.badge_id,
-    remaining: promo.max_uses - promo.current_uses - 1,
   });
 }

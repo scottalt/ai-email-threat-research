@@ -246,7 +246,7 @@ export async function POST(req: NextRequest) {
       user_answer: a.userAnswer,
       correct: verifiedCorrect,
       confidence: a.confidence,
-      time_from_render_ms: a.timeFromRenderMs,
+      time_from_render_ms: a.verifiedTimeMs ?? a.timeFromRenderMs,
       time_from_confidence_ms: a.timeFromConfidenceMs,
       confidence_selection_time_ms: a.confidenceSelectionTimeMs,
       scroll_depth_pct: Math.min(100, Math.max(0, a.scrollDepthPct ?? 0)),

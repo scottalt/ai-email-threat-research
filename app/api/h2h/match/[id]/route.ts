@@ -217,7 +217,7 @@ export async function PATCH(
     .from('h2h_matches')
     .update({
       status: 'complete',
-      winner_id: body.winnerId ?? player.id,
+      winner_id: player.id,
       ended_at: new Date().toISOString(),
     })
     .eq('id', id)

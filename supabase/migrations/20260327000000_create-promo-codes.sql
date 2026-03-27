@@ -38,7 +38,5 @@ CREATE POLICY "Players can read own redemptions"
 
 -- Writes go through admin client (service role)
 
--- Seed the THOUGHT_LEADER promo code (first 100 redemptions)
-INSERT INTO promo_codes (code, badge_id, max_uses, active)
-VALUES ('OPEN-TO-WORK', 'thought_leader', 100, true)
-ON CONFLICT (code) DO NOTHING;
+-- Promo codes are seeded via Supabase dashboard (not committed to public repo).
+-- See temp-seed-promo-codes.sql in the project root for the seed INSERT.

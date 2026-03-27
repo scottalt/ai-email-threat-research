@@ -16,7 +16,12 @@ export async function POST(req: NextRequest) {
   }
 
   const { cardId, sessionId, reason, comment } = await req.json();
-  if (!cardId || typeof cardId !== 'string') return NextResponse.json({ error: 'cardId required' }, { status: 400 });
+  if (!cardId || typeof cardId !== 'string' || cardId.length > 100) {
+    return NextResponse.json({ error: 'cardId required (max 100 chars)' }, { status: 400 });
+  }
+  if (sessionId && (typeof sessionId !== 'string' || sessionId.length > 100)) {
+    return NextResponse.json({ error: 'Invalid sessionId' }, { status: 400 });
+  }
   if (reason !== undefined && !(VALID_REASONS as readonly string[]).includes(reason)) {
     return NextResponse.json({ error: 'Invalid reason' }, { status: 400 });
   }

@@ -98,7 +98,10 @@ async function finalizeMatch(
     .eq('id', matchId)
     .single();
 
-  if (!match) return;
+  if (!match) {
+    console.error(`[finalizeMatch] Match not found: ${matchId}`);
+    return;
+  }
 
   if (match.is_rated && match.player1_id && match.player2_id) {
     // Fetch both players' stats for the current season
@@ -166,50 +169,34 @@ async function finalizeMatch(
       .eq('status', 'active')
       .select('id');
 
-    if (!updated || updated.length === 0) return; // already finalized by another thread
+    if (!updated || updated.length === 0) {
+      console.warn(`[finalizeMatch] Match ${matchId} already finalized by another thread`);
+      return;
+    }
 
-    // Upsert winner stats
-    await admin.from('h2h_player_stats').upsert(
-      {
-        player_id: winnerId,
-        season: CURRENT_SEASON,
-        rank_points: newWinnerPoints,
-        wins: (winnerStats?.wins ?? 0) + 1,
-        losses: winnerStats?.losses ?? 0,
-        win_streak: (winnerStats?.win_streak ?? 0) + 1,
-        best_win_streak: Math.max(
-          winnerStats?.best_win_streak ?? 0,
-          (winnerStats?.win_streak ?? 0) + 1,
-        ),
-        peak_rank_points: Math.max(
-          winnerStats?.peak_rank_points ?? 0,
-          newWinnerPoints,
-        ),
-        rated_matches_today: winnerRatedToday + 1,
-        last_match_date: today,
-      },
-      { onConflict: 'player_id,season' },
-    );
-
-    // Upsert loser stats
-    await admin.from('h2h_player_stats').upsert(
-      {
-        player_id: loserId,
-        season: CURRENT_SEASON,
-        rank_points: newLoserPoints,
-        wins: loserStats?.wins ?? 0,
-        losses: (loserStats?.losses ?? 0) + 1,
-        win_streak: 0,
-        best_win_streak: loserStats?.best_win_streak ?? 0,
-        peak_rank_points: Math.max(
-          loserStats?.peak_rank_points ?? 0,
-          newLoserPoints,
-        ),
-        rated_matches_today: loserRatedToday + 1,
-        last_match_date: today,
-      },
-      { onConflict: 'player_id,season' },
-    );
+    // Atomic stats update via Postgres RPC (prevents concurrent match race conditions)
+    const [{ error: winnerRpcErr }, { error: loserRpcErr }] = await Promise.all([
+      admin.rpc('update_h2h_stats', {
+        p_player_id: winnerId,
+        p_season: CURRENT_SEASON,
+        p_points_delta: winnerDelta,
+        p_is_winner: true,
+        p_today: today,
+      }),
+      admin.rpc('update_h2h_stats', {
+        p_player_id: loserId,
+        p_season: CURRENT_SEASON,
+        p_points_delta: loserDelta,
+        p_is_winner: false,
+        p_today: today,
+      }),
+    ]);
+    if (winnerRpcErr) {
+      console.error(`[finalizeMatch] Winner stats RPC failed for ${winnerId} in match ${matchId}:`, winnerRpcErr.message);
+    }
+    if (loserRpcErr) {
+      console.error(`[finalizeMatch] Loser stats RPC failed for ${loserId} in match ${matchId}:`, loserRpcErr.message);
+    }
 
     // Award XP to both players — count correct answers from DB (not stale match snapshot)
     // Same daily cap as rank points (20 rated matches/day) — prevents XP farming
@@ -250,7 +237,10 @@ async function finalizeMatch(
       .eq('status', 'active')
       .select('id');
 
-    if (!updated || updated.length === 0) return; // already finalized by another thread
+    if (!updated || updated.length === 0) {
+      console.warn(`[finalizeMatch] Unrated match ${matchId} already finalized by another thread`);
+      return;
+    }
 
     // Bot matches do not award XP — prevents bot farming exploits
     // Release bot lock so player can queue again immediately
@@ -275,9 +265,12 @@ export async function POST(
   }
 
   // Rate limit: max 30 answer submissions per player per 60 seconds
+  // Use atomic INCR + EXPIRE together to prevent orphaned keys without TTL
   const answerRlKey = `ratelimit:h2h-answer:${playerId}`;
-  const answerRlCount = await redis.incr(answerRlKey);
-  if (answerRlCount === 1) await redis.expire(answerRlKey, 60);
+  const [answerRlCount] = await Promise.all([
+    redis.incr(answerRlKey),
+    redis.expire(answerRlKey, 60, 'NX'),
+  ]);
   if (answerRlCount > 30) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
@@ -399,6 +392,12 @@ export async function POST(
     return NextResponse.json({ error: 'Match expired — render timestamp missing' }, { status: 410 });
   }
   const verifiedTimeMs = now - renderTimestamp;
+
+  // Anti-cheat: reject sub-human answer times
+  const MIN_ANSWER_MS = 300;
+  if (verifiedTimeMs < MIN_ANSWER_MS) {
+    return NextResponse.json({ error: 'Answer submitted too fast' }, { status: 400 });
+  }
 
   // Insert answer record — do this BEFORE marking as checked so retries are possible on insert failure
   const { error: insertError } = await admin.from('h2h_match_answers').insert({
