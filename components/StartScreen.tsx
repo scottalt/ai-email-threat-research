@@ -205,13 +205,16 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     return () => { cancelled = true; };
   }, [profile?.researchGraduated]);
 
-  // Boot line animation — staggered reveal with brief power-on delay
+  // Boot line animation — staggered reveal with brief power-on delay + tick sound
   useEffect(() => {
     if (bootSeen) return;
     const startDelay = setTimeout(() => {
       const interval = setInterval(() => {
         setVisibleCount((prev) => {
-          if (prev < BOOT_LINES.length) return prev + 1;
+          if (prev < BOOT_LINES.length) {
+            playBootTick();
+            return prev + 1;
+          }
           clearInterval(interval);
           return prev;
         });
@@ -310,9 +313,9 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     }
 
     // No pending milestone — show greeting
-    // Skip if already greeted recently (within 2 hours)
+    // Skip if already greeted recently (within 2 hours) — but never skip for brand new players
     const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
-    if (lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) {
+    if (answers > 0 && lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) {
       // Even without greeting, check bonus milestones
       if (profile.level >= 30) triggerSigint('max_level');
       else if (profile.level >= 28) triggerSigint('level_28');
