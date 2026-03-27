@@ -166,9 +166,9 @@ const ONBOARDING_EXTRA = {
   tutorial_return: {
     lines: [
       "You left last time without classifying anything. I noticed.",
-      "Same drill. Read the email. Think about the context -- who sent it, what they want, whether any of it adds up.",
+      "Same drill. Read the email. Think about the context. Who sent it, what they want, whether any of it adds up.",
       "The glowing bits are forensic tools. Tap them. But they're not the whole picture. Your instinct matters too.",
-      "Pick a confidence level, then call it -- phishing or legit.",
+      "Pick a confidence level, then call it. Phishing or legit.",
       "Don't leave me hanging again.",
     ],
     buttonText: "I'M ON IT",
@@ -520,7 +520,7 @@ export const MILESTONES = {
       "Level 30. You hit the ceiling.",
       "I could tell you there's nothing left to unlock.",
       "Or I could tell you the real score is your rank.",
-      "Either way -- you've put in the work. My logs confirm it.",
+      "Either way. You've put in the work. My logs confirm it.",
     ],
     buttonText: "WHAT'S NEXT",
   } as SigintDialogue,
