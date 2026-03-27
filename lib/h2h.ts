@@ -5,6 +5,7 @@
 export const H2H_CARDS_PER_MATCH = 5;
 export const H2H_QUEUE_TIMEOUT_MS = 30_000;
 export const H2H_MATCH_TTL = 60 * 30; // 30 min Redis TTL
+export const H2H_AFK_TIMEOUT_MS = 90_000; // 90s per-card inactivity timeout
 export const H2H_DAILY_RATED_CAP = 20;
 export const H2H_DAILY_HALF_RATE_AFTER = 10;
 export const CURRENT_SEASON = 'season-0';

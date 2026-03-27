@@ -262,6 +262,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
   // playingItOut removed — elimination goes straight to result screen
   const [submitting, setSubmitting] = useState(false);
   const [showForfeitConfirm, setShowForfeitConfirm] = useState(false);
+  const [afkWarning, setAfkWarning] = useState<number | null>(null); // seconds remaining before AFK forfeit
 
   // ── Timing ──
   const renderTime = useRef<number>(Date.now());
@@ -450,18 +451,29 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
         const oppCards = isP1 ? m.player2CardsCompleted : m.player1CardsCompleted;
         if (oppCards > 0) setOpponentIndex(oppCards);
 
-        // Match finalized on server — end it
-        if (m.status === 'complete' && !matchEndedRef.current) {
+        // Match finalized or cancelled on server — end it
+        if ((m.status === 'complete' || m.status === 'cancelled') && !matchEndedRef.current) {
           matchEndedRef.current = true;
           clearInterval(interval);
-          const myDelta = isP1 ? (m.player1PointsDelta ?? 0) : (m.player2PointsDelta ?? 0);
-          const oppDelta = isP1 ? (m.player2PointsDelta ?? 0) : (m.player1PointsDelta ?? 0);
-          onMatchEnd({
-            winnerId: m.winnerId,
-            myPointsDelta: myDelta,
-            opponentPointsDelta: oppDelta,
-            reason: m.winnerId === playerId ? 'completed' : 'eliminated',
-          });
+
+          if (m.status === 'cancelled') {
+            // Both players AFK — no winner, no rank changes
+            onMatchEnd({
+              winnerId: null,
+              myPointsDelta: 0,
+              opponentPointsDelta: 0,
+              reason: 'completed',
+            });
+          } else {
+            const myDelta = isP1 ? (m.player1PointsDelta ?? 0) : (m.player2PointsDelta ?? 0);
+            const oppDelta = isP1 ? (m.player2PointsDelta ?? 0) : (m.player1PointsDelta ?? 0);
+            onMatchEnd({
+              winnerId: m.winnerId,
+              myPointsDelta: myDelta,
+              opponentPointsDelta: oppDelta,
+              reason: m.winnerId === playerId ? 'completed' : 'eliminated',
+            });
+          }
         }
       } catch {
         // polling failure is non-fatal
@@ -470,6 +482,28 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
 
     return () => clearInterval(interval);
   }, [matchId, playerId, isBot, loading, onMatchEnd]);
+
+  // ── AFK warning countdown (visual only — server enforces the timeout) ──
+  useEffect(() => {
+    if (isBot || loading || eliminated || finished || matchEndedRef.current) {
+      setAfkWarning(null);
+      return;
+    }
+    const AFK_WARN_AFTER_MS = 60_000; // show warning after 60s
+    const AFK_TOTAL_MS = 90_000;      // server forfeits at 90s
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - renderTime.current;
+      if (elapsed > AFK_WARN_AFTER_MS) {
+        const remaining = Math.max(0, Math.ceil((AFK_TOTAL_MS - elapsed) / 1000));
+        setAfkWarning(remaining);
+      } else {
+        setAfkWarning(null);
+      }
+    }, 1000);
+
+    return () => { clearInterval(interval); setAfkWarning(null); };
+  }, [isBot, loading, eliminated, finished, cardIndex]);
 
   // ── Bot opponent simulation ──
   // Simulates a realistic human opponent: variable speed, hesitation, mistakes
@@ -988,6 +1022,13 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
   return (
     <div className="flex flex-col items-center gap-3 w-full max-w-sm lg:max-w-lg px-4 pb-safe">
       {/* Top bar: forfeit + my progress */}
+      {/* AFK warning countdown */}
+      {afkWarning !== null && afkWarning > 0 && (
+        <div className="w-full text-center font-mono text-sm text-[#ff3333] animate-pulse mb-1">
+          ANSWER IN {afkWarning}s OR AUTO-FORFEIT
+        </div>
+      )}
+
       <div className="w-full flex items-center justify-between text-sm font-mono">
         <div className="flex items-center gap-3">
           {!showForfeitConfirm ? (

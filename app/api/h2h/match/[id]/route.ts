@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import { THEMES } from '@/lib/themes';
+import { checkMatchAfk, finalizeMatch } from '@/lib/h2h-server';
 
 // ── GET /api/h2h/match/[id] — Return match state for initial load / reconnection ──
 
@@ -137,6 +138,44 @@ export async function GET(
     }
   }
 
+  // AFK check — for active, non-bot matches only
+  let afkForfeited: string | null = null;
+  if (match.status === 'active' && !match.is_ghost_match && match.player1_id && match.player2_id) {
+    const afk = await checkMatchAfk(
+      match.id,
+      match.player1_id,
+      match.player2_id,
+      match.player1_cards_completed ?? 0,
+      match.player2_cards_completed ?? 0,
+    );
+
+    if (afk.player1Afk && afk.player2Afk) {
+      // Both AFK — cancel match, no rank changes
+      await admin.from('h2h_matches')
+        .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+        .eq('id', match.id)
+        .eq('status', 'active');
+      match.status = 'cancelled';
+      match.ended_at = new Date().toISOString();
+      console.log(`[H2H AFK] Both players AFK — match ${match.id} cancelled`);
+    } else if (afk.player1Afk) {
+      // Player 1 AFK — player 2 wins
+      await finalizeMatch(match.id, match.player2_id, match.player1_id);
+      afkForfeited = match.player1_id;
+      // Re-read match for updated status
+      const { data: fresh } = await admin.from('h2h_matches').select('*').eq('id', match.id).single();
+      if (fresh) Object.assign(match, fresh);
+      console.log(`[H2H AFK] Player 1 AFK — match ${match.id} forfeited`);
+    } else if (afk.player2Afk) {
+      // Player 2 AFK — player 1 wins
+      await finalizeMatch(match.id, match.player1_id, match.player2_id);
+      afkForfeited = match.player2_id;
+      const { data: fresh } = await admin.from('h2h_matches').select('*').eq('id', match.id).single();
+      if (fresh) Object.assign(match, fresh);
+      console.log(`[H2H AFK] Player 2 AFK — match ${match.id} forfeited`);
+    }
+  }
+
   return NextResponse.json({
     match: {
       id: match.id,
@@ -166,6 +205,7 @@ export async function GET(
     })),
     players: playerMap,
     reviewCards,
+    afkForfeited,
   });
 }
 
