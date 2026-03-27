@@ -616,7 +616,9 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
         <Handler lines={d.lines} buttonText={d.buttonText} onDismiss={() => {
           markMomentSeen('research_brief');
-          setPhase('handler_tutorial_intro');
+          // tutorial_intro fires as SIGINT overlay on top of the tutorial card
+          triggerSigint('tutorial_intro');
+          setPhase('tutorial');
         }} />
       </div>
     );
