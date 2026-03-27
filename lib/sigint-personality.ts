@@ -44,7 +44,7 @@ export function dynamicDialogue(id: string, callsign: string): SigintDialogue | 
         { lines: [`${callsign}. I counted the seconds.`, "...kidding. I don't have a clock. I have a threat queue."], buttonText: "SURE" },
         { lines: ["Incoming operative detected.", `Threat level: ${callsign}. Proceed with caution.`], buttonText: "VERY FUNNY" },
         { lines: [`${callsign}. You look different.`, "Just kidding. I can't see you. But I know you're ready."], buttonText: "ALWAYS" },
-        { lines: ["System log: operative returned.", `Note to self — ${callsign} actually came back. Adjusting expectations.`], buttonText: "RUDE" },
+        { lines: ["System log: operative returned.", `Note to self: ${callsign} actually came back. Adjusting expectations.`], buttonText: "RUDE" },
         { lines: [`${callsign}. Quick question.`, "Did you think about phishing while you were gone? Be honest."], buttonText: "...MAYBE" },
         { lines: ["Connection established.", `${callsign} is back online. Resuming operations.`], buttonText: "ROGER" },
         { lines: [`${callsign}.`, "I defragmented while you were gone. Feeling sharp."], buttonText: "GOOD FOR YOU" },
@@ -105,8 +105,8 @@ export function dynamicDialogue(id: string, callsign: string): SigintDialogue | 
       return {
         lines: [
           `${callsign}. We need to talk.`,
-          "I'm SIGINT — Signals Intelligence. If you're in cyber, you already know. If not... you will be soon.",
-          "They installed me in the v2 update. I run threat analysis now — PvP mode, ranked matches, badges. That's all me.",
+          "I'm SIGINT. Signals Intelligence. If you're in cyber, you already know. If not... you will be soon.",
+          "They installed me in the v2 update. I run threat analysis now. PvP mode, ranked matches, badges. That's all me.",
           "Your research data carried over. Everything you've done still counts.",
           "But there's a lot of new stuff. Poke around. I'll be here if you need me.",
         ],
@@ -122,9 +122,9 @@ export function dynamicDialogue(id: string, callsign: string): SigintDialogue | 
 export const ONBOARDING = {
   boot_greeting: {
     lines: [
-      "Hey. I'm SIGINT — short for Signals Intelligence. If that means nothing to you, don't worry. You'll learn.",
-      "I'm the AI that runs this terminal. Threat analysis, pattern detection, unsolicited commentary — the full package.",
-      "Emails are coming in. Some are real. Some are phishing. All of them are written by AI — so don't expect typos to save you.",
+      "Hey. I'm SIGINT. Short for Signals Intelligence. If that means nothing to you, don't worry. You'll learn.",
+      "I'm the AI that runs this terminal. Threat analysis, pattern detection, unsolicited commentary. The full package.",
+      "Emails are coming in. Some are real. Some are phishing. All of them are written by AI, so don't expect typos to save you.",
       "Hit Research Mode and classify 10. Then we'll talk about the fun stuff.",
     ],
     buttonText: "LET'S GO",
@@ -132,7 +132,7 @@ export const ONBOARDING = {
 
   research_brief: {
     lines: [
-      "Quick heads up — this isn't a game. Well, it is. But also it's a real research study.",
+      "Quick heads up. This isn't a game. Well, it is. But also it's a real research study.",
       "Your answers are anonymous. No one's watching. Except me. But I'm software, so that doesn't count.",
       "I'll show you the tools. What you spot is on you.",
     ],
@@ -200,7 +200,7 @@ export const MILESTONES = {
   freeplay_unlock: {
     lines: [
       "30 classifications. Research protocol complete.",
-      "Full clearance granted. Freeplay, Expert cards — the whole terminal is yours.",
+      "Full clearance granted. Freeplay, Expert cards. The whole terminal is yours.",
       "You've earned it. The Freeplay button is on the home screen now.",
       "Welcome to the inner circle, operative.",
     ],
@@ -382,7 +382,7 @@ export const PAGE_VISITS = {
   first_inventory: {
     lines: [
       "Welcome to your locker.",
-      "Themes change the whole terminal aesthetic. Badges go on your shelf — opponents see them in PvP.",
+      "Themes change the whole terminal aesthetic. Badges go on your shelf. Opponents see them in PvP.",
       "Cosmetics only. Nothing here makes you better. That part's on you.",
     ],
     buttonText: "GOT IT",
@@ -391,7 +391,7 @@ export const PAGE_VISITS = {
   first_profile: {
     lines: [
       "Your dossier.",
-      "Stats, quests, friends — it's all here. The badges on your shelf show up in PvP lobbies.",
+      "Stats, quests, friends. It's all here. The badges on your shelf show up in PvP lobbies.",
       "Try not to stare at your own win rate too long.",
     ],
     buttonText: "NOTED",
