@@ -44,7 +44,7 @@ export function Handler({ lines, buttonText = 'CONTINUE', onDismiss }: Props) {
 
       {/* Dialog box */}
       <div
-        className="w-full max-w-sm relative anim-fade-in-up sigint-box term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)]"
+        className="w-full max-w-sm relative anim-fade-in-up sigint-box term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-accent)_60%,transparent)]"
       >
         {/* Header */}
         <div className="border-b border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)] px-3 py-2 flex items-center justify-between">
