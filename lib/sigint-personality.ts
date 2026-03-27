@@ -166,7 +166,8 @@ const ONBOARDING_EXTRA = {
   tutorial_return: {
     lines: [
       "You left last time without classifying anything. I noticed.",
-      "Same drill. Check the sender, inspect the URL, look at the attachment. The glowing bits are clickable.",
+      "Same drill. Read the email. Think about the context -- who sent it, what they want, whether any of it adds up.",
+      "The glowing bits are forensic tools. Tap them. But they're not the whole picture. Your instinct matters too.",
       "Pick a confidence level, then call it -- phishing or legit.",
       "Don't leave me hanging again.",
     ],
