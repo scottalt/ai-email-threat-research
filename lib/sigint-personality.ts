@@ -165,11 +165,12 @@ const ONBOARDING_EXTRA = {
 
   tutorial_return: {
     lines: [
-      "You're back. Good.",
-      "The training sim is still loaded. Same email. Same clues.",
-      "This time, try finishing it.",
+      "You left last time without classifying anything. I noticed.",
+      "Same drill. Check the sender, inspect the URL, look at the attachment. The glowing bits are clickable.",
+      "Pick a confidence level, then call it -- phishing or legit.",
+      "Don't leave me hanging again.",
     ],
-    buttonText: "FINE",
+    buttonText: "I'M ON IT",
   } as SigintDialogue,
 
   tutorial_complete: {
