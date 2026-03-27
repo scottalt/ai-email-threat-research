@@ -212,7 +212,8 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           if (newMode === 'preview') {
             setPhase('playing');
           } else {
-            const hasSeenIntro = typeof window !== 'undefined' && localStorage.getItem('research_intro_seen') === '1';
+            // Player-scoped check via DB (not localStorage which leaks across accounts)
+            const hasSeenIntro = hasSeenMoment('research_brief');
             setPhase(hasSeenIntro ? 'playing' : 'research_intro');
           }
         })

@@ -84,7 +84,7 @@ export function ResearchIntro({ onBegin }: Props) {
         </div>
 
         <button
-          onClick={() => { localStorage.setItem('research_intro_seen', '1'); onBegin(); }}
+          onClick={() => { onBegin(); }}
           className="w-full py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] transition-all"
         >
           [ BEGIN RESEARCH ]

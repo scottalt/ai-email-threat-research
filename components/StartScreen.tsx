@@ -262,13 +262,14 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   // Show SIGINT greeting OR milestone on home page.
   // Milestones take priority — if one is pending, skip greeting and show milestone.
   // Greetings are recurring (every login with 2hr cooldown).
-  const greetingShownThisSession = useRef(false);
+  // Use sessionStorage (survives remounts, resets on new tab/login)
   useEffect(() => {
-    if (!showButton || greetingShownThisSession.current) return;
+    if (!showButton) return;
+    try { if (sessionStorage.getItem('sigint_greeting_done') === '1') return; } catch {}
     if (!signedIn || !profile) return;
     // Wait until callsign + background are set before showing SIGINT
     if (!profile.displayName) return;
-    greetingShownThisSession.current = true;
+    try { sessionStorage.setItem('sigint_greeting_done', '1'); } catch {}
 
     const seen = profile.seenMoments ?? [];
     const answers = profile.researchAnswersSubmitted ?? 0;
