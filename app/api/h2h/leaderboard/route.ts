@@ -33,6 +33,7 @@ export async function GET() {
       wins: row.wins,
       losses: row.losses,
       nameEffect: theme?.nameEffect ?? null,
+      themeColor: theme?.colors.primary ?? '#00ff41',
     };
   });
 

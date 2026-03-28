@@ -25,6 +25,7 @@ interface LeaderboardEntry {
   score: number;
   level?: number;
   nameEffect?: string | null;
+  themeColor?: string | null;
 }
 
 interface Props {
@@ -78,7 +79,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   const [xpLeaderboard, setXpLeaderboard] = useState<{ display_name: string | null; xp: number; level: number; research_graduated: boolean; theme_id?: string | null }[]>([]);
   const [activeTab, setActiveTab] = useState<'daily' | 'xp' | 'h2h'>('xp');
   const [h2hStats, setH2HStats] = useState<{ rankLabel: string; rankIcon: string; rankPoints: number; rankColor: string; wins: number; losses: number; winStreak: number } | null>(null);
-  const [h2hLeaderboard, setH2HLeaderboard] = useState<{ position: number; displayName: string; rankPoints: number; rankLabel: string; rankColor: string; wins: number; losses: number; nameEffect?: string | null }[]>([]);
+  const [h2hLeaderboard, setH2HLeaderboard] = useState<{ position: number; displayName: string; rankPoints: number; rankLabel: string; rankColor: string; wins: number; losses: number; nameEffect?: string | null; themeColor?: string | null }[]>([]);
   const [lbExpanded, setLbExpanded] = useState(false);
   const [lbExpandLoading, setLbExpandLoading] = useState(false);
 
@@ -794,7 +795,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
                           <span className={`text-sm font-mono w-4 shrink-0 ${i === 0 ? 'text-[var(--c-accent)]' : 'text-[var(--c-muted)]'}`}>{i + 1}</span>
                           {entry.name ? (
                             <Link href={`/player/${encodeURIComponent(entry.name)}`} className="text-sm font-mono flex-1 truncate hover:text-[var(--c-primary)] transition-colors">
-                              {entry.nameEffect === 'rainbow' ? <span className="rainbow-name-glow"><span className="rainbow-name">{entry.name}</span></span> : <span className="text-[var(--c-secondary)]">{entry.name}</span>}
+                              <RainbowName name={entry.name} nameEffect={entry.nameEffect} themeColor={entry.themeColor} fallbackColor="var(--c-secondary)" />
                             </Link>
                           ) : (
                             <span className="text-[var(--c-muted)] text-sm font-mono flex-1 truncate">ANON</span>
@@ -819,7 +820,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
                         <div key={i} className="flex items-center gap-2 px-3 py-1.5 lg:py-2.5 text-sm lg:text-base font-mono anim-fade-in-up" style={{ opacity: 0, animationDelay: `${i * 60}ms` }}>
                           <span className="text-[var(--c-muted)] w-4">{row.position}.</span>
                           <Link href={`/player/${encodeURIComponent(row.displayName)}`} className="flex-1 truncate hover:text-[var(--c-primary)] transition-colors">
-                            {row.nameEffect === 'rainbow' ? <span className="rainbow-name-glow"><span className="rainbow-name">{row.displayName}</span></span> : <span className="text-[var(--c-secondary)]">{row.displayName}</span>}
+                            <RainbowName name={row.displayName} nameEffect={row.nameEffect} themeColor={row.themeColor} fallbackColor="var(--c-secondary)" />
                           </Link>
                           <span className="text-sm font-mono shrink-0" style={{ color: row.rankColor }}>{row.rankLabel}</span>
                           <span className="text-[var(--c-primary)]">{row.rankPoints} pts</span>

@@ -64,15 +64,19 @@ export async function GET(req: Request) {
     .select('display_name, theme_id')
     .in('display_name', names);
 
-  const themeMap: Record<string, string | null> = {};
+  const themeMap: Record<string, { nameEffect: string | null; color: string }> = {};
   for (const p of playerThemes ?? []) {
     const theme = THEMES.find((t) => t.id === (p.theme_id ?? 'phosphor'));
-    if (theme?.nameEffect) themeMap[p.display_name] = theme.nameEffect;
+    themeMap[p.display_name] = {
+      nameEffect: theme?.nameEffect ?? null,
+      color: theme?.colors.primary ?? '#00ff41',
+    };
   }
 
   return NextResponse.json(entries.map((e) => ({
     ...e,
-    nameEffect: themeMap[e.name] ?? null,
+    nameEffect: themeMap[e.name]?.nameEffect ?? null,
+    themeColor: themeMap[e.name]?.color ?? null,
   })));
 }
 
