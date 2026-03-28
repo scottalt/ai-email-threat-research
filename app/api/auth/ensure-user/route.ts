@@ -27,21 +27,26 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdminClient();
 
-    // Attempt to create the user with a pre-confirmed email.
-    // If they already exist, Supabase returns an error we can safely ignore.
+    // Try to create the user. If they exist, Supabase returns an error.
     const { error } = await supabase.auth.admin.createUser({
       email,
       email_confirm: true,
     });
 
-    const alreadyRegistered = error?.message.toLowerCase().includes('already been registered');
-
-    if (error && !alreadyRegistered) {
+    if (error) {
+      // Check multiple possible error messages for existing users
+      const msg = error.message.toLowerCase();
+      const alreadyRegistered = msg.includes('already been registered')
+        || msg.includes('already exists')
+        || msg.includes('duplicate');
+      if (alreadyRegistered) {
+        return NextResponse.json({ ok: true, existing: true });
+      }
       console.error('[ensure-user] createUser error:', error.message);
       return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, existing: !!alreadyRegistered });
+    return NextResponse.json({ ok: true, existing: false });
   } catch (err) {
     console.error('[ensure-user] unexpected error:', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
