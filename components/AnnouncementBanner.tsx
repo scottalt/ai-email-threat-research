@@ -11,6 +11,7 @@ interface AdminMessage {
   buttonText: string;
   isGlobal: boolean;
   achievementId: string | null;
+  themeId: string | null;
   createdAt: string;
 }
 
@@ -64,11 +65,15 @@ export function AnnouncementBanner() {
             msg.buttonText,
             () => {
               markSeen(msg);
-              if (msg.achievementId) {
+              if (msg.achievementId || msg.themeId) {
                 fetch('/api/player/messages', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ messageId: msg.id, grantAchievement: msg.achievementId }),
+                  body: JSON.stringify({
+                    messageId: msg.id,
+                    ...(msg.achievementId && { grantAchievement: msg.achievementId }),
+                    ...(msg.themeId && { unlockTheme: msg.themeId }),
+                  }),
                 }).catch(() => {});
               }
             },

@@ -46,6 +46,7 @@ function toProfile(row: Record<string, unknown>, researchAnswersSubmitted = 0, a
     privacyLevel: (row.privacy_level as string as 'public' | 'friends' | 'private') ?? 'public',
     featuredBadges: (row.featured_badges as string[]) ?? [],
     themeId: (row.theme_id as string | null) ?? 'phosphor',
+    unlockedThemes: (row.unlocked_themes as string[]) ?? [],
     seenMoments,
   };
 }

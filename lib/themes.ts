@@ -148,10 +148,10 @@ export function getThemeById(id: string): ThemeDef {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
 }
 
-export function isThemeUnlocked(theme: ThemeDef, playerLevel: number, graduated: boolean, playerThemeId?: string): boolean {
+export function isThemeUnlocked(theme: ThemeDef, playerLevel: number, graduated: boolean, playerThemeId?: string, unlockedThemes?: string[]): boolean {
   if (theme.id === 'phosphor') return true;
-  // Admin-granted themes: if it's the player's current theme, it's unlocked
   if (playerThemeId === theme.id) return true;
-  if (theme.hidden) return false; // hidden themes can't be earned
+  if (unlockedThemes?.includes(theme.id)) return true;
+  if (theme.hidden) return false;
   return graduated && playerLevel >= theme.unlockLevel;
 }

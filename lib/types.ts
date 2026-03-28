@@ -133,6 +133,7 @@ export interface PlayerProfile {
   privacyLevel: 'public' | 'friends' | 'private';
   featuredBadges: string[];
   themeId: string;
+  unlockedThemes?: string[];
   seenMoments?: string[];
   dailyResult?: { score: number; totalScore: number } | null;
   cooldown?: { hourlyRemaining: number; dailyRemaining: number; hourlyResetsAt: string; dailyResetsAt: string };

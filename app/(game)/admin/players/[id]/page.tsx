@@ -48,6 +48,7 @@ export default function AdminPlayerDetail() {
   const [msgLines, setMsgLines] = useState('');
   const [msgButton, setMsgButton] = useState('ACKNOWLEDGED');
   const [msgAchievement, setMsgAchievement] = useState('');
+  const [msgTheme, setMsgTheme] = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
 
   function fetchPlayer() {
@@ -468,6 +469,21 @@ export default function AdminPlayerDetail() {
             })()}
           </div>
 
+          {/* Gift theme (optional) */}
+          <div className="space-y-1">
+            <div className="text-[var(--c-secondary)] text-xs font-mono">GIFT THEME (optional)</div>
+            <select
+              value={msgTheme}
+              onChange={(e) => setMsgTheme(e.target.value)}
+              className="w-full bg-[var(--c-bg)] border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] px-2 py-2 text-[var(--c-primary)] font-mono text-xs focus:outline-none"
+            >
+              <option value="">No theme</option>
+              {THEMES.filter((t) => t.hidden).map((t) => (
+                <option key={t.id} value={t.id}>{t.name} — {t.subtitle}</option>
+              ))}
+            </select>
+          </div>
+
           <button
             onClick={async () => {
               const lines = msgLines.split('\n').filter((l) => l.trim());
@@ -475,19 +491,24 @@ export default function AdminPlayerDetail() {
               setSendingMsg(true);
               const body: Record<string, unknown> = { targetPlayerId: id, lines, buttonText: msgButton || 'ACKNOWLEDGED' };
               if (msgAchievement) body.achievementId = msgAchievement;
+              if (msgTheme) body.themeId = msgTheme;
               const res = await fetch('/api/admin/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
               });
-              if (res.ok) { setActionMsg(msgAchievement ? 'MESSAGE + ACHIEVEMENT SENT' : 'MESSAGE SENT'); setMsgLines(''); setMsgAchievement(''); }
+              if (res.ok) {
+                const parts = [msgAchievement && 'BADGE', msgTheme && 'THEME'].filter(Boolean);
+                setActionMsg(parts.length ? `MESSAGE + ${parts.join(' + ')} SENT` : 'MESSAGE SENT');
+                setMsgLines(''); setMsgAchievement(''); setMsgTheme('');
+              }
               else setActionMsg('SEND FAILED');
               setSendingMsg(false);
             }}
             disabled={sendingMsg || !msgLines.trim()}
             className="w-full py-3 term-border text-[var(--c-accent)] font-mono text-xs tracking-widest hover:bg-[color-mix(in_srgb,var(--c-accent)_5%,transparent)] disabled:opacity-40 transition-all"
           >
-            {sendingMsg ? 'SENDING...' : msgAchievement ? '[ SEND MESSAGE + AWARD BADGE ]' : '[ SEND TO THIS PLAYER ]'}
+            {sendingMsg ? 'SENDING...' : (msgAchievement || msgTheme) ? `[ SEND MESSAGE + ${[msgAchievement && 'BADGE', msgTheme && 'THEME'].filter(Boolean).join(' + ')} ]` : '[ SEND TO THIS PLAYER ]'}
           </button>
         </div>
       )}
