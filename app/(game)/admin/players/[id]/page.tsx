@@ -25,7 +25,9 @@ interface SessionRow {
 }
 
 export default function AdminPlayerDetail() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams();
+  const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
+  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PlayerData | null>(null);
   const [answers, setAnswers] = useState<AnswerRow[]>([]);
   const [answerTotal, setAnswerTotal] = useState(0);
@@ -45,8 +47,12 @@ export default function AdminPlayerDetail() {
 
   function fetchPlayer() {
     fetch(`/api/admin/players/${id}`)
-      .then((r) => r.ok ? r.json() : null)
+      .then(async (r) => {
+        if (!r.ok) { setError(`API ${r.status}: ${await r.text().catch(() => 'unknown')}`); return null; }
+        return r.json();
+      })
       .then((d) => { if (d) setData(d); })
+      .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
   }
 
@@ -106,7 +112,8 @@ export default function AdminPlayerDetail() {
   }
 
   if (loading) return <div className="text-[var(--c-muted)] font-mono text-sm animate-pulse text-center py-8">LOADING PLAYER...</div>;
-  if (!data) return <div className="text-[#ff3333] font-mono text-sm text-center py-8">PLAYER NOT FOUND</div>;
+  if (error) return <div className="text-[#ff3333] font-mono text-sm text-center py-8 space-y-2"><div>ERROR</div><div className="text-xs text-[var(--c-muted)] break-all px-4">{error}</div><Link href="/admin/players" className="text-[var(--c-secondary)] text-xs hover:underline block mt-4">← BACK</Link></div>;
+  if (!data) return <div className="text-[#ff3333] font-mono text-sm text-center py-8">PLAYER NOT FOUND<Link href="/admin/players" className="text-[var(--c-secondary)] text-xs hover:underline block mt-4">← BACK</Link></div>;
 
   const p = data.player;
   const earnedIds = new Set(data.achievements.map((a) => a.id));
