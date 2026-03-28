@@ -82,7 +82,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      const { existing } = ensureRes.ok ? await ensureRes.json() : { existing: true };
+      // existing: true = skip terms, false = show terms, null = ambiguous (skip terms to be safe)
+      const data = ensureRes.ok ? await ensureRes.json() : { existing: true };
+      const existing = data.existing === false ? false : true;
 
       // Step 2: Send OTP (now that user is guaranteed to exist in auth)
       const supabase = getSupabaseBrowserClient();

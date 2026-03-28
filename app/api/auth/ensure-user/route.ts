@@ -27,22 +27,31 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdminClient();
 
-    // Step 1: Check if this email already has a player row (fast DB query).
-    // We query auth.users via admin API to get the auth_id for this email,
-    // then check if a player profile exists.
+    // Try to create the user (needed so signInWithOtp sends a code, not a link).
     const { data: created, error } = await supabase.auth.admin.createUser({
       email,
       email_confirm: true,
     });
 
     if (error) {
-      // createUser failed — user likely exists. Return existing=true.
-      // The OTP will still work via signInWithOtp on the client.
-      return NextResponse.json({ ok: true, existing: true });
+      // createUser errored. Could be "already registered" or "database error".
+      // Either way the user might exist in auth. Check the error message:
+      const msg = error.message.toLowerCase();
+      const definitelyExists = msg.includes('already been registered')
+        || msg.includes('already exists')
+        || msg.includes('duplicate');
+
+      if (definitelyExists) {
+        return NextResponse.json({ ok: true, existing: true });
+      }
+
+      // Ambiguous error (e.g. "Database error"). We don't know if user is new or existing.
+      // Return existing: null so the client can decide.
+      console.log(`[ensure-user] ambiguous createUser error: ${error.message}`);
+      return NextResponse.json({ ok: true, existing: null });
     }
 
-    // createUser succeeded — this is either a new user or Supabase returned an existing one.
-    // Check the players table to know if they've completed onboarding before.
+    // createUser succeeded. Check if this user has a player profile (completed onboarding).
     if (created?.user?.id) {
       const { data: player } = await supabase
         .from('players')
@@ -53,7 +62,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, existing: !!player });
     }
 
-    // Fallback: genuinely new
     return NextResponse.json({ ok: true, existing: false });
   } catch (err) {
     console.error('[ensure-user] unexpected error:', err);
