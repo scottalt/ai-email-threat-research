@@ -7,12 +7,14 @@ interface ThemeContextValue {
   theme: ThemeDef;
   setThemeId: (id: string) => void;
   loadFromServer: (themeId: string) => void;
+  resetToDefault: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: getThemeById('phosphor'),
   setThemeId: () => {},
   loadFromServer: () => {},
+  resetToDefault: () => {},
 });
 
 function applyThemeVars(theme: ThemeDef) {
@@ -68,8 +70,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }).catch(() => {}); // non-critical — localStorage is the fallback
   }, []);
 
+  const resetToDefault = useCallback(() => {
+    const t = getThemeById('phosphor');
+    setTheme(t);
+    applyThemeVars(t);
+    setServerLoaded(false);
+    try { localStorage.removeItem('terminal_theme'); } catch {}
+  }, []);
+
   return (
-    <ThemeContext.Provider value={{ theme, setThemeId, loadFromServer }}>
+    <ThemeContext.Provider value={{ theme, setThemeId, loadFromServer, resetToDefault }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -25,16 +25,22 @@ function BackfillTrigger() {
 
 /** Syncs server-stored theme to ThemeContext when profile loads */
 function ThemeSync() {
-  const { profile } = usePlayer();
-  const { loadFromServer } = useTheme();
+  const { profile, signedIn } = usePlayer();
+  const { loadFromServer, resetToDefault } = useTheme();
   const synced = useRef(false);
 
   useEffect(() => {
+    if (!signedIn) {
+      // Reset to default phosphor theme on sign-out
+      synced.current = false;
+      resetToDefault();
+      return;
+    }
     if (profile?.themeId && !synced.current) {
       loadFromServer(profile.themeId);
       synced.current = true;
     }
-  }, [profile?.themeId, loadFromServer]);
+  }, [signedIn, profile?.themeId, loadFromServer, resetToDefault]);
 
   return null;
 }
