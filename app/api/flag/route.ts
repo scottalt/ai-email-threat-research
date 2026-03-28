@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import { redis } from '@/lib/redis';
+import { redis, getClientIp } from '@/lib/redis';
 
 // These values must match the <option value="..."> in FeedbackCard.tsx
 const VALID_REASONS = ['wrong_answer', 'too_obvious', 'poor_quality', 'other'] as const;
 
 export async function POST(req: NextRequest) {
   // Rate limit: 20 flags per IP per minute
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ip = getClientIp(req);
   const rlKey = `ratelimit:flag:${ip}`;
   const count = await redis.incr(rlKey);
   if (count === 1) await redis.expire(rlKey, 60);
@@ -16,7 +16,12 @@ export async function POST(req: NextRequest) {
   }
 
   const { cardId, sessionId, reason, comment } = await req.json();
-  if (!cardId || typeof cardId !== 'string') return NextResponse.json({ error: 'cardId required' }, { status: 400 });
+  if (!cardId || typeof cardId !== 'string' || cardId.length > 100) {
+    return NextResponse.json({ error: 'cardId required (max 100 chars)' }, { status: 400 });
+  }
+  if (sessionId && (typeof sessionId !== 'string' || sessionId.length > 100)) {
+    return NextResponse.json({ error: 'Invalid sessionId' }, { status: 400 });
+  }
   if (reason !== undefined && !(VALID_REASONS as readonly string[]).includes(reason)) {
     return NextResponse.json({ error: 'Invalid reason' }, { status: 400 });
   }

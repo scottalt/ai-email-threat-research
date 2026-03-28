@@ -74,6 +74,11 @@ export async function PATCH(req: NextRequest) {
     achievements: [],
     currentStreak: 0,
     longestStreak: 0,
+    featuredBadge: (row.featured_badge as string | null) ?? null,
+    bio: (row.bio as string) ?? '',
+    privacyLevel: (row.privacy_level as string as 'public' | 'friends' | 'private') ?? 'public',
+    featuredBadges: (row.featured_badges as string[]) ?? [],
+    themeId: (row.theme_id as string | null) ?? 'phosphor',
   };
   return NextResponse.json(profile);
 }

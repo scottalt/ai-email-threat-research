@@ -278,6 +278,7 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
                 <span className="text-[#ffaa00] text-sm font-mono tracking-widest">URL_INSPECTOR</span>
                 <button
                   onClick={() => setInspectedUrl(null)}
+                  aria-label="Close URL inspector"
                   className="text-[var(--c-dark)] text-sm font-mono hover:text-[var(--c-secondary)] transition-colors"
                 >
                   [ × ]
@@ -286,6 +287,9 @@ export function FeedbackCard({ result, streak, totalScore, onNext, questionNumbe
               <span className="text-[#ffaa00] font-mono text-sm break-all">{inspectedUrl}</span>
             </div>
           )}
+          <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] px-3 py-1.5">
+            <p className="text-[var(--c-muted)] text-[9px] font-mono opacity-50 text-center">AI-generated for research. Brand names used for realism only — no affiliation.</p>
+          </div>
         </div>
 
         {/* Explanation — mobile only (desktop shows in left column) */}

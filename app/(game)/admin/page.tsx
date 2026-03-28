@@ -307,6 +307,12 @@ export default function AdminPage() {
             </div>
           </div>
           <Link
+            href="/admin/content"
+            className="block w-full py-3 term-border border-[rgba(0,170,255,0.4)] text-[#00aaff] font-mono text-xs tracking-widest text-center hover:bg-[rgba(0,170,255,0.05)] transition-all"
+          >
+            [ CONTENT REGISTRY — SEASONS, THEMES, ACHIEVEMENTS... ]
+          </Link>
+          <Link
             href="/admin/xp-audit"
             className="block w-full py-3 term-border border-[rgba(255,51,51,0.4)] text-[#ff3333] font-mono text-xs tracking-widest text-center hover:bg-[rgba(255,51,51,0.05)] transition-all"
           >

@@ -5,6 +5,7 @@ import type { DealCard, Answer, Confidence, GameMode } from '@/lib/types';
 import type { SafeDealCard } from '@/lib/card-utils';
 
 import { parseFrom } from '@/lib/parseFrom';
+import { playCommit } from '@/lib/sounds';
 
 interface Props {
   card: DealCard | SafeDealCard;
@@ -21,8 +22,8 @@ interface Props {
   total: number;
   streak: number;
   totalScore: number;
-  soundEnabled: boolean;
-  onToggleSound: () => void;
+  musicEnabled: boolean;
+  onToggleMusic: () => void;
   onQuit: () => void;
   mode?: GameMode;
 }
@@ -180,6 +181,9 @@ function EmailDisplay({ card, onScroll, onUrlInspected }: {
           <span className="text-[#ffaa00] font-mono text-sm break-all">{inspectedUrl}</span>
         </div>
       )}
+      <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] px-3 py-1.5">
+        <p className="text-[var(--c-muted)] text-[9px] font-mono opacity-50 text-center">AI-generated for research. Brand names used for realism only — no affiliation.</p>
+      </div>
     </div>
   );
 }
@@ -265,13 +269,17 @@ function SMSDisplay({ card, onScroll, onUrlInspected }: {
           <span className="text-[#ffaa00] font-mono text-sm break-all">{inspectedUrl}</span>
         </div>
       )}
+      <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] px-3 py-1.5">
+        <p className="text-[var(--c-muted)] text-[9px] font-mono opacity-50 text-center">AI-generated for research. Brand names used for realism only — no affiliation.</p>
+      </div>
     </div>
   );
 }
 
-export function GameCard({ card, onAnswer, questionNumber, total, streak, totalScore, soundEnabled, onToggleSound, onQuit, mode }: Props) {
+export function GameCard({ card, onAnswer, questionNumber, total, streak, totalScore, musicEnabled, onToggleMusic, onQuit, mode }: Props) {
   const [confidence, setConfidence] = useState<Confidence | null>(null);
   const [flying, setFlying] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
   const renderTime          = useRef<number>(Date.now());
   const confidenceTime      = useRef<number | null>(null);
@@ -282,7 +290,9 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
 
   function handleButton(answer: Answer) {
     if (!confidence || answered.current) return;
+    playCommit();
     answered.current = true;
+    setProcessing(true);
     setFlying(true);
     const now = Date.now();
     const timeFromRender = now - renderTime.current;
@@ -339,17 +349,17 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
           </span>
           <span className="text-[var(--c-secondary)]">PTS:<span className="text-[var(--c-primary)]">{totalScore}</span></span>
           <button
-            onClick={onToggleSound}
-            className={`font-mono text-sm transition-colors p-2 -m-2 ${soundEnabled ? 'text-[var(--c-primary)]' : 'text-[var(--c-secondary)]'}`}
+            onClick={onToggleMusic}
+            className={`font-mono text-sm transition-colors p-2 -m-2 ${musicEnabled ? 'text-[var(--c-primary)]' : 'text-[var(--c-secondary)]'}`}
           >
-            {soundEnabled ? '[SFX]' : '[SFX OFF]'}
+            {musicEnabled ? '[MUSIC]' : '[MUSIC OFF]'}
           </button>
         </div>
       </div>
 
       {/* Card */}
       <div
-        className="w-full anim-card-entry"
+        className={`w-full anim-card-entry ${processing ? 'card-processing' : ''}`}
         style={{
           opacity: flying ? 0 : 1,
           transition: flying ? 'opacity 0.23s ease-in' : '',
@@ -405,13 +415,13 @@ export function GameCard({ card, onAnswer, questionNumber, total, streak, totalS
           <div className="flex gap-3">
             <button
               onClick={() => handleButton('phishing')}
-              className="flex-1 py-4 border border-[rgba(255,51,51,0.5)] text-[#ff3333] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,51,51,0.1)] active:scale-95 transition-all"
+              className="flex-1 py-4 border border-[rgba(255,51,51,0.5)] text-[#ff3333] font-mono font-bold tracking-widest text-sm hover:bg-[rgba(255,51,51,0.1)] active:scale-95 transition-all btn-glow"
             >
               PHISHING
             </button>
             <button
               onClick={() => handleButton('legit')}
-              className="flex-1 py-4 border border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)] text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] active:scale-95 transition-all"
+              className="flex-1 py-4 border border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)] text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] active:scale-95 transition-all btn-glow"
             >
               LEGIT
             </button>

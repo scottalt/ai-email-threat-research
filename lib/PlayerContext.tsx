@@ -30,6 +30,19 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (data.cooldown) {
           try { localStorage.setItem('xp_cooldown', JSON.stringify(data.cooldown)); } catch {}
         }
+        // Merge server seen moments with local cache (local may have moments not yet persisted to DB)
+        try {
+          const local = JSON.parse(localStorage.getItem('handler_moments_seen') ?? '[]') as string[];
+          const server = (data.seenMoments ?? []) as string[];
+          const merged = [...new Set([...local, ...server])];
+          localStorage.setItem('handler_moments_seen', JSON.stringify(merged));
+          // Also merge into the profile data so triggerSigint's profile check works
+          data.seenMoments = merged;
+        } catch {
+          if (data.seenMoments) {
+            try { localStorage.setItem('handler_moments_seen', JSON.stringify(data.seenMoments)); } catch {}
+          }
+        }
         setProfile(data);
       } else {
         setProfile(null);
@@ -49,8 +62,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: unknown) => {
+      // Note: SIGNED_IN fires on page load (session restore) — don't clear session flags here.
+      // Caches are cleared in signOut() only. refreshProfile() merges seen moments from server.
       if (session) {
-        refreshProfile();
+        refreshProfile(); // will re-seed handler_moments_seen from server
         try { localStorage.setItem('terms_agreed', '1'); } catch {}
       } else {
         setProfile(null);
@@ -61,15 +76,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   async function signInWithEmail(email: string) {
     try {
-      // Pre-create the user via admin API so Supabase treats them as existing
-      // and sends a 6-digit OTP code instead of a confirmation link.
+      // Step 1: Pre-create user (must complete before OTP so new users get a code, not a link)
       const ensureRes = await fetch('/api/auth/ensure-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      const { existing } = ensureRes.ok ? await ensureRes.json() : { existing: false };
+      // existing: true = skip terms, false = show terms, null = ambiguous (skip terms to be safe)
+      const data = ensureRes.ok ? await ensureRes.json() : { existing: true };
+      const existing = data.existing === false ? false : true;
 
+      // Step 2: Send OTP (now that user is guaranteed to exist in auth)
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.auth.signInWithOtp({ email });
       return { error: error?.message ?? null, existing: !!existing };
@@ -82,6 +99,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     try {
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+      if (!error) {
+        // Revoke all other sessions — enforces single-device login
+        fetch('/api/auth/revoke-others', { method: 'POST' }).catch(() => {});
+      }
       return { error: error?.message ?? null };
     } catch {
       return { error: 'Verification failed' };
@@ -92,7 +113,22 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
     setProfile(null);
-    try { localStorage.removeItem('xp_cooldown'); } catch {}
+    try {
+      localStorage.removeItem('xp_cooldown');
+      localStorage.removeItem('handler_moments_seen');
+      localStorage.removeItem('terminal_theme');
+      sessionStorage.removeItem('sigint_spoke');
+      // Reset theme CSS vars immediately (don't wait for React effect cycle)
+      const root = document.documentElement;
+      root.style.setProperty('--c-primary', '#00ff41');
+      root.style.setProperty('--c-secondary', '#33bb55');
+      root.style.setProperty('--c-muted', '#1a5c2a');
+      root.style.setProperty('--c-dark', '#0d3318');
+      root.style.setProperty('--c-bg', '#060c06');
+      root.style.setProperty('--c-bg-alt', '#0a140a');
+      root.style.setProperty('--c-accent', '#ffaa00');
+      root.style.setProperty('--c-accent-dim', '#aa7700');
+    } catch {}
   }
 
   return (

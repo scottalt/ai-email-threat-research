@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePlayer } from '@/lib/PlayerContext';
-import { RESEARCH_GRADUATION_ANSWERS } from '@/lib/xp';
+import { RESEARCH_FULL_UNLOCK_ANSWERS } from '@/lib/xp';
 import { useEffect, useState } from 'react';
 
 interface IntelData {
@@ -54,7 +54,7 @@ const BACKGROUND_LABELS: Record<string, string> = {
 };
 
 function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answersSubmitted: number }) {
-  const pct = Math.round(Math.min(answersSubmitted / RESEARCH_GRADUATION_ANSWERS, 1) * 100);
+  const pct = Math.round(Math.min(answersSubmitted / RESEARCH_FULL_UNLOCK_ANSWERS, 1) * 100);
 
   return (
     <div className="min-h-screen bg-[var(--c-bg)] p-4 flex flex-col items-center lg:pt-16 pb-20 lg:pb-4">
@@ -69,7 +69,7 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
               CLASSIFIED: INTEL BRIEFING
             </div>
             <div className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed max-w-md mx-auto">
-              Submit {RESEARCH_GRADUATION_ANSWERS} research answers to unlock live aggregate findings from all participants.
+              Submit {RESEARCH_FULL_UNLOCK_ANSWERS} research answers to unlock live aggregate findings from all participants.
             </div>
 
             {signedIn ? (
@@ -79,7 +79,7 @@ function LockedState({ signedIn, answersSubmitted }: { signedIn: boolean; answer
                   <div className="h-full bg-[var(--c-secondary)] transition-all duration-500" style={{ width: `${pct}%` }} />
                 </div>
                 <div className="text-[var(--c-secondary)] text-sm font-mono">
-                  {answersSubmitted}/{RESEARCH_GRADUATION_ANSWERS} answers
+                  {answersSubmitted}/{RESEARCH_FULL_UNLOCK_ANSWERS} answers
                 </div>
                 <Link
                   href="/"
@@ -157,7 +157,7 @@ export default function PlayerIntelPage() {
   const [fetching, setFetching] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const graduated = profile?.researchGraduated ?? false;
+  const hasEnoughResearch = (profile?.researchAnswersSubmitted ?? 0) >= 20;
 
   // Check admin status
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function PlayerIntelPage() {
       .catch(() => {});
   }, [signedIn]);
 
-  const canViewIntel = graduated || isAdmin;
+  const canViewIntel = hasEnoughResearch || isAdmin;
 
   useEffect(() => {
     if (!canViewIntel) return;

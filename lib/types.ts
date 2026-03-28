@@ -39,7 +39,7 @@ export interface RoundResult {
   pointsEarned: number;
 }
 
-export type GameMode = 'freeplay' | 'daily' | 'research' | 'preview' | 'expert';
+export type GameMode = 'freeplay' | 'daily' | 'research' | 'preview' | 'expert' | 'h2h';
 
 // Research mode card — extends Card with research metadata from cards_real
 export interface ResearchCard extends Card {
@@ -75,6 +75,7 @@ export interface AnswerEvent {
   correct: boolean;
   confidence: Confidence;
   timeFromRenderMs: number | null;
+  verifiedTimeMs?: number | null; // server-verified response time (from Redis render timestamp)
   timeFromConfidenceMs: number | null;
   confidenceSelectionTimeMs: number | null;
   scrollDepthPct: number;
@@ -127,4 +128,10 @@ export interface PlayerProfile {
   achievements?: string[];
   currentStreak: number;
   longestStreak: number;
+  featuredBadge: string | null;
+  bio: string;
+  privacyLevel: 'public' | 'friends' | 'private';
+  featuredBadges: string[];
+  themeId: string;
+  seenMoments?: string[];
 }

@@ -1,6 +1,6 @@
 # Terms of Use
 
-*Last updated: March 23, 2026*
+*Last updated: March 24, 2026*
 
 By using Threat Terminal ("the platform"), you agree to these terms.
 
@@ -12,11 +12,23 @@ Threat Terminal is a **free educational and research platform** that measures ho
 
 ---
 
+## Age requirement
+
+You must be at least **16 years old** to use Threat Terminal. By using the platform, you confirm that you meet this age requirement.
+
+---
+
 ## Disclaimer
 
 **Threat Terminal is not a substitute for professional cybersecurity training, tools, or advice.** The skills and techniques presented are for educational awareness only. We make no guarantees that completing this game will protect you from real phishing attacks.
 
 The phishing emails shown in this game are **fictional and AI-generated**. They do not represent real organizations, real people, or real threats. Any resemblance to actual companies, persons, or events is coincidental.
+
+---
+
+## Trademarks
+
+Any brand names, company names, or trademarks referenced in the AI-generated email content are the property of their respective owners. Their inclusion is for educational realism only and does not imply endorsement, affiliation, or sponsorship.
 
 ---
 
@@ -36,7 +48,7 @@ You agree to:
 
 By playing in Research mode (your first 30 answers), you voluntarily contribute anonymized data to a study on AI-generated phishing detection. Your participation is anonymous — see our [Privacy Policy](/privacy) for details on what is collected.
 
-You may stop participating at any time by closing the browser. Your existing answers will remain in the dataset unless you request deletion.
+Participants must be of legal age to consent to research participation in their jurisdiction. You may stop participating at any time by closing the browser. Your existing answers will remain in the dataset unless you request deletion.
 
 ---
 

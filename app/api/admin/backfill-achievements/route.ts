@@ -26,13 +26,27 @@ export async function POST() {
 
   for (const row of players) {
     const p = row as Record<string, unknown>;
+    const playerId = p.id as string;
+
+    // Fetch supplementary data for new achievement checks
+    const [{ count: researchCount }, { data: h2hStatsRow }] = await Promise.all([
+      admin.from('answers').select('id', { count: 'exact', head: true })
+        .eq('player_id', playerId).eq('game_mode', 'research'),
+      admin.from('h2h_player_stats').select('wins, best_win_streak, peak_rank_points')
+        .eq('player_id', playerId).eq('season', 'season-0').maybeSingle(),
+    ]);
+
     const player = {
-      id: p.id as string,
+      id: playerId,
       xp: p.xp as number,
       level: p.level as number,
       totalSessions: p.total_sessions as number,
       researchGraduated: p.research_graduated as boolean,
       personalBestScore: p.personal_best_score as number,
+      researchAnswersSubmitted: researchCount ?? 0,
+      h2hWins: h2hStatsRow?.wins ?? 0,
+      h2hBestStreak: h2hStatsRow?.best_win_streak ?? 0,
+      h2hPeakRankPoints: h2hStatsRow?.peak_rank_points ?? 0,
     };
 
     try {

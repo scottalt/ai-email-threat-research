@@ -40,11 +40,19 @@ import { RoundSummary } from './RoundSummary';
 import { StartScreen } from './StartScreen';
 import { ResearchIntro } from './ResearchIntro';
 import { TutorialCard } from './TutorialCard';
+import { Handler } from './Handler';
+import { HANDLER_DIALOGUES, hasSeenMoment, markMomentSeen } from '@/lib/handler-dialogues';
+import { H2HLobby } from './H2HLobby';
+import { H2HQueue } from './H2HQueue';
+import { H2HCountdown } from './H2HCountdown';
+import { H2HMatch } from './H2HMatch';
+import { H2HResult } from './H2HResult';
 import type { Card, DealCard, Answer, Confidence, RoundResult, GameMode, AnswerEvent, SessionPayload } from '@/lib/types';
 import type { SafeDealCard } from '@/lib/card-utils';
-import { useSoundEnabled } from '@/lib/useSoundEnabled';
+import { useSoundEnabled, useMusicEnabled } from '@/lib/useSoundEnabled';
 import { usePlayer } from '@/lib/usePlayer';
 import { useNavVisibility } from '@/lib/NavVisibilityContext';
+import { useSigint } from '@/lib/SigintContext';
 import { playCorrect, playWrong, playStreak } from '@/lib/sounds';
 import { getRankFromLevel } from '@/lib/rank';
 
@@ -62,7 +70,11 @@ const CONFIDENCE_PENALTY: Record<Confidence, number> = {
   certain: -200,
 };
 
-type GamePhase = 'start' | 'playing' | 'checking' | 'feedback' | 'summary' | 'daily_complete' | 'loading' | 'research_intro' | 'research_unavailable' | 'tutorial';
+type GamePhase = 'start' | 'playing' | 'checking' | 'feedback'
+  | 'summary' | 'daily_complete' | 'loading'
+  | 'research_intro' | 'research_unavailable' | 'tutorial'
+  | 'handler_research_brief' | 'handler_tutorial_intro' | 'handler_tutorial_complete' | 'handler_first_research'
+  | 'h2h_lobby' | 'h2h_queue' | 'h2h_countdown' | 'h2h_match' | 'h2h_result';
 
 export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const [phase, setPhase] = useState<GamePhase>('start');
@@ -74,15 +86,33 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   const [totalScore, setTotalScore] = useState(0);
   const [mode, setMode] = useState<GameMode>('freeplay');
   const [dailyResult, setDailyResult] = useState<{ score: number; totalScore: number } | null>(null);
-  const { soundEnabled, toggleSound } = useSoundEnabled();
-  const { profile } = usePlayer();
+  const { soundEnabled } = useSoundEnabled();
+  const { musicEnabled, toggleMusic } = useMusicEnabled();
+  const { profile, refreshProfile } = usePlayer();
   const sessionId = useRef<string>('');
   const sessionStartedAt = useRef<string>('');
   const [correctCount, setCorrectCount] = useState(0);
+  const [h2hMatchId, setH2HMatchId] = useState<string | null>(null);
+  const [h2hIsBot, setH2HIsBot] = useState(false);
+  const [h2hOpponentName, setH2HOpponentName] = useState('OPPONENT');
+  const [h2hOpponentBadge, setH2HOpponentBadge] = useState<string | null>(null);
+  const [h2hOpponentThemeColor, setH2HOpponentThemeColor] = useState('#00ff41');
+  const [h2hResult, setH2HResult] = useState<{ winnerId: string | null; myPointsDelta: number; opponentPointsDelta: number; reason: string } | null>(null);
   const hasAutoStarted = useRef(false);
+  const tutorialCorrectRef = useRef(false);
   const [flashClass, setFlashClass] = useState<string | null>(null);
   const sessionFinalized = useRef<Promise<void>>(Promise.resolve());
   const { setNavHidden } = useNavVisibility();
+  const { triggerSigint } = useSigint();
+
+  // Refresh profile when returning to start screen (updates clearance path, XP, etc.)
+  const prevPhase = useRef<GamePhase>('start');
+  useEffect(() => {
+    if (phase === 'start' && prevPhase.current !== 'start') {
+      refreshProfile();
+    }
+    prevPhase.current = phase;
+  }, [phase, refreshProfile]);
 
   useEffect(() => {
     setNavHidden(phase !== 'start');
@@ -146,6 +176,12 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       }
     }
 
+    if (newMode === 'h2h') {
+      setMode('h2h');
+      setPhase('h2h_lobby');
+      return;
+    }
+
     setMode(newMode);
     setCurrentIndex(0);
     setResults([]);
@@ -177,7 +213,8 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           if (newMode === 'preview') {
             setPhase('playing');
           } else {
-            const hasSeenIntro = typeof window !== 'undefined' && localStorage.getItem('research_intro_seen') === '1';
+            // Player-scoped check via DB (not localStorage which leaks across accounts)
+            const hasSeenIntro = hasSeenMoment('research_brief');
             setPhase(hasSeenIntro ? 'playing' : 'research_intro');
           }
         })
@@ -185,26 +222,10 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       return;
     }
 
+    // Expert mode merged into freeplay — redirect silently
     if (newMode === 'expert') {
-      setPhase('loading' as GamePhase);
-      fetch(`/api/cards/expert?sessionId=${encodeURIComponent(sessionId.current)}`)
-        .then((r) => r.json())
-        .then((cards: Card[]) => {
-          if (!cards.length) {
-            // No extreme cards yet — fall back to freeplay silently
-            setMode('freeplay');
-            return fetchFreeplayDeck();
-          }
-          const arr = [...cards];
-          for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-          }
-          setDeck(arr.slice(0, ROUND_SIZE));
-          setPhase('playing');
-        })
-        .catch(() => setPhase('start'));
-      return;
+      newMode = 'freeplay';
+      setMode('freeplay');
     }
 
     // Freeplay and daily modes — fetch cards from server
@@ -214,6 +235,9 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       .then((r) => r.json())
       .then((cards: Card[]) => {
         setDeck(cards);
+        // SIGINT: explain the mode on first play (before cards appear)
+        if (newMode === 'daily') triggerSigint('first_daily');
+        else if (newMode === 'freeplay') triggerSigint('first_freeplay');
         setPhase('playing');
       })
       .catch(() => setPhase('start'));
@@ -256,6 +280,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           grammarQuality?: number | null; proseFluency?: number | null;
           personalizationLevel?: number | null; contextualCoherence?: number | null;
           datasetVersion?: string | null;
+          verifiedTimeMs?: number | null;
         }) => {
           // Hydrate the card with server-provided answer data (post-answer, no leak)
           const fullCard: Card = {
@@ -310,7 +335,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
 
           // Log answer event (fire and forget — skip in preview mode)
           if (typeof window !== 'undefined' && mode !== 'preview') {
-            logAnswerEvent(fullCard, answer, data.correct, confidence, data.streak, newCorrectCount, timing);
+            logAnswerEvent(fullCard, answer, data.correct, confidence, data.streak, newCorrectCount, timing, data.verifiedTimeMs ?? null);
           }
 
           setPhase('feedback');
@@ -367,7 +392,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     answerMethod: 'button';
     headersOpened: boolean;
     urlInspected: boolean;
-  }) {
+  }, serverVerifiedTimeMs?: number | null) {
     const researchCard = card as Card & Record<string, unknown>;
     const answerEvent: AnswerEvent = {
       sessionId: sessionId.current,
@@ -388,6 +413,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       correct,
       confidence,
       timeFromRenderMs: timing?.timeFromRenderMs ?? null,
+      verifiedTimeMs: serverVerifiedTimeMs ?? null,
       timeFromConfidenceMs: timing?.timeFromConfidenceMs ?? null,
       confidenceSelectionTimeMs: timing?.confidenceSelectionTimeMs ?? null,
       scrollDepthPct: timing?.scrollDepthPct ?? 0,
@@ -454,21 +480,119 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         }).then((r) => { if (!r.ok) console.error('[sessions] finalize failed:', r.status); }).catch((err) => { console.error('[sessions] finalize failed:', err); });
       }
       setPhase('summary');
+
+      // SIGINT: round completion moments — delayed so player sees summary first
+      setTimeout(() => {
+        if (correctCount > 0) triggerSigint('first_correct');
+        triggerSigint('first_session_complete');
+      }, 2000);
     } else {
       setCurrentIndex(nextIndex);
       setPhase('playing');
     }
   }
 
+  if (phase === 'h2h_lobby' && profile) {
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <H2HLobby
+          profile={profile}
+          onSearch={() => setPhase('h2h_queue')}
+          onBack={() => setPhase('start')}
+        />
+      </div>
+    );
+  }
+
+  if (phase === 'h2h_queue' && profile) {
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <H2HQueue
+          profile={{ id: profile.id, displayName: profile.displayName }}
+          onMatchFound={(matchId, isBot) => {
+            setH2HMatchId(matchId);
+            setH2HIsBot(isBot);
+            if (isBot) {
+              // Bot gets a random name for the countdown
+              import('@/lib/h2h').then(({ getRandomBotName }) => {
+                setH2HOpponentName(getRandomBotName());
+                setPhase('h2h_countdown');
+              });
+            } else {
+              // Real PvP — go straight to match lobby (accept first, then countdown plays after)
+              setPhase('h2h_match');
+            }
+          }}
+          onCancel={() => setPhase('start')}
+        />
+      </div>
+    );
+  }
+
+  if (phase === 'h2h_countdown' && h2hMatchId && profile) {
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <H2HCountdown
+          opponentName={h2hOpponentName}
+          opponentBadge={h2hOpponentBadge}
+          opponentThemeColor={h2hOpponentThemeColor}
+          onComplete={() => setPhase('h2h_match')}
+        />
+      </div>
+    );
+  }
+
+  if (phase === 'h2h_match' && h2hMatchId && profile) {
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <H2HMatch
+          matchId={h2hMatchId}
+          playerId={profile.id}
+          isBot={h2hIsBot}
+          onMatchEnd={(result) => {
+            setH2HResult(result);
+            setPhase('h2h_result');
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (phase === 'h2h_result' && h2hMatchId && profile) {
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <H2HResult
+          matchId={h2hMatchId}
+          playerId={profile.id}
+          winnerId={h2hResult?.winnerId ?? null}
+          myPointsDelta={h2hResult?.myPointsDelta ?? 0}
+          isBot={h2hIsBot}
+          reason={h2hResult?.reason ?? 'completed'}
+          onRematch={() => {
+            setH2HMatchId(null);
+            setH2HResult(null);
+            setPhase('h2h_lobby');
+          }}
+          onBack={() => {
+            setH2HMatchId(null);
+            setH2HResult(null);
+            setH2HIsBot(false);
+            setPhase('start');
+          }}
+        />
+      </div>
+    );
+  }
+
   if (phase === 'start') {
-    return <StartScreen onStart={startRound} soundEnabled={soundEnabled} onToggleSound={toggleSound} />;
+    return <StartScreen onStart={startRound} musicEnabled={musicEnabled} onToggleMusic={toggleMusic} />;
   }
 
   if (phase === ('loading' as GamePhase)) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <span className="text-[var(--c-secondary)] font-mono text-sm tracking-widest">
-          {mode === 'expert' ? 'LOADING EXPERT DECK...' : 'LOADING RESEARCH DATA...'}
+          LOADING...
         </span>
       </div>
     );
@@ -479,14 +603,86 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
       <ResearchIntro
         onBegin={() => {
           const isFirstTime = !profile || (profile.researchAnswersSubmitted ?? 0) === 0;
-          setPhase(isFirstTime ? 'tutorial' : 'playing');
+          if (isFirstTime && !hasSeenMoment('research_brief')) {
+            setPhase('handler_research_brief');
+          } else if (isFirstTime) {
+            // Always show tutorial for players with 0 answers, even if they saw it before
+            // If they've seen the tutorial intro before, SIGINT acknowledges their return
+            if (hasSeenMoment('tutorial_intro')) {
+              triggerSigint('tutorial_return');
+            }
+            setPhase('tutorial');
+          } else {
+            setPhase('playing');
+          }
         }}
       />
     );
   }
 
+  // Handler: research brief → tutorial intro → tutorial → tutorial complete → first research → playing
+  if (phase === 'handler_research_brief') {
+    const d = HANDLER_DIALOGUES.research_brief ?? { lines: ['Research mode. Let\'s go.'], buttonText: 'GO' };
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <Handler lines={d.lines} buttonText={d.buttonText} onDismiss={() => {
+          try { markMomentSeen('research_brief'); } catch {}
+          try { triggerSigint('tutorial_intro'); } catch {}
+          setPhase('tutorial');
+        }} />
+      </div>
+    );
+  }
+
+  if (phase === 'handler_tutorial_intro') {
+    const d = HANDLER_DIALOGUES.tutorial_intro ?? { lines: ['Training sim loaded.'], buttonText: 'GOT IT' };
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <Handler lines={d.lines} buttonText={d.buttonText} onDismiss={() => {
+          markMomentSeen('tutorial_intro');
+          setPhase('tutorial');
+        }} />
+      </div>
+    );
+  }
+
   if (phase === 'tutorial') {
-    return <TutorialCard onComplete={() => setPhase('playing')} />;
+    return <TutorialCard onComplete={(correct) => {
+      if (!hasSeenMoment('tutorial_complete')) {
+        tutorialCorrectRef.current = correct;
+        setPhase('handler_tutorial_complete');
+      } else {
+        setPhase('playing');
+      }
+    }} />;
+  }
+
+  if (phase === 'handler_tutorial_complete') {
+    const d = tutorialCorrectRef.current
+      ? HANDLER_DIALOGUES.tutorial_complete_correct
+      : HANDLER_DIALOGUES.tutorial_complete_wrong;
+    // Fall back to generic if variant doesn't exist
+    const dialogue = d ?? HANDLER_DIALOGUES.tutorial_complete ?? { lines: ['Good work. You\'re ready.'], buttonText: 'GO' };
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <Handler lines={dialogue.lines} buttonText={dialogue.buttonText} onDismiss={() => {
+          markMomentSeen('tutorial_complete');
+          setPhase('handler_first_research');
+        }} />
+      </div>
+    );
+  }
+
+  if (phase === 'handler_first_research') {
+    const d = HANDLER_DIALOGUES.first_research_start ?? { lines: ['Good luck.'], buttonText: 'BEGIN' };
+    return (
+      <div className="min-h-screen bg-[var(--c-bg)] flex flex-col items-center justify-center p-4 pb-safe">
+        <Handler lines={d.lines} buttonText={d.buttonText} onDismiss={() => {
+          markMomentSeen('first_research_start');
+          setPhase('playing');
+        }} />
+      </div>
+    );
   }
 
   if (phase === 'research_unavailable') {
@@ -600,8 +796,8 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           total={ROUND_SIZE}
           streak={streak}
           totalScore={totalScore}
-          soundEnabled={soundEnabled}
-          onToggleSound={toggleSound}
+          musicEnabled={musicEnabled}
+          onToggleMusic={toggleMusic}
           onQuit={() => setPhase('start')}
           mode={mode}
         />

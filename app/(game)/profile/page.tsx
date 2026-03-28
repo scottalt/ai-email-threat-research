@@ -1,14 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '@/lib/usePlayer';
+import { useSigint } from '@/lib/SigintContext';
 import { LevelMeter } from '@/components/LevelMeter';
 import { getRankFromLevel } from '@/lib/rank';
-import { ACHIEVEMENTS, RARITY_COLORS, CATEGORY_LABELS, type AchievementCategory } from '@/lib/achievements';
-import { THEMES, isThemeUnlocked, type ThemeDef } from '@/lib/themes';
-import { useTheme } from '@/lib/ThemeContext';
+import { ACHIEVEMENTS, RARITY_COLORS, RARITY_BADGE_CLASS, CATEGORY_LABELS, type AchievementCategory } from '@/lib/achievements';
+import { getRankFromPoints, H2H_DAILY_RATED_CAP } from '@/lib/h2h';
+import { QUESTS } from '@/lib/quests';
 import Link from 'next/link';
 import type { PlayerBackground } from '@/lib/types';
+
+interface SoloStats {
+  totalAnswers: number;
+  totalCorrect: number;
+  overallAccuracy: number;
+  phishingCatchRate: number | null;
+  legitAccuracy: number | null;
+  byDifficulty: Record<string, { total: number; correct: number }>;
+  byConfidence: Record<string, { total: number; correct: number }>;
+  avgTimeMs: number | null;
+  headersRate: number;
+  urlRate: number;
+  byMode: Record<string, { total: number; correct: number }>;
+  activity: Record<string, number>;
+}
+
+const DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'extreme'];
+const CONFIDENCE_ORDER = ['guessing', 'likely', 'certain'];
+const MODE_LABELS: Record<string, string> = { freeplay: 'FREEPLAY', daily: 'DAILY', expert: 'EXPERT' };
+
+function AccuracyBar({ pct, color }: { pct: number; color: string }) {
+  return (
+    <div className="w-full h-1.5 bg-[#0a140a] mt-1">
+      <div className="h-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+    </div>
+  );
+}
 
 const RANKS = [
   { label: 'ZERO_DAY',         levels: '28–30', color: '#ff3333', minLevel: 28 },
@@ -31,8 +59,8 @@ const BACKGROUND_OPTIONS: { value: PlayerBackground; label: string }[] = [
 ];
 
 export default function ProfilePage() {
-  const { profile, loading, signedIn, applyProfile } = usePlayer();
-  const { theme: activeTheme, setThemeId } = useTheme();
+  const { profile, loading, signedIn, applyProfile, refreshProfile } = usePlayer();
+  const { triggerSigint } = useSigint();
   const [editingCallsign, setEditingCallsign] = useState(false);
   const [callsignValue, setCallsignValue] = useState('');
   const [callsignSaving, setCallsignSaving] = useState(false);
@@ -41,6 +69,33 @@ export default function ProfilePage() {
   const [backgroundSaving, setBackgroundSaving] = useState(false);
   const [showRanks, setShowRanks] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [profileTab, setProfileTab] = useState<'info' | 'solo' | 'h2h' | 'quests' | 'friends'>('info');
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioValue, setBioValue] = useState('');
+  const [bioSaving, setBioSaving] = useState(false);
+  const [bioError, setBioError] = useState('');
+  const [privacySaving, setPrivacySaving] = useState(false);
+  const [shelfSaving, setShelfSaving] = useState(false);
+  const [h2hStats, setH2HStats] = useState<{
+    rankLabel: string; rankIcon: string; rankPoints: number; rankColor: string;
+    wins: number; losses: number; winStreak: number; bestWinStreak: number;
+    peakRankPoints: number; ratedMatchesToday: number;
+  } | null>(null);
+  const [soloStats, setSoloStats] = useState<SoloStats | null>(null);
+  const [soloStatsEmpty, setSoloStatsEmpty] = useState(false);
+  const [soloStatsError, setSoloStatsError] = useState('');
+
+  // Friends
+  const [friendsData, setFriendsData] = useState<{
+    friends: { playerId: string; displayName: string; level: number; rankPoints: number; rankLabel: string }[];
+    incoming: { requestId: string; from: { playerId: string; displayName: string } }[];
+    outgoing: { requestId: string; to: { playerId: string; displayName: string } }[];
+  } | null>(null);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [friendsSubTab, setFriendsSubTab] = useState<'list' | 'incoming' | 'outgoing'>('list');
+  const [addFriendCallsign, setAddFriendCallsign] = useState('');
+  const [addFriendStatus, setAddFriendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [addFriendMsg, setAddFriendMsg] = useState('');
 
   // Admin override panel
   const [isAdmin, setIsAdmin] = useState(false);
@@ -56,6 +111,114 @@ export default function ProfilePage() {
   useEffect(() => {
     fetch('/api/player/admin-check').then(r => { if (r.ok) setIsAdmin(true); });
   }, []);
+
+  // SIGINT: first profile visit (fire once per mount)
+  const sigintFired = useRef(false);
+  useEffect(() => {
+    if (signedIn && profile && !sigintFired.current) {
+      sigintFired.current = true;
+      triggerSigint('first_profile');
+    }
+  }, [signedIn, profile, triggerSigint]);
+
+  // Eagerly fetch incoming friend request count for notification badge
+  const [incomingCount, setIncomingCount] = useState(0);
+  useEffect(() => {
+    if (!signedIn) return;
+    fetch('/api/friends')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setIncomingCount(data.incoming?.length ?? 0);
+          setFriendsData(data); // cache it so the tab doesn't re-fetch
+        }
+      })
+      .catch(() => {});
+  }, [signedIn]);
+
+  // Lazy-load friends data when tab selected (fallback if eager fetch hasn't completed)
+  useEffect(() => {
+    if (profileTab !== 'friends' || friendsData || friendsLoading) return;
+    setFriendsLoading(true);
+    fetch('/api/friends')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setFriendsData(data); })
+      .catch(() => {})
+      .finally(() => setFriendsLoading(false));
+  }, [profileTab, friendsData, friendsLoading]);
+
+  async function handleAddFriend() {
+    const callsign = addFriendCallsign.trim();
+    if (!callsign) return;
+    setAddFriendStatus('sending');
+    setAddFriendMsg('');
+    try {
+      const res = await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetCallsign: callsign }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAddFriendStatus('sent');
+        setAddFriendMsg('REQUEST SENT');
+        setAddFriendCallsign('');
+        setFriendsData(null); // refetch
+        triggerSigint('first_friend');
+      } else {
+        setAddFriendStatus('error');
+        setAddFriendMsg(data.error ?? 'FAILED');
+      }
+    } catch {
+      setAddFriendStatus('error');
+      setAddFriendMsg('NETWORK ERROR');
+    }
+  }
+
+  async function handleFriendAction(requestId: string, action: 'accept' | 'reject') {
+    try {
+      const res = await fetch('/api/friends', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action }),
+      });
+      if (res.ok) setFriendsData(null); // refetch
+    } catch { /* ignore */ }
+  }
+
+  async function handleRemoveFriend(friendId: string) {
+    try {
+      const res = await fetch('/api/friends', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendId }),
+      });
+      if (res.ok) setFriendsData(null); // refetch
+    } catch { /* ignore */ }
+  }
+
+  useEffect(() => {
+    if (!signedIn) return;
+    // Fetch solo stats
+    fetch('/api/player/stats')
+      .then(r => {
+        if (r.status === 403) { setSoloStatsError('LOCKED'); return null; }
+        if (!r.ok) { setSoloStatsError('FAILED'); return null; }
+        return r.json();
+      })
+      .then(data => {
+        if (!data) return;
+        if (data.empty) { setSoloStatsEmpty(true); return; }
+        setSoloStats(data);
+      })
+      .catch(() => setSoloStatsError('FAILED'));
+
+    // Fetch h2h stats
+    fetch('/api/h2h/stats')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data && !data.error) setH2HStats(data); })
+      .catch(() => {});
+  }, [signedIn]);
 
   useEffect(() => {
     if (!profile) return;
@@ -166,22 +329,73 @@ export default function ProfilePage() {
     }
   }
 
-  const topRows: { label: string; value: string | number }[] = [];
+  async function handleSaveBio() {
+    setBioSaving(true);
+    setBioError('');
+    try {
+      const res = await fetch('/api/player/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: bioValue }),
+      });
+      if (res.ok) {
+        await refreshProfile();
+        setEditingBio(false);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setBioError(data.error ?? 'Failed to save bio');
+      }
+    } finally {
+      setBioSaving(false);
+    }
+  }
+
+  async function handleSetPrivacy(level: 'public' | 'friends' | 'private') {
+    setPrivacySaving(true);
+    try {
+      const res = await fetch('/api/player/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ privacyLevel: level }),
+      });
+      if (res.ok) {
+        await refreshProfile();
+      }
+    } finally {
+      setPrivacySaving(false);
+    }
+  }
+
+  async function handleToggleShelfBadge(badgeId: string) {
+    setShelfSaving(true);
+    try {
+      const res = await fetch('/api/player/featured-badge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badgeId, action: 'shelf' }),
+      });
+      if (res.ok) {
+        await refreshProfile();
+      }
+    } finally {
+      setShelfSaving(false);
+    }
+  }
 
   const bottomRows: { label: string; value: string | number }[] = [
-    { label: 'LEVEL',             value: profile.level },
     { label: 'TOTAL XP',          value: `${profile.xp.toLocaleString()} XP` },
     { label: 'CURRENT STREAK',    value: profile.currentStreak > 0 ? `${profile.currentStreak} days` : '—' },
-    { label: 'LONGEST STREAK',    value: profile.longestStreak > 0 ? `${profile.longestStreak} days` : '—' },
-    { label: 'SESSIONS',          value: profile.totalSessions },
-    { label: 'RESEARCH SESSIONS', value: profile.researchSessionsCompleted },
-    { label: 'GRADUATION',        value: profile.researchGraduated ? 'GRADUATED — EXPERT UNLOCKED' : `${profile.researchSessionsCompleted}/3 sessions` },
     { label: 'PERSONAL BEST',     value: `${profile.personalBestScore.toLocaleString()} pts` },
   ];
+
+  const avgTimeSec = soloStats?.avgTimeMs ? (soloStats.avgTimeMs / 1000).toFixed(1) : null;
+  const activityValues = soloStats ? Object.values(soloStats.activity) : [];
+  const maxActivity = Math.max(...activityValues, 1);
 
   return (
     <main className="min-h-screen bg-[var(--c-bg-alt)] flex items-start justify-center px-4 py-8 lg:pt-16 pb-20 lg:pb-8">
       <div className="w-full max-w-sm lg:max-w-4xl space-y-4 lg:space-y-6">
+        {/* Player header — always visible */}
         <div className="term-border bg-[var(--c-bg)]">
           <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
             <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">OPERATOR_PROFILE</span>
@@ -291,11 +505,7 @@ export default function ProfilePage() {
               {bottomRows.map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between lg:flex-col lg:items-center lg:text-center px-3 py-2 lg:py-3 bg-[var(--c-bg)]">
                   <span className="text-[var(--c-secondary)] text-sm lg:text-xs font-mono tracking-wider">{label}</span>
-                  <span className={`text-sm font-mono font-bold ${
-                    label === 'GRADUATION' && profile.researchGraduated
-                      ? 'text-[var(--c-accent)]'
-                      : 'text-[var(--c-primary)]'
-                  }`}>
+                  <span className="text-sm font-mono font-bold text-[var(--c-primary)]">
                     {value}
                   </span>
                 </div>
@@ -308,175 +518,924 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Terminal Themes — prominent placement */}
-        <div className="term-border bg-[var(--c-bg)]">
-          <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
-            <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">TERMINAL_THEMES</span>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 p-3">
-            {THEMES.map((t) => {
-              const unlocked = isThemeUnlocked(t, profile.level, profile.researchGraduated);
-              const isActive = activeTheme.id === t.id;
-              return (
-                <button
-                  key={t.id}
-                  disabled={!unlocked}
-                  onClick={() => { if (unlocked) setThemeId(t.id); }}
-                  className={`text-left transition-all ${unlocked ? 'hover:scale-[1.02]' : 'opacity-50 cursor-not-allowed'}`}
-                >
-                  {/* Mini terminal preview */}
-                  <div
-                    className="rounded-sm overflow-hidden border"
-                    style={{
-                      borderColor: unlocked
-                        ? isActive
-                          ? t.colors.primary
-                          : `color-mix(in srgb, ${t.colors.primary} 40%, transparent)`
-                        : '#222',
-                      backgroundColor: t.colors.bg,
-                      boxShadow: isActive ? `0 0 12px color-mix(in srgb, ${t.colors.primary} 25%, transparent)` : 'none',
-                    }}
-                  >
-                    {/* Preview header bar */}
-                    <div
-                      className="px-2 py-1 flex items-center justify-between"
-                      style={{ borderBottom: `1px solid color-mix(in srgb, ${t.colors.primary} 30%, transparent)` }}
-                    >
-                      <span className="text-[10px] font-mono tracking-widest font-bold" style={{ color: t.colors.secondary }}>
-                        {t.name}
-                      </span>
-                      <span className="text-[10px] font-mono" style={{ color: t.colors.muted }}>
-                        {isActive ? '[ ON ]' : unlocked ? '' : ''}
-                      </span>
-                    </div>
-                    {/* Preview body */}
-                    <div className="px-2 py-2 space-y-1">
-                      <div className="text-[11px] font-mono" style={{ color: t.colors.primary }}>
-                        {'>'} SYSTEM READY
-                      </div>
-                      <div className="text-[11px] font-mono" style={{ color: t.colors.secondary }}>
-                        {'>'} SCANNING...
-                      </div>
-                      <div className="flex gap-1 mt-1">
-                        {[t.colors.primary, t.colors.secondary, t.colors.muted, t.colors.dark].map((c, i) => (
-                          <div key={i} className="w-3 h-3 rounded-sm" style={{ backgroundColor: c }} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Label below preview */}
-                  <div className="mt-1.5 px-0.5">
-                    <div className="text-xs font-mono font-bold" style={{ color: unlocked ? t.colors.primary : '#555' }}>
-                      {t.name}
-                    </div>
-                    <div className="text-[10px] font-mono" style={{ color: unlocked ? t.colors.secondary : '#444' }}>
-                      {t.subtitle}
-                    </div>
-                    {!unlocked && (
-                      <div className="text-[10px] font-mono text-[#555] mt-0.5">
-                        &#128274; {!profile.researchGraduated ? 'GRADUATE RESEARCH' : t.unlockLabel}
-                      </div>
-                    )}
-                    {isActive && (
-                      <div className="text-[10px] font-mono mt-0.5" style={{ color: t.colors.primary }}>
-                        ACTIVE
-                      </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+        {/* Tab bar */}
+        <div className="term-border bg-[var(--c-bg)] flex overflow-x-auto">
+          <button
+            onClick={() => setProfileTab('info')}
+            className={`flex-1 py-2 text-sm font-mono tracking-widest transition-colors ${
+              profileTab === 'info'
+                ? 'text-[var(--c-primary)] bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] border-b-2 border-[var(--c-primary)]'
+                : 'text-[var(--c-secondary)] hover:text-[var(--c-primary)] border-b-2 border-transparent'
+            }`}
+          >
+            INFO
+          </button>
+          <button
+            onClick={() => setProfileTab('solo')}
+            className={`flex-1 py-2 text-sm font-mono tracking-widest transition-colors ${
+              profileTab === 'solo'
+                ? 'text-[var(--c-primary)] bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] border-b-2 border-[var(--c-primary)]'
+                : 'text-[var(--c-secondary)] hover:text-[var(--c-primary)] border-b-2 border-transparent'
+            }`}
+          >
+            <span className="hidden sm:inline">SOLO </span>STATS
+          </button>
+          <button
+            onClick={() => setProfileTab('h2h')}
+            className={`flex-1 py-2 text-sm font-mono tracking-widest transition-colors ${
+              profileTab === 'h2h'
+                ? 'text-[#ff0080] bg-[rgba(255,0,128,0.06)] border-b-2 border-[#ff0080]'
+                : 'text-[var(--c-secondary)] hover:text-[#ff0080] border-b-2 border-transparent'
+            }`}
+          >
+            PvP
+          </button>
+          <button
+            onClick={() => setProfileTab('quests')}
+            className={`flex-1 py-2 text-sm font-mono tracking-widest transition-colors ${
+              profileTab === 'quests'
+                ? 'text-[var(--c-accent)] bg-[color-mix(in_srgb,var(--c-accent)_6%,transparent)] border-b-2 border-[var(--c-accent)]'
+                : 'text-[var(--c-secondary)] hover:text-[var(--c-accent)] border-b-2 border-transparent'
+            }`}
+          >
+            QUESTS
+          </button>
+          <button
+            onClick={() => setProfileTab('friends')}
+            className={`relative flex-1 py-2 text-sm font-mono tracking-widest transition-colors ${
+              profileTab === 'friends'
+                ? 'text-[var(--c-primary)] bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] border-b-2 border-[var(--c-primary)]'
+                : 'text-[var(--c-secondary)] hover:text-[var(--c-primary)] border-b-2 border-transparent'
+            }`}
+          >
+            FRIENDS
+            {incomingCount > 0 && profileTab !== 'friends' && (
+              <span className="absolute top-1 right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--c-accent)] text-[var(--c-bg)] text-[10px] font-bold animate-pulse">
+                {incomingCount}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Collapsible sections: rank ladder + achievements */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-4 lg:space-y-0">
-          {/* Rank ladder — collapsible on mobile */}
-          <div className="term-border bg-[var(--c-bg)]">
-            <button
-              onClick={() => setShowRanks(o => !o)}
-              className="lg:hidden w-full border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-2 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)] transition-colors"
-            >
-              <span className="text-[var(--c-secondary)] text-sm tracking-widest">RANK_PROGRESSION</span>
-              <span className="text-[var(--c-secondary)] text-sm">{showRanks ? '▲' : '▼'}</span>
-            </button>
-            <div className="hidden lg:block border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
-              <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">RANK_PROGRESSION</span>
-            </div>
-            <div className={`${showRanks ? '' : 'hidden'} lg:block divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]`}>
-              {RANKS.map((rank) => {
-                const isCurrent = getRankFromLevel(profile.level).label === rank.label;
-                return (
-                  <div key={rank.label} className={`flex items-center justify-between px-3 py-2 lg:py-2.5 ${isCurrent ? 'bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)]' : ''}`}>
-                    <div className="flex items-center gap-2">
-                      {isCurrent && <span className="text-[var(--c-primary)] text-sm lg:text-base font-mono">▶</span>}
-                      {!isCurrent && <span className="text-sm lg:text-base font-mono opacity-0">▶</span>}
-                      <span
-                        className={`text-sm lg:text-base font-mono font-bold ${isCurrent ? 'anim-rank-pulse' : ''}`}
-                        style={{ color: rank.color }}
-                      >
-                        {rank.label}
-                      </span>
-                    </div>
-                    <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono opacity-60">LVL {rank.levels}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {/* ═══════════════ INFO TAB ═══════════════ */}
+        {profileTab === 'info' && (
+          <>
 
-          {/* Achievements — collapsible on mobile */}
-          <div className="term-border bg-[var(--c-bg)]">
-            <button
-              onClick={() => setShowAchievements(o => !o)}
-              className="lg:hidden w-full border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-2 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)] transition-colors"
-            >
-              <span className="text-[var(--c-secondary)] text-sm tracking-widest">ACHIEVEMENTS</span>
-              <div className="flex items-center gap-2">
-                <span className="text-[var(--c-secondary)] text-sm font-mono">{profile.achievements?.length ?? 0}/{ACHIEVEMENTS.length}</span>
-                <span className="text-[var(--c-secondary)] text-sm">{showAchievements ? '▲' : '▼'}</span>
+            {/* Bio editor */}
+            <div className="term-border bg-[var(--c-bg)]">
+              <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 flex items-center justify-between">
+                <span className="text-[var(--c-secondary)] text-sm tracking-widest">BIO</span>
+                {!editingBio ? (
+                  <button
+                    type="button"
+                    onClick={() => { setBioValue(profile.bio ?? ''); setEditingBio(true); }}
+                    className="text-[var(--c-secondary)] text-sm font-mono hover:text-[var(--c-primary)] transition-colors"
+                  >
+                    [EDIT]
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditingBio(false)}
+                    className="text-[var(--c-secondary)] text-sm font-mono hover:text-[var(--c-primary)] transition-colors"
+                  >
+                    [CANCEL]
+                  </button>
+                )}
               </div>
-            </button>
-            <div className="hidden lg:flex border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 items-center justify-between">
-              <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">ACHIEVEMENTS</span>
-              <span className="text-[var(--c-secondary)] text-sm font-mono">{profile.achievements?.length ?? 0}/{ACHIEVEMENTS.length}</span>
-            </div>
-            <div className={`${showAchievements ? '' : 'hidden'} lg:block divide-y divide-[color-mix(in_srgb,var(--c-primary)_6%,transparent)]`}>
-              {(Object.keys(CATEGORY_LABELS) as AchievementCategory[]).map((cat) => {
-                const catAchievements = ACHIEVEMENTS.filter(a => a.category === cat);
-                return (
-                  <div key={cat}>
-                    <div className="px-3 py-1.5 bg-[color-mix(in_srgb,var(--c-primary)_2%,transparent)]">
-                      <span className="text-[var(--c-muted)] text-sm font-mono tracking-widest">{CATEGORY_LABELS[cat]}</span>
+              <div className="px-3 py-2">
+                {editingBio ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={bioValue}
+                      onChange={(e) => setBioValue(e.target.value.slice(0, 200))}
+                      maxLength={200}
+                      rows={3}
+                      className="w-full bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-2 py-1.5 text-[var(--c-primary)] font-mono text-sm focus:outline-none focus:border-[color-mix(in_srgb,var(--c-primary)_70%,transparent)] placeholder:text-[var(--c-dark)] resize-none"
+                      placeholder="Write something about yourself..."
+                    />
+                    {bioError && (
+                      <div className="text-[#ff3333] text-xs font-mono">{bioError}</div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--c-muted)] text-xs font-mono">{bioValue.length}/200</span>
+                      <button
+                        type="button"
+                        onClick={handleSaveBio}
+                        disabled={bioSaving}
+                        className="px-4 py-1 border border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)] text-[var(--c-primary)] font-mono text-sm tracking-widest hover:bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] disabled:opacity-40 transition-colors"
+                      >
+                        {bioSaving ? '...' : '[ SAVE ]'}
+                      </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-px bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)]">
-                      {catAchievements.map((a) => {
-                        const unlocked = profile.achievements?.includes(a.id) ?? false;
-                        const color = unlocked ? RARITY_COLORS[a.rarity] : 'var(--c-muted)';
-                        return (
+                  </div>
+                ) : (
+                  <div className="text-[var(--c-secondary)] text-sm font-mono">
+                    {profile.bio || <span className="text-[var(--c-muted)]">No bio set.</span>}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Privacy toggle */}
+            <div className="term-border bg-[var(--c-bg)]">
+              <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                <span className="text-[var(--c-secondary)] text-sm tracking-widest">PROFILE_PRIVACY</span>
+              </div>
+              <div className="px-3 py-2 flex gap-2">
+                {(['public', 'friends', 'private'] as const).map(level => (
+                  <button
+                    key={level}
+                    type="button"
+                    disabled={privacySaving}
+                    onClick={() => handleSetPrivacy(level)}
+                    className={`flex-1 py-1.5 font-mono text-sm tracking-wider transition-all border disabled:opacity-40 ${
+                      profile.privacyLevel === level
+                        ? 'text-[var(--c-primary)] border-[color-mix(in_srgb,var(--c-primary)_80%,transparent)] bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]'
+                        : 'text-[var(--c-secondary)] border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] hover:text-[var(--c-primary)] hover:border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)]'
+                    }`}
+                  >
+                    {level === 'friends' ? 'FRIENDS' : level.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <div className="px-3 pb-2">
+                <span className="text-[var(--c-muted)] text-xs font-mono">
+                  {profile.privacyLevel === 'public' && 'Anyone can see your profile.'}
+                  {profile.privacyLevel === 'friends' && 'Only friends can see your profile. (coming soon)'}
+                  {profile.privacyLevel === 'private' && 'Your profile is hidden from others.'}
+                </span>
+              </div>
+            </div>
+
+            {/* Featured badge shelf */}
+            <div className="term-border bg-[var(--c-bg)]">
+              <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 flex items-center justify-between">
+                <span className="text-[var(--c-secondary)] text-sm tracking-widest">BADGE_SHELF</span>
+                <span className="text-[var(--c-muted)] text-xs font-mono">{profile.featuredBadges?.length ?? 0}/5</span>
+              </div>
+              {(profile.featuredBadges?.length ?? 0) > 0 ? (
+                <div className="px-3 py-3">
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {profile.featuredBadges.map((id, idx) => {
+                      const badge = ACHIEVEMENTS.find(a => a.id === id);
+                      if (!badge) return null;
+                      const color = RARITY_COLORS[badge.rarity];
+                      const isPvpBadge = idx === 0;
+                      return (
+                        <div key={badge.id} className="relative flex flex-col items-center gap-1">
                           <div
-                            key={a.id}
-                            className={`px-3 py-2.5 bg-[var(--c-bg)] ${unlocked ? '' : 'opacity-40'}`}
+                            className="flex flex-col items-center gap-1 px-3 py-2 border min-w-[70px]"
+                            style={{ borderColor: isPvpBadge ? color : `${color}40` }}
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-mono" style={{ color }}>{a.icon}</span>
-                              <span className="text-sm font-mono font-bold tracking-wider" style={{ color }}>
-                                {a.name}
-                              </span>
-                            </div>
-                            <div className="text-sm font-mono mt-0.5" style={{ color: unlocked ? 'var(--c-secondary)' : 'var(--c-muted)' }}>
-                              {unlocked ? a.description : '[LOCKED]'}
-                            </div>
+                            {isPvpBadge && (
+                              <span className="text-[8px] font-mono font-bold tracking-widest" style={{ color }}>PvP</span>
+                            )}
+                            <span className={`text-xl font-mono ${RARITY_BADGE_CLASS[badge.rarity]}`} style={{ color }}>{badge.icon}</span>
+                            <span className="text-[10px] font-mono font-bold tracking-wider" style={{ color }}>{badge.name}</span>
                           </div>
+                          <div className="flex gap-1 mt-1">
+                            {!isPvpBadge && (
+                              <button
+                                type="button"
+                                disabled={shelfSaving}
+                                onClick={async () => {
+                                  setShelfSaving(true);
+                                  try {
+                                    await fetch('/api/player/featured-badge', {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ badgeId: badge.id, action: 'promote' }),
+                                    });
+                                    await refreshProfile();
+                                  } finally { setShelfSaving(false); }
+                                }}
+                                className="text-[9px] font-mono px-1.5 py-0.5 border hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:scale-95 transition-all disabled:opacity-40"
+                                style={{ color, borderColor: `${color}40` }}
+                              >
+                                SET PvP
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              disabled={shelfSaving}
+                              onClick={() => handleToggleShelfBadge(badge.id)}
+                              className="text-[9px] font-mono text-[var(--c-muted)] px-1.5 py-0.5 border border-[var(--c-dark)] hover:text-[#ff3333] hover:border-[rgba(255,51,51,0.3)] active:scale-95 transition-all disabled:opacity-40"
+                            >
+                              REMOVE
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="text-[var(--c-muted)] text-xs font-mono text-center mt-2">First badge = your PvP display badge</div>
+                </div>
+              ) : (
+                <div className="px-3 py-3 text-center">
+                  <span className="text-[var(--c-muted)] text-sm font-mono">No badges on shelf. Tap earned badges below to add.</span>
+                </div>
+              )}
+              {/* Add to shelf — show earned badges not on shelf */}
+              {(() => {
+                const shelfSet = new Set(profile.featuredBadges ?? []);
+                const addable = ACHIEVEMENTS.filter(a => (profile.achievements?.includes(a.id) ?? false) && !shelfSet.has(a.id));
+                if (addable.length === 0 || (profile.featuredBadges?.length ?? 0) >= 5) return null;
+                return (
+                  <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] px-3 py-2">
+                    <div className="text-[var(--c-muted)] text-xs font-mono mb-2">TAP TO ADD:</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {addable.map(a => {
+                        const color = RARITY_COLORS[a.rarity];
+                        return (
+                          <button
+                            key={a.id}
+                            type="button"
+                            disabled={shelfSaving}
+                            onClick={() => handleToggleShelfBadge(a.id)}
+                            className="flex items-center gap-1.5 px-2 py-1 border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] hover:border-current disabled:opacity-40 transition-all text-sm font-mono"
+                            style={{ color }}
+                            title={`Add ${a.name} to shelf`}
+                          >
+                            <span className={RARITY_BADGE_CLASS[a.rarity]}>{a.icon}</span>
+                            <span className="text-xs tracking-wider">{a.name}</span>
+                          </button>
                         );
                       })}
                     </div>
                   </div>
                 );
-              })}
+              })()}
             </div>
+
+            {/* Collapsible sections: rank ladder + achievements */}
+            <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-4 lg:space-y-0">
+              {/* Rank ladder — collapsible on mobile */}
+              <div className="term-border bg-[var(--c-bg)]">
+                <button
+                  onClick={() => setShowRanks(o => !o)}
+                  className="lg:hidden w-full border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-2 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)] transition-colors"
+                >
+                  <span className="text-[var(--c-secondary)] text-sm tracking-widest">XP_RANK</span>
+                  <span className="text-[var(--c-secondary)] text-sm">{showRanks ? '▲' : '▼'}</span>
+                </button>
+                <div className="hidden lg:block border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                  <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">XP_RANK</span>
+                </div>
+                <div className={`${showRanks ? '' : 'hidden'} lg:block divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]`}>
+                  {RANKS.map((rank) => {
+                    const isCurrent = getRankFromLevel(profile.level).label === rank.label;
+                    return (
+                      <div key={rank.label} className={`flex items-center justify-between px-3 py-2 lg:py-2.5 ${isCurrent ? 'bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)]' : ''}`}>
+                        <div className="flex items-center gap-2">
+                          {isCurrent && <span className="text-[var(--c-primary)] text-sm lg:text-base font-mono">▶</span>}
+                          {!isCurrent && <span className="text-sm lg:text-base font-mono opacity-0">▶</span>}
+                          <span
+                            className={`text-sm lg:text-base font-mono font-bold ${isCurrent ? 'anim-rank-pulse' : ''}`}
+                            style={{ color: rank.color }}
+                          >
+                            {rank.label}
+                          </span>
+                        </div>
+                        <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono opacity-60">LVL {rank.levels}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* H2H rank — only for graduated players */}
+              {profile.researchGraduated && h2hStats && (
+                <div className="term-border bg-[var(--c-bg)]">
+                  <div className="border-b border-[rgba(255,0,128,0.25)] px-3 py-1.5">
+                    <span className="text-[#ff0080] text-sm lg:text-base tracking-widest">PvP_RANK</span>
+                  </div>
+                  <div className="px-3 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg" style={{ color: h2hStats.rankColor }}>{h2hStats.rankIcon}</span>
+                      <span className="text-sm lg:text-base font-mono font-bold" style={{ color: h2hStats.rankColor }}>{h2hStats.rankLabel}</span>
+                    </div>
+                    <div className="text-sm font-mono text-[var(--c-secondary)]">
+                      {h2hStats.rankPoints} pts · {h2hStats.wins}W {h2hStats.losses}L
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Achievements — collapsible on mobile */}
+              <div className="term-border bg-[var(--c-bg)]">
+                <button
+                  onClick={() => setShowAchievements(o => !o)}
+                  className="lg:hidden w-full border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-2 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--c-primary)_3%,transparent)] transition-colors"
+                >
+                  <span className="text-[var(--c-secondary)] text-sm tracking-widest">ACHIEVEMENTS</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[var(--c-secondary)] text-sm font-mono">{profile.achievements?.length ?? 0}/{ACHIEVEMENTS.length}</span>
+                    <span className="text-[var(--c-secondary)] text-sm">{showAchievements ? '▲' : '▼'}</span>
+                  </div>
+                </button>
+                <div className="hidden lg:flex border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 items-center justify-between">
+                  <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">ACHIEVEMENTS</span>
+                  <span className="text-[var(--c-secondary)] text-sm font-mono">{profile.achievements?.length ?? 0}/{ACHIEVEMENTS.length}</span>
+                </div>
+                <div className={`${showAchievements ? '' : 'hidden'} lg:block divide-y divide-[color-mix(in_srgb,var(--c-primary)_6%,transparent)]`}>
+                  {(Object.keys(CATEGORY_LABELS) as AchievementCategory[]).map((cat) => {
+                    const catAchievements = ACHIEVEMENTS.filter(a => a.category === cat);
+                    return (
+                      <div key={cat}>
+                        <div className="px-3 py-1.5 bg-[color-mix(in_srgb,var(--c-primary)_2%,transparent)]">
+                          <span className="text-[var(--c-muted)] text-sm font-mono tracking-widest">{CATEGORY_LABELS[cat]}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-px bg-[color-mix(in_srgb,var(--c-primary)_4%,transparent)]">
+                          {catAchievements.map((a) => {
+                            const unlocked = profile.achievements?.includes(a.id) ?? false;
+                            const color = unlocked ? RARITY_COLORS[a.rarity] : 'var(--c-muted)';
+                            return (
+                              <div
+                                key={a.id}
+                                className={`px-3 py-2.5 bg-[var(--c-bg)] ${unlocked ? '' : 'opacity-40'}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg font-mono" style={{ color }}>{a.icon}</span>
+                                  <span className="text-sm font-mono font-bold tracking-wider" style={{ color }}>
+                                    {a.name}
+                                  </span>
+                                </div>
+                                <div className="text-sm font-mono mt-0.5" style={{ color: unlocked ? 'var(--c-secondary)' : 'var(--c-muted)' }}>
+                                  {unlocked ? a.description : '[LOCKED]'}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ═══════════════ SOLO STATS TAB ═══════════════ */}
+        {profileTab === 'solo' && (
+          <>
+            {soloStatsError === 'LOCKED' ? (
+              <div className="term-border bg-[var(--c-bg)] px-4 py-6 text-center space-y-3">
+                <div className="text-[var(--c-accent)] text-sm font-mono tracking-widest">STATS_LOCKED</div>
+                <div className="text-[var(--c-muted)] text-sm font-mono">Complete 30 research answers to unlock your personal stats.</div>
+              </div>
+            ) : soloStatsError ? (
+              <div className="term-border bg-[var(--c-bg)] px-4 py-6 text-center">
+                <div className="text-[#ff3333] text-sm font-mono">LOAD_FAILED</div>
+              </div>
+            ) : soloStatsEmpty ? (
+              <div className="term-border bg-[var(--c-bg)] px-4 py-6 text-center space-y-3">
+                <div className="text-[var(--c-secondary)] text-sm font-mono tracking-widest">NO_DATA</div>
+                <div className="text-[var(--c-muted)] text-sm font-mono">Play some rounds in Freeplay, Daily, or Expert to see your stats.</div>
+              </div>
+            ) : !soloStats ? (
+              <div className="term-border bg-[var(--c-bg)] px-4 py-6 text-center">
+                <span className="text-[var(--c-secondary)] text-sm font-mono">LOADING...</span>
+              </div>
+            ) : (
+              <>
+                {/* Core stats */}
+                <div className="term-border bg-[var(--c-bg)]">
+                  <div className="grid grid-cols-3 divide-x divide-[color-mix(in_srgb,var(--c-primary)_10%,transparent)]">
+                    <div className="px-3 py-4 text-center">
+                      <div className="text-2xl font-black font-mono text-[var(--c-primary)]">{soloStats.overallAccuracy}%</div>
+                      <div className="text-sm font-mono text-[var(--c-muted)] mt-1">ACCURACY</div>
+                    </div>
+                    <div className="px-3 py-4 text-center">
+                      <div className="text-2xl font-black font-mono text-[var(--c-primary)]">{soloStats.totalAnswers}</div>
+                      <div className="text-sm font-mono text-[var(--c-muted)] mt-1">ANALYZED</div>
+                    </div>
+                    <div className="px-3 py-4 text-center">
+                      <div className="text-2xl font-black font-mono text-[var(--c-primary)]">{avgTimeSec ?? '—'}s</div>
+                      <div className="text-sm font-mono text-[var(--c-muted)] mt-1">AVG TIME</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detection split */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="term-border bg-[var(--c-bg)] border-[rgba(255,51,51,0.3)] text-center px-3 py-3">
+                    <div className="text-[#ff3333] text-2xl font-black font-mono">{soloStats.phishingCatchRate ?? '—'}%</div>
+                    <div className="text-sm font-mono text-[var(--c-secondary)] mt-1 tracking-wider">THREATS CAUGHT</div>
+                  </div>
+                  <div className="term-border bg-[var(--c-bg)] border-[color-mix(in_srgb,var(--c-primary)_30%,transparent)] text-center px-3 py-3">
+                    <div className="text-[var(--c-primary)] text-2xl font-black font-mono">{soloStats.legitAccuracy ?? '—'}%</div>
+                    <div className="text-sm font-mono text-[var(--c-secondary)] mt-1 tracking-wider">LEGIT CLEARED</div>
+                  </div>
+                </div>
+
+                {/* Two-column layout on desktop */}
+                <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-4 lg:space-y-0">
+                  {/* Left column */}
+                  <div className="space-y-4">
+                    {/* By game mode */}
+                    <div className="term-border bg-[var(--c-bg)]">
+                      <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                        <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">BY_GAME_MODE</span>
+                      </div>
+                      <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                        {Object.entries(soloStats.byMode).map(([mode, data]) => {
+                          const pct = Math.round((data.correct / data.total) * 100);
+                          const color = pct >= 80 ? 'var(--c-primary)' : pct >= 60 ? '#ffaa00' : '#ff3333';
+                          return (
+                            <div key={mode} className="px-3 py-2.5 lg:py-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono tracking-wider">{MODE_LABELS[mode] ?? mode.toUpperCase()}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[var(--c-muted)] text-sm lg:text-base font-mono">{data.total} answers</span>
+                                  <span className="text-sm lg:text-base font-mono font-bold" style={{ color }}>{pct}%</span>
+                                </div>
+                              </div>
+                              <AccuracyBar pct={pct} color={color} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Tool usage */}
+                    <div className="term-border bg-[var(--c-bg)]">
+                      <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                        <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">TOOL_USAGE</span>
+                      </div>
+                      <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                        <div className="px-3 py-2.5 lg:py-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono tracking-wider">HEADERS CHECKED</span>
+                            <span className="text-sm lg:text-base font-mono font-bold text-[var(--c-primary)]">{soloStats.headersRate}%</span>
+                          </div>
+                          <AccuracyBar pct={soloStats.headersRate} color="var(--c-secondary)" />
+                        </div>
+                        <div className="px-3 py-2.5 lg:py-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono tracking-wider">URLS INSPECTED</span>
+                            <span className="text-sm lg:text-base font-mono font-bold text-[var(--c-primary)]">{soloStats.urlRate}%</span>
+                          </div>
+                          <AccuracyBar pct={soloStats.urlRate} color="var(--c-secondary)" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right column */}
+                  <div className="space-y-4">
+                    {/* By difficulty */}
+                    <div className="term-border bg-[var(--c-bg)]">
+                      <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                        <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">ACCURACY_BY_DIFFICULTY</span>
+                      </div>
+                      <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                        {DIFFICULTY_ORDER.map(d => {
+                          const data = soloStats.byDifficulty[d];
+                          if (!data || data.total < 3) return null;
+                          const pct = Math.round((data.correct / data.total) * 100);
+                          const color = pct >= 80 ? 'var(--c-primary)' : pct >= 60 ? '#ffaa00' : '#ff3333';
+                          return (
+                            <div key={d} className="px-3 py-2.5 lg:py-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono tracking-wider">{d.toUpperCase()}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[var(--c-muted)] text-sm lg:text-base font-mono">{data.correct}/{data.total}</span>
+                                  <span className="text-sm lg:text-base font-mono font-bold" style={{ color }}>{pct}%</span>
+                                </div>
+                              </div>
+                              <AccuracyBar pct={pct} color={color} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Confidence calibration */}
+                    <div className="term-border bg-[var(--c-bg)]">
+                      <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                        <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">CONFIDENCE_CALIBRATION</span>
+                      </div>
+                      <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                        {CONFIDENCE_ORDER.map(c => {
+                          const data = soloStats.byConfidence[c];
+                          if (!data || data.total < 3) return null;
+                          const pct = Math.round((data.correct / data.total) * 100);
+                          const color = c === 'certain' ? (pct >= 90 ? 'var(--c-primary)' : '#ff3333')
+                            : c === 'likely' ? (pct >= 70 ? 'var(--c-primary)' : '#ffaa00')
+                            : 'var(--c-secondary)';
+                          return (
+                            <div key={c} className="px-3 py-2.5 lg:py-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[var(--c-secondary)] text-sm lg:text-base font-mono tracking-wider">{c.toUpperCase()}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[var(--c-muted)] text-sm lg:text-base font-mono">{data.correct}/{data.total}</span>
+                                  <span className="text-sm lg:text-base font-mono font-bold" style={{ color }}>{pct}%</span>
+                                </div>
+                              </div>
+                              <AccuracyBar pct={pct} color={color} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="px-3 py-2 text-sm lg:text-base font-mono text-[var(--c-muted)]">
+                        CERTAIN should be 90%+. If not, recalibrate.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Activity heatmap */}
+                <div className="term-border bg-[var(--c-bg)]">
+                  <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                    <span className="text-[var(--c-secondary)] text-sm lg:text-base tracking-widest">ACTIVITY_14D</span>
+                  </div>
+                  <div className="px-3 py-3">
+                    <div className="flex gap-1 items-end h-12 lg:h-16">
+                      {Object.entries(soloStats.activity).map(([date, count]) => {
+                        const height = count > 0 ? Math.max(15, (count / maxActivity) * 100) : 4;
+                        const opacity = count > 0 ? 0.3 + (count / maxActivity) * 0.7 : 0.08;
+                        return (
+                          <div
+                            key={date}
+                            className="flex-1 rounded-sm"
+                            style={{
+                              height: `${height}%`,
+                              backgroundColor: 'var(--c-primary)',
+                              opacity,
+                            }}
+                            title={`${date}: ${count} answers`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between mt-1.5">
+                      <span className="text-[var(--c-muted)] text-xs font-mono">{Object.keys(soloStats.activity)[0]?.slice(5)}</span>
+                      <span className="text-[var(--c-muted)] text-xs font-mono">TODAY</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ═══════════════ H2H STATS TAB ═══════════════ */}
+        {profileTab === 'h2h' && (
+          <>
+            {!h2hStats || (h2hStats.wins === 0 && h2hStats.losses === 0) ? (
+              <div className="term-border bg-[var(--c-bg)] px-4 py-6 text-center space-y-2">
+                <div className="text-[var(--c-secondary)] text-sm font-mono tracking-widest">NO_PvP_DATA</div>
+                <div className="text-[var(--c-muted)] text-sm font-mono">No PvP matches played yet.</div>
+              </div>
+            ) : (
+              <>
+                {/* Rank card */}
+                <div className="term-border bg-[var(--c-bg)]" style={{ borderColor: `${h2hStats.rankColor}50` }}>
+                  <div className="border-b px-3 py-1.5" style={{ borderColor: `${h2hStats.rankColor}50` }}>
+                    <span className="text-sm lg:text-base tracking-widest" style={{ color: h2hStats.rankColor }}>CURRENT_RANK</span>
+                  </div>
+                  <div className="px-4 py-5 text-center space-y-1">
+                    <div className="text-3xl font-mono" style={{ color: h2hStats.rankColor }}>{h2hStats.rankIcon}</div>
+                    <div className="text-xl font-black font-mono tracking-widest" style={{ color: h2hStats.rankColor }}>{h2hStats.rankLabel}</div>
+                    <div className="text-sm font-mono text-[var(--c-muted)]">{h2hStats.rankPoints} RP</div>
+                  </div>
+                </div>
+
+                {/* Record */}
+                {(() => {
+                  const totalMatches = h2hStats.wins + h2hStats.losses;
+                  const winrate = totalMatches > 0 ? Math.round((h2hStats.wins / totalMatches) * 100) : 0;
+                  return (
+                    <div className="term-border bg-[var(--c-bg)]">
+                      <div className="border-b border-[rgba(255,0,128,0.3)] px-3 py-1.5">
+                        <span className="text-[#ff0080] text-sm lg:text-base tracking-widest">MATCH_RECORD</span>
+                      </div>
+                      <div className="grid grid-cols-3 divide-x divide-[rgba(255,0,128,0.1)]">
+                        <div className="px-3 py-4 text-center">
+                          <div className="text-2xl font-black font-mono text-[var(--c-primary)]">{h2hStats.wins}</div>
+                          <div className="text-sm font-mono text-[var(--c-muted)] mt-1">WINS</div>
+                        </div>
+                        <div className="px-3 py-4 text-center">
+                          <div className="text-2xl font-black font-mono text-[#ff3333]">{h2hStats.losses}</div>
+                          <div className="text-sm font-mono text-[var(--c-muted)] mt-1">LOSSES</div>
+                        </div>
+                        <div className="px-3 py-4 text-center">
+                          <div className="text-2xl font-black font-mono text-[#ff0080]">{winrate}%</div>
+                          <div className="text-sm font-mono text-[var(--c-muted)] mt-1">WINRATE</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Streaks & Peak */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="term-border bg-[var(--c-bg)] border-[rgba(255,0,128,0.3)]">
+                    <div className="border-b border-[rgba(255,0,128,0.3)] px-3 py-1.5">
+                      <span className="text-[#ff0080] text-sm tracking-widest">STREAKS</span>
+                    </div>
+                    <div className="divide-y divide-[rgba(255,0,128,0.08)]">
+                      <div className="px-3 py-2.5 flex items-center justify-between">
+                        <span className="text-[var(--c-secondary)] text-sm font-mono tracking-wider">CURRENT</span>
+                        <span className="text-sm font-mono font-bold text-[#ff0080]">{h2hStats.winStreak}</span>
+                      </div>
+                      <div className="px-3 py-2.5 flex items-center justify-between">
+                        <span className="text-[var(--c-secondary)] text-sm font-mono tracking-wider">BEST</span>
+                        <span className="text-sm font-mono font-bold text-[#ff0080]">{h2hStats.bestWinStreak}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="term-border bg-[var(--c-bg)] border-[rgba(255,0,128,0.3)]">
+                    <div className="border-b border-[rgba(255,0,128,0.3)] px-3 py-1.5">
+                      <span className="text-[#ff0080] text-sm tracking-widest">MILESTONES</span>
+                    </div>
+                    <div className="divide-y divide-[rgba(255,0,128,0.08)]">
+                      <div className="px-3 py-2.5 flex items-center justify-between">
+                        <span className="text-[var(--c-secondary)] text-sm font-mono tracking-wider">HIGHEST POINTS</span>
+                        <span className="text-sm font-mono font-bold" style={{ color: getRankFromPoints(h2hStats.peakRankPoints).color }}>{h2hStats.peakRankPoints} pts</span>
+                      </div>
+                      <div className="px-3 py-2.5 flex items-center justify-between">
+                        <span className="text-[var(--c-secondary)] text-sm font-mono tracking-wider">HIGHEST RANK</span>
+                        <span className="text-sm font-mono font-bold" style={{ color: getRankFromPoints(h2hStats.peakRankPoints).color }}>{getRankFromPoints(h2hStats.peakRankPoints).icon} {getRankFromPoints(h2hStats.peakRankPoints).label}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Matches today */}
+                <div className="term-border bg-[var(--c-bg)] border-[rgba(255,0,128,0.3)]">
+                  <div className="px-3 py-3 flex items-center justify-between">
+                    <span className="text-[var(--c-secondary)] text-sm font-mono tracking-wider">RATED_TODAY</span>
+                    <span className="text-sm font-mono font-bold text-[#ff0080]">{h2hStats.ratedMatchesToday} / {H2H_DAILY_RATED_CAP}</span>
+                  </div>
+                  <div className="px-3 pb-3">
+                    <div className="w-full h-1.5 bg-[#0a140a]">
+                      <div className="h-full transition-all duration-500 bg-[#ff0080]" style={{ width: `${Math.min(100, (h2hStats.ratedMatchesToday / H2H_DAILY_RATED_CAP) * 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ═══════════════ QUESTS TAB ═══════════════ */}
+        {profileTab === 'quests' && (() => {
+          const answers = profile.researchAnswersSubmitted ?? 0;
+          const questsWithState = QUESTS.map((quest, i) => {
+            const completed = answers >= quest.target;
+            const prevTarget = i > 0 ? QUESTS[i - 1].target : 0;
+            const active = !completed && answers >= prevTarget;
+            const progress = completed ? 100 : active ? Math.min(100, Math.round(((answers - prevTarget) / (quest.target - prevTarget)) * 100)) : 0;
+            return { quest, completed, active, progress, i };
+          });
+          // Active first, then upcoming, then completed at bottom
+          const activeQuests = questsWithState.filter(q => q.active);
+          const upcomingQuests = questsWithState.filter(q => !q.active && !q.completed);
+          const completedQuests = questsWithState.filter(q => q.completed);
+          const sorted = [...activeQuests, ...upcomingQuests, ...completedQuests];
+
+          return (
+            <>
+              {sorted.map(({ quest, completed, active, progress }) => (
+                <div
+                  key={quest.id}
+                  className={`term-border bg-[var(--c-bg)] transition-opacity ${completed ? 'opacity-50 border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)]' : active ? 'border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)]' : ''}`}
+                >
+                  <div className={`border-b px-3 py-2 flex items-center justify-between ${active ? 'border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)]' : 'border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)]'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-lg ${completed ? 'opacity-60' : ''}`}>{quest.icon}</span>
+                      <span className={`text-sm font-mono tracking-widest font-bold ${active ? 'text-[var(--c-accent)]' : completed ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'}`}>
+                        {quest.name}
+                      </span>
+                    </div>
+                    {completed && (
+                      <span className="text-[var(--c-primary)] text-xs font-mono tracking-widest">COMPLETE</span>
+                    )}
+                    {active && (
+                      <span className="text-[var(--c-accent)] text-xs font-mono tracking-widest font-bold">{answers}/{quest.target}</span>
+                    )}
+                  </div>
+
+                  {/* Expanded content for active + upcoming, collapsed for completed */}
+                  {!completed ? (
+                    <div className="px-3 py-3 space-y-2">
+                      <p className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed">
+                        {quest.description}
+                      </p>
+                      {active && (
+                        <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed">
+                          {quest.detail}
+                        </p>
+                      )}
+
+                      {/* Progress bar */}
+                      {active && (
+                        <div className="w-full h-2 bg-[#0a140a]">
+                          <div
+                            className="h-full transition-all duration-500"
+                            style={{ width: `${progress}%`, backgroundColor: 'var(--c-accent)' }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Reward */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[var(--c-muted)] text-xs font-mono">REWARD</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[var(--c-secondary)] text-xs font-mono font-bold">{quest.reward}</span>
+                          <span className="text-[var(--c-accent)] text-xs font-mono">+{quest.xpReward} XP</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="px-3 py-2 flex items-center justify-between">
+                      <span className="text-[var(--c-muted)] text-xs font-mono">{quest.description}</span>
+                      <span className="text-[var(--c-accent)] text-xs font-mono">+{quest.xpReward} XP</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
+          );
+        })()}
+
+        {/* ═══════════════ FRIENDS TAB ═══════════════ */}
+        {profileTab === 'friends' && (
+          <>
+            {/* Add friend */}
+            <div className="term-border bg-[var(--c-bg)]">
+              <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5">
+                <span className="text-[var(--c-secondary)] text-sm tracking-widest">ADD_FRIEND</span>
+              </div>
+              <div className="px-3 py-3 space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={addFriendCallsign}
+                    onChange={e => setAddFriendCallsign(e.target.value.slice(0, 20))}
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddFriend(); }}
+                    placeholder="ENTER CALLSIGN"
+                    className="flex-1 bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-2 py-1.5 text-[var(--c-primary)] font-mono text-sm focus:outline-none focus:border-[color-mix(in_srgb,var(--c-primary)_70%,transparent)] placeholder:text-[var(--c-dark)]"
+                  />
+                  <button
+                    onClick={handleAddFriend}
+                    disabled={addFriendStatus === 'sending' || !addFriendCallsign.trim()}
+                    className="px-4 py-1.5 border border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)] text-[var(--c-primary)] font-mono text-sm tracking-widest hover:bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] disabled:opacity-40 transition-colors active:scale-95 transition-all"
+                  >
+                    {addFriendStatus === 'sending' ? '...' : 'ADD'}
+                  </button>
+                </div>
+                {addFriendMsg && (
+                  <div className={`text-sm font-mono ${addFriendStatus === 'sent' ? 'text-[var(--c-primary)]' : 'text-[#ff3333]'}`}>
+                    {addFriendMsg}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {friendsLoading && (
+              <div className="term-border bg-[var(--c-bg)] px-4 py-6 text-center">
+                <span className="text-[var(--c-secondary)] text-sm font-mono tracking-widest">LOADING...</span>
+              </div>
+            )}
+
+            {friendsData && (
+              <>
+                {/* Sub-tabs */}
+                <div className="term-border bg-[var(--c-bg)] flex">
+                  {([
+                    { key: 'list' as const, label: 'FRIENDS', count: friendsData.friends.length },
+                    { key: 'incoming' as const, label: 'INCOMING', count: friendsData.incoming.length },
+                    { key: 'outgoing' as const, label: 'OUTGOING', count: friendsData.outgoing.length },
+                  ]).map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => setFriendsSubTab(t.key)}
+                      className={`flex-1 py-2 text-xs font-mono tracking-widest transition-colors ${
+                        friendsSubTab === t.key
+                          ? 'text-[var(--c-primary)] bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] border-b-2 border-[var(--c-primary)]'
+                          : 'text-[var(--c-secondary)] hover:text-[var(--c-primary)] border-b-2 border-transparent'
+                      }`}
+                    >
+                      {t.label}{t.count > 0 ? ` (${t.count})` : ''}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Friends list sub-tab */}
+                {friendsSubTab === 'list' && (
+                  <div className="term-border bg-[var(--c-bg)]">
+                    {friendsData.friends.length === 0 ? (
+                      <div className="px-3 py-6 text-center">
+                        <div className="text-[var(--c-muted)] text-sm font-mono">No friends yet. Add one by callsign above.</div>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                        {friendsData.friends.map(f => {
+                          const rank = getRankFromPoints(f.rankPoints);
+                          return (
+                            <div key={f.playerId} className="px-3 py-2 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Link href={`/player/${encodeURIComponent(f.displayName)}`} className="text-[var(--c-primary)] text-sm font-mono font-bold truncate hover:underline">{f.displayName}</Link>
+                                <span className="text-[var(--c-muted)] text-xs font-mono shrink-0">LVL {f.level}</span>
+                                <span className="text-xs font-mono font-bold shrink-0" style={{ color: rank.color }}>{rank.icon} {rank.label}</span>
+                              </div>
+                              <button
+                                onClick={() => handleRemoveFriend(f.playerId)}
+                                className="px-2 py-1 border border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] text-[var(--c-muted)] font-mono text-xs tracking-wider hover:text-[#ff3333] hover:border-[#ff333350] active:scale-95 transition-all shrink-0"
+                              >
+                                REMOVE
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Incoming requests sub-tab */}
+                {friendsSubTab === 'incoming' && (
+                  <div className="term-border bg-[var(--c-bg)]">
+                    {friendsData.incoming.length === 0 ? (
+                      <div className="px-3 py-6 text-center">
+                        <div className="text-[var(--c-muted)] text-sm font-mono">No incoming requests.</div>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                        {friendsData.incoming.map(req => (
+                          <div key={req.requestId} className="px-3 py-2 flex items-center justify-between">
+                            <Link href={`/player/${encodeURIComponent(req.from.displayName)}`} className="text-[var(--c-primary)] text-sm font-mono font-bold hover:underline">{req.from.displayName}</Link>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => handleFriendAction(req.requestId, 'accept')}
+                                className="px-3 py-1 border border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)] text-[var(--c-primary)] font-mono text-xs tracking-wider hover:bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] active:scale-95 transition-all"
+                              >
+                                ACCEPT
+                              </button>
+                              <button
+                                onClick={() => handleFriendAction(req.requestId, 'reject')}
+                                className="px-3 py-1 border border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] text-[var(--c-muted)] font-mono text-xs tracking-wider hover:text-[#ff3333] hover:border-[#ff333350] active:scale-95 transition-all"
+                              >
+                                REJECT
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Outgoing requests sub-tab */}
+                {friendsSubTab === 'outgoing' && (
+                  <div className="term-border bg-[var(--c-bg)]">
+                    {friendsData.outgoing.length === 0 ? (
+                      <div className="px-3 py-6 text-center">
+                        <div className="text-[var(--c-muted)] text-sm font-mono">No outgoing requests.</div>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
+                        {friendsData.outgoing.map(req => (
+                          <div key={req.requestId} className="px-3 py-2 flex items-center justify-between">
+                            <Link href={`/player/${encodeURIComponent(req.to.displayName)}`} className="text-[var(--c-secondary)] text-sm font-mono hover:underline">{req.to.displayName}</Link>
+                            <button
+                              onClick={() => handleRemoveFriend(req.to.playerId)}
+                              className="px-3 py-1 border border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] text-[var(--c-muted)] font-mono text-xs tracking-wider hover:text-[#ff3333] hover:border-[#ff333350] active:scale-95 transition-all"
+                            >
+                              CANCEL
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Privacy note */}
+                <div className="text-center">
+                  <span className="text-[var(--c-muted)] text-xs font-mono opacity-60">Research mode data is anonymous and never shared with friends.</span>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Data deletion request — compact inline style */}
+        {signedIn && profile && (
+          <div className="text-center space-y-1 px-2">
+            <a
+              href={`mailto:scott@scottaltiparmak.com?subject=${encodeURIComponent(`[Data Deletion Request] ${profile.displayName}`)}&body=${encodeURIComponent(`I would like to request deletion of my Threat Terminal account.\n\nCallsign: ${profile.displayName}\nPlayer ID: ${profile.id}\n\nPlease delete:\n- [ ] My account and profile only (keep anonymized research answers)\n- [ ] Everything (account + all answers including research)\n`)}`}
+              className="text-[var(--c-secondary)] text-xs font-mono opacity-70 hover:opacity-100 hover:text-[#ff3333] underline transition-all"
+            >
+              Request data deletion
+            </a>
           </div>
-        </div>
+        )}
 
         {/* Data deletion request — compact inline style */}
         {signedIn && profile && (

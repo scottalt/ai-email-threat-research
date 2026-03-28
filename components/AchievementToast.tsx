@@ -1,12 +1,23 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ACHIEVEMENT_MAP, RARITY_COLORS } from '@/lib/achievements';
+import { playAchievement } from '@/lib/sounds';
+import { useSoundEnabled } from '@/lib/useSoundEnabled';
 
 interface Props {
   achievementIds: string[];
 }
 
 export function AchievementToast({ achievementIds }: Props) {
+  const { soundEnabled } = useSoundEnabled();
+
+  useEffect(() => {
+    if (achievementIds.length > 0 && soundEnabled) {
+      playAchievement();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (achievementIds.length === 0) return null;
 
   return (
@@ -33,9 +44,10 @@ export function AchievementToast({ achievementIds }: Props) {
             </div>
             <div className="px-3 py-3 flex items-center gap-3">
               <span
-                className="text-2xl font-mono anim-rank-pulse"
+                className="relative text-2xl font-mono anim-rank-pulse anim-achievement-burst"
                 style={{ color }}
               >
+                <span className="absolute inset-0 rounded-full anim-glow-ring" style={{ backgroundColor: 'currentColor' }} />
                 {def.icon}
               </span>
               <div className="flex-1 min-w-0">

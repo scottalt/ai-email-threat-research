@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redis } from '@/lib/redis';
+import { redis, getClientIp } from '@/lib/redis';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import filter from 'leo-profanity';
 
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
 export async function POST(req: NextRequest) {
   try {
     // Rate limit: 10 submissions per IP per hour
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const ip = getClientIp(req);
     const rlKey = `ratelimit:leaderboard:${ip}`;
     const count = await redis.incr(rlKey);
     if (count === 1) await redis.expire(rlKey, 60 * 60);

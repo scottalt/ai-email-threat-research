@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import type { PlayerBackground, PlayerProfile } from '@/lib/types';
+import { RESEARCH_GRADUATION_ANSWERS } from '@/lib/xp';
 import filter from 'leo-profanity';
 
 const VALID_BACKGROUNDS: PlayerBackground[] = ['other', 'technical', 'infosec', 'prefer_not_to_say'];
@@ -24,7 +25,7 @@ async function getAuthId(): Promise<string | null> {
   return user?.id ?? null;
 }
 
-function toProfile(row: Record<string, unknown>, researchAnswersSubmitted = 0, achievements: string[] = [], streakData?: { current_streak: number; longest_streak: number } | null): PlayerProfile {
+function toProfile(row: Record<string, unknown>, researchAnswersSubmitted = 0, achievements: string[] = [], streakData?: { current_streak: number; longest_streak: number } | null, seenMoments: string[] = []): PlayerProfile {
   return {
     id: row.id as string,
     authId: row.auth_id as string,
@@ -40,6 +41,12 @@ function toProfile(row: Record<string, unknown>, researchAnswersSubmitted = 0, a
     achievements,
     currentStreak: streakData?.current_streak ?? 0,
     longestStreak: streakData?.longest_streak ?? 0,
+    featuredBadge: ((row.featured_badges as string[]) ?? [])[0] ?? (row.featured_badge as string | null) ?? null,
+    bio: (row.bio as string) ?? '',
+    privacyLevel: (row.privacy_level as string as 'public' | 'friends' | 'private') ?? 'public',
+    featuredBadges: (row.featured_badges as string[]) ?? [],
+    themeId: (row.theme_id as string | null) ?? 'phosphor',
+    seenMoments,
   };
 }
 
@@ -69,18 +76,27 @@ export async function GET(req: NextRequest) {
   const nowHour = new Date().toISOString().slice(0, 13);
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  const [{ count: researchAnswersSubmitted }, { data: achievementRows }, { data: streakData }, hourlyCount, dailyCount] = await Promise.all([
+  const [{ count: researchAnswersSubmitted }, { data: achievementRows }, { data: streakData }, { data: momentRows }, hourlyCount, dailyCount] = await Promise.all([
     admin.from('answers').select('*', { count: 'exact', head: true })
       .eq('player_id', row.id as string).eq('game_mode', 'research'),
     admin.from('player_achievements').select('achievement_id')
       .eq('player_id', row.id as string),
     admin.from('player_streaks').select('current_streak, longest_streak')
       .eq('player_id', row.id as string).maybeSingle(),
+    admin.from('player_seen_moments').select('moment_id')
+      .eq('player_id', row.id as string),
     redis.get<number>(`ratelimit:xp:${authId}:h:${nowHour}`),
     redis.get<number>(`ratelimit:xp:${authId}:d:${todayStr}`),
   ]);
 
   const achievements = (achievementRows ?? []).map((r: { achievement_id: string }) => r.achievement_id);
+  const seenMoments = (momentRows ?? []).map((r: { moment_id: string }) => r.moment_id);
+
+  // Retroactive graduation: if player has enough research answers but flag is false, update it
+  if (!(row.research_graduated as boolean) && (researchAnswersSubmitted ?? 0) >= RESEARCH_GRADUATION_ANSWERS) {
+    await admin.from('players').update({ research_graduated: true, updated_at: new Date().toISOString() }).eq('id', row.id as string);
+    row.research_graduated = true;
+  }
 
   // Compute cooldown info from current rate limit state
   const hUsed = hourlyCount ?? 0;
@@ -92,7 +108,7 @@ export async function GET(req: NextRequest) {
   const nextDay = new Date(todayStr + 'T00:00:00.000Z');
   nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
-  const profile = toProfile(row, researchAnswersSubmitted ?? 0, achievements, streakData);
+  const profile = toProfile(row, researchAnswersSubmitted ?? 0, achievements, streakData, seenMoments);
 
   return NextResponse.json({
     ...profile,
@@ -129,6 +145,19 @@ export async function POST(req: NextRequest) {
       : null;
     if (!displayName) return NextResponse.json({ error: 'Invalid display_name' }, { status: 400 });
     if (filter.check(displayName)) return NextResponse.json({ error: 'Keep it clean.' }, { status: 400 });
+
+    // Enforce unique callsigns (case-insensitive)
+    const adminCheck = getSupabaseAdminClient();
+    const { data: existing } = await adminCheck
+      .from('players')
+      .select('id')
+      .ilike('display_name', displayName)
+      .neq('auth_id', authId)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return NextResponse.json({ error: 'Callsign already taken.' }, { status: 409 });
+    }
+
     updates.display_name = displayName;
   }
 

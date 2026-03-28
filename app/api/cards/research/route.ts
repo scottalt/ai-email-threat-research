@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import { redis } from '@/lib/redis';
+import { redis, getClientIp } from '@/lib/redis';
 import type { ResearchCard } from '@/lib/types';
 import { toSafeCard } from '@/lib/card-utils';
 
@@ -40,7 +40,7 @@ async function getPlayerId(): Promise<string | null> {
 export async function GET(req: NextRequest) {
   try {
     // Rate limit: 10 requests per IP per minute
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const ip = getClientIp(req);
     const rlKey = `ratelimit:cards-research:${ip}`;
     const rlCount = await redis.incr(rlKey);
     if (rlCount === 1) await redis.expire(rlKey, 60);
@@ -52,18 +52,20 @@ export async function GET(req: NextRequest) {
 
     const supabase = getSupabaseAdminClient();
 
-    // Fetch cards (capped) and player's previously answered card IDs in parallel
+    // Require authentication — prevent unauthenticated card enumeration
     const playerId = await getPlayerId();
+    if (!playerId) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    // Fetch cards and player's previously answered card IDs in parallel
     const [{ data, error }, answeredCards] = await Promise.all([
       supabase.from('cards_real').select('*').limit(CARDS_LIMIT),
-      playerId
-        ? supabase
-            .from('answers')
-            .select('card_id')
-            .eq('player_id', playerId)
-            .eq('game_mode', 'research')
-            .then(({ data: rows }) => new Set((rows ?? []).map((r) => r.card_id)))
-        : Promise.resolve(new Set<string>()),
+      supabase
+        .from('answers')
+        .select('card_id')
+        .eq('player_id', playerId)
+        .eq('game_mode', 'research')
+        .then(({ data: rows }) => new Set((rows ?? []).map((r) => r.card_id))),
     ]);
 
     if (error) throw error;
@@ -126,6 +128,10 @@ export async function GET(req: NextRequest) {
     if (sessionId && /^[0-9a-f-]{36}$/.test(sessionId)) {
       await redis.set(`session-cards:${sessionId}`, JSON.stringify(cards), { ex: SESSION_TTL, nx: true });
       await redis.set(`session-streak:${sessionId}`, 0, { ex: SESSION_TTL });
+      // Set render timestamp for the first card (server-side response timing)
+      if (cards.length > 0) {
+        await redis.set(`session-render:${sessionId}:0`, Date.now(), { ex: SESSION_TTL, nx: true });
+      }
     }
 
     // Return cards with answer-revealing fields stripped

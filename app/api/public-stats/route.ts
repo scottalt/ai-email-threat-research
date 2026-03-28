@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import { redis } from '@/lib/redis';
+import { redis, getClientIp } from '@/lib/redis';
 
 export const revalidate = 300; // 5-minute ISR cache
 
 export async function GET(req: NextRequest) {
   // Rate limit: 20 requests per IP per minute
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ip = getClientIp(req);
   const rlKey = `ratelimit:public-stats:${ip}`;
   const rlCount = await redis.incr(rlKey);
   if (rlCount === 1) await redis.expire(rlKey, 60);

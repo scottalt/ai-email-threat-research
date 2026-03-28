@@ -38,7 +38,7 @@ body {
   font-family: var(--font-geist-mono), 'Courier New', monospace;
 }
 
-/* CRT scanlines */
+/* CRT scanlines — slightly more visible with green tint */
 .crt-active::before {
   content: '';
   position: fixed;
@@ -47,19 +47,19 @@ body {
     0deg,
     transparent,
     transparent 2px,
-    rgba(0, 0, 0, 0.08) 2px,
-    rgba(0, 0, 0, 0.08) 4px
+    rgba(0, 10, 0, 0.12) 2px,
+    rgba(0, 10, 0, 0.12) 4px
   );
   pointer-events: none;
   z-index: 9999;
 }
 
-/* CRT vignette */
+/* CRT vignette — slightly stronger for immersion */
 .crt-active::after {
   content: '';
   position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.6) 100%);
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.7) 100%);
   pointer-events: none;
   z-index: 9998;
 }
@@ -157,8 +157,9 @@ body {
 }
 
 @keyframes cardEntry {
-  from { opacity: 0; transform: scale(0.92) translateY(12px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+  0%   { opacity: 0; transform: scale(0.85) translateY(20px); }
+  70%  { opacity: 1; transform: scale(1.02) translateY(-3px); }
+  100% { opacity: 1; transform: scale(1)    translateY(0);    }
 }
 
 .anim-fade-in {
@@ -191,7 +192,7 @@ body {
 }
 
 .anim-card-entry {
-  animation: cardEntry 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: cardEntry 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* Rank badge pulse */
@@ -228,15 +229,21 @@ body {
   -webkit-user-select: none;
 }
 
-/* Terminal border */
+/* Terminal border — layered glow for depth */
 .term-border {
   border: 1px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--c-primary) 5%, transparent), inset 0 0 10px color-mix(in srgb, var(--c-primary) 2%, transparent);
+  box-shadow:
+    0 0 6px color-mix(in srgb, var(--c-primary) 6%, transparent),
+    0 0 20px color-mix(in srgb, var(--c-primary) 3%, transparent),
+    inset 0 0 8px color-mix(in srgb, var(--c-primary) 3%, transparent);
 }
 
 .term-border-bright {
   border: 1px solid color-mix(in srgb, var(--c-primary) 70%, transparent);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--c-primary) 15%, transparent), inset 0 0 10px color-mix(in srgb, var(--c-primary) 4%, transparent);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--c-primary) 15%, transparent),
+    0 0 30px color-mix(in srgb, var(--c-primary) 6%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--c-primary) 5%, transparent);
 }
 
 /* Glitch animation — wrong answer feedback */
@@ -311,6 +318,66 @@ body {
   animation: hint-text-pulse 1.6s ease-in-out infinite;
 }
 
+/* ── SIGINT overlay animations ── */
+
+/* SIGINT dialog — elevated with strong drop shadow + accent glow breathe.
+   Uses --c-accent so the glow color follows the active theme. */
+@keyframes sigint-glow {
+  0%, 100% {
+    box-shadow:
+      0 16px 60px rgba(0,0,0,0.85),
+      0 6px 20px rgba(0,0,0,0.6),
+      0 0 25px color-mix(in srgb, var(--c-accent) 20%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--c-accent) 12%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 16px 60px rgba(0,0,0,0.85),
+      0 6px 20px rgba(0,0,0,0.6),
+      0 0 40px color-mix(in srgb, var(--c-accent) 30%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--c-accent) 18%, transparent);
+  }
+}
+.sigint-box {
+  animation: sigint-glow 4s ease-in-out infinite;
+  border-width: 2px;
+}
+
+/* Scanning accent line under SIGINT header while typing */
+@keyframes sigint-scan {
+  0% { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+.sigint-scanline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--c-accent) 50%, transparent 100%);
+  background-size: 50% 100%;
+  animation: sigint-scan 2s linear infinite;
+}
+.sigint-scanline-done {
+  height: 1px;
+  background: color-mix(in srgb, var(--c-accent) 30%, transparent);
+  animation: none;
+}
+
+/* Left border gentle pulse while SIGINT typewriter is active */
+@keyframes sigint-border-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.sigint-typing-border {
+  animation: sigint-border-pulse 2s ease-in-out infinite;
+}
+
+/* AI tag subtle brightness pulse */
+@keyframes sigint-ai-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.9; }
+}
+.sigint-ai-tag {
+  animation: sigint-ai-pulse 3s ease-in-out infinite;
+}
+
 /* Respect reduced motion — pauses decorative animations on iOS low power / accessibility */
 @media (prefers-reduced-motion: reduce) {
   .scanline-sweep,
@@ -321,6 +388,20 @@ body {
   .anim-pulse-glow {
     animation: none !important;
     opacity: 1;
+  }
+  .anim-fade-in-up {
+    opacity: 1 !important;
+  }
+  .anim-glitch,
+  .anim-hint-pulse,
+  .anim-hint-text-pulse,
+  .breach-overlay,
+  .clear-overlay,
+  .sigint-box,
+  .sigint-scanline,
+  .sigint-typing-border,
+  .sigint-ai-tag {
+    animation: none !important;
   }
   .anim-card-entry,
   .anim-fade-in,
@@ -351,4 +432,251 @@ body {
 .momentum-scroll {
   -webkit-overflow-scrolling: touch;
   overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════════════════
+   JUICE — reward animations, button feedback, glow
+   ═══════════════════════════════════════════════════ */
+
+/* XP award pop — scales up with glow burst */
+@keyframes xp-pop {
+  0%   { transform: scale(0.7); opacity: 0; text-shadow: none; }
+  50%  { transform: scale(1.15); opacity: 1; text-shadow: 0 0 20px currentColor; }
+  100% { transform: scale(1); opacity: 1; text-shadow: 0 0 6px color-mix(in srgb, currentColor 40%, transparent); }
+}
+.anim-xp-pop {
+  animation: xp-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Level-up celebration — glow burst + bounce */
+@keyframes level-up {
+  0%   { transform: scale(0.8) translateY(10px); opacity: 0; }
+  40%  { transform: scale(1.08) translateY(-4px); opacity: 1; }
+  70%  { transform: scale(0.98) translateY(1px); }
+  100% { transform: scale(1) translateY(0); }
+}
+.anim-level-up {
+  animation: level-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Level-up screen flash — green overlay pulse */
+@keyframes level-flash {
+  0%   { opacity: 0; }
+  30%  { opacity: 0.15; }
+  100% { opacity: 0; }
+}
+.level-flash-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--c-primary);
+  pointer-events: none;
+  z-index: 9990;
+  animation: level-flash 0.8s ease-out forwards;
+}
+
+/* Achievement icon burst — spring overshoot with glow ring */
+@keyframes achievement-burst {
+  0%   { transform: scale(0.5); opacity: 0; }
+  50%  { transform: scale(1.3); opacity: 1; }
+  75%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+.anim-achievement-burst {
+  animation: achievement-burst 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Achievement glow ring — radiating pulse behind icon */
+@keyframes glow-ring {
+  0%   { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+.anim-glow-ring {
+  animation: glow-ring 0.8s ease-out forwards;
+}
+
+/* Progress square fill — brief pop */
+@keyframes square-fill {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+.anim-square-fill {
+  animation: square-fill 0.3s ease-out;
+}
+
+/* Button hover glow — desktop only (hover: hover prevents mobile double-tap issue) */
+.btn-glow {
+  transition: text-shadow 0.2s ease, box-shadow 0.2s ease;
+}
+@media (hover: hover) {
+  .btn-glow:hover {
+    text-shadow: 0 0 8px currentColor, 0 0 16px color-mix(in srgb, currentColor 30%, transparent);
+  }
+}
+.btn-glow:active {
+  text-shadow: 0 0 12px currentColor, 0 0 24px color-mix(in srgb, currentColor 40%, transparent);
+}
+
+/* Phosphor text glow — subtle ambient glow on primary text */
+.crt-active .text-glow {
+  text-shadow: 0 0 4px color-mix(in srgb, var(--c-primary) 20%, transparent);
+}
+
+/* Phosphor flicker — subtle brightness oscillation */
+@keyframes phosphor-flicker {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(0.98); }
+}
+.crt-active {
+  animation: phosphor-flicker 4s ease-in-out infinite;
+}
+
+/* Streak glow — intensity scales with streak count via CSS custom property */
+.streak-glow {
+  text-shadow:
+    0 0 calc(var(--streak, 1) * 2px) var(--c-accent),
+    0 0 calc(var(--streak, 1) * 6px) color-mix(in srgb, var(--c-accent) 40%, transparent);
+}
+
+/* Answer commit — scanning sweep across the card */
+@keyframes analyze-sweep {
+  from { background-position: 0 -100%; }
+  to   { background-position: 0 200%; }
+}
+.card-processing {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--c-primary) 8%, transparent) 48%,
+    color-mix(in srgb, var(--c-primary) 15%, transparent) 50%,
+    color-mix(in srgb, var(--c-primary) 8%, transparent) 52%,
+    transparent 100%
+  );
+  background-size: 100% 300%;
+  animation: analyze-sweep 0.5s linear;
+}
+
+/* Countdown number bounce */
+@keyframes countdown-bounce {
+  0%   { transform: scale(1.4); opacity: 0; }
+  60%  { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes countdown-go {
+  0%   { transform: scale(0.5); opacity: 0; }
+  50%  { transform: scale(1.25); opacity: 1; text-shadow: 0 0 30px currentColor; }
+  100% { transform: scale(1); opacity: 1; text-shadow: 0 0 12px currentColor; }
+}
+.anim-countdown-bounce {
+  animation: countdown-bounce 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.anim-countdown-go {
+  animation: countdown-go 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Data stream background — ambient scrolling hex text */
+@keyframes data-scroll {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-50%); }
+}
+.data-stream {
+  animation: data-scroll 30s linear infinite;
+  opacity: 0.03;
+  color: var(--c-primary);
+  font-size: 10px;
+  line-height: 1.8;
+  font-family: var(--font-geist-mono), monospace;
+}
+
+/* ═══════════════════════════════════════════════════
+   BADGE RARITY — progressively more exciting visuals
+   ═══════════════════════════════════════════════════ */
+
+/* Common — clean, no effects */
+.badge-common {
+  color: #00aa28;
+}
+
+/* Uncommon — subtle glow */
+.badge-uncommon {
+  color: #00ff41;
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.4);
+}
+
+/* Rare — amber glow + pulse */
+.badge-rare {
+  color: #ffaa00;
+  text-shadow: 0 0 8px rgba(255, 170, 0, 0.5), 0 0 20px rgba(255, 170, 0, 0.2);
+  animation: badge-rare-pulse 2s ease-in-out infinite;
+}
+@keyframes badge-rare-pulse {
+  0%, 100% { text-shadow: 0 0 8px rgba(255, 170, 0, 0.5), 0 0 20px rgba(255, 170, 0, 0.2); }
+  50% { text-shadow: 0 0 12px rgba(255, 170, 0, 0.7), 0 0 30px rgba(255, 170, 0, 0.3); }
+}
+
+/* Legendary — red glow + stronger pulse + scale breathe */
+.badge-legendary {
+  color: #ff3333;
+  text-shadow: 0 0 10px rgba(255, 51, 51, 0.6), 0 0 25px rgba(255, 51, 51, 0.3);
+  animation: badge-legendary-pulse 1.8s ease-in-out infinite;
+}
+@keyframes badge-legendary-pulse {
+  0%, 100% { text-shadow: 0 0 10px rgba(255, 51, 51, 0.6), 0 0 25px rgba(255, 51, 51, 0.3); transform: scale(1); }
+  50% { text-shadow: 0 0 16px rgba(255, 51, 51, 0.8), 0 0 40px rgba(255, 51, 51, 0.4); transform: scale(1.05); }
+}
+
+/* Mythic — gold shimmer + glow ring + continuous rotation shimmer */
+.badge-mythic {
+  color: #ffd700;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.7), 0 0 30px rgba(255, 215, 0, 0.3), 0 0 60px rgba(255, 215, 0, 0.15);
+  animation: badge-mythic-shimmer 2.5s ease-in-out infinite;
+}
+@keyframes badge-mythic-shimmer {
+  0%, 100% { text-shadow: 0 0 12px rgba(255, 215, 0, 0.7), 0 0 30px rgba(255, 215, 0, 0.3), 0 0 60px rgba(255, 215, 0, 0.15); transform: scale(1); filter: brightness(1); }
+  25% { filter: brightness(1.2); }
+  50% { text-shadow: 0 0 18px rgba(255, 215, 0, 0.9), 0 0 45px rgba(255, 215, 0, 0.5), 0 0 80px rgba(255, 215, 0, 0.25); transform: scale(1.08); filter: brightness(1.3); }
+  75% { filter: brightness(1.1); }
+}
+
+/* Reduced motion — disable badge animations */
+@media (prefers-reduced-motion: reduce) {
+  .badge-rare,
+  .badge-legendary,
+  .badge-mythic {
+    animation: none !important;
+  }
+}
+
+/* Card scanlines — slightly more visible */
+.scanline::after {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 10, 0, 0.06) 3px,
+    rgba(0, 10, 0, 0.06) 4px
+  ) !important;
+}
+
+/* Respect reduced motion — pause new animations too */
+@media (prefers-reduced-motion: reduce) {
+  .anim-xp-pop,
+  .anim-level-up,
+  .anim-achievement-burst,
+  .anim-glow-ring,
+  .anim-square-fill,
+  .anim-countdown-bounce,
+  .anim-countdown-go,
+  .card-processing {
+    animation-duration: 0.01ms !important;
+  }
+  .crt-active {
+    animation: none !important;
+  }
+  .level-flash-overlay {
+    display: none !important;
+  }
+  .data-stream {
+    display: none !important;
+  }
 }

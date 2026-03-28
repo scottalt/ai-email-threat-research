@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redis } from '@/lib/redis';
+import { redis, getClientIp } from '@/lib/redis';
 import type { Card } from '@/lib/types';
 
 const BASE_POINTS = 100;
@@ -17,7 +17,7 @@ const STREAK_BONUS = 50;
 
 export async function POST(req: NextRequest) {
   // Rate limit: 30 checks per IP per minute
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ip = getClientIp(req);
   const rlKey = `ratelimit:cards-check:${ip}`;
   const rlCount = await redis.incr(rlKey);
   if (rlCount === 1) await redis.expire(rlKey, 60);
@@ -81,6 +81,17 @@ export async function POST(req: NextRequest) {
   // Persist streak server-side
   await redis.set(streakKey, currentStreak, { ex: 60 * 60 });
 
+  // Compute server-side response time from render timestamp
+  const resolvedIndex = cardIndex ?? cards.findIndex(c => c.id === cardId);
+  const renderKey = `session-render:${sessionId}:${resolvedIndex}`;
+  const renderTimestamp = await redis.get<number>(renderKey);
+  const verifiedTimeMs = renderTimestamp ? Date.now() - renderTimestamp : null;
+
+  // Set render timestamp for the NEXT card
+  if (resolvedIndex >= 0 && resolvedIndex + 1 < cards.length) {
+    await redis.set(`session-render:${sessionId}:${resolvedIndex + 1}`, Date.now(), { ex: 60 * 60 });
+  }
+
   // Include research metadata if present (for research card answer logging)
   const researchFields = card as unknown as Record<string, unknown>;
 
@@ -95,6 +106,7 @@ export async function POST(req: NextRequest) {
     explanation: card.explanation,
     highlights: card.highlights ?? [],
     technique: card.technique ?? null,
+    verifiedTimeMs: verifiedTimeMs ?? null, // server-side response time (null for legacy sessions)
     authStatus: card.authStatus ?? 'unverified',  // safe post-answer — for feedback forensic signals
     // Research card metadata — only present for research mode cards
     ...(researchFields.cardSource ? {

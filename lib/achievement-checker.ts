@@ -8,6 +8,10 @@ interface PlayerStats {
   totalSessions: number;
   researchGraduated: boolean;
   personalBestScore: number;
+  researchAnswersSubmitted?: number;
+  h2hWins?: number;
+  h2hBestStreak?: number;
+  h2hPeakRankPoints?: number;
 }
 
 interface AnswerRow {
@@ -70,6 +74,26 @@ const CHECKS: Record<string, CheckFn> = {
   xp_5000:         (p) => p.xp >= 5000,
   xp_20000:        (p) => p.xp >= 20000,
   pb_2500:         (p) => p.personalBestScore >= 2500,
+
+  // Research milestones
+  research_20:     (p) => (p.researchAnswersSubmitted ?? 0) >= 20,
+  research_30:     (p) => (p.researchAnswersSubmitted ?? 0) >= 30,
+
+  // H2H
+  h2h_first_win:   (p) => (p.h2hWins ?? 0) >= 1,
+  h2h_10_wins:     (p) => (p.h2hWins ?? 0) >= 10,
+  h2h_50_wins:     (p) => (p.h2hWins ?? 0) >= 50,
+  h2h_perfect:     () => false, // checked inline during match finalization
+  h2h_streak_5:    (p) => (p.h2hBestStreak ?? 0) >= 5,
+
+  // Season 0
+  founder:         (p) => p.totalSessions >= 1, // any player who played during Season 0
+  s0_silver:       (p) => (p.h2hPeakRankPoints ?? 0) >= 100,
+  s0_gold:         (p) => (p.h2hPeakRankPoints ?? 0) >= 250,
+  s0_platinum:     (p) => (p.h2hPeakRankPoints ?? 0) >= 450,
+  s0_diamond:      (p) => (p.h2hPeakRankPoints ?? 0) >= 700,
+  s0_master:       (p) => (p.h2hPeakRankPoints ?? 0) >= 1000,
+  s0_elite:        (p) => (p.h2hPeakRankPoints ?? 0) >= 1400,
 };
 
 /**
@@ -160,15 +184,30 @@ export async function backfillPlayerAchievements(
   // Daily session count
   const dailySessionCount = (sessions ?? []).filter((s: { game_mode: string }) => s.game_mode === 'daily').length;
 
+  // Fetch longest streak for daily-streak achievements
+  const { data: streakRow } = await admin
+    .from('player_streaks')
+    .select('longest_streak')
+    .eq('player_id', player.id)
+    .maybeSingle();
+  const longestStreak = (streakRow?.longest_streak as number) ?? 0;
+
   // Check profile-based achievements first (no per-session data needed)
-  const profileChecks = ['first_blood', 'veteran', 'graduate', 'apex', 'xp_1000', 'xp_5000', 'xp_20000', 'pb_2500', 'daily_3'];
+  const profileChecks = [
+    'first_blood', 'veteran', 'graduate', 'apex',
+    'xp_1000', 'xp_5000', 'xp_20000', 'pb_2500', 'daily_3',
+    'research_20', 'research_30',
+    'streak_3d', 'streak_7d', 'streak_30d',
+    'founder', 's0_silver', 's0_gold', 's0_platinum', 's0_diamond', 's0_master', 's0_elite',
+    'h2h_first_win', 'h2h_10_wins', 'h2h_50_wins', 'h2h_streak_5',
+  ];
   const newlyEarned: string[] = [];
 
   for (const id of profileChecks) {
     if (earned.has(id)) continue;
     const check = CHECKS[id];
     if (!check) continue;
-    if (check(player, [], '', { dailySessionCount })) {
+    if (check(player, [], '', { dailySessionCount, currentStreak: longestStreak })) {
       newlyEarned.push(id);
     }
   }

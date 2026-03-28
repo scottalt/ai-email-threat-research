@@ -1,19 +1,41 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
-const STORAGE_KEY = 'sfx_enabled';
-
+// SFX are always on — no toggle needed.
+// This hook is kept for backward compatibility with components that check soundEnabled.
 export function useSoundEnabled() {
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
-  const sfxEnabledRef = useRef(soundEnabled);
+  return { soundEnabled: true, toggleSound: () => {} };
+}
 
-  const toggleSound = useCallback(() => {
-    const next = !sfxEnabledRef.current;
-    sfxEnabledRef.current = next;
-    setSoundEnabled(next);
-    sessionStorage.setItem(STORAGE_KEY, String(next));
-    // Dispatch synchronously during click handler so audio.play() has user activation
-    window.dispatchEvent(new CustomEvent('sfx-change', { detail: next }));
+// Music toggle — persisted in localStorage
+const MUSIC_KEY = 'music_enabled';
+
+function readMusicInitial(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    const val = localStorage.getItem(MUSIC_KEY);
+    // Default to ON if never set
+    return val !== 'false';
+  } catch { return true; }
+}
+
+export function useMusicEnabled() {
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const musicEnabledRef = useRef(true);
+
+  // Hydrate from localStorage after mount (avoids SSR mismatch)
+  useEffect(() => {
+    const initial = readMusicInitial();
+    musicEnabledRef.current = initial;
+    setMusicEnabled(initial);
   }, []);
 
-  return { soundEnabled, toggleSound };
+  const toggleMusic = useCallback(() => {
+    const next = !musicEnabledRef.current;
+    musicEnabledRef.current = next;
+    setMusicEnabled(next);
+    try { localStorage.setItem(MUSIC_KEY, String(next)); } catch {}
+    window.dispatchEvent(new CustomEvent('music-change', { detail: next }));
+  }, []);
+
+  return { musicEnabled, toggleMusic };
 }

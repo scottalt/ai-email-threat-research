@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePlayer } from '@/lib/usePlayer';
+import { useSigint } from '@/lib/SigintContext';
 import { CHANGELOG_ENTRIES } from '@/lib/changelog';
 import { version } from '@/package.json';
 
@@ -16,6 +17,16 @@ function formatDate(iso: string): string {
 
 export default function ChangelogPage() {
   const { signedIn } = usePlayer();
+  const { triggerSigint } = useSigint();
+
+  // SIGINT: first changelog visit (fire once per mount)
+  const sigintFired = useRef(false);
+  useEffect(() => {
+    if (signedIn && !sigintFired.current) {
+      sigintFired.current = true;
+      triggerSigint('first_changelog');
+    }
+  }, [signedIn, triggerSigint]);
   const [showArchive, setShowArchive] = useState(false);
 
   const milestones = CHANGELOG_ENTRIES.filter((e) => e.category === 'milestone');
@@ -74,13 +85,46 @@ export default function ChangelogPage() {
             ) : (
               <>
                 {recentUpdates.map((entry, i) => (
-                  <div key={i} className="border-l-2 border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] pl-3">
-                    <div className="text-[var(--c-secondary)] text-xs font-mono tracking-wider">{formatDate(entry.date)}</div>
-                    <div className="text-[var(--c-primary)] text-sm font-mono mt-0.5">{entry.title}</div>
-                    {entry.body && (
-                      <div className="text-[var(--c-secondary)] text-sm font-mono mt-1 leading-relaxed">{entry.body}</div>
-                    )}
-                  </div>
+                  entry.highlight ? (
+                    <div key={i} className="border-2 border-[rgba(255,0,128,0.4)] bg-[rgba(255,0,128,0.03)] px-4 py-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#ff0080] text-xs font-mono font-bold tracking-widest px-1.5 py-0.5 border border-[rgba(255,0,128,0.5)]">NEW</span>
+                        <span className="text-[var(--c-secondary)] text-xs font-mono tracking-wider">{formatDate(entry.date)}</span>
+                      </div>
+                      <div className="text-[#ff0080] text-base font-mono font-bold tracking-wide">{entry.title}</div>
+                      {entry.body && (
+                        <div className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed">{entry.body}</div>
+                      )}
+                      {entry.details && entry.details.length > 0 && (
+                        <div className="mt-3 space-y-2 border-t border-[rgba(255,0,128,0.15)] pt-3">
+                          {entry.details.map((detail, j) => {
+                            const dashIdx = detail.indexOf(' — ');
+                            return (
+                              <div key={j} className="text-sm font-mono leading-relaxed flex gap-2">
+                                <span className="text-[#ff0080] shrink-0">{'>'}</span>
+                                {dashIdx > 0 ? (
+                                  <span>
+                                    <span className="text-[var(--c-primary)] font-bold">{detail.slice(0, dashIdx)}</span>
+                                    <span className="text-[var(--c-secondary)]">{detail.slice(dashIdx)}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[var(--c-secondary)]">{detail}</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div key={i} className="border-l-2 border-[color-mix(in_srgb,var(--c-primary)_25%,transparent)] pl-3">
+                      <div className="text-[var(--c-secondary)] text-xs font-mono tracking-wider">{formatDate(entry.date)}</div>
+                      <div className="text-[var(--c-primary)] text-sm font-mono mt-0.5">{entry.title}</div>
+                      {entry.body && (
+                        <div className="text-[var(--c-secondary)] text-sm font-mono mt-1 leading-relaxed">{entry.body}</div>
+                      )}
+                    </div>
+                  )
                 ))}
 
                 {archivedUpdates.length > 0 && (

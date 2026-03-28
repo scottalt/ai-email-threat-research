@@ -1,6 +1,6 @@
 # Privacy Policy
 
-*Last updated: March 23, 2026*
+*Last updated: March 24, 2026*
 
 Threat Terminal is a free research platform operated by **Scott Altiparmak**. This policy explains what data we collect, how we use it, and your rights.
 
@@ -26,11 +26,14 @@ When you play, we record:
 
 ### What we do NOT collect
 
-- IP address
 - Geographic location
 - Device fingerprints
 - Browser history
 - Cookies beyond the authentication session
+
+### Transient processing
+
+- **IP addresses** are temporarily processed for rate limiting (to prevent abuse) and are automatically discarded within 1 hour. IP addresses are not stored in our database or linked to your account.
 
 ### Analytics
 
@@ -75,7 +78,7 @@ If you are in the **EU/EEA** (GDPR) or **California** (CCPA), you have additiona
 
 ## Children
 
-Threat Terminal is not directed at children under 13. We do not knowingly collect data from children under 13.
+Threat Terminal requires users to be at least 16 years old. We do not knowingly collect data from anyone under 16.
 
 ---
 

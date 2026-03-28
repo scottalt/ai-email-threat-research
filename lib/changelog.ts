@@ -5,6 +5,8 @@ export interface ChangelogEntry {
   category: ChangelogCategory;
   title: string;
   body?: string;
+  details?: string[]; // bullet-point feature list for major releases
+  highlight?: boolean; // major release — render with special styling
 }
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
@@ -97,6 +99,25 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     title: 'v1.9.2 — Data deletion requests and consent',
     body: 'Request data deletion from your profile page. Sign-up now requires agreement to Privacy Policy and Terms of Use.',
   },
+  {
+    date: '2026-03-22',
+    category: 'update',
+    title: 'v2.0.0 — Season 0',
+    body: 'Head-to-head PvP, a ranked competitive system, a new AI companion, and a complete progression overhaul.',
+    details: [
+      'HEAD-TO-HEAD PVP — Real-time 1v1 ranked matches. 5 cards, same deck, pure speed. Wrong answer eliminates. First to finish wins.',
+      'RANKED SYSTEM — 7 tiers from Bronze to Elite with skill-based point scaling. Beat higher-ranked opponents for bigger gains.',
+      'SEASON 0 EXCLUSIVES — Earn seasonal badges tied to your final rank. Founder badge for early adopters. These won\'t return.',
+      'SIGINT — Your terminal handler. 50+ rotating greetings, milestone reactions, and commentary. Cross-device persistence.',
+      'UNLOCK LADDER — 10 research answers unlocks PvP, 20 unlocks Daily Challenge, 30 unlocks Freeplay.',
+      'INVENTORY — Themes, badges, and promo codes in one place. Badge rarities with visual effects (glow, pulse, shimmer).',
+      'FRIENDS — Add friends, view profiles, see their featured badges and stats.',
+      'AFK PROTECTION — 90-second per-card inactivity timeout. Idle players are auto-forfeited.',
+      'FREEPLAY — Expert mode merged into Freeplay with a combined card pool. Unlimited practice, no XP cooldown.',
+      'PHASE 2 RESEARCH — Auth headers, Reply-To, and Send Time removed to focus on technique detection. Phase 1 data preserved.',
+    ],
+    highlight: true,
+  },
 ];
 
 /*
@@ -148,4 +169,13 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
  * 2026-03-22  Add auth_visible column to answers for phase 1/2 partitioning
  * 2026-03-22  Remove Reply-To from UI — only exists on phishing cards (298/0), dead giveaway confound
  * 2026-03-22  Remove SENT row from UI — inconsistently populated (~60% missing across both types)
+ * 2026-03-22  v2.0.0 — Head-to-Head competitive mode (Season 0)
+ * 2026-03-22  Supabase Realtime Broadcast for live match communication
+ * 2026-03-22  7-tier rank system (Bronze → Elite), skill-based point scaling
+ * 2026-03-22  Server-side timing verification (Redis render timestamps)
+ * 2026-03-22  Merge Expert into Freeplay (single combined card pool)
+ * 2026-03-22  Tiered unlock ladder: 10 → H2H, 20 → Daily, 30 → Freeplay
+ * 2026-03-22  Lower research graduation threshold from 30 to 10 answers
+ * 2026-03-22  Ghost matches for empty queue (unrated, 30s timeout)
+ * 2026-03-22  Anti-cheat: participant verification, idempotent finalization, rate limiting
  */

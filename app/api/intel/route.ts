@@ -21,17 +21,27 @@ export async function GET() {
 
     const admin = isAdminUser(user.id);
 
-    // Non-admins must be research-graduated
+    // Non-admins must have 20+ research answers to access intel
     if (!admin) {
       const supabaseAdmin = getSupabaseAdminClient();
       const { data: player } = await supabaseAdmin
         .from('players')
-        .select('research_graduated')
+        .select('id')
         .eq('auth_id', user.id)
         .single();
 
-      if (!player?.research_graduated) {
-        return NextResponse.json({ error: 'Complete research to unlock intel' }, { status: 403 });
+      if (!player) {
+        return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+      }
+
+      const { count } = await supabaseAdmin
+        .from('answers')
+        .select('id', { count: 'exact', head: true })
+        .eq('player_id', player.id)
+        .eq('game_mode', 'research');
+
+      if ((count ?? 0) < 20) {
+        return NextResponse.json({ error: 'Submit 20 research answers to unlock intel' }, { status: 403 });
       }
     }
 

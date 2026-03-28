@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data:",
               "font-src 'self'",
-              "connect-src 'self' https://*.supabase.co https://*.upstash.io",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.upstash.io",
               "worker-src 'self'",
               "manifest-src 'self'",
               "frame-ancestors 'none'",

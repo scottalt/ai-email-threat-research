@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 interface Props {
-  onComplete: () => void;
+  onComplete: (correct: boolean) => void;
 }
 
 const TUTORIAL_EMAIL = {
@@ -39,7 +39,7 @@ export function TutorialCard({ onComplete }: Props) {
       <div className="term-border border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] bg-[var(--c-bg)] px-3 py-3 space-y-1">
         <div className="text-[var(--c-accent)] text-sm font-mono font-bold tracking-widest">TRAINING_SIMULATION</div>
         <div className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed">
-          Explore the forensic tools below, then set your confidence and classify this email.
+          Tap the glowing elements below to inspect them, then set your confidence and classify this email.
         </div>
       </div>
 
@@ -68,8 +68,9 @@ export function TutorialCard({ onComplete }: Props) {
                   className={`transition-colors ${
                     fromInteracted
                       ? 'text-[var(--c-dark)] hover:text-[var(--c-secondary)]'
-                      : 'text-[#ffaa00] anim-hint-text-pulse'
+                      : 'text-[#ffaa00] animate-pulse font-bold'
                   }`}
+                  style={!fromInteracted ? { textShadow: '0 0 8px rgba(255,170,0,0.8), 0 0 20px rgba(255,170,0,0.4)' } : undefined}
                   aria-label="Reveal sender email"
                 >
                   {showFrom ? '[−]' : '[↗]'}
@@ -93,7 +94,7 @@ export function TutorialCard({ onComplete }: Props) {
         </div>
 
         {/* Body */}
-        <div className="px-3 py-2 max-h-40 overflow-y-auto">
+        <div className="px-3 py-3">
           <div className="text-[var(--c-secondary)] text-sm font-mono whitespace-pre-wrap leading-relaxed">
             {TUTORIAL_EMAIL.bodyBefore}
             <button
@@ -105,8 +106,9 @@ export function TutorialCard({ onComplete }: Props) {
               className={`underline underline-offset-2 transition-colors ${
                 urlInteracted
                   ? 'text-[#ffaa00] hover:text-[#ffcc44]'
-                  : 'text-[#ffaa00] anim-hint-text-pulse'
+                  : 'text-[#ffaa00] animate-pulse font-bold'
               }`}
+              style={!urlInteracted ? { textShadow: '0 0 8px rgba(255,170,0,0.8), 0 0 20px rgba(255,170,0,0.4)' } : undefined}
             >
               {TUTORIAL_EMAIL.url}
             </button>
@@ -121,6 +123,9 @@ export function TutorialCard({ onComplete }: Props) {
             <div className="text-[#ffaa00] text-sm font-mono break-all">{TUTORIAL_EMAIL.url}</div>
           </div>
         )}
+        <div className="border-t border-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] px-3 py-1.5">
+          <p className="text-[var(--c-muted)] text-[9px] font-mono opacity-50 text-center">AI-generated for research. Brand names used for realism only — no affiliation.</p>
+        </div>
       </div>
 
       {/* Confidence selector */}
@@ -171,19 +176,24 @@ export function TutorialCard({ onComplete }: Props) {
 
       {/* Result panel */}
       {answer && (
-        <div className={`term-border px-3 py-3 space-y-2 ${
+        <div className={`term-border px-4 py-4 space-y-3 anim-fade-in-up ${
           answer === 'PHISHING'
-            ? 'border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)]'
-            : 'border-[rgba(255,51,51,0.5)]'
+            ? 'border-2 border-[color-mix(in_srgb,var(--c-primary)_60%,transparent)]'
+            : 'border-2 border-[rgba(255,51,51,0.6)]'
         } bg-[var(--c-bg)]`}>
-          <div className={`text-sm font-mono font-bold tracking-widest ${
+          <div className={`text-lg font-mono font-bold tracking-widest text-center ${
             answer === 'PHISHING' ? 'text-[var(--c-primary)]' : 'text-[#ff3333]'
-          }`}>
-            {answer === 'PHISHING' ? '✓ PHISHING — CORRECT' : '✗ LEGIT — INCORRECT'}
+          }`}
+            style={answer === 'PHISHING' ? { textShadow: '0 0 10px var(--c-primary), 0 0 25px rgba(0,255,65,0.3)' } : { textShadow: '0 0 10px #ff3333, 0 0 25px rgba(255,51,51,0.3)' }}
+          >
+            {answer === 'PHISHING' ? '✓ CORRECT — PHISHING' : '✗ WRONG — IT WAS PHISHING'}
           </div>
-          <div className="text-[var(--c-secondary)] text-sm font-mono space-y-0.5">
-            <div>• <span className="text-[var(--c-accent)]">FROM:</span> paypa1.com — typosquatted domain</div>
-            <div>• <span className="text-[var(--c-accent)]">URL:</span> paypa1-secure.com — typosquatted</div>
+          <div className="text-[var(--c-secondary)] text-sm font-mono space-y-1 border-t border-[color-mix(in_srgb,var(--c-primary)_15%,transparent)] pt-2">
+            <div className="text-[var(--c-muted)] text-xs tracking-widest mb-1">RED FLAGS:</div>
+            <div>• <span className="text-[var(--c-accent)]">FROM:</span> paypa1.com — typosquatted domain (1 not l)</div>
+            <div>• <span className="text-[var(--c-accent)]">URL:</span> paypa1-secure.com — not the real PayPal</div>
+            <div>• <span className="text-[var(--c-accent)]">ATCH:</span> .zip attachment — unusual for account alerts</div>
+            <div>• <span className="text-[var(--c-accent)]">TONE:</span> urgency + threat of closure — pressure tactic</div>
           </div>
         </div>
       )}
@@ -192,7 +202,7 @@ export function TutorialCard({ onComplete }: Props) {
       {answer && (
         <button
           type="button"
-          onClick={onComplete}
+          onClick={() => onComplete(answer === 'PHISHING')}
           className="w-full py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] transition-all"
         >
           [ GOT IT — START RESEARCH ]

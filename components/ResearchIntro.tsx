@@ -36,12 +36,12 @@ export function ResearchIntro({ onBegin }: Props) {
             </div>
             <ul className="px-3 py-3 space-y-2">
               {[
-                'Sender domain \u2014 tap [\u2197] next to the sender name to reveal the actual email address',
-                'Attachment name \u2014 check [ATCH] for suspicious filenames',
-                'URL destinations \u2014 tap any link to inspect the full URL',
+                'Sender domain — tap [↗] next to the sender name to reveal the actual email address',
+                'Attachment name — check [ATCH] for suspicious filenames',
+                'URL destinations — tap any link to inspect the full URL',
               ].map((signal, i) => (
                 <li key={i} className="flex gap-2 text-sm text-[var(--c-secondary)] font-mono">
-                  <span className="text-[var(--c-accent)] shrink-0">\u25B8</span>
+                  <span className="text-[var(--c-accent)] shrink-0">▸</span>
                   <span>{signal}</span>
                 </li>
               ))}
@@ -54,18 +54,18 @@ export function ResearchIntro({ onBegin }: Props) {
             </div>
             <div className="px-3 py-3 space-y-2">
               <p className="text-[var(--c-secondary)] text-sm font-mono leading-relaxed">
-                Sign-in required. No password \u2014 just a 6-digit code to your email.
+                Sign-in required. No password — just a 6-digit code to your email.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
                 <span className="text-[var(--c-secondary)]">Recorded:</span>{' '}
-                answer, confidence, response time, URL inspection, session position, self-reported background.
+                answer, confidence, response time, scroll depth, URL inspection, session position, self-reported background.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
-                <span className="text-[var(--c-secondary)]">Not recorded:</span>{' '}
-                email, IP, location, or any identifying information.
+                <span className="text-[var(--c-secondary)]">Not linked to research data:</span>{' '}
+                your email is used for sign-in only and is never stored in the research dataset. No IP, location, or identifying information is recorded.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
-                30 research answers to contribute. After that, Expert Mode and Intel unlock.{' '}
+                10 answers unlocks PvP. 20 unlocks Daily Challenge. 30 unlocks Freeplay.{' '}
                 <Link href="/intel/player" className="text-[var(--c-secondary)] hover:underline">Preview</Link>.
               </p>
             </div>
@@ -74,7 +74,7 @@ export function ResearchIntro({ onBegin }: Props) {
 
         <div className="text-center">
           <p className="text-[var(--c-muted)] text-xs font-mono leading-relaxed mb-1">
-            For educational and research purposes only. All emails are fictional and AI-generated.
+            For educational and research purposes only. All emails are fictional and AI-generated. Brand names are used for realism and do not imply endorsement.
           </p>
           <p className="text-[var(--c-muted)] text-xs font-mono">
             <Link href="/privacy" className="hover:text-[var(--c-secondary)] transition-colors underline">Privacy</Link>
@@ -84,7 +84,7 @@ export function ResearchIntro({ onBegin }: Props) {
         </div>
 
         <button
-          onClick={() => { localStorage.setItem('research_intro_seen', '1'); onBegin(); }}
+          onClick={() => { onBegin(); }}
           className="w-full py-4 term-border text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)] active:bg-[color-mix(in_srgb,var(--c-primary)_10%,transparent)] transition-all"
         >
           [ BEGIN RESEARCH ]

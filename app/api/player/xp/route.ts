@@ -179,7 +179,35 @@ export async function PATCH(req: NextRequest) {
   }
   // --- End streak computation ---
 
-  const newXp = (p.xp as number) + xpEarned + streakBonusXp;
+  // --- Quest milestone rewards (one-time, server-verified) ---
+  // Award XP bonuses when crossing 10/20/30 research answer thresholds
+  let questBonusXp = 0;
+  if (verifiedGameMode === 'research') {
+    const { count: researchTotal } = await admin
+      .from('answers')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', playerId)
+      .eq('game_mode', 'research');
+    const total = researchTotal ?? 0;
+
+    const questMilestones = [
+      { threshold: 10, reward: 100, key: `quest-reward:${playerId}:10` },
+      { threshold: 20, reward: 200, key: `quest-reward:${playerId}:20` },
+      { threshold: 30, reward: 500, key: `quest-reward:${playerId}:30` },
+    ];
+
+    for (const milestone of questMilestones) {
+      if (total >= milestone.threshold) {
+        // SET NX — only awards if key doesn't exist (prevents double-award)
+        const awarded = await redis.set(milestone.key, '1', { nx: true, ex: 365 * 24 * 3600 });
+        if (awarded) {
+          questBonusXp += milestone.reward;
+        }
+      }
+    }
+  }
+
+  const newXp = (p.xp as number) + xpEarned + streakBonusXp + questBonusXp;
   const newLevel = getLevelFromXp(newXp);
   const levelUp = newLevel > (p.level as number);
   const newTotalSessions = sessionCompleted ? (p.total_sessions as number) + 1 : p.total_sessions as number;
@@ -319,6 +347,7 @@ export async function PATCH(req: NextRequest) {
     newAchievements,
     streakDay,
     streakBonusXp,
+    questBonusXp,
     ...(cooldown ? { cooldown } : {}),
   });
 }

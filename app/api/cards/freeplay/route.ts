@@ -1,19 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redis } from '@/lib/redis';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { redis, getClientIp } from '@/lib/redis';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { toSafeCard } from '@/lib/card-utils';
 import type { Card } from '@/lib/types';
 
 const SESSION_TTL = 60 * 60; // 1 hour — plenty of time to finish a round
 const ROUND_SIZE = 10;
+const FREEPLAY_UNLOCK_ANSWERS = 30;
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ip = getClientIp(req);
   const rlKey = `ratelimit:cards-freeplay:${ip}`;
   const rlCount = await redis.incr(rlKey);
   if (rlCount === 1) await redis.expire(rlKey, 60);
   if (rlCount > 10) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  // Server-side gate: freeplay requires 30 research answers
+  try {
+    const cookieStore = await cookies();
+    const authClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+    );
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const admin = getSupabaseAdminClient();
+    const { data: player } = await admin.from('players').select('id').eq('auth_id', user.id).single();
+    if (player) {
+      const { count } = await admin.from('answers').select('id', { count: 'exact', head: true })
+        .eq('player_id', player.id).eq('game_mode', 'research');
+      if ((count ?? 0) < FREEPLAY_UNLOCK_ANSWERS) {
+        return NextResponse.json({ error: 'Complete 30 research answers to unlock freeplay' }, { status: 403 });
+      }
+    }
+  } catch {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
   const sessionId = req.nextUrl.searchParams.get('sessionId');
@@ -28,12 +56,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(existingCards.map(toSafeCard));
   }
 
-  // Fetch from DB — random selection of freeplay cards
+  // Fetch from DB — random selection from both freeplay and expert pools
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
     .from('cards_generated')
     .select('*')
-    .eq('pool', 'freeplay');
+    .in('pool', ['freeplay', 'expert']);
 
   if (error || !data || data.length === 0) {
     return NextResponse.json({ error: 'No cards available' }, { status: 500 });

@@ -487,6 +487,8 @@ export async function POST(req: NextRequest) {
 
   for (const r of restorations) {
     if (typeof r.xp !== 'number' || typeof r.level !== 'number') continue;
+    if (r.xp < 0 || r.xp > 100000) continue; // realistic ceiling
+    if (r.level < 1 || r.level > 30) continue;
 
     const { error } = await supabase
       .from('players')
