@@ -30,11 +30,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (data.cooldown) {
           try { localStorage.setItem('xp_cooldown', JSON.stringify(data.cooldown)); } catch {}
         }
-        // Seed seen moments cache from server (player-scoped, prevents cross-account leaks)
-        if (data.seenMoments) {
-          try { localStorage.setItem('handler_moments_seen', JSON.stringify(data.seenMoments)); } catch {}
-        } else {
-          try { localStorage.removeItem('handler_moments_seen'); } catch {}
+        // Merge server seen moments with local cache (local may have moments not yet persisted to DB)
+        try {
+          const local = JSON.parse(localStorage.getItem('handler_moments_seen') ?? '[]') as string[];
+          const server = (data.seenMoments ?? []) as string[];
+          const merged = [...new Set([...local, ...server])];
+          localStorage.setItem('handler_moments_seen', JSON.stringify(merged));
+          // Also merge into the profile data so triggerSigint's profile check works
+          data.seenMoments = merged;
+        } catch {
+          if (data.seenMoments) {
+            try { localStorage.setItem('handler_moments_seen', JSON.stringify(data.seenMoments)); } catch {}
+          }
         }
         setProfile(data);
       } else {
