@@ -7,6 +7,12 @@ export default function AdminTools() {
   const [backfillMsg, setBackfillMsg] = useState<string | null>(null);
   const [backfilling, setBackfilling] = useState(false);
 
+  // Broadcast state
+  const [broadcastLines, setBroadcastLines] = useState('');
+  const [broadcastButton, setBroadcastButton] = useState('ACKNOWLEDGED');
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [broadcastMsg, setBroadcastMsg] = useState<string | null>(null);
+
   async function runBackfill() {
     setBackfilling(true);
     setBackfillMsg(null);
@@ -82,6 +88,55 @@ export default function AdminTools() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Global broadcast */}
+      <div className="term-border border-[rgba(255,170,0,0.3)] px-4 py-3">
+        <div className="text-[var(--c-accent)] text-xs font-mono tracking-widest mb-2">GLOBAL_BROADCAST</div>
+        <div className="text-[var(--c-muted)] text-xs font-mono mb-3">
+          Shows as a banner at the top of every player&apos;s screen on their next visit. Dismissible.
+        </div>
+        <textarea
+          value={broadcastLines}
+          onChange={(e) => setBroadcastLines(e.target.value)}
+          placeholder="Banner message (first line shown in the slide-down banner)"
+          rows={3}
+          className="w-full bg-transparent border border-[color-mix(in_srgb,var(--c-accent)_20%,transparent)] px-3 py-2 text-[var(--c-accent)] font-mono text-sm placeholder:text-[var(--c-dark)] focus:outline-none focus:border-[color-mix(in_srgb,var(--c-accent)_50%,transparent)] resize-none mb-2"
+        />
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-[var(--c-secondary)] text-xs font-mono shrink-0">BUTTON</span>
+          <input
+            type="text"
+            value={broadcastButton}
+            onChange={(e) => setBroadcastButton(e.target.value)}
+            className="flex-1 bg-transparent border border-[color-mix(in_srgb,var(--c-accent)_20%,transparent)] px-2 py-1.5 text-[var(--c-accent)] font-mono text-sm focus:outline-none"
+          />
+        </div>
+        <button
+          onClick={async () => {
+            const lines = broadcastLines.split('\n').filter((l) => l.trim());
+            if (lines.length === 0) return;
+            setSendingBroadcast(true);
+            setBroadcastMsg(null);
+            const res = await fetch('/api/admin/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ lines, buttonText: broadcastButton || 'ACKNOWLEDGED' }),
+            });
+            if (res.ok) { setBroadcastMsg('BROADCAST SENT TO ALL PLAYERS'); setBroadcastLines(''); }
+            else setBroadcastMsg('BROADCAST FAILED');
+            setSendingBroadcast(false);
+          }}
+          disabled={sendingBroadcast || !broadcastLines.trim()}
+          className="w-full py-3 term-border border-[rgba(255,170,0,0.4)] text-[var(--c-accent)] font-mono text-xs tracking-widest hover:bg-[color-mix(in_srgb,var(--c-accent)_5%,transparent)] disabled:opacity-40 transition-all"
+        >
+          {sendingBroadcast ? 'SENDING...' : '[ BROADCAST TO ALL PLAYERS ]'}
+        </button>
+        {broadcastMsg && (
+          <div className={`text-xs font-mono mt-2 ${broadcastMsg.includes('FAILED') ? 'text-[#ff3333]' : 'text-[var(--c-primary)]'}`}>
+            {broadcastMsg}
+          </div>
+        )}
       </div>
 
       {/* Backfill */}

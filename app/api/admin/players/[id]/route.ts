@@ -84,6 +84,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.displayName === 'string' && body.displayName.trim().length > 0) updates.display_name = body.displayName.trim().slice(0, 20);
   if (typeof body.bio === 'string') updates.bio = body.bio.slice(0, 200);
   if (typeof body.researchGraduated === 'boolean') updates.research_graduated = body.researchGraduated;
+  if (typeof body.customTitle === 'string') updates.custom_title = body.customTitle.trim().slice(0, 30) || null;
+  if (body.customTitle === null) updates.custom_title = null;
   if (typeof body.totalSessions === 'number' && body.totalSessions >= 0) updates.total_sessions = body.totalSessions;
   if (typeof body.researchSessionsCompleted === 'number' && body.researchSessionsCompleted >= 0) {
     updates.research_sessions_completed = body.researchSessionsCompleted;

@@ -10,6 +10,7 @@ import { SigintProvider } from '@/lib/SigintContext';
 import { NavBar } from '@/components/NavBar';
 import { DataStream } from '@/components/DataStream';
 import { PresenceSync } from '@/components/PresenceSync';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import Link from 'next/link';
 
 /** One-time achievement backfill — fires once per deploy version */
@@ -57,6 +58,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
           <BackfillTrigger />
           <PresenceSync />
           <SigintProvider>
+          <AnnouncementBanner />
           <NavVisibilityProvider>
             <NavBar />
             {children}

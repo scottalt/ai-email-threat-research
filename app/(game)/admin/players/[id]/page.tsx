@@ -34,7 +34,7 @@ export default function AdminPlayerDetail({ params }: { params: Promise<{ id: st
   const [sessionTotal, setSessionTotal] = useState(0);
   const [sessionOffset, setSessionOffset] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'answers' | 'sessions' | 'achievements'>('overview');
+  const [tab, setTab] = useState<'overview' | 'answers' | 'sessions' | 'achievements' | 'comms'>('overview');
 
   // Edit state
   const [editField, setEditField] = useState<string | null>(null);
@@ -112,6 +112,11 @@ export default function AdminPlayerDetail({ params }: { params: Promise<{ id: st
   const earnedIds = new Set(data.achievements.map((a) => a.id));
   const unearnedAchievements = ACHIEVEMENTS.filter((a) => !earnedIds.has(a.id));
 
+  // SIGINT message state
+  const [msgLines, setMsgLines] = useState('');
+  const [msgButton, setMsgButton] = useState('ACKNOWLEDGED');
+  const [sendingMsg, setSendingMsg] = useState(false);
+
   function renderEditableField(label: string, field: string, currentValue: unknown, type: 'number' | 'text' | 'boolean' = 'text') {
     const isEditing = editField === field;
     return (
@@ -186,12 +191,13 @@ export default function AdminPlayerDetail({ params }: { params: Promise<{ id: st
           {renderEditableField('BIO', 'bio', p.bio, 'text')}
           {renderEditableField('GRADUATED', 'researchGraduated', p.research_graduated, 'boolean')}
           {renderEditableField('SESSIONS', 'totalSessions', p.total_sessions, 'number')}
+          {renderEditableField('CUSTOM TITLE', 'customTitle', p.custom_title, 'text')}
         </div>
       </div>
 
       {/* Tab bar */}
       <div className="flex gap-1">
-        {(['overview', 'answers', 'sessions', 'achievements'] as const).map((t) => (
+        {(['overview', 'answers', 'sessions', 'achievements', 'comms'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -368,6 +374,51 @@ export default function AdminPlayerDetail({ params }: { params: Promise<{ id: st
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Comms tab */}
+      {tab === 'comms' && (
+        <div className="term-border px-4 py-3 space-y-3">
+          <div className="text-[var(--c-accent)] text-xs font-mono tracking-widest">SEND SIGINT MESSAGE</div>
+          <div className="text-[var(--c-muted)] text-xs font-mono">
+            This will show as a full-screen SIGINT overlay next time this player loads the game.
+          </div>
+          <textarea
+            value={msgLines}
+            onChange={(e) => setMsgLines(e.target.value)}
+            placeholder="One line per message. Each line shows as a separate SIGINT dialogue line."
+            rows={4}
+            className="w-full bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] px-3 py-2 text-[var(--c-primary)] font-mono text-sm placeholder:text-[var(--c-dark)] focus:outline-none focus:border-[color-mix(in_srgb,var(--c-primary)_50%,transparent)] resize-none"
+          />
+          <div className="flex items-center gap-3">
+            <span className="text-[var(--c-secondary)] text-xs font-mono shrink-0">BUTTON TEXT</span>
+            <input
+              type="text"
+              value={msgButton}
+              onChange={(e) => setMsgButton(e.target.value)}
+              className="flex-1 bg-transparent border border-[color-mix(in_srgb,var(--c-primary)_20%,transparent)] px-2 py-1.5 text-[var(--c-primary)] font-mono text-sm focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={async () => {
+              const lines = msgLines.split('\n').filter((l) => l.trim());
+              if (lines.length === 0) return;
+              setSendingMsg(true);
+              const res = await fetch('/api/admin/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetPlayerId: id, lines, buttonText: msgButton || 'ACKNOWLEDGED' }),
+              });
+              if (res.ok) { setActionMsg('MESSAGE SENT'); setMsgLines(''); }
+              else setActionMsg('SEND FAILED');
+              setSendingMsg(false);
+            }}
+            disabled={sendingMsg || !msgLines.trim()}
+            className="w-full py-3 term-border text-[var(--c-accent)] font-mono text-xs tracking-widest hover:bg-[color-mix(in_srgb,var(--c-accent)_5%,transparent)] disabled:opacity-40 transition-all"
+          >
+            {sendingMsg ? 'SENDING...' : '[ SEND TO THIS PLAYER ]'}
+          </button>
         </div>
       )}
     </div>
