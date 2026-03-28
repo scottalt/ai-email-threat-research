@@ -265,48 +265,17 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     const isFirstLoad = lastProgressionKey.current === '';
     lastProgressionKey.current = progressionKey;
 
-    // ── 1. Greeting — once per sign-in, guarded by sessionStorage ──
-    if (isFirstLoad) {
-      try { if (sessionStorage.getItem('sigint_greeting_done') === '1') { /* skip greeting */ } else {
-        // v2_intro for v1 veterans
-        if (answers > 0 && !hasSeenMoment('v2_intro')) {
-          const d = dynamicDialogue('v2_intro', callsign);
-          if (d) {
-            setHandlerLines(d.lines);
-            setHandlerButton(d.buttonText ?? 'GOT IT');
-            setShowHandlerGreeting(true);
-            try { sessionStorage.setItem('sigint_greeting_done', '1'); } catch {}
-          }
-        } else {
-          // Boot greeting or returning greeting (with 2hr cooldown)
-          const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
-          const cooldownOk = answers === 0 || !lastGreeted || (Date.now() - lastGreeted > 2 * 60 * 60 * 1000);
-          if (cooldownOk) {
-            let dialogue: { lines: string[]; buttonText?: string } | null = null;
-            if (answers === 0) {
-              dialogue = bootGreetingNamed(callsign);
-              try { markMomentSeen('v2_intro'); } catch {}
-            } else {
-              dialogue = dynamicDialogue('welcome_back', callsign);
-            }
-            if (dialogue) {
-              setHandlerLines(dialogue.lines);
-              setHandlerButton(dialogue.buttonText ?? 'CONTINUE');
-              setShowHandlerGreeting(true);
-              try { sessionStorage.setItem('sigint_greeting_done', '1'); } catch {}
-            }
-          }
-        }
-      }} catch {}
-    }
-
-    // ── 2. Milestones — only on actual progression changes (not on every home visit) ──
+    // ── 1. Milestones — fire on first load or progression change ──
+    let milestonesFired = false;
     if (isFirstLoad || isNewProgression) {
-      // Unlock milestones (highest first — triggerSigint dedup prevents repeats)
-      if (answers >= 30) triggerSigint('freeplay_unlock');
-      else if (answers >= 20) triggerSigint('daily_unlock');
-      else if (answers >= 15) triggerSigint('research_halfway');
-      else if (graduated || answers >= 10) triggerSigint('pvp_unlock');
+      // Unlock milestones (highest first)
+      const unlockMoment =
+        (answers >= 30 && !hasSeenMoment('freeplay_unlock')) ? 'freeplay_unlock' :
+        (answers >= 20 && !hasSeenMoment('daily_unlock')) ? 'daily_unlock' :
+        (answers >= 15 && !hasSeenMoment('research_halfway')) ? 'research_halfway' :
+        ((graduated || answers >= 10) && !hasSeenMoment('pvp_unlock')) ? 'pvp_unlock' :
+        null;
+      if (unlockMoment) { triggerSigint(unlockMoment); milestonesFired = true; }
 
       // Level moments (exact match + sessionStorage guard)
       const levelMoments: Record<number, string> = {
@@ -321,18 +290,57 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
           if (sessionStorage.getItem(levelKey) !== '1') {
             sessionStorage.setItem(levelKey, '1');
             triggerSigint(levelMoment);
+            milestonesFired = true;
           }
         } catch {}
       }
 
-      if (profile.totalSessions >= 7) triggerSigint('played_7_days');
+      if (!hasSeenMoment('played_7_days') && profile.totalSessions >= 7) {
+        triggerSigint('played_7_days');
+        milestonesFired = true;
+      }
+    }
+
+    // ── 2. Greeting — only if NO milestones fired, once per sign-in ──
+    if (!milestonesFired && isFirstLoad) {
+      try { if (sessionStorage.getItem('sigint_greeting_done') !== '1') {
+        if (answers > 0 && !hasSeenMoment('v2_intro')) {
+          const d = dynamicDialogue('v2_intro', callsign);
+          if (d) {
+            setHandlerLines(d.lines);
+            setHandlerButton(d.buttonText ?? 'GOT IT');
+            setShowHandlerGreeting(true);
+            sessionStorage.setItem('sigint_greeting_done', '1');
+          }
+        } else {
+          const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
+          const cooldownOk = answers === 0 || !lastGreeted || (Date.now() - lastGreeted > 2 * 60 * 60 * 1000);
+          if (cooldownOk) {
+            let dialogue: { lines: string[]; buttonText?: string } | null = null;
+            if (answers === 0) {
+              dialogue = bootGreetingNamed(callsign);
+              try { markMomentSeen('v2_intro'); } catch {}
+            } else {
+              dialogue = dynamicDialogue('welcome_back', callsign);
+            }
+            if (dialogue) {
+              setHandlerLines(dialogue.lines);
+              setHandlerButton(dialogue.buttonText ?? 'CONTINUE');
+              setShowHandlerGreeting(true);
+              sessionStorage.setItem('sigint_greeting_done', '1');
+            }
+          }
+        }
+      }} catch {}
     }
 
     // ── 3. Time-based one-time moments ──
-    const hour = new Date().getHours();
-    const day = new Date().getDay();
-    if (hour >= 0 && hour < 5) triggerSigint('night_owl');
-    if (day === 0 || day === 6) triggerSigint('weekend_warrior');
+    if (isFirstLoad) {
+      const hour = new Date().getHours();
+      const day = new Date().getDay();
+      if (hour >= 0 && hour < 5) triggerSigint('night_owl');
+      if (day === 0 || day === 6) triggerSigint('weekend_warrior');
+    }
   }, [showButton, signedIn, profile, triggerSigint]);
 
   // Hide nav bar during boot and until player profile is fully set up
