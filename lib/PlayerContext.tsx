@@ -61,14 +61,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       else setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
-      // Only clear caches on actual sign-in/sign-out (not token refresh)
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        try {
-          localStorage.removeItem('handler_moments_seen');
-          sessionStorage.removeItem('sigint_spoke');
-        } catch {}
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: unknown) => {
+      // Note: SIGNED_IN fires on page load (session restore) — don't clear session flags here.
+      // Caches are cleared in signOut() only. refreshProfile() merges seen moments from server.
       if (session) {
         refreshProfile(); // will re-seed handler_moments_seen from server
         try { localStorage.setItem('terms_agreed', '1'); } catch {}

@@ -248,7 +248,19 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   // SIGINT milestone unlocks — fire when player crosses answer thresholds
   const { triggerSigint } = useSigint();
 
-  // ── SIGINT greeting: once per sign-in, never on refresh/navigate ──
+  // ── Helper: find the highest unseen unlock milestone ──
+  function findPendingMilestone(): string | null {
+    if (!profile) return null;
+    const answers = profile.researchAnswersSubmitted ?? 0;
+    const graduated = profile.researchGraduated ?? false;
+    if (answers >= 30 && !hasSeenMoment('freeplay_unlock')) return 'freeplay_unlock';
+    if (answers >= 20 && !hasSeenMoment('daily_unlock')) return 'daily_unlock';
+    if (answers >= 15 && !hasSeenMoment('research_halfway')) return 'research_halfway';
+    if ((graduated || answers >= 10) && !hasSeenMoment('pvp_unlock')) return 'pvp_unlock';
+    return null;
+  }
+
+  // ── SIGINT on sign-in: milestone OR greeting (never both) ──
   useEffect(() => {
     if (!showButton || !signedIn || !profile || !profile.displayName) return;
     try { if (sessionStorage.getItem('sigint_spoke') === '1') return; } catch {}
@@ -256,6 +268,10 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
 
     const answers = profile.researchAnswersSubmitted ?? 0;
     const callsign = profile.displayName ?? 'operative';
+
+    // If a milestone is pending, show that instead of a greeting
+    const milestone = findPendingMilestone();
+    if (milestone) { triggerSigint(milestone); return; }
 
     // v2_intro for v1 veterans
     if (answers > 0 && !hasSeenMoment('v2_intro')) {
@@ -286,31 +302,23 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showButton, signedIn, !!profile?.displayName]);
 
-  // ── SIGINT milestones: fire when progression changes (independent of greeting) ──
-  // Tracked by answer count so it fires when player returns after crossing a threshold.
+  // ── SIGINT milestones: fire when answer count changes (after playing) ──
   const lastAnswerCount = useRef<number>(-1);
   useEffect(() => {
     if (!showButton || !signedIn || !profile) return;
     const answers = profile.researchAnswersSubmitted ?? 0;
-    const graduated = profile.researchGraduated ?? false;
 
-    // Only fire when answer count actually changes (not on profile refreshes for XP etc.)
     if (lastAnswerCount.current === answers) return;
     const isFirstCheck = lastAnswerCount.current === -1;
     lastAnswerCount.current = answers;
 
-    // On first load, don't fire milestones — let the greeting have the spotlight.
-    // Milestones fire when the player returns after playing (answer count changed).
+    // Skip first load — handled by the sign-in effect above
     if (isFirstCheck) return;
 
-    const milestone =
-      (answers >= 30 && !hasSeenMoment('freeplay_unlock')) ? 'freeplay_unlock' :
-      (answers >= 20 && !hasSeenMoment('daily_unlock')) ? 'daily_unlock' :
-      (answers >= 15 && !hasSeenMoment('research_halfway')) ? 'research_halfway' :
-      ((graduated || answers >= 10) && !hasSeenMoment('pvp_unlock')) ? 'pvp_unlock' :
-      null;
+    const milestone = findPendingMilestone();
     if (milestone) triggerSigint(milestone);
-  }, [showButton, signedIn, profile?.researchAnswersSubmitted, profile?.researchGraduated, triggerSigint]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showButton, signedIn, profile?.researchAnswersSubmitted]);
 
   // Hide nav bar during boot and until player profile is fully set up
   useLayoutEffect(() => {
