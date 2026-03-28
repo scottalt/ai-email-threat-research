@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { getCtx, ensureUnlocked, playClick, playKeyPress } from '@/lib/sounds';
+import { getMusicCtx, ensureUnlocked, playClick, playKeyPress } from '@/lib/sounds';
 
 const MUSIC_SRC = '/audio/joelfazhari-synthetic-deception-loopable-epic-cyberpunk-crime-music-157454.mp3';
 const MUSIC_GAIN = 0.04;
-const FADE_TIME = 0.05; // 50ms gain ramp to prevent pops
+const FADE_MS = 50;
 
 const SKIP_KEYS = new Set([
   'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock',
@@ -14,97 +14,88 @@ const SKIP_KEYS = new Set([
   'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
 ]);
 
-function musicEnabled(): boolean {
+function musicWanted(): boolean {
   try { return localStorage.getItem('music_enabled') !== 'false'; } catch { return true; }
 }
 
 interface MusicState {
   audio: HTMLAudioElement;
   gain: GainNode;
-  source: MediaElementAudioSourceNode;
 }
 
 export function TerminalSounds() {
   const musicRef = useRef<MusicState | null>(null);
-  const musicStarted = useRef(false);
+  const wantMusic = useRef(musicWanted());
 
-  // Create music nodes lazily — connects to the shared AudioContext
   function getMusic(): MusicState {
     if (musicRef.current) return musicRef.current;
-    const ctx = getCtx();
+    const ctx = getMusicCtx();
     const audio = new Audio(MUSIC_SRC);
     audio.loop = true;
     audio.crossOrigin = 'anonymous';
     const source = ctx.createMediaElementSource(audio);
     const gain = ctx.createGain();
-    gain.gain.value = 0; // start silent
+    gain.gain.value = 0;
     source.connect(gain);
     gain.connect(ctx.destination);
-    musicRef.current = { audio, gain, source };
+    musicRef.current = { audio, gain };
     return musicRef.current;
   }
 
-  function startMusic() {
-    const ctx = getCtx();
-    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  function fadeIn() {
     const m = getMusic();
+    const ctx = getMusicCtx();
     const t = ctx.currentTime;
-    // Fade in to prevent pop
     m.gain.gain.cancelScheduledValues(t);
-    m.gain.gain.setValueAtTime(m.gain.gain.value, t);
-    m.gain.gain.linearRampToValueAtTime(MUSIC_GAIN, t + FADE_TIME);
-    if (m.audio.paused) {
-      m.audio.play().catch(() => {});
-    }
-    musicStarted.current = true;
+    m.gain.gain.setValueAtTime(0, t);
+    m.gain.gain.linearRampToValueAtTime(MUSIC_GAIN, t + FADE_MS / 1000);
+    m.audio.play().catch(() => {});
+    wantMusic.current = true;
   }
 
-  function stopMusic() {
+  function fadeOut() {
     if (!musicRef.current) return;
-    const ctx = getCtx();
+    const ctx = getMusicCtx();
     const t = ctx.currentTime;
-    // Fade out to prevent pop
     musicRef.current.gain.gain.cancelScheduledValues(t);
     musicRef.current.gain.gain.setValueAtTime(musicRef.current.gain.gain.value, t);
-    musicRef.current.gain.gain.linearRampToValueAtTime(0, t + FADE_TIME);
-    // Pause after fade completes
-    setTimeout(() => {
-      musicRef.current?.audio.pause();
-    }, FADE_TIME * 1000 + 10);
-    musicStarted.current = false;
+    musicRef.current.gain.gain.linearRampToValueAtTime(0, t + FADE_MS / 1000);
+    const audio = musicRef.current.audio;
+    setTimeout(() => audio.pause(), FADE_MS + 20);
+    wantMusic.current = false;
   }
 
   useEffect(() => {
-    // ── User gesture handler — unlocks AudioContext + starts music ──
+    // ── First user gesture: unlock AudioContext, then start music if wanted ──
     function handleGesture() {
-      ensureUnlocked();
-      // Try to start music on first gesture if enabled
-      if (musicEnabled() && !musicStarted.current) {
-        // Small delay to let context resume
-        setTimeout(() => startMusic(), 50);
+      const wasRunning = ensureUnlocked();
+      // If context just transitioned to running AND music is wanted, start it
+      if (!wasRunning && musicWanted()) {
+        // Wait for resume to actually complete
+        const ctx = getMusicCtx();
+        const check = () => {
+          if (ctx.state === 'running') fadeIn();
+          else setTimeout(check, 50);
+        };
+        setTimeout(check, 50);
       }
     }
 
-    // ── Music toggle handler ──
     function handleMusicChange(e: Event) {
       const enabled = (e as CustomEvent<boolean>).detail;
-      if (enabled) {
-        startMusic();
-      } else {
-        stopMusic();
-      }
+      if (enabled) fadeIn(); else fadeOut();
     }
 
-    // ── Visibility change — resume context when returning from background ──
     function handleVisibility() {
       if (document.visibilityState === 'visible') {
-        const ctx = getCtx();
-        if (ctx.state === 'suspended') {
-          ctx.resume().catch(() => {});
-        }
-        // Restart music if it was playing before background
-        if (musicEnabled() && musicStarted.current && musicRef.current?.audio.paused) {
-          startMusic();
+        ensureUnlocked();
+        if (wantMusic.current && musicRef.current?.audio.paused) {
+          const ctx = getMusicCtx();
+          const check = () => {
+            if (ctx.state === 'running') fadeIn();
+            else setTimeout(check, 50);
+          };
+          setTimeout(check, 50);
         }
       }
     }
@@ -123,10 +114,9 @@ export function TerminalSounds() {
     };
   }, []);
 
-  // ── Global SFX — click and keypress sounds ──
+  // ── Global SFX ──
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      // Ensure context is unlocked on every click (handles first interaction)
       ensureUnlocked();
       const target = e.target as HTMLElement;
       if (target.closest('button') || target.closest('[role="button"]') || target.closest('a')) {
@@ -137,8 +127,7 @@ export function TerminalSounds() {
     function handleKeyDown(e: KeyboardEvent) {
       if (SKIP_KEYS.has(e.key)) return;
       const target = e.target as HTMLElement;
-      const tag = target.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) {
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
         playKeyPress();
       }
     }
