@@ -200,6 +200,7 @@ export default function AdminPlayerDetail() {
           {renderEditableField('GRADUATED', 'researchGraduated', p.research_graduated, 'boolean')}
           {renderEditableField('SESSIONS', 'totalSessions', p.total_sessions, 'number')}
           {renderEditableField('CUSTOM TITLE', 'customTitle', p.custom_title, 'text')}
+          {renderEditableField('TOXIC MODE', 'toxicMode', p.toxic_mode, 'boolean')}
           {/* Theme override */}
           <div className="flex items-center justify-between py-1">
             <span className="text-[var(--c-secondary)] text-xs tracking-widest">THEME</span>

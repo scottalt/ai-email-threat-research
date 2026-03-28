@@ -10,6 +10,7 @@ import { playVictory, playDefeat, playLevelUp, playStreak } from '@/lib/sounds';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { usePlayer } from '@/lib/usePlayer';
 import { useSigint } from '@/lib/SigintContext';
+import { getRandomToxicLoss } from '@/lib/toxic-sigint';
 
 interface Props {
   matchId: string;
@@ -83,7 +84,7 @@ export function H2HResult({
   const [myAnswers, setMyAnswers] = useState<any[]>([]);
 
   const { soundEnabled } = useSoundEnabled();
-  const { triggerSigint } = useSigint();
+  const { triggerSigint, triggerCustom } = useSigint();
 
   // Prefer server-fetched winnerId over client prop (client passes null for eliminations/forfeits)
   const resolvedWinnerId = matchData?.serverWinnerId ?? winnerId;
@@ -118,6 +119,15 @@ export function H2HResult({
       triggerSigint('first_pvp_loss');
       // Loss streak empathy
       if (stats.winStreak === 0 && stats.losses >= 3) triggerSigint('loss_streak_3');
+      // TOXIC MODE — unhinged SIGINT roast on every loss
+      if (profile?.toxicMode) {
+        const toxicLines = getRandomToxicLoss(
+          profile.displayName ?? 'operative',
+          matchData.oppName ?? 'unknown',
+          reason === 'eliminated' ? matchData.myCards : undefined,
+        );
+        triggerCustom(toxicLines, 'I DESERVE THAT', undefined, null);
+      }
     }
     // Rated match cap warnings
     if (stats.ratedMatchesToday >= 20) triggerSigint('h2h_daily_cap');

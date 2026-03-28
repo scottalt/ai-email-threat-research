@@ -47,6 +47,7 @@ function toProfile(row: Record<string, unknown>, researchAnswersSubmitted = 0, a
     featuredBadges: (row.featured_badges as string[]) ?? [],
     themeId: (row.theme_id as string | null) ?? 'phosphor',
     unlockedThemes: (row.unlocked_themes as string[]) ?? [],
+    toxicMode: (row.toxic_mode as boolean) ?? false,
     seenMoments,
   };
 }

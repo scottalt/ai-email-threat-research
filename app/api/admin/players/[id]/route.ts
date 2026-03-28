@@ -88,6 +88,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.customTitle === null) updates.custom_title = null;
   if (typeof body.totalSessions === 'number' && body.totalSessions >= 0) updates.total_sessions = body.totalSessions;
   if (typeof body.themeId === 'string') updates.theme_id = body.themeId;
+  if (typeof body.toxicMode === 'boolean') updates.toxic_mode = body.toxicMode;
   if (typeof body.researchSessionsCompleted === 'number' && body.researchSessionsCompleted >= 0) {
     updates.research_sessions_completed = body.researchSessionsCompleted;
   }
