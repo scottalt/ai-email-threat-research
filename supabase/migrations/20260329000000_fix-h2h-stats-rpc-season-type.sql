@@ -1,6 +1,9 @@
 -- Fix: p_season was declared as integer but h2h_player_stats.season is TEXT.
--- This caused the update_h2h_stats RPC to fail on type mismatch,
--- preventing rank points from being recorded after matches.
+-- Also: p_today was text but last_match_date is DATE — added ::date casts.
+-- DROP both old signatures first (CREATE OR REPLACE won't replace a different signature).
+
+DROP FUNCTION IF EXISTS update_h2h_stats(uuid, integer, integer, boolean, text);
+DROP FUNCTION IF EXISTS update_h2h_stats(uuid, text, integer, boolean, text);
 
 CREATE OR REPLACE FUNCTION update_h2h_stats(
   p_player_id uuid,
