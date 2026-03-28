@@ -48,6 +48,8 @@ function toProfile(row: Record<string, unknown>, researchAnswersSubmitted = 0, a
     themeId: (row.theme_id as string | null) ?? 'phosphor',
     unlockedThemes: (row.unlocked_themes as string[]) ?? [],
     toxicMode: (row.toxic_mode as boolean) ?? false,
+    sfxEnabled: (row.sfx_enabled as boolean) ?? true,
+    musicEnabled: (row.music_enabled as boolean) ?? true,
     seenMoments,
   };
 }

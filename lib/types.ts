@@ -135,6 +135,8 @@ export interface PlayerProfile {
   themeId: string;
   unlockedThemes?: string[];
   toxicMode?: boolean;
+  sfxEnabled?: boolean;
+  musicEnabled?: boolean;
   seenMoments?: string[];
   dailyResult?: { score: number; totalScore: number } | null;
   cooldown?: { hourlyRemaining: number; dailyRemaining: number; hourlyResetsAt: string; dailyResetsAt: string };

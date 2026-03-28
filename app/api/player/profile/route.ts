@@ -73,6 +73,10 @@ export async function PATCH(req: NextRequest) {
     updates.bio = cleaned;
   }
 
+  // Audio settings
+  if (typeof body.sfxEnabled === 'boolean') updates.sfx_enabled = body.sfxEnabled;
+  if (typeof body.musicEnabled === 'boolean') updates.music_enabled = body.musicEnabled;
+
   // Validate privacyLevel
   if ('privacyLevel' in body) {
     if (!VALID_PRIVACY_LEVELS.includes(body.privacyLevel)) {

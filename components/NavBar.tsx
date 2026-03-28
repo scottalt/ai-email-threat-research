@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePlayer } from '@/lib/usePlayer';
 import { useNavVisibility } from '@/lib/NavVisibilityContext';
-import { useMusicEnabled, useSoundEnabled } from '@/lib/useSoundEnabled';
+import { useMusicEnabled } from '@/lib/useSoundEnabled';
 import { version } from '@/package.json';
 import { playerGet, playerSet } from '@/lib/player-storage';
 
@@ -28,7 +28,6 @@ export function NavBar() {
   const { signedIn } = usePlayer();
   const { navHidden } = useNavVisibility();
   const { musicEnabled, toggleMusic } = useMusicEnabled();
-  const { soundEnabled, toggleSound } = useSoundEnabled();
 
   const [hasUnread, setHasUnread] = useState(false);
   const [pendingFriends, setPendingFriends] = useState(0);
@@ -91,17 +90,6 @@ export function NavBar() {
             )}
           </Link>
           <button
-            onClick={toggleSound}
-            aria-label={soundEnabled ? 'Mute SFX' : 'Enable SFX'}
-            className="text-[17px] tracking-wider transition-colors hover:text-[var(--c-primary)]"
-          >
-            <span className="text-[var(--c-secondary)]">SFX </span>
-            {soundEnabled
-              ? <span className="text-[var(--c-primary)]">[ON]</span>
-              : <span className="text-[var(--c-muted)]">[OFF]</span>
-            }
-          </button>
-          <button
             onClick={toggleMusic}
             aria-label={musicEnabled ? 'Mute music' : 'Enable music'}
             className="text-[17px] tracking-wider transition-colors hover:text-[var(--c-primary)]"
@@ -112,23 +100,18 @@ export function NavBar() {
               : <span className="text-[var(--c-muted)]">[OFF]</span>
             }
           </button>
+          <Link
+            href="/settings"
+            className="text-[var(--c-secondary)] text-[17px] tracking-wider hover:text-[var(--c-primary)] transition-colors"
+          >
+            [SET]
+          </Link>
         </div>
       </nav>
 
       {/* Mobile: bottom tab bar */}
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--c-bg)] border-t border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] font-mono ${navAnim}`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        {/* Audio controls — compact row above nav links */}
-        <div className="flex justify-center gap-4 pt-2 pb-0.5">
-          <button onClick={toggleSound} className="text-[10px] tracking-widest transition-colors">
-            <span className="text-[var(--c-muted)]">SFX </span>
-            {soundEnabled ? <span className="text-[var(--c-primary)]">ON</span> : <span className="text-[var(--c-dark)]">OFF</span>}
-          </button>
-          <button onClick={toggleMusic} className="text-[10px] tracking-widest transition-colors">
-            <span className="text-[var(--c-muted)]">MUSIC </span>
-            {musicEnabled ? <span className="text-[var(--c-primary)]">ON</span> : <span className="text-[var(--c-dark)]">OFF</span>}
-          </button>
-        </div>
-        <div className="flex justify-around pt-1 pb-2">
+        <div className="flex justify-around pt-3 pb-2">
           {links.map((link) => {
             const active = link.match(pathname);
             const showDot = link.label === 'PROFILE' && pendingFriends > 0;

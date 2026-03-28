@@ -41,6 +41,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             playerSet('handler_moments_seen', JSON.stringify(data.seenMoments));
           }
         }
+        // Sync audio settings from server to localStorage
+        if (typeof data.sfxEnabled === 'boolean') {
+          try { localStorage.setItem('sfx_enabled', String(data.sfxEnabled)); } catch {}
+        }
+        if (typeof data.musicEnabled === 'boolean') {
+          try { localStorage.setItem('music_enabled', String(data.musicEnabled)); } catch {}
+          window.dispatchEvent(new CustomEvent('music-change', { detail: data.musicEnabled }));
+        }
         setProfile(data);
       } else {
         setProfile(null);
