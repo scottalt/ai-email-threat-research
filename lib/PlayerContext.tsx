@@ -89,7 +89,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         supabase.auth.signInWithOtp({ email }),
       ]);
 
-      const { existing } = ensureRes.ok ? await ensureRes.json() : { existing: false };
+      // Default to existing=true on any error — safer to skip terms than to show them incorrectly
+      const { existing } = ensureRes.ok ? await ensureRes.json() : { existing: true };
       return { error: otpResult.error?.message ?? null, existing: !!existing };
     } catch {
       return { error: 'Failed to send code' };
