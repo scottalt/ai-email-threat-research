@@ -61,8 +61,8 @@ export function ResearchIntro({ onBegin }: Props) {
                 answer, confidence, response time, scroll depth, URL inspection, session position, self-reported background.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
-                <span className="text-[var(--c-secondary)]">Not recorded:</span>{' '}
-                email, IP, location, or any identifying information.
+                <span className="text-[var(--c-secondary)]">Not linked to research data:</span>{' '}
+                your email is used for sign-in only and is never stored in the research dataset. No IP, location, or identifying information is recorded.
               </p>
               <p className="text-[var(--c-muted)] text-sm font-mono leading-relaxed">
                 10 answers unlocks PvP. 20 unlocks Daily Challenge. 30 unlocks Freeplay.{' '}
