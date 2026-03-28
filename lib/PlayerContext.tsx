@@ -44,6 +44,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // Sync audio settings from server to localStorage
         if (typeof data.sfxEnabled === 'boolean') {
           try { localStorage.setItem('sfx_enabled', String(data.sfxEnabled)); } catch {}
+          window.dispatchEvent(new CustomEvent('sfx-change', { detail: data.sfxEnabled }));
         }
         if (typeof data.musicEnabled === 'boolean') {
           try { localStorage.setItem('music_enabled', String(data.musicEnabled)); } catch {}
@@ -123,6 +124,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       // Clear all player-scoped storage (both scoped and legacy unscoped keys)
       clearAllPlayerStorage();
       setStoragePlayerId(null);
+      // Stop music on sign-out
+      window.dispatchEvent(new CustomEvent('music-change', { detail: false }));
       // Reset theme CSS vars immediately (don't wait for React effect cycle)
       const root = document.documentElement;
       root.style.setProperty('--c-primary', '#00ff41');

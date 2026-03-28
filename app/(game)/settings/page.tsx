@@ -19,14 +19,14 @@ export default function SettingsPage() {
   }
 
   function handleToggleSfx() {
-    toggleSound();
     const next = !soundEnabled;
+    toggleSound();
     saveServerSetting('sfxEnabled', next);
   }
 
   function handleToggleMusic() {
-    toggleMusic();
     const next = !musicEnabled;
+    toggleMusic();
     saveServerSetting('musicEnabled', next);
   }
 

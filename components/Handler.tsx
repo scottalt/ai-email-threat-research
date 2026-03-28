@@ -32,10 +32,10 @@ export function Handler({ lines: rawLines, buttonText = 'CONTINUE', onDismiss, a
   const [typingDone, setTypingDone] = useState(false);
   const { soundEnabled } = useSoundEnabled();
 
-  // Play entry sound on mount
+  // Play entry sound on mount only
   useEffect(() => {
     if (soundEnabled) playBootTick();
-  }, [soundEnabled]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleNext() {
     if (currentLine < lines.length - 1) {
