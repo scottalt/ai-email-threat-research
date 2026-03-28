@@ -128,9 +128,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
       .then(async (r) => {
         if (r.status === 429) {
           const body = await r.json().catch(() => null);
-          if (body?.cooldown) {
-            try { localStorage.setItem('xp_cooldown', JSON.stringify(body.cooldown)); } catch {}
-          }
+          // Cooldown is now read from profile.cooldown (server-side)
           setRateLimited(true);
           return null;
         }
@@ -141,9 +139,7 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
         if (data) {
           setXpResult(data);
           refreshProfile();
-          if (data.cooldown) {
-            try { localStorage.setItem('xp_cooldown', JSON.stringify(data.cooldown)); } catch {}
-          }
+          // Cooldown is now read from profile.cooldown (server-side)
         }
       })
       .catch((err) => { console.error('[player/xp] award failed:', err); });

@@ -134,4 +134,6 @@ export interface PlayerProfile {
   featuredBadges: string[];
   themeId: string;
   seenMoments?: string[];
+  dailyResult?: { score: number; totalScore: number } | null;
+  cooldown?: { hourlyRemaining: number; dailyRemaining: number; hourlyResetsAt: string; dailyResetsAt: string };
 }

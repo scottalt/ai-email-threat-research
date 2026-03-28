@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
   const nowHour = new Date().toISOString().slice(0, 13);
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  const [{ count: researchAnswersSubmitted }, { data: achievementRows }, { data: streakData }, { data: momentRows }, hourlyCount, dailyCount] = await Promise.all([
+  const [{ count: researchAnswersSubmitted }, { data: achievementRows }, { data: streakData }, { data: momentRows }, hourlyCount, dailyCount, { data: dailyAnswers }] = await Promise.all([
     admin.from('answers').select('*', { count: 'exact', head: true })
       .eq('player_id', row.id as string).eq('game_mode', 'research'),
     admin.from('player_achievements').select('achievement_id')
@@ -87,6 +87,12 @@ export async function GET(req: NextRequest) {
       .eq('player_id', row.id as string),
     redis.get<number>(`ratelimit:xp:${authId}:h:${nowHour}`),
     redis.get<number>(`ratelimit:xp:${authId}:d:${todayStr}`),
+    // Check if player completed today's daily challenge (via answers table which has player_id)
+    admin.from('answers')
+      .select('correct, confidence_score')
+      .eq('player_id', row.id as string)
+      .eq('game_mode', 'daily')
+      .gte('created_at', todayStr + 'T00:00:00.000Z'),
   ]);
 
   const achievements = (achievementRows ?? []).map((r: { achievement_id: string }) => r.achievement_id);
@@ -108,10 +114,16 @@ export async function GET(req: NextRequest) {
   const nextDay = new Date(todayStr + 'T00:00:00.000Z');
   nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
+  // Compute today's daily result from answer records
+  const dailyResult = dailyAnswers && dailyAnswers.length > 0
+    ? { score: dailyAnswers.filter((a: { correct: boolean }) => a.correct).length, totalScore: dailyAnswers.reduce((sum: number, a: { confidence_score: number | null }) => sum + (a.confidence_score ?? 0), 0) }
+    : null;
+
   const profile = toProfile(row, researchAnswersSubmitted ?? 0, achievements, streakData, seenMoments);
 
   return NextResponse.json({
     ...profile,
+    dailyResult,
     cooldown: {
       hourlyRemaining: Math.max(0, MAX_HOURLY - hUsed),
       dailyRemaining: Math.max(0, MAX_DAILY - dUsed),

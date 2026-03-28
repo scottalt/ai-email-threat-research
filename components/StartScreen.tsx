@@ -96,65 +96,58 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
 
   useEffect(() => {
     function check() {
-      try {
-        const raw = localStorage.getItem('xp_cooldown');
-        if (!raw) { setCooldownLabel(null); setAtCap(false); setCooldownTimer(null); return; }
-        const cd = JSON.parse(raw) as { hourlyRemaining: number; dailyRemaining: number; hourlyResetsAt: string; dailyResetsAt: string };
-        const now = Date.now();
-        const hourlyReset = new Date(cd.hourlyResetsAt).getTime();
-        const dailyReset = new Date(cd.dailyResetsAt).getTime();
+      const cd = profile?.cooldown;
+      if (!cd) { setCooldownLabel(null); setAtCap(false); setCooldownTimer(null); return; }
+      const now = Date.now();
+      const hourlyReset = new Date(cd.hourlyResetsAt).getTime();
+      const dailyReset = new Date(cd.dailyResetsAt).getTime();
 
-        // If both resets are in the past, cooldown is stale
-        if (hourlyReset <= now && dailyReset <= now) {
-          localStorage.removeItem('xp_cooldown');
+      // If both resets are in the past, cooldown is stale — refetch
+      if (hourlyReset <= now && dailyReset <= now) {
+        setCooldownLabel(null); setAtCap(false); setCooldownTimer(null);
+        refreshProfile();
+        return;
+      }
+
+      // At cap — show countdown
+      if (cd.hourlyRemaining === 0 || cd.dailyRemaining === 0) {
+        const isDaily = cd.dailyRemaining === 0;
+        const resetMs = isDaily ? dailyReset : hourlyReset;
+        const diff = Math.max(0, resetMs - now);
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        if (diff <= 0) {
           setCooldownLabel(null); setAtCap(false); setCooldownTimer(null);
           refreshProfile();
-          return;
+        } else {
+          const timer = `${mins}m ${secs.toString().padStart(2, '0')}s`;
+          setCooldownTimer(timer);
+          setCooldownCapType(isDaily ? 'DAILY' : 'HOURLY');
+          setCooldownLabel(`XP COOLDOWN · ${timer}`);
+          setAtCap(true);
         }
-
-        // At cap — show countdown
-        if (cd.hourlyRemaining === 0 || cd.dailyRemaining === 0) {
-          const isDaily = cd.dailyRemaining === 0;
-          const resetMs = isDaily ? dailyReset : hourlyReset;
-          const diff = Math.max(0, resetMs - now);
-          const mins = Math.floor(diff / 60000);
-          const secs = Math.floor((diff % 60000) / 1000);
-          if (diff <= 0) {
-            localStorage.removeItem('xp_cooldown');
-            setCooldownLabel(null); setAtCap(false); setCooldownTimer(null);
-            refreshProfile(); // fetch fresh cooldown state from server
-          } else {
-            const timer = `${mins}m ${secs.toString().padStart(2, '0')}s`;
-            setCooldownTimer(timer);
-            setCooldownCapType(isDaily ? 'DAILY' : 'HOURLY');
-            setCooldownLabel(`XP COOLDOWN · ${timer}`);
-            setAtCap(true);
-          }
-          return;
-        }
-
-        setAtCap(false);
-        setCooldownTimer(null);
-
-        // Low remaining — show warning
-        if (cd.hourlyRemaining <= 3) {
-          setCooldownLabel(`${cd.hourlyRemaining} XP SESSION${cd.hourlyRemaining === 1 ? '' : 'S'} LEFT THIS HOUR`);
-          return;
-        }
-        if (cd.dailyRemaining <= 5) {
-          setCooldownLabel(`${cd.dailyRemaining} XP SESSIONS LEFT TODAY`);
-          return;
-        }
-
-        setCooldownLabel(null);
-      } catch {
-        setCooldownLabel(null); setAtCap(false); setCooldownTimer(null);
+        return;
       }
+
+      setAtCap(false);
+      setCooldownTimer(null);
+
+      // Low remaining — show warning
+      if (cd.hourlyRemaining <= 3) {
+        setCooldownLabel(`${cd.hourlyRemaining} XP SESSION${cd.hourlyRemaining === 1 ? '' : 'S'} LEFT THIS HOUR`);
+        return;
+      }
+      if (cd.dailyRemaining <= 5) {
+        setCooldownLabel(`${cd.dailyRemaining} XP SESSIONS LEFT TODAY`);
+        return;
+      }
+
+      setCooldownLabel(null);
     }
     check();
     const interval = setInterval(check, 1000);
     return () => clearInterval(interval);
-  }, [refreshProfile]);
+  }, [profile?.cooldown, refreshProfile]);
 
   /** Intercept game start — show cooldown modal if at cap for non-research modes */
   function tryStart(mode: GameMode) {

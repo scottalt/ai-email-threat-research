@@ -128,15 +128,6 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function getToday(): string {
-    const d = new Date();
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-  }
-
-  function getDailyStorageKey(): string {
-    return `daily_${getToday()}`;
-  }
-
   function generateSessionId(): string {
     return crypto.randomUUID();
   }
@@ -163,13 +154,9 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     sessionStartedAt.current = new Date().toISOString();
 
     if (newMode === 'daily') {
-      const stored = localStorage.getItem(getDailyStorageKey());
-      if (stored) {
-        try {
-          setDailyResult(JSON.parse(stored));
-        } catch {
-          setDailyResult(null);
-        }
+      // Server-side daily completion check (profile.dailyResult is set by /api/player)
+      if (profile?.dailyResult) {
+        setDailyResult(profile.dailyResult);
         setMode('daily');
         setPhase('daily_complete');
         return;
@@ -459,11 +446,9 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     const nextIndex = currentIndex + 1;
     if (nextIndex >= deck.length || nextIndex >= ROUND_SIZE) {
       if (mode === 'daily') {
-        const correctCount = results.filter((r) => r.correct).length;
-        localStorage.setItem(
-          getDailyStorageKey(),
-          JSON.stringify({ score: correctCount, totalScore })
-        );
+        // Daily result is now stored server-side via sessions/answers tables.
+        // Refresh profile so the daily_complete gate picks it up on return.
+        refreshProfile();
       }
       // Record session completion — must complete before leaderboard submission
       if (typeof window !== 'undefined' && mode !== 'preview') {
@@ -732,7 +717,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
         <div className="term-border bg-[var(--c-bg)]">
           <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-1.5 flex items-center justify-between">
             <span className="text-[var(--c-secondary)] text-sm tracking-widest">DAILY_CHALLENGE</span>
-            <span className="text-[var(--c-dark)] text-sm font-mono">{getToday()}</span>
+            <span className="text-[var(--c-dark)] text-sm font-mono">{new Date().toISOString().slice(0, 10)}</span>
           </div>
           <div className="px-3 py-6 text-center space-y-2">
             <div className="text-sm font-mono text-[var(--c-secondary)] tracking-widest">ALREADY_DEPLOYED</div>
