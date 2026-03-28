@@ -87,12 +87,6 @@ export function NavBar() {
               <span className="absolute -top-0.5 -right-2 w-2 h-2 rounded-full bg-[var(--c-accent)] animate-pulse" />
             )}
           </Link>
-          <Link
-            href="/settings"
-            className="text-[var(--c-secondary)] text-[17px] tracking-wider hover:text-[var(--c-primary)] transition-colors"
-          >
-            SETTINGS
-          </Link>
         </div>
       </nav>
 

@@ -59,6 +59,10 @@ export function TerminalSounds() {
       if (!musicRef.current) return;
       musicRef.current.audio.pause();
       musicRef.current.audio.currentTime = 0;
+      // Suspend the AudioContext to fully stop processing on mobile
+      if (musicRef.current.ctx.state === 'running') {
+        musicRef.current.ctx.suspend().catch(() => {});
+      }
     }
 
     function handleFirstInteraction() {

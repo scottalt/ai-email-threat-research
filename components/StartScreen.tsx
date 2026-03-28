@@ -443,16 +443,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
         >
           <div className="border-b border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] px-3 py-2 flex items-center justify-between">
             <span className="text-[var(--c-secondary)] text-sm tracking-widest">ANALYST_TERMINAL</span>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMusic}
-                aria-label={musicEnabled ? 'Mute music' : 'Enable music'}
-                className={`lg:hidden text-sm font-mono transition-colors p-2 -m-2 ${musicEnabled ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'}`}
-              >
-                {musicEnabled ? '[MUSIC]' : '[MUSIC OFF]'}
-              </button>
-              <span className="text-[var(--c-secondary)] text-sm">■ □ □</span>
-            </div>
+            <span className="text-[var(--c-secondary)] text-sm">■ □ □</span>
           </div>
           <div className="px-3 py-4 min-h-48 space-y-1 overflow-hidden">
             {BOOT_LINES.slice(0, visibleCount).map((line, i) => {
@@ -508,18 +499,6 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
 
       {showButton && (
         <div className="anim-fade-in-up space-y-4">
-          {/* Music toggle — mobile only, visible when not signed in (signed-in users see it in profile header) */}
-          {!signedIn && (
-            <div className="flex justify-end lg:hidden">
-              <button
-                onClick={toggleMusic}
-                aria-label={musicEnabled ? 'Mute music' : 'Enable music'}
-                className={`text-sm font-mono transition-colors ${musicEnabled ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'}`}
-              >
-                {musicEnabled ? '[MUSIC]' : '[MUSIC OFF]'}
-              </button>
-            </div>
-          )}
           {/* Player Profile Card — only shown for signed-in users with a display name */}
           {!playerLoading && signedIn && profile?.displayName && (
             <div className="anim-fade-in-up">
@@ -537,9 +516,6 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
                       const color = RARITY_COLORS[badge.rarity];
                       return <span style={{ color }}>{badge.icon}</span>;
                     })()}
-                    <button onClick={toggleMusic} className={`text-sm font-mono ${musicEnabled ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'} hover:text-[var(--c-secondary)]`}>
-                      MUSIC {musicEnabled ? '[ON]' : '[OFF]'}
-                    </button>
                     <button onClick={async () => { await signOut(); }} className="text-[var(--c-muted)] text-sm font-mono hover:text-[var(--c-secondary)]">SIGN OUT</button>
                   </div>
                 </div>
