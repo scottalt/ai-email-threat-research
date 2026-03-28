@@ -161,26 +161,30 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
     };
   }, [joined, pollForMatch, cleanup]);
 
-  // ── Bot match trigger — retries every 3s until successful ──
-  const botTriggered = useRef(false);
+  // ── Bot match — user-initiated after timeout ──
+  const [botAvailable, setBotAvailable] = useState(false);
+  const [launchingBot, setLaunchingBot] = useState(false);
+
   useEffect(() => {
-    if (!joined || matchedRef.current || botTriggered.current) return;
-    if (elapsed < BOT_TIMEOUT_S) return;
+    if (elapsed >= BOT_TIMEOUT_S && !botAvailable && !matchedRef.current) {
+      setBotAvailable(true);
+    }
+  }, [elapsed, botAvailable]);
 
-    botTriggered.current = true;
-    cleanup(); // stop polling
+  async function handlePlayBot() {
+    if (matchedRef.current || launchingBot) return;
+    setLaunchingBot(true);
 
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    let botRetryCount = 0;
-    const MAX_BOT_RETRIES = 10;
+    let retryCount = 0;
+    const MAX_RETRIES = 10;
 
-    async function tryCreateBot() {
+    async function tryCreateBot(): Promise<void> {
       if (matchedRef.current || !mountedRef.current) return;
-      if (botRetryCount >= MAX_BOT_RETRIES) {
-        if (mountedRef.current) setError('Could not create a match. Please try again.');
+      if (retryCount >= MAX_RETRIES) {
+        if (mountedRef.current) { setError('Could not create a match. Please try again.'); setLaunchingBot(false); }
         return;
       }
-      botRetryCount++;
+      retryCount++;
       try {
         const res = await fetch('/api/h2h/queue/bot', { method: 'POST' });
         if (!mountedRef.current) return;
@@ -188,22 +192,21 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
           const data = await res.json();
           if (data.matchId) {
             matchedRef.current = true;
+            cleanup();
             onMatchFound(data.matchId, true);
             return;
           }
         }
-        // Failed (409 lock, stale match, etc.) — retry in 3s
-        retryTimer = setTimeout(tryCreateBot, 3000);
+        await new Promise((r) => setTimeout(r, 3000));
+        return tryCreateBot();
       } catch {
-        // Network error — retry in 3s
-        retryTimer = setTimeout(tryCreateBot, 3000);
+        await new Promise((r) => setTimeout(r, 3000));
+        return tryCreateBot();
       }
     }
 
     tryCreateBot();
-
-    return () => { if (retryTimer) clearTimeout(retryTimer); };
-  }, [elapsed, joined, cleanup, onMatchFound]);
+  }
 
   // ── Cancel handler ──
   const handleCancel = useCallback(async () => {
@@ -296,18 +299,32 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
             <span className="text-[var(--c-muted)]">
               Queue: <span className="text-[var(--c-primary)]">{elapsed}s</span>
             </span>
-            <span className="text-[var(--c-muted)]">
-              {botCountdown > 0
-                ? <>Bot in <span className="text-[var(--c-secondary)]">{botCountdown}s</span></>
-                : <span className="text-[var(--c-primary)] animate-pulse">Launching bot...</span>
-              }
-            </span>
+            {!botAvailable && (
+              <span className="text-[var(--c-muted)]">
+                Bot in <span className="text-[var(--c-secondary)]">{botCountdown}s</span>
+              </span>
+            )}
             {ratedMatchesLeft !== null && (
               <span className="text-[var(--c-muted)]">
                 Rated: <span className={ratedMatchesLeft > 0 ? 'text-[var(--c-secondary)]' : 'text-[#ffaa00]'}>{ratedMatchesLeft}</span>
               </span>
             )}
           </div>
+
+          {/* Bot match option — appears after 30s */}
+          {botAvailable && !launchingBot && (
+            <button
+              onClick={handlePlayBot}
+              className="w-full py-3 border-2 border-[rgba(255,170,0,0.5)] text-[var(--c-accent)] text-sm font-mono tracking-widest hover:bg-[rgba(255,170,0,0.06)] active:scale-95 transition-all anim-fade-in"
+            >
+              [ PLAY BOT — UNRATED ]
+            </button>
+          )}
+          {launchingBot && (
+            <div className="text-center text-[var(--c-accent)] text-sm font-mono tracking-widest animate-pulse">
+              LAUNCHING BOT MATCH...
+            </div>
+          )}
 
           {winStreak >= 2 && (
             <div className="text-center">
