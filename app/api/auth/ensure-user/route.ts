@@ -47,14 +47,19 @@ export async function POST(req: NextRequest) {
     // Case B: createUser "succeeded" — but did it create a new user or return an existing one?
     // Check if this auth user already has a player profile (terms were agreed previously)
     if (created?.user?.id) {
-      const { data: player } = await supabase
+      const { data: player, error: playerErr } = await supabase
         .from('players')
         .select('id')
         .eq('auth_id', created.user.id)
         .maybeSingle();
+
+      console.log(`[ensure-user] createUser succeeded for ${email}: auth_id=${created.user.id}, player=${player?.id ?? 'null'}, playerErr=${playerErr?.message ?? 'none'}, created_at=${created.user.created_at}`);
+
       if (player) {
         return NextResponse.json({ ok: true, existing: true });
       }
+    } else {
+      console.log(`[ensure-user] createUser returned no user for ${email}`);
     }
 
     // Case C: Genuinely new user
