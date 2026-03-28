@@ -20,6 +20,8 @@ interface Props {
   mode: GameMode;
   sessionId: string;
   onPlayAgain: () => void;
+  /** Promise that resolves when the session PATCH has completed (final_score written) */
+  sessionReady?: Promise<void>;
 }
 
 function getTier(score: number, total: number): { label: string; sub: string; color: string } {
@@ -56,7 +58,7 @@ function buildShareText(opts: {
   return { text, url: SHARE_URL };
 }
 
-export function RoundSummary({ score, total, totalScore, results, mode, sessionId, onPlayAgain }: Props) {
+export function RoundSummary({ score, total, totalScore, results, mode, sessionId, onPlayAgain, sessionReady }: Props) {
   const { soundEnabled } = useSoundEnabled();
   const tier = getTier(score, total);
   const [displayScore, setDisplayScore] = useState(0);
@@ -120,29 +122,30 @@ export function RoundSummary({ score, total, totalScore, results, mode, sessionI
   useEffect(() => {
     if (!signedIn || xpFired.current) return;
     xpFired.current = true;
-    fetch('/api/player/xp', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ xpEarned, score: totalScore, gameMode: mode, sessionCompleted: true, sessionId }),
-    })
-      .then(async (r) => {
-        if (r.status === 429) {
-          const body = await r.json().catch(() => null);
-          // Cooldown is now read from profile.cooldown (server-side)
-          setRateLimited(true);
-          return null;
-        }
-        if (!r.ok) { console.error('[player/xp] non-ok response:', r.status); return null; }
-        return r.json();
+    // Wait for session finalization (final_score write) before XP call,
+    // so the server can read the verified score for leaderboard submission.
+    (sessionReady ?? Promise.resolve()).then(() =>
+      fetch('/api/player/xp', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ xpEarned, score: totalScore, gameMode: mode, sessionCompleted: true, sessionId }),
       })
-      .then(data => {
-        if (data) {
-          setXpResult(data);
-          refreshProfile();
-          // Cooldown is now read from profile.cooldown (server-side)
-        }
-      })
-      .catch((err) => { console.error('[player/xp] award failed:', err); });
+        .then(async (r) => {
+          if (r.status === 429) {
+            // Cooldown is now read from profile.cooldown (server-side)
+            setRateLimited(true);
+            return null;
+          }
+          if (!r.ok) { console.error('[player/xp] non-ok response:', r.status); return null; }
+          return r.json();
+        })
+        .then(data => {
+          if (data) {
+            setXpResult(data);
+            refreshProfile();
+          }
+        })
+    ).catch((err) => { console.error('[player/xp] award failed:', err); });
   }, [signedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Play level-up sound when XP result arrives with a level up

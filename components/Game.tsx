@@ -706,6 +706,7 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
           mode={mode}
           sessionId={sessionId.current}
           onPlayAgain={() => setPhase('start')}
+          sessionReady={sessionFinalized.current}
         />
       </SummaryErrorBoundary>
     );
