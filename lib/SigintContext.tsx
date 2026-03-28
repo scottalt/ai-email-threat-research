@@ -33,6 +33,11 @@ export function SigintProvider({ children }: { children: ReactNode }) {
   const triggerSigint = useCallback((momentId: string) => {
     // Check DB-backed seen list from profile
     if (profile?.seenMoments?.includes(momentId)) return;
+    // Also check localStorage cache (written immediately on dismiss, survives refresh race)
+    try {
+      const cached = JSON.parse(localStorage.getItem('handler_moments_seen') ?? '[]');
+      if (cached.includes(momentId)) return;
+    } catch {}
     // Prevent duplicates in queue or active
     if (activeRef.current === momentId) return;
     if (queueRef.current.includes(momentId)) return;
@@ -69,6 +74,14 @@ export function SigintProvider({ children }: { children: ReactNode }) {
 
   const handleDismiss = useCallback(() => {
     if (activeRef.current) {
+      // Write to localStorage immediately (prevents re-fire on refresh before DB roundtrip)
+      try {
+        const cached = JSON.parse(localStorage.getItem('handler_moments_seen') ?? '[]');
+        if (!cached.includes(activeRef.current)) {
+          cached.push(activeRef.current);
+          localStorage.setItem('handler_moments_seen', JSON.stringify(cached));
+        }
+      } catch {}
       // Persist to DB (fire and forget)
       fetch('/api/player/moments', {
         method: 'PATCH',
