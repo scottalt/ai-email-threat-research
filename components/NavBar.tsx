@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePlayer } from '@/lib/usePlayer';
 import { useNavVisibility } from '@/lib/NavVisibilityContext';
-import { useMusicEnabled } from '@/lib/useSoundEnabled';
+import { useMusicEnabled, useSoundEnabled } from '@/lib/useSoundEnabled';
 import { version } from '@/package.json';
 import { playerGet, playerSet } from '@/lib/player-storage';
 
@@ -28,6 +28,7 @@ export function NavBar() {
   const { signedIn } = usePlayer();
   const { navHidden } = useNavVisibility();
   const { musicEnabled, toggleMusic } = useMusicEnabled();
+  const { soundEnabled, toggleSound } = useSoundEnabled();
 
   const [hasUnread, setHasUnread] = useState(false);
   const [pendingFriends, setPendingFriends] = useState(0);
@@ -90,9 +91,20 @@ export function NavBar() {
             )}
           </Link>
           <button
+            onClick={toggleSound}
+            aria-label={soundEnabled ? 'Mute SFX' : 'Enable SFX'}
+            className="text-[17px] tracking-wider transition-colors hover:text-[var(--c-primary)]"
+          >
+            <span className="text-[var(--c-secondary)]">SFX </span>
+            {soundEnabled
+              ? <span className="text-[var(--c-primary)]">[ON]</span>
+              : <span className="text-[var(--c-muted)]">[OFF]</span>
+            }
+          </button>
+          <button
             onClick={toggleMusic}
             aria-label={musicEnabled ? 'Mute music' : 'Enable music'}
-            className={`text-[17px] tracking-wider transition-colors hover:text-[var(--c-primary)]`}
+            className="text-[17px] tracking-wider transition-colors hover:text-[var(--c-primary)]"
           >
             <span className="text-[var(--c-secondary)]">MUSIC </span>
             {musicEnabled
