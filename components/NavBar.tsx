@@ -117,7 +117,18 @@ export function NavBar() {
 
       {/* Mobile: bottom tab bar */}
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--c-bg)] border-t border-[color-mix(in_srgb,var(--c-primary)_35%,transparent)] font-mono ${navAnim}`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex justify-around pt-3 pb-2">
+        {/* Audio controls — compact row above nav links */}
+        <div className="flex justify-center gap-4 pt-2 pb-0.5">
+          <button onClick={toggleSound} className="text-[10px] tracking-widest transition-colors">
+            <span className="text-[var(--c-muted)]">SFX </span>
+            {soundEnabled ? <span className="text-[var(--c-primary)]">ON</span> : <span className="text-[var(--c-dark)]">OFF</span>}
+          </button>
+          <button onClick={toggleMusic} className="text-[10px] tracking-widest transition-colors">
+            <span className="text-[var(--c-muted)]">MUSIC </span>
+            {musicEnabled ? <span className="text-[var(--c-primary)]">ON</span> : <span className="text-[var(--c-dark)]">OFF</span>}
+          </button>
+        </div>
+        <div className="flex justify-around pt-1 pb-2">
           {links.map((link) => {
             const active = link.match(pathname);
             const showDot = link.label === 'PROFILE' && pendingFriends > 0;

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { playClick, playKeyPress } from '@/lib/sounds';
 
 const MUSIC_SRC = '/audio/joelfazhari-synthetic-deception-loopable-epic-cyberpunk-crime-music-157454.mp3';
-const MUSIC_GAIN = 0.04; // Audible on mobile but still below SFX
+const MUSIC_GAIN = 0.04;
 
 const SKIP_KEYS = new Set([
   'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock',
@@ -17,8 +17,10 @@ function musicEnabled(): boolean {
   try { return localStorage.getItem('music_enabled') !== 'false'; } catch { return true; }
 }
 
-// Route MP3 through Web Audio API GainNode for volume control.
-// iOS Safari ignores HTMLAudioElement.volume — it's always 1.0.
+function sfxEnabled(): boolean {
+  try { return localStorage.getItem('sfx_enabled') !== 'false'; } catch { return true; }
+}
+
 interface MusicState {
   audio: HTMLAudioElement;
   ctx: AudioContext;
@@ -41,34 +43,27 @@ function createMusic(): MusicState {
 export function TerminalSounds() {
   const musicRef = useRef<MusicState | null>(null);
 
-  // Background music — persists across all routes, toggled independently from SFX
+  // Background music
   useEffect(() => {
     function startMusic() {
-      if (!musicRef.current) {
-        musicRef.current = createMusic();
-      }
-      if (musicRef.current.ctx.state === 'suspended') {
-        // Chain play off resume to avoid iOS race condition
-        musicRef.current.ctx.resume()
-          .then(() => musicRef.current?.audio.play())
-          .catch(() => {});
+      if (!musicRef.current) musicRef.current = createMusic();
+      const { audio, ctx } = musicRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => audio.play()).catch(() => {});
       } else {
-        musicRef.current.audio.play().catch(() => {});
+        audio.play().catch(() => {});
       }
     }
 
     function stopMusic() {
-      if (musicRef.current) {
-        musicRef.current.audio.pause();
-      }
+      if (!musicRef.current) return;
+      musicRef.current.audio.pause();
+      musicRef.current.audio.currentTime = 0;
     }
 
-    // Retry on first user gesture to bypass autoplay block
     function handleFirstInteraction() {
       if (musicEnabled()) {
-        if (!musicRef.current) {
-          musicRef.current = createMusic();
-        }
+        if (!musicRef.current) musicRef.current = createMusic();
         if (musicRef.current.ctx.state === 'suspended') {
           musicRef.current.ctx.resume().catch(() => {});
         }
@@ -84,7 +79,6 @@ export function TerminalSounds() {
       document.removeEventListener('touchstart', handleFirstInteraction);
     }
 
-    // React to music toggle
     function handleMusicChange(e: Event) {
       const enabled = (e as CustomEvent<boolean>).detail;
       if (enabled) startMusic(); else stopMusic();
@@ -104,9 +98,10 @@ export function TerminalSounds() {
     };
   }, []);
 
-  // SFX — always on (click sounds, keypress sounds)
+  // SFX — respects sfx_enabled toggle
   useEffect(() => {
     function handleClick(e: MouseEvent) {
+      if (!sfxEnabled()) return;
       const target = e.target as HTMLElement;
       if (target.closest('button') || target.closest('[role="button"]') || target.closest('a')) {
         playClick();
@@ -114,6 +109,7 @@ export function TerminalSounds() {
     }
 
     function handleKeyDown(e: KeyboardEvent) {
+      if (!sfxEnabled()) return;
       if (SKIP_KEYS.has(e.key)) return;
       const target = e.target as HTMLElement;
       const tag = target.tagName;
