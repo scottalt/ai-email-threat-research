@@ -49,8 +49,9 @@ export function TerminalSounds() {
       if (!musicRef.current) musicRef.current = createMusic();
       const { audio, ctx, gain } = musicRef.current;
       gain.gain.value = MUSIC_GAIN;
+      audio.currentTime = 0;
       if (ctx.state === 'suspended') {
-        ctx.resume().then(() => audio.play()).catch(() => {});
+        ctx.resume().then(() => { audio.play().catch(() => {}); }).catch(() => {});
       } else {
         audio.play().catch(() => {});
       }
@@ -58,9 +59,9 @@ export function TerminalSounds() {
 
     function stopMusic() {
       if (!musicRef.current) return;
-      musicRef.current.audio.pause();
-      // Set gain to 0 immediately to prevent any residual audio on mobile
       musicRef.current.gain.gain.value = 0;
+      musicRef.current.audio.pause();
+      musicRef.current.audio.currentTime = 0;
     }
 
     function handleFirstInteraction() {
