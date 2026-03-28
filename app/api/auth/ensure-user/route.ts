@@ -27,14 +27,15 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdminClient();
 
-    // Try to create the user — if they exist, Supabase errors and we detect it.
+    // Step 1: Try createUser. For genuinely new emails this is fast.
+    // For existing emails, Supabase either errors or returns the existing user.
     const { data: created, error } = await supabase.auth.admin.createUser({
       email,
       email_confirm: true,
     });
 
+    // Case A: Supabase errored — user exists
     if (error) {
-      // Race condition: user created between check and create
       const msg = error.message.toLowerCase();
       if (msg.includes('already been registered') || msg.includes('already exists') || msg.includes('duplicate')) {
         return NextResponse.json({ ok: true, existing: true });
@@ -43,15 +44,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 
-    // createUser succeeded — check if it returned an existing user
-    // (some Supabase versions return the user without erroring)
-    if (created?.user?.created_at) {
-      const age = Date.now() - new Date(created.user.created_at).getTime();
-      if (age > 60_000) {
+    // Case B: createUser "succeeded" — but did it create a new user or return an existing one?
+    // Check if this auth user already has a player profile (terms were agreed previously)
+    if (created?.user?.id) {
+      const { data: player } = await supabase
+        .from('players')
+        .select('id')
+        .eq('auth_id', created.user.id)
+        .maybeSingle();
+      if (player) {
         return NextResponse.json({ ok: true, existing: true });
       }
     }
 
+    // Case C: Genuinely new user
     return NextResponse.json({ ok: true, existing: false });
   } catch (err) {
     console.error('[ensure-user] unexpected error:', err);
