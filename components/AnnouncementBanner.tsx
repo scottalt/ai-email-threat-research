@@ -47,10 +47,9 @@ export function AnnouncementBanner() {
         if (!data?.messages?.length) return;
         const msgs = data.messages as AdminMessage[];
 
-        // Queue all targeted messages through SigintContext (shares the overlay queue with moments)
+        // Queue all targeted messages through SigintContext
         const targeted = msgs.filter((m) => !m.isGlobal);
         for (const msg of targeted) {
-          // Look up achievement for reveal card
           const achDef = msg.achievementId ? ACHIEVEMENTS.find((a) => a.id === msg.achievementId) : null;
           const reveal = achDef ? {
             icon: achDef.icon,
@@ -65,7 +64,6 @@ export function AnnouncementBanner() {
             msg.buttonText,
             () => {
               markSeen(msg);
-              // Grant the achievement on dismiss
               if (msg.achievementId) {
                 fetch('/api/player/messages', {
                   method: 'POST',
@@ -78,12 +76,11 @@ export function AnnouncementBanner() {
           );
         }
 
-        // Global messages show as ticker banner
+        // Global messages
         const globals = msgs.filter((m) => m.isGlobal);
         if (globals.length > 0) {
           setAllGlobals(globals);
           setTimeout(() => setBannerVisible(true), 2000);
-          // Auto-dismiss after 3 full scroll passes (20s each = 60s) + 2s entry delay
           setTimeout(() => {
             setBannerDismissed(true);
             for (const g of globals) markSeen(g);
@@ -98,31 +95,64 @@ export function AnnouncementBanner() {
     setBannerDismissed(true);
   }
 
-  const tickerText = allGlobals.length > 0
-    ? allGlobals.map((g) => `⚡ ${g.lines.join('  ·  ')}`).join('     ///     ')
-    : '';
-
-  // Only render the ticker — targeted messages go through SigintContext
   if (!allGlobals.length || bannerDismissed || !bannerVisible) return null;
 
+  // Combine all global lines for display
+  const allLines = allGlobals.flatMap((g) => g.lines);
+  const tickerText = allGlobals.map((g) => `⚡ ${g.lines.join('  ·  ')}`).join('     ///     ');
+
   return (
-    <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-50 pointer-events-none">
-      <div className="bg-[color-mix(in_srgb,var(--c-bg)_92%,transparent)] border-t border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)] backdrop-blur-sm">
-        <div className="flex items-center">
-          <div className="flex-1 overflow-hidden py-1.5">
-            <div className="ticker-scroll whitespace-nowrap text-[var(--c-accent)] text-xs font-mono tracking-wider">
-              <span className="inline-block pr-[50vw]">{tickerText}</span>
-              <span className="inline-block pr-[50vw]">{tickerText}</span>
+    <>
+      {/* Desktop: full banner with all lines visible */}
+      <div className="hidden lg:block fixed top-0 left-0 right-0 z-50 anim-fade-in">
+        <div className="bg-[var(--c-bg)] border-b-2 border-[var(--c-accent)] shadow-[0_4px_30px_rgba(255,170,0,0.1)]">
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <div className="flex items-start gap-4">
+              {/* Left: SIGINT label */}
+              <div className="shrink-0 pt-0.5">
+                <span className="text-[var(--c-accent)] text-sm font-mono font-bold tracking-widest">⚡ SIGINT</span>
+              </div>
+
+              {/* Center: all message lines */}
+              <div className="flex-1 space-y-1">
+                {allLines.map((line, i) => (
+                  <div key={i} className="text-[var(--c-primary)] text-sm font-mono leading-relaxed">
+                    {line}
+                  </div>
+                ))}
+              </div>
+
+              {/* Right: dismiss */}
+              <button
+                onClick={handleBannerDismiss}
+                className="shrink-0 text-[var(--c-muted)] text-xs font-mono hover:text-[var(--c-accent)] transition-colors px-2 py-1"
+              >
+                DISMISS
+              </button>
             </div>
           </div>
-          <button
-            onClick={handleBannerDismiss}
-            className="pointer-events-auto px-3 py-1.5 text-[var(--c-muted)] text-[10px] font-mono hover:text-[var(--c-accent)] transition-colors shrink-0 border-l border-[color-mix(in_srgb,var(--c-accent)_20%,transparent)]"
-          >
-            ✕
-          </button>
         </div>
       </div>
-    </div>
+
+      {/* Mobile: scrolling ticker at bottom */}
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 z-50 pointer-events-none">
+        <div className="bg-[color-mix(in_srgb,var(--c-bg)_92%,transparent)] border-t border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)] backdrop-blur-sm">
+          <div className="flex items-center">
+            <div className="flex-1 overflow-hidden py-1.5">
+              <div className="ticker-scroll whitespace-nowrap text-[var(--c-accent)] text-xs font-mono tracking-wider">
+                <span className="inline-block pr-[50vw]">{tickerText}</span>
+                <span className="inline-block pr-[50vw]">{tickerText}</span>
+              </div>
+            </div>
+            <button
+              onClick={handleBannerDismiss}
+              className="pointer-events-auto px-3 py-1.5 text-[var(--c-muted)] text-[10px] font-mono hover:text-[var(--c-accent)] transition-colors shrink-0 border-l border-[color-mix(in_srgb,var(--c-accent)_20%,transparent)]"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
