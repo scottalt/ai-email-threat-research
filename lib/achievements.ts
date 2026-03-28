@@ -2,7 +2,7 @@
 // Rarity determines badge color: common=dim green, uncommon=green, rare=amber, legendary=red
 
 export type AchievementCategory = 'progression' | 'skill' | 'streak' | 'speed' | 'investigation' | 'xp' | 'daily' | 'h2h' | 'season';
-export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'legendary' | 'mythic' | 'unique';
+export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'legendary' | 'mythic' | 'secret' | 'unique';
 
 export interface AchievementDef {
   id: string;
@@ -75,8 +75,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 
   // ── Admin Exclusive (manually granted only) ──
   { id: 'architect', name: 'ARCHITECT', description: 'Built this world from the command line. There is no badge above this one.', category: 'season', rarity: 'unique', icon: '◈' },
-  { id: 'buffer_overflow', name: 'BUFFER_OVERFLOW', description: 'Pushed more data than the system could handle. 60 answers per second. The logs don\'t lie.', category: 'season', rarity: 'unique', icon: '▓' },
-  { id: 'beta_tester', name: 'BETA_TESTER', description: 'Broke things so others didn\'t have to. Tested before the terminal was ready. Early access operator.', category: 'season', rarity: 'unique', icon: '⟐' },
+  { id: 'buffer_overflow', name: 'BUFFER_OVERFLOW', description: 'Pushed more data than the system could handle. 60 answers per second. The logs don\'t lie.', category: 'season', rarity: 'secret', icon: '▓' },
+  { id: 'beta_tester', name: 'BETA_TESTER', description: 'Broke things so others didn\'t have to. Tested before the terminal was ready. Early access operator.', category: 'season', rarity: 'secret', icon: '⟐' },
 ];
 
 export const ACHIEVEMENT_MAP = new Map(ACHIEVEMENTS.map(a => [a.id, a]));
@@ -87,10 +87,11 @@ export const RARITY_COLORS: Record<AchievementRarity, string> = {
   rare:      '#ffaa00',
   legendary: '#ff3333',
   mythic:    '#ffd700',
+  secret:    '#00ffcc',
   unique:    '#ff00ff',
 };
 
-export const RARITY_ORDER: AchievementRarity[] = ['common', 'uncommon', 'rare', 'legendary', 'mythic', 'unique'];
+export const RARITY_ORDER: AchievementRarity[] = ['common', 'uncommon', 'rare', 'legendary', 'mythic', 'secret', 'unique'];
 
 /** CSS class for badge rarity visual effects (glow, pulse, shimmer) */
 export const RARITY_BADGE_CLASS: Record<AchievementRarity, string> = {
@@ -99,6 +100,7 @@ export const RARITY_BADGE_CLASS: Record<AchievementRarity, string> = {
   rare:      'badge-rare',
   legendary: 'badge-legendary',
   mythic:    'badge-mythic',
+  secret:    'badge-secret',
   unique:    'badge-unique',
 };
 

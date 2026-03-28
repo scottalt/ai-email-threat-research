@@ -638,6 +638,23 @@ body {
   75% { filter: brightness(1.1); }
 }
 
+/* Secret — cyan glow + electric flicker */
+.badge-secret {
+  color: #00ffcc;
+  text-shadow:
+    0 0 8px rgba(0, 255, 204, 0.7),
+    0 0 20px rgba(0, 255, 204, 0.35),
+    0 0 50px rgba(0, 255, 204, 0.15);
+  animation: badge-secret-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-secret-pulse {
+  0%, 100% { text-shadow: 0 0 8px rgba(0,255,204,0.7), 0 0 20px rgba(0,255,204,0.35), 0 0 50px rgba(0,255,204,0.15); transform: scale(1); filter: brightness(1); }
+  25% { filter: brightness(1.4); }
+  50% { text-shadow: 0 0 14px rgba(0,255,204,0.9), 0 0 35px rgba(0,255,204,0.5), 0 0 70px rgba(0,255,204,0.25); transform: scale(1.06); filter: brightness(1.2); }
+  75% { filter: brightness(0.9); }
+}
+
 /* Unique — prismatic color cycle + intense glow + star sparkle */
 .badge-unique {
   color: #ff00ff;
@@ -699,6 +716,7 @@ body {
   .badge-rare,
   .badge-legendary,
   .badge-mythic,
+  .badge-secret,
   .badge-unique {
     animation: none !important;
   }

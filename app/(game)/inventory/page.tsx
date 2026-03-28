@@ -254,7 +254,7 @@ export default function InventoryPage() {
               onClick={() => setRarityFilter('all')}
               className={`text-xs font-mono px-2 py-1 border transition-all ${rarityFilter === 'all' ? 'text-[var(--c-primary)] border-[var(--c-primary)]' : 'text-[var(--c-muted)] border-[var(--c-dark)] hover:text-[var(--c-secondary)]'}`}
             >ALL</button>
-            {RARITY_ORDER.filter((r) => r !== 'unique').map((r) => (
+            {RARITY_ORDER.filter((r) => r !== 'unique' && r !== 'secret').map((r) => (
               <button
                 key={r}
                 onClick={() => setRarityFilter(r)}
@@ -266,7 +266,7 @@ export default function InventoryPage() {
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {ACHIEVEMENTS.filter((a) => {
               // Hide unique-rarity badges unless the player owns them
-              if (a.rarity === 'unique' && !(profile.achievements?.includes(a.id))) return false;
+              if ((a.rarity === 'unique' || a.rarity === 'secret') && !(profile.achievements?.includes(a.id))) return false;
               return rarityFilter === 'all' || a.rarity === rarityFilter;
             }).map((achievement) => {
               const earned = profile.achievements?.includes(achievement.id) ?? false;
