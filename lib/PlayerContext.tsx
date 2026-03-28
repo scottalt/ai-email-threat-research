@@ -66,8 +66,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         try {
           localStorage.removeItem('handler_moments_seen');
-          sessionStorage.removeItem('sigint_greeting_done');
-          sessionStorage.removeItem('sigint_greeted');
+          sessionStorage.removeItem('sigint_spoke');
         } catch {}
       }
       if (session) {
@@ -120,8 +119,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem('xp_cooldown');
       localStorage.removeItem('handler_moments_seen');
-      sessionStorage.removeItem('sigint_greeting_done');
-      sessionStorage.removeItem('sigint_greeted');
+      sessionStorage.removeItem('sigint_spoke');
     } catch {}
   }
 

@@ -248,98 +248,51 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   // SIGINT milestone unlocks — fire when player crosses answer thresholds
   const { triggerSigint } = useSigint();
 
-  // ── SIGINT: greeting (once per sign-in) + milestones (once per progression change) ──
-  const lastProgressionKey = useRef<string>('');
+  // ── SIGINT: ONE message per home screen arrival. Never stacks. Never repeats. ──
+  // sessionStorage('sigint_spoke') blocks all re-fires until next sign-in.
   useEffect(() => {
-    if (!showButton) return;
-    if (!signedIn || !profile) return;
-    if (!profile.displayName) return;
+    if (!showButton || !signedIn || !profile || !profile.displayName) return;
+    try { if (sessionStorage.getItem('sigint_spoke') === '1') return; } catch {}
+    try { sessionStorage.setItem('sigint_spoke', '1'); } catch {}
 
     const answers = profile.researchAnswersSubmitted ?? 0;
     const graduated = profile.researchGraduated ?? false;
     const callsign = profile.displayName ?? 'operative';
 
-    // Track progression so milestones only fire on actual changes (not profile refreshes)
-    const progressionKey = `${answers}:${profile.level}:${profile.totalSessions}`;
-    const isNewProgression = lastProgressionKey.current !== '' && lastProgressionKey.current !== progressionKey;
-    const isFirstLoad = lastProgressionKey.current === '';
-    lastProgressionKey.current = progressionKey;
+    // Priority 1: Milestone (via triggerSigint overlay — picks the highest unseen one)
+    const milestone =
+      (answers >= 30 && !hasSeenMoment('freeplay_unlock')) ? 'freeplay_unlock' :
+      (answers >= 20 && !hasSeenMoment('daily_unlock')) ? 'daily_unlock' :
+      (answers >= 15 && !hasSeenMoment('research_halfway')) ? 'research_halfway' :
+      ((graduated || answers >= 10) && !hasSeenMoment('pvp_unlock')) ? 'pvp_unlock' :
+      null;
+    if (milestone) { triggerSigint(milestone); return; }
 
-    // ── 1. Milestones — fire on first load or progression change ──
-    let milestonesFired = false;
-    if (isFirstLoad || isNewProgression) {
-      // Unlock milestones (highest first)
-      const unlockMoment =
-        (answers >= 30 && !hasSeenMoment('freeplay_unlock')) ? 'freeplay_unlock' :
-        (answers >= 20 && !hasSeenMoment('daily_unlock')) ? 'daily_unlock' :
-        (answers >= 15 && !hasSeenMoment('research_halfway')) ? 'research_halfway' :
-        ((graduated || answers >= 10) && !hasSeenMoment('pvp_unlock')) ? 'pvp_unlock' :
-        null;
-      if (unlockMoment) { triggerSigint(unlockMoment); milestonesFired = true; }
-
-      // Level moments (exact match + sessionStorage guard)
-      const levelMoments: Record<number, string> = {
-        3: 'level_3', 5: 'level_5', 7: 'level_7', 10: 'level_10',
-        13: 'level_13', 15: 'level_15', 18: 'level_18', 20: 'level_20',
-        22: 'level_22', 25: 'level_25', 28: 'level_28', 30: 'max_level',
-      };
-      const levelMoment = levelMoments[profile.level];
-      if (levelMoment) {
-        const levelKey = `sigint_level_fired_${profile.level}`;
-        try {
-          if (sessionStorage.getItem(levelKey) !== '1') {
-            sessionStorage.setItem(levelKey, '1');
-            triggerSigint(levelMoment);
-            milestonesFired = true;
-          }
-        } catch {}
+    // Priority 2: v2_intro for v1 veterans
+    if (answers > 0 && !hasSeenMoment('v2_intro')) {
+      const d = dynamicDialogue('v2_intro', callsign);
+      if (d) {
+        setHandlerLines(d.lines);
+        setHandlerButton(d.buttonText ?? 'GOT IT');
+        setShowHandlerGreeting(true);
       }
-
-      if (!hasSeenMoment('played_7_days') && profile.totalSessions >= 7) {
-        triggerSigint('played_7_days');
-        milestonesFired = true;
-      }
+      return;
     }
 
-    // ── 2. Greeting — only if NO milestones fired, once per sign-in ──
-    if (!milestonesFired && isFirstLoad) {
-      try { if (sessionStorage.getItem('sigint_greeting_done') !== '1') {
-        if (answers > 0 && !hasSeenMoment('v2_intro')) {
-          const d = dynamicDialogue('v2_intro', callsign);
-          if (d) {
-            setHandlerLines(d.lines);
-            setHandlerButton(d.buttonText ?? 'GOT IT');
-            setShowHandlerGreeting(true);
-            sessionStorage.setItem('sigint_greeting_done', '1');
-          }
-        } else {
-          const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
-          const cooldownOk = answers === 0 || !lastGreeted || (Date.now() - lastGreeted > 2 * 60 * 60 * 1000);
-          if (cooldownOk) {
-            let dialogue: { lines: string[]; buttonText?: string } | null = null;
-            if (answers === 0) {
-              dialogue = bootGreetingNamed(callsign);
-              try { markMomentSeen('v2_intro'); } catch {}
-            } else {
-              dialogue = dynamicDialogue('welcome_back', callsign);
-            }
-            if (dialogue) {
-              setHandlerLines(dialogue.lines);
-              setHandlerButton(dialogue.buttonText ?? 'CONTINUE');
-              setShowHandlerGreeting(true);
-              sessionStorage.setItem('sigint_greeting_done', '1');
-            }
-          }
-        }
-      }} catch {}
-    }
-
-    // ── 3. Time-based one-time moments ──
-    if (isFirstLoad) {
-      const hour = new Date().getHours();
-      const day = new Date().getDay();
-      if (hour >= 0 && hour < 5) triggerSigint('night_owl');
-      if (day === 0 || day === 6) triggerSigint('weekend_warrior');
+    // Priority 3: Boot greeting (new players) or welcome back (returning)
+    if (answers === 0) {
+      const d = bootGreetingNamed(callsign);
+      setHandlerLines(d.lines);
+      setHandlerButton(d.buttonText ?? "LET'S GO");
+      setShowHandlerGreeting(true);
+      try { markMomentSeen('v2_intro'); } catch {}
+    } else {
+      const d = dynamicDialogue('welcome_back', callsign);
+      if (d) {
+        setHandlerLines(d.lines);
+        setHandlerButton(d.buttonText ?? 'CONTINUE');
+        setShowHandlerGreeting(true);
+      }
     }
   }, [showButton, signedIn, profile, triggerSigint]);
 
