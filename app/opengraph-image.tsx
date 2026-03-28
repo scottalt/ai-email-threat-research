@@ -7,7 +7,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export default async function OGImage() {
-  const fontData = readFileSync(join(process.cwd(), 'app', 'fonts', 'GeistMono-Latin.woff2'));
+  const fontData = readFileSync(join(process.cwd(), 'app', 'fonts', 'JetBrainsMono-Regular.ttf'));
 
   return new ImageResponse(
     (
@@ -71,9 +71,9 @@ export default async function OGImage() {
           </div>
           <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
             {[
-              { text: '⚔ HEAD-TO-HEAD PVP', color: '#ff0080' },
-              { text: '◆ RANKED SYSTEM', color: '#ffaa00' },
-              { text: '★ 40+ ACHIEVEMENTS', color: '#00ff41' },
+              { text: '// HEAD-TO-HEAD PVP', color: '#ff0080' },
+              { text: '// RANKED SYSTEM', color: '#ffaa00' },
+              { text: '// 40+ ACHIEVEMENTS', color: '#00ff41' },
             ].map((pill) => (
               <div
                 key={pill.text}

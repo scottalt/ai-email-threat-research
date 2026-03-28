@@ -7,7 +7,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export default async function OGImage() {
-  const fontData = readFileSync(join(process.cwd(), 'app', 'fonts', 'GeistMono-Latin.woff2'));
+  const fontData = readFileSync(join(process.cwd(), 'app', 'fonts', 'JetBrainsMono-Regular.ttf'));
 
   return new ImageResponse(
     (
