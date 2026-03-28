@@ -44,6 +44,9 @@ export default function AdminPlayerDetail() {
   const [saving, setSaving] = useState(false);
   const [grantId, setGrantId] = useState('');
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [msgLines, setMsgLines] = useState('');
+  const [msgButton, setMsgButton] = useState('ACKNOWLEDGED');
+  const [sendingMsg, setSendingMsg] = useState(false);
 
   function fetchPlayer() {
     fetch(`/api/admin/players/${id}`)
@@ -118,11 +121,6 @@ export default function AdminPlayerDetail() {
   const p = data.player;
   const earnedIds = new Set(data.achievements.map((a) => a.id));
   const unearnedAchievements = ACHIEVEMENTS.filter((a) => !earnedIds.has(a.id));
-
-  // SIGINT message state
-  const [msgLines, setMsgLines] = useState('');
-  const [msgButton, setMsgButton] = useState('ACKNOWLEDGED');
-  const [sendingMsg, setSendingMsg] = useState(false);
 
   function renderEditableField(label: string, field: string, currentValue: unknown, type: 'number' | 'text' | 'boolean' = 'text') {
     const isEditing = editField === field;
