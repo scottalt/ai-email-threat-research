@@ -313,6 +313,8 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     if (answers === 0) {
       // Brand new player — greet by callsign (always set at this point, guarded above)
       dialogue = bootGreetingNamed(callsign);
+      // Pre-mark v2_intro so it never fires — this player got the v2 boot greeting already
+      try { markMomentSeen('v2_intro'); } catch {}
     } else {
       // Returning player — rotating personalized welcome
       dialogue = dynamicDialogue('welcome_back', callsign);
