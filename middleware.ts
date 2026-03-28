@@ -49,7 +49,7 @@ export async function middleware(req: NextRequest) {
   const isAdminRoute =
     pathname.startsWith('/admin') ||
     pathname.startsWith('/api/admin') ||
-    pathname.startsWith('/api/player/admin');
+    (pathname.startsWith('/api/player/admin') && pathname !== '/api/player/admin-check');
 
   if (isAdminRoute) {
     const adminUserId = process.env.ADMIN_USER_ID;
