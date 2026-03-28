@@ -2,7 +2,7 @@
 
 import { usePlayer } from '@/lib/usePlayer';
 import { usePresence } from '@/lib/usePresence';
-import { getRankFromPoints } from '@/lib/h2h';
+import { getRankFromLevel } from '@/lib/rank';
 
 /**
  * Syncs player presence to Supabase Realtime.
@@ -13,11 +13,11 @@ export function PresenceSync() {
 
   const playerId = signedIn ? (profile?.id ?? null) : null;
   const callsign = profile?.displayName ?? null;
+  const rank = profile ? getRankFromLevel(profile.level).label : null;
+  const level = profile?.level ?? null;
+  const themeId = profile?.themeId ?? null;
 
-  // Get the player's solo rank label from their level
-  const rank = profile ? getRankFromPoints(profile.xp ?? 0).label : null;
-
-  usePresence(playerId, callsign, rank);
+  usePresence(playerId, callsign, rank, level, themeId);
 
   return null;
 }

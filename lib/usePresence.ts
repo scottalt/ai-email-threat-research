@@ -8,7 +8,10 @@ interface PresenceState {
   playerId: string;
   callsign: string;
   rank: string;
+  level: number;
+  themeId: string;
   page: string;
+  joinedAt: number;
 }
 
 /**
@@ -20,6 +23,8 @@ export function usePresence(
   playerId: string | null,
   callsign: string | null,
   rank: string | null,
+  level: number | null,
+  themeId: string | null,
 ) {
   const pathname = usePathname();
   const channelRef = useRef<ReturnType<typeof getSupabaseBrowserClient>['channel'] extends (name: string, ...args: unknown[]) => infer R ? R : never>(null);
@@ -36,7 +41,10 @@ export function usePresence(
       playerId,
       callsign,
       rank: rank ?? 'CLICK_HAPPY',
+      level: level ?? 1,
+      themeId: themeId ?? 'phosphor',
       page: pathname ?? '/play',
+      joinedAt: Date.now(),
     };
 
     channel
@@ -53,5 +61,5 @@ export function usePresence(
       channel.unsubscribe();
       channelRef.current = null;
     };
-  }, [playerId, callsign, rank, pathname]);
+  }, [playerId, callsign, rank, level, themeId, pathname]);
 }
