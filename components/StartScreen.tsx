@@ -305,14 +305,22 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     else if (answers >= 15) triggerSigint('research_halfway');
     else if (graduated || answers >= 10) triggerSigint('pvp_unlock');
 
-    // Level moments (exact match only — no repeats for same level)
+    // Level moments (exact match only — fires once per session via sessionStorage guard)
     const levelMoments: Record<number, string> = {
       3: 'level_3', 5: 'level_5', 7: 'level_7', 10: 'level_10',
       13: 'level_13', 15: 'level_15', 18: 'level_18', 20: 'level_20',
       22: 'level_22', 25: 'level_25', 28: 'level_28', 30: 'max_level',
     };
     const levelMoment = levelMoments[profile.level];
-    if (levelMoment) triggerSigint(levelMoment);
+    if (levelMoment) {
+      const levelKey = `sigint_level_fired_${profile.level}`;
+      try {
+        if (sessionStorage.getItem(levelKey) !== '1') {
+          sessionStorage.setItem(levelKey, '1');
+          triggerSigint(levelMoment);
+        }
+      } catch { triggerSigint(levelMoment); }
+    }
 
     if (profile.totalSessions >= 7) triggerSigint('played_7_days');
 
