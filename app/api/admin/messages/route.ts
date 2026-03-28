@@ -9,13 +9,26 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const limit = Math.min(100, parseInt(searchParams.get('limit') ?? '50', 10) || 50);
+  const filter = searchParams.get('filter'); // 'global' | 'targeted' | 'archived' | null (all active)
 
   const admin = getSupabaseAdminClient();
-  const { data, error } = await admin
+  let query = admin
     .from('admin_messages')
     .select('*, players!target_player_id(display_name)')
     .order('created_at', { ascending: false })
     .limit(limit);
+
+  if (filter === 'archived') {
+    query = query.eq('archived', true);
+  } else if (filter === 'global') {
+    query = query.is('target_player_id', null).eq('archived', false);
+  } else if (filter === 'targeted') {
+    query = query.not('target_player_id', 'is', null).eq('archived', false);
+  } else {
+    query = query.eq('archived', false);
+  }
+
+  const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -36,6 +49,7 @@ export async function GET(req: NextRequest) {
       expiresAt: msg.expires_at,
       seenCount: count ?? 0,
       isGlobal: !msg.target_player_id,
+      archived: msg.archived ?? false,
     };
   }));
 
@@ -72,6 +86,25 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true, id: data.id, global: !targetPlayerId });
+}
+
+// PATCH /api/admin/messages — archive or unarchive a message
+export async function PATCH(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
+  const { id, archived } = await req.json();
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  const admin = getSupabaseAdminClient();
+  const { error } = await admin
+    .from('admin_messages')
+    .update({ archived: archived !== false })
+    .eq('id', id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true, archived: archived !== false });
 }
 
 // DELETE /api/admin/messages — delete a message

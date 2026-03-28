@@ -30,6 +30,7 @@ export async function GET() {
     .from('admin_messages')
     .select('id, lines, button_text, target_player_id, created_at, expires_at')
     .or(`target_player_id.eq.${playerId},target_player_id.is.null`)
+    .eq('archived', false)
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ messages: [] });
