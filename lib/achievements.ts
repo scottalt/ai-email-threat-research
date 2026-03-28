@@ -76,6 +76,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   // ── Admin Exclusive (manually granted only) ──
   { id: 'architect', name: 'ARCHITECT', description: 'Built this world from the command line. There is no badge above this one.', category: 'season', rarity: 'unique', icon: '◈' },
   { id: 'buffer_overflow', name: 'BUFFER_OVERFLOW', description: 'Pushed more data than the system could handle. 60 answers per second. The logs don\'t lie.', category: 'season', rarity: 'unique', icon: '▓' },
+  { id: 'beta_tester', name: 'BETA_TESTER', description: 'Broke things so others didn\'t have to. Tested before the terminal was ready. Early access operator.', category: 'season', rarity: 'unique', icon: '⟐' },
 ];
 
 export const ACHIEVEMENT_MAP = new Map(ACHIEVEMENTS.map(a => [a.id, a]));
