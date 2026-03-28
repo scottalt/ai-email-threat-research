@@ -46,7 +46,7 @@ export function TerminalSounds() {
 
   function startMusic() {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return; // not unlocked yet
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const m = getMusic();
     const t = ctx.currentTime;
     // Fade in to prevent pop
@@ -126,6 +126,8 @@ export function TerminalSounds() {
   // ── Global SFX — click and keypress sounds ──
   useEffect(() => {
     function handleClick(e: MouseEvent) {
+      // Ensure context is unlocked on every click (handles first interaction)
+      ensureUnlocked();
       const target = e.target as HTMLElement;
       if (target.closest('button') || target.closest('[role="button"]') || target.closest('a')) {
         playClick();

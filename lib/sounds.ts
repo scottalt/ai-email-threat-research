@@ -64,7 +64,7 @@ export function playClick() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -84,7 +84,7 @@ export function playKeyPress() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -104,7 +104,7 @@ export function playCorrect() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     createNote(ctx, 523, t, 0.08);
     createNote(ctx, 784, t + 0.09, 0.14);
@@ -115,7 +115,7 @@ export function playWrong() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     createNote(ctx, 220, t, 0.08);
     createNote(ctx, 165, t + 0.09, 0.14);
@@ -126,7 +126,7 @@ export function playBootTick() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     createNote(ctx, 480, ctx.currentTime, 0.04, 0.07);
   } catch {}
 }
@@ -135,7 +135,7 @@ export function playStreak() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     createNote(ctx, 523, t, 0.08);
     createNote(ctx, 659, t + 0.09, 0.08);
@@ -147,7 +147,7 @@ export function playCommit() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     createNote(ctx, 1200, ctx.currentTime, 0.03, 0.10);
   } catch {}
 }
@@ -156,7 +156,7 @@ export function playLevelUp() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     createNote(ctx, 523, t, 0.10, 0.12);
     createNote(ctx, 659, t + 0.10, 0.10, 0.12);
@@ -169,7 +169,7 @@ export function playAchievement() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     createNote(ctx, 784, t, 0.06, 0.10);
     createNote(ctx, 1047, t + 0.07, 0.06, 0.10);
@@ -182,7 +182,7 @@ export function playMatchFound() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     createNote(ctx, 440, t, 0.12, 0.14);
     createNote(ctx, 660, t + 0.13, 0.12, 0.14);
@@ -194,7 +194,7 @@ export function playCountdownBeep() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     createNote(ctx, 440, ctx.currentTime, 0.08, 0.10);
   } catch {}
 }
@@ -203,7 +203,7 @@ export function playCountdownGo() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     createNote(ctx, 880, ctx.currentTime, 0.15, 0.15);
   } catch {}
 }
@@ -212,7 +212,7 @@ export function playVictory() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     createNote(ctx, 523, t, 0.08, 0.12);
     createNote(ctx, 659, t + 0.09, 0.08, 0.12);
@@ -225,7 +225,7 @@ export function playDefeat() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     createNote(ctx, 330, t, 0.15, 0.10);
     createNote(ctx, 262, t + 0.16, 0.25, 0.10);
@@ -236,7 +236,7 @@ export function playOpponentDown() {
   if (!isSfxEnabled()) return;
   try {
     const ctx = getCtx();
-    if (ctx.state !== 'running') return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t = ctx.currentTime;
     createNote(ctx, 660, t, 0.05, 0.08);
     createNote(ctx, 880, t + 0.06, 0.10, 0.10);
