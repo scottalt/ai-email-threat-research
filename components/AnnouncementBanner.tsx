@@ -81,10 +81,9 @@ export function AnnouncementBanner() {
         if (globals.length > 0) {
           setAllGlobals(globals);
           setTimeout(() => setBannerVisible(true), 2000);
-          setTimeout(() => {
-            setBannerDismissed(true);
-            for (const g of globals) markSeen(g);
-          }, 62000);
+          // Auto-hide after 60s but DON'T mark as seen — it'll show again next refresh.
+          // Only manual dismiss marks as seen permanently.
+          setTimeout(() => setBannerDismissed(true), 62000);
         }
       })
       .catch(() => {});
