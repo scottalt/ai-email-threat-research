@@ -12,7 +12,6 @@ const NAV_LINKS = [
   { label: 'HOME', path: '/play', match: (p: string) => p === '/play' },
   { label: 'PROFILE', path: '/profile', match: (p: string) => p.startsWith('/profile') },
   { label: 'INVENTORY', path: '/inventory', match: (p: string) => p.startsWith('/inventory') },
-  { label: 'SHOP', path: '/shop', match: (p: string) => p.startsWith('/shop') },
   { label: 'SETTINGS', path: '/settings', match: (p: string) => p.startsWith('/settings') },
 ];
 
