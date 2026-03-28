@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis, getClientIp } from '@/lib/redis';
 import { getSupabaseAdminClient } from '@/lib/supabase';
+import { THEMES } from '@/lib/themes';
 import filter from 'leo-profanity';
 
 const KEY = 'leaderboard';
@@ -42,11 +43,9 @@ export async function GET(req: Request) {
     let name: string;
     let level: number;
     if (parts.length >= 3) {
-      // Legacy format: name:level:timestamp
       level = parseInt(parts[parts.length - 2], 10) || 1;
       name = parts.slice(0, parts.length - 2).join(':');
     } else if (parts.length === 2) {
-      // Current format: name:level
       const maybeLevel = parseInt(parts[parts.length - 1], 10);
       level = maybeLevel >= 1 && maybeLevel <= 30 ? maybeLevel : 1;
       name = parts.slice(0, -1).join(':');
@@ -57,7 +56,24 @@ export async function GET(req: Request) {
     entries.push({ name, score, level });
   }
 
-  return NextResponse.json(entries);
+  // Look up theme IDs for leaderboard players (for rainbow name effect)
+  const names = entries.map((e) => e.name);
+  const supabase = getSupabaseAdminClient();
+  const { data: playerThemes } = await supabase
+    .from('players')
+    .select('display_name, theme_id')
+    .in('display_name', names);
+
+  const themeMap: Record<string, string | null> = {};
+  for (const p of playerThemes ?? []) {
+    const theme = THEMES.find((t) => t.id === (p.theme_id ?? 'phosphor'));
+    if (theme?.nameEffect) themeMap[p.display_name] = theme.nameEffect;
+  }
+
+  return NextResponse.json(entries.map((e) => ({
+    ...e,
+    nameEffect: themeMap[e.name] ?? null,
+  })));
 }
 
 export async function POST(req: NextRequest) {

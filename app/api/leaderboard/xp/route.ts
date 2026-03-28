@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const admin = getSupabaseAdminClient();
   const { data, error } = await admin
     .from('players')
-    .select('display_name, xp, level, research_graduated')
+    .select('display_name, xp, level, research_graduated, theme_id')
     .gte('xp', 0)
     .order('xp', { ascending: false })
     .limit(limit);
