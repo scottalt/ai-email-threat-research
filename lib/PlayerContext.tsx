@@ -119,6 +119,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem('xp_cooldown');
       localStorage.removeItem('handler_moments_seen');
+      localStorage.removeItem('terminal_theme');
       sessionStorage.removeItem('sigint_spoke');
     } catch {}
   }

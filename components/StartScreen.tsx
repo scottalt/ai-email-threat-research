@@ -248,27 +248,16 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   // SIGINT milestone unlocks — fire when player crosses answer thresholds
   const { triggerSigint } = useSigint();
 
-  // ── SIGINT: ONE message per home screen arrival. Never stacks. Never repeats. ──
-  // sessionStorage('sigint_spoke') blocks all re-fires until next sign-in.
+  // ── SIGINT greeting: once per sign-in, never on refresh/navigate ──
   useEffect(() => {
     if (!showButton || !signedIn || !profile || !profile.displayName) return;
     try { if (sessionStorage.getItem('sigint_spoke') === '1') return; } catch {}
     try { sessionStorage.setItem('sigint_spoke', '1'); } catch {}
 
     const answers = profile.researchAnswersSubmitted ?? 0;
-    const graduated = profile.researchGraduated ?? false;
     const callsign = profile.displayName ?? 'operative';
 
-    // Priority 1: Milestone (via triggerSigint overlay — picks the highest unseen one)
-    const milestone =
-      (answers >= 30 && !hasSeenMoment('freeplay_unlock')) ? 'freeplay_unlock' :
-      (answers >= 20 && !hasSeenMoment('daily_unlock')) ? 'daily_unlock' :
-      (answers >= 15 && !hasSeenMoment('research_halfway')) ? 'research_halfway' :
-      ((graduated || answers >= 10) && !hasSeenMoment('pvp_unlock')) ? 'pvp_unlock' :
-      null;
-    if (milestone) { triggerSigint(milestone); return; }
-
-    // Priority 2: v2_intro for v1 veterans
+    // v2_intro for v1 veterans
     if (answers > 0 && !hasSeenMoment('v2_intro')) {
       const d = dynamicDialogue('v2_intro', callsign);
       if (d) {
@@ -279,7 +268,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
       return;
     }
 
-    // Priority 3: Boot greeting (new players) or welcome back (returning)
+    // Boot greeting (new players) or welcome back (returning)
     if (answers === 0) {
       const d = bootGreetingNamed(callsign);
       setHandlerLines(d.lines);
@@ -294,7 +283,34 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
         setShowHandlerGreeting(true);
       }
     }
-  }, [showButton, signedIn, profile, triggerSigint]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showButton, signedIn, !!profile?.displayName]);
+
+  // ── SIGINT milestones: fire when progression changes (independent of greeting) ──
+  // Tracked by answer count so it fires when player returns after crossing a threshold.
+  const lastAnswerCount = useRef<number>(-1);
+  useEffect(() => {
+    if (!showButton || !signedIn || !profile) return;
+    const answers = profile.researchAnswersSubmitted ?? 0;
+    const graduated = profile.researchGraduated ?? false;
+
+    // Only fire when answer count actually changes (not on profile refreshes for XP etc.)
+    if (lastAnswerCount.current === answers) return;
+    const isFirstCheck = lastAnswerCount.current === -1;
+    lastAnswerCount.current = answers;
+
+    // On first load, don't fire milestones — let the greeting have the spotlight.
+    // Milestones fire when the player returns after playing (answer count changed).
+    if (isFirstCheck) return;
+
+    const milestone =
+      (answers >= 30 && !hasSeenMoment('freeplay_unlock')) ? 'freeplay_unlock' :
+      (answers >= 20 && !hasSeenMoment('daily_unlock')) ? 'daily_unlock' :
+      (answers >= 15 && !hasSeenMoment('research_halfway')) ? 'research_halfway' :
+      ((graduated || answers >= 10) && !hasSeenMoment('pvp_unlock')) ? 'pvp_unlock' :
+      null;
+    if (milestone) triggerSigint(milestone);
+  }, [showButton, signedIn, profile?.researchAnswersSubmitted, profile?.researchGraduated, triggerSigint]);
 
   // Hide nav bar during boot and until player profile is fully set up
   useLayoutEffect(() => {
