@@ -202,17 +202,23 @@ export default function AdminPlayerDetail() {
 
       {/* Tab bar */}
       <div className="flex gap-1">
-        {(['overview', 'answers', 'sessions', 'achievements', 'comms'] as const).map((t) => (
+        {([
+          { key: 'overview', label: 'OVERVIEW' },
+          { key: 'answers', label: 'ANSWERS' },
+          { key: 'sessions', label: 'SESSIONS' },
+          { key: 'achievements', label: 'BADGES' },
+          { key: 'comms', label: '⚡ MSG' },
+        ] as const).map(({ key, label }) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={key}
+            onClick={() => setTab(key)}
             className={`px-3 py-1.5 font-mono text-xs tracking-widest transition-all ${
-              tab === t
+              tab === key
                 ? 'text-[var(--c-primary)] border border-[color-mix(in_srgb,var(--c-primary)_40%,transparent)] bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)]'
                 : 'text-[var(--c-muted)] hover:text-[var(--c-secondary)] border border-transparent'
             }`}
           >
-            {t.toUpperCase()}
+            {label}
           </button>
         ))}
       </div>
