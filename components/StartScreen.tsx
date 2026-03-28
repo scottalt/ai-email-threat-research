@@ -301,10 +301,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     // We're going to speak — set the flag
     try { sessionStorage.setItem('sigint_spoke', '1'); } catch {}
 
-    // Milestone takes priority over greeting
-    if (milestone) { triggerSigint(milestone); return; }
-
-    // v2_intro for v1 veterans
+    // v2_intro for v1 veterans — takes precedence over milestones (shows once)
     if (answers > 0 && !hasSeenMoment('v2_intro')) {
       const d = dynamicDialogue('v2_intro', callsign);
       if (d) {
@@ -314,6 +311,9 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
       }
       return;
     }
+
+    // Milestone takes priority over greeting (but not v2_intro)
+    if (milestone) { triggerSigint(milestone); return; }
 
     // Boot greeting (new) or welcome back (returning)
     if (answers === 0) {
