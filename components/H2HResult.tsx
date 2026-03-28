@@ -122,7 +122,6 @@ export function H2HResult({
     }
 
     // TOXIC MODE — fires on ALL losses including bot matches
-    console.log('[toxic-check]', { isLoss, toxicMode: profile?.toxicMode, hasProfile: !!profile });
     if (isLoss && profile?.toxicMode) {
       const toxicLines = getRandomToxicLoss(
         profile.displayName ?? 'operative',
