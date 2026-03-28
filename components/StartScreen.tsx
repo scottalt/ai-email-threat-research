@@ -248,26 +248,64 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   // SIGINT milestone unlocks — fire when player crosses answer thresholds
   const { triggerSigint } = useSigint();
 
-  // Milestone check — fires ONCE when profile first loads on home screen.
-  // Uses a ref + sessionStorage key based on answer count + level to detect changes.
-  const lastMilestoneKey = useRef<string | null>(null);
+  // ── Single unified SIGINT effect: greeting + milestones ──
+  // Fires ONCE per home screen visit. Shows greeting first, then queues milestones
+  // via triggerSigint (which dedup via localStorage + DB seenMoments).
+  const sigintFiredRef = useRef(false);
   useEffect(() => {
-    if (!showButton || !signedIn || !profile) return;
-    // Only fire when the player's progression state actually changes
-    const key = `${profile.researchAnswersSubmitted}:${profile.level}:${profile.totalSessions}`;
-    if (lastMilestoneKey.current === key) return;
-    lastMilestoneKey.current = key;
+    if (!showButton || sigintFiredRef.current) return;
+    if (!signedIn || !profile) return;
+    if (!profile.displayName) return;
+    sigintFiredRef.current = true;
 
     const answers = profile.researchAnswersSubmitted ?? 0;
     const graduated = profile.researchGraduated ?? false;
+    const callsign = profile.displayName ?? 'operative';
 
-    // Unlock milestones (highest first — triggerSigint dedup prevents repeats)
+    // ── 1. Greeting (Handler overlay — shown inline, not via triggerSigint) ──
+    let greetingShown = false;
+
+    // v2_intro for v1 veterans
+    if (answers > 0 && !hasSeenMoment('v2_intro')) {
+      const d = dynamicDialogue('v2_intro', callsign);
+      if (d) {
+        setHandlerLines(d.lines);
+        setHandlerButton(d.buttonText ?? 'GOT IT');
+        setShowHandlerGreeting(true);
+        greetingShown = true;
+      }
+    }
+
+    // Boot greeting for brand new players OR returning greeting
+    if (!greetingShown) {
+      const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
+      const cooldownOk = answers === 0 || !lastGreeted || (Date.now() - lastGreeted > 2 * 60 * 60 * 1000);
+
+      if (cooldownOk) {
+        let dialogue: { lines: string[]; buttonText?: string } | null = null;
+        if (answers === 0) {
+          dialogue = bootGreetingNamed(callsign);
+          try { markMomentSeen('v2_intro'); } catch {}
+        } else {
+          dialogue = dynamicDialogue('welcome_back', callsign);
+        }
+        if (dialogue) {
+          setHandlerLines(dialogue.lines);
+          setHandlerButton(dialogue.buttonText ?? 'CONTINUE');
+          setShowHandlerGreeting(true);
+        }
+      }
+    }
+
+    // ── 2. Milestones (via triggerSigint — overlay, dedup via localStorage + DB) ──
+    // These queue behind the greeting if one is showing.
+    // Unlock milestones (highest first)
     if (answers >= 30) triggerSigint('freeplay_unlock');
     else if (answers >= 20) triggerSigint('daily_unlock');
     else if (answers >= 15) triggerSigint('research_halfway');
     else if (graduated || answers >= 10) triggerSigint('pvp_unlock');
 
-    // Level moments (exact match only)
+    // Level moments (exact match only — no repeats for same level)
     const levelMoments: Record<number, string> = {
       3: 'level_3', 5: 'level_5', 7: 'level_7', 10: 'level_10',
       13: 'level_13', 15: 'level_15', 18: 'level_18', 20: 'level_20',
@@ -277,64 +315,10 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     if (levelMoment) triggerSigint(levelMoment);
 
     if (profile.totalSessions >= 7) triggerSigint('played_7_days');
-  }, [showButton, signedIn, profile, triggerSigint]);
 
-  // Show SIGINT greeting OR milestone on home page.
-  // Milestones take priority — if one is pending, skip greeting and show milestone.
-  // Greetings are recurring (every login with 2hr cooldown).
-  // Use sessionStorage (survives remounts, resets on new tab/login)
-  useEffect(() => {
-    if (!showButton) return;
-    try { if (sessionStorage.getItem('sigint_greeting_done') === '1') return; } catch {}
-    if (!signedIn || !profile) return;
-    // Wait until callsign + background are set before showing SIGINT
-    if (!profile.displayName) return;
-    try { sessionStorage.setItem('sigint_greeting_done', '1'); } catch {}
-
-    const seen = profile.seenMoments ?? [];
-    const answers = profile.researchAnswersSubmitted ?? 0;
-    const graduated = profile.researchGraduated ?? false;
-    const callsign = profile.displayName ?? 'operative';
-
-    // v2_intro ALWAYS takes priority for v1 veterans who haven't seen SIGINT yet.
-    // Milestones get pre-marked on dismiss so they don't fire after.
-    if (answers > 0 && !seen.includes('v2_intro') && !hasSeenMoment('v2_intro')) {
-      setHandlerLines(dynamicDialogue('v2_intro', callsign)!.lines);
-      setHandlerButton(dynamicDialogue('v2_intro', callsign)!.buttonText ?? 'GOT IT');
-      setShowHandlerGreeting(true);
-      return;
-    }
-
-    // Milestones (unlock, level, sessions) are handled by the separate effect above.
-    // This effect only handles greetings.
-
-    // Skip if already greeted recently (within 2 hours) — but never skip for brand new players
-    const lastGreeted = Number(sessionStorage.getItem('sigint_greeted') ?? '0');
-    if (answers > 0 && lastGreeted && Date.now() - lastGreeted < 2 * 60 * 60 * 1000) {
-      return;
-    }
-
-    let dialogue: { lines: string[]; buttonText?: string } | null = null;
-
-    if (answers === 0) {
-      // Brand new player — greet by callsign (always set at this point, guarded above)
-      dialogue = bootGreetingNamed(callsign);
-      // Pre-mark v2_intro so it never fires — this player got the v2 boot greeting already
-      try { markMomentSeen('v2_intro'); } catch {}
-    } else {
-      // Returning player — rotating personalized welcome
-      dialogue = dynamicDialogue('welcome_back', callsign);
-    }
-
-    if (dialogue) {
-      setHandlerLines(dialogue.lines);
-      setHandlerButton(dialogue.buttonText ?? 'CONTINUE');
-      setShowHandlerGreeting(true);
-    }
-
-    // Time-based one-time moments — fire via SigintContext (queue behind greeting)
+    // ── 3. Time-based one-time moments ──
     const hour = new Date().getHours();
-    const day = new Date().getDay(); // 0=Sun, 6=Sat
+    const day = new Date().getDay();
     if (hour >= 0 && hour < 5) triggerSigint('night_owl');
     if (day === 0 || day === 6) triggerSigint('weekend_warrior');
   }, [showButton, signedIn, profile, triggerSigint]);
