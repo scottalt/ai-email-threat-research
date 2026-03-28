@@ -22,8 +22,7 @@ async function getAuthId(): Promise<string | null> {
 // reset: true → recalculate level from XP (after applying any XP override)
 export async function PATCH(req: NextRequest) {
   const authId = await getAuthId();
-  if (!authId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  if (!isAdminUser(authId)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!authId || !isAdminUser(authId)) return new NextResponse(null, { status: 404 });
 
   const body = await req.json();
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
