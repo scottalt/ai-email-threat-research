@@ -275,11 +275,13 @@ export async function PATCH(
   }
 
   // Complete action — for bot matches marking as done
+  // winnerId from body: player.id if they won, null if they got eliminated
+  const botWinnerId = body.winnerId === player.id ? player.id : null;
   const { data: updated } = await admin
     .from('h2h_matches')
     .update({
       status: 'complete',
-      winner_id: player.id,
+      winner_id: botWinnerId,
       ended_at: new Date().toISOString(),
     })
     .eq('id', id)
