@@ -102,18 +102,21 @@ export function AnnouncementBanner() {
 
   return (
     <>
-      {/* Desktop: full banner below nav bar */}
-      <div className="hidden lg:block fixed top-[45px] left-0 right-0 z-[60] anim-fade-in">
-        <div className="bg-[var(--c-bg)] border-b-2 border-[var(--c-accent)] shadow-[0_4px_30px_rgba(255,170,0,0.1)]">
-          <div className="max-w-4xl mx-auto px-6 py-4">
-            <div className="flex items-start gap-4">
-              {/* Left: SIGINT label */}
-              <div className="shrink-0 pt-0.5">
-                <span className="text-[var(--c-accent)] text-sm font-mono font-bold tracking-widest">⚡ SIGINT</span>
+      {/* Desktop: animated banner below nav bar */}
+      <div className="hidden lg:block fixed top-[45px] left-0 right-0 z-[60] anim-fade-in-up">
+        <div className="bg-[color-mix(in_srgb,var(--c-bg)_95%,transparent)] border-b-2 border-[var(--c-accent)] shadow-[0_4px_30px_rgba(255,170,0,0.12)] backdrop-blur-sm">
+          {/* Animated accent line */}
+          <div className="h-[2px] bg-gradient-to-r from-transparent via-[var(--c-accent)] to-transparent" style={{ animation: 'ticker-scroll 4s linear infinite' }} />
+          <div className="max-w-4xl mx-auto px-6 py-3">
+            <div className="flex items-center gap-4">
+              {/* Left: SIGINT pulse */}
+              <div className="shrink-0 flex items-center gap-2">
+                <span className="text-[var(--c-accent)] text-lg" style={{ animation: 'badge-mythic-shimmer 2.5s ease-in-out infinite' }}>⚡</span>
+                <span className="text-[var(--c-accent)] text-xs font-mono font-bold tracking-[0.3em]">SIGINT</span>
               </div>
 
-              {/* Center: all message lines */}
-              <div className="flex-1 space-y-1">
+              {/* Center: message with separator */}
+              <div className="flex-1 border-l border-[color-mix(in_srgb,var(--c-accent)_30%,transparent)] pl-4">
                 {allLines.map((line, i) => (
                   <div key={i} className="text-[var(--c-primary)] text-sm font-mono leading-relaxed">
                     {line}
@@ -121,12 +124,12 @@ export function AnnouncementBanner() {
                 ))}
               </div>
 
-              {/* Right: dismiss */}
+              {/* Right: button text from the broadcast */}
               <button
                 onClick={handleBannerDismiss}
-                className="shrink-0 text-[var(--c-muted)] text-xs font-mono hover:text-[var(--c-accent)] transition-colors px-2 py-1"
+                className="shrink-0 px-3 py-1.5 term-border border-[color-mix(in_srgb,var(--c-accent)_40%,transparent)] text-[var(--c-accent)] text-xs font-mono tracking-widest hover:bg-[color-mix(in_srgb,var(--c-accent)_8%,transparent)] active:scale-95 transition-all"
               >
-                DISMISS
+                {allGlobals[0]?.buttonText ?? 'DISMISS'}
               </button>
             </div>
           </div>
@@ -145,7 +148,7 @@ export function AnnouncementBanner() {
             </div>
             <button
               onClick={handleBannerDismiss}
-              className="pointer-events-auto px-3 py-1.5 text-[var(--c-muted)] text-[10px] font-mono hover:text-[var(--c-accent)] transition-colors shrink-0 border-l border-[color-mix(in_srgb,var(--c-accent)_20%,transparent)]"
+              className="pointer-events-auto px-3 py-1.5 text-[var(--c-accent)] text-[10px] font-mono hover:text-[var(--c-primary)] transition-colors shrink-0 border-l border-[color-mix(in_srgb,var(--c-accent)_20%,transparent)]"
             >
               ✕
             </button>
