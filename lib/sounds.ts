@@ -14,31 +14,29 @@ export function isSfxEnabled(): boolean {
   try { return localStorage.getItem('sfx_enabled') !== 'false'; } catch { return true; }
 }
 
-export function playClick() {
+// Click and keypress use HTML Audio — works on mobile without AudioContext unlock
+const _clickPool: HTMLAudioElement[] = [];
+const _keypressPool: HTMLAudioElement[] = [];
+
+function playFromPool(pool: HTMLAudioElement[], src: string, vol: number) {
   if (!isSfxEnabled()) return;
   try {
-    const ctx = getCtx(); const t = ctx.currentTime;
-    const osc = ctx.createOscillator(); const gain = ctx.createGain();
-    osc.type = 'square'; osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.08, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(t); osc.stop(t + 0.035);
+    // Find a free element or create one (max 3)
+    let a = pool.find(el => el.paused || el.ended);
+    if (!a && pool.length < 3) {
+      a = new Audio(src);
+      a.preload = 'auto';
+      pool.push(a);
+    }
+    if (!a) { a = pool[0]; }
+    a.volume = vol;
+    a.currentTime = 0;
+    a.play().catch(() => {});
   } catch {}
 }
 
-export function playKeyPress() {
-  if (!isSfxEnabled()) return;
-  try {
-    const ctx = getCtx(); const t = ctx.currentTime;
-    const osc = ctx.createOscillator(); const gain = ctx.createGain();
-    osc.type = 'square'; osc.frequency.value = 660;
-    gain.gain.setValueAtTime(0.05, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(t); osc.stop(t + 0.02);
-  } catch {}
-}
+export function playClick() { playFromPool(_clickPool, '/audio/click.wav', 0.3); }
+export function playKeyPress() { playFromPool(_keypressPool, '/audio/keypress.wav', 0.2); }
 
 function createNote(ctx: AudioContext, freq: number, startTime: number, duration: number, volume = 0.12) {
   const osc = ctx.createOscillator(); const gain = ctx.createGain();
