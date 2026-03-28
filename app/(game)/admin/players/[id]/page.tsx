@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ACHIEVEMENTS, RARITY_COLORS, type AchievementRarity } from '@/lib/achievements';
-import { getLevelFromXp } from '@/lib/xp';
 
 interface PlayerData {
   player: Record<string, unknown>;
@@ -24,8 +24,8 @@ interface SessionRow {
   final_score: number | null; final_rank: string | null;
 }
 
-export default function AdminPlayerDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function AdminPlayerDetail() {
+  const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<PlayerData | null>(null);
   const [answers, setAnswers] = useState<AnswerRow[]>([]);
   const [answerTotal, setAnswerTotal] = useState(0);
