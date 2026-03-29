@@ -1,5 +1,6 @@
 // Shared AudioContext for all sounds
 let _ctx: AudioContext | null = null;
+let _warmedUp = false;
 
 export function getCtx(): AudioContext {
   if (!_ctx || _ctx.state === 'closed') _ctx = new AudioContext();
@@ -8,7 +9,34 @@ export function getCtx(): AudioContext {
 }
 
 export const getMusicCtx = getCtx;
-export const ensureUnlocked = () => { getCtx(); };
+
+// Warm up AudioContext on first user interaction (fixes iOS first-sound clipping)
+export function ensureUnlocked() {
+  const ctx = getCtx();
+  if (_warmedUp) return;
+  _warmedUp = true;
+  // Play a silent buffer to fully activate the context on iOS
+  try {
+    const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch {}
+}
+
+// Auto-warm on first tap/click/key (runs once, removes itself)
+if (typeof window !== 'undefined') {
+  const warmUp = () => {
+    ensureUnlocked();
+    window.removeEventListener('click', warmUp, true);
+    window.removeEventListener('touchstart', warmUp, true);
+    window.removeEventListener('keydown', warmUp, true);
+  };
+  window.addEventListener('click', warmUp, true);
+  window.addEventListener('touchstart', warmUp, true);
+  window.addEventListener('keydown', warmUp, true);
+}
 
 export function isSfxEnabled(): boolean {
   try { return localStorage.getItem('sfx_enabled') !== 'false'; } catch { return true; }
