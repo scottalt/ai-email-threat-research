@@ -236,8 +236,23 @@ export async function PATCH(
   if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
 
   const body = await req.json().catch(() => null);
-  if (!body?.action || !['complete', 'cancel'].includes(body.action)) {
+  if (!body?.action || !['complete', 'cancel', 'bot-progress'].includes(body.action)) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  }
+
+  // Write bot's simulated progress to match record (fire-and-forget from client)
+  if (body.action === 'bot-progress') {
+    const botCards = typeof body.botCards === 'number' ? body.botCards : null;
+    if (botCards !== null) {
+      const { data: m } = await admin.from('h2h_matches').select('player1_id').eq('id', id).single();
+      if (m) {
+        const isP1 = m.player1_id === player.id;
+        await admin.from('h2h_matches').update({
+          [isP1 ? 'player2_cards_completed' : 'player1_cards_completed']: botCards,
+        }).eq('id', id);
+      }
+    }
+    return NextResponse.json({ ok: true });
   }
 
   if (body.action === 'cancel') {

@@ -239,7 +239,14 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
   // ── Opponent state ──
   const [myName, setMyName] = useState<string>('YOU');
   const [opponentName, setOpponentName] = useState<string>('OPPONENT');
-  const [opponentIndex, setOpponentIndex] = useState(0);
+  const [opponentIndex, setOpponentIndexRaw] = useState(0);
+  const setOpponentIndex = (v: number | ((prev: number) => number)) => {
+    setOpponentIndexRaw((prev) => {
+      const next = typeof v === 'function' ? v(prev) : v;
+      opponentIndexRef.current = next;
+      return next;
+    });
+  };
   const [opponentEliminated, setOpponentEliminated] = useState(false);
   const [opponentBadgeIcon, setOpponentBadgeIcon] = useState<string | null>(null);
   const [opponentBadgeName, setOpponentBadgeName] = useState<string | null>(null);
@@ -284,6 +291,7 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
   const matchEndedRef = useRef(false);
   const isPlayer1Ref = useRef(true);
   const opponentIdRef = useRef<string | null>(null);
+  const opponentIndexRef = useRef(0);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   // Reset render timer + scroll to top when card changes
@@ -701,6 +709,17 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
               if ((isBot || data.matchOver) && !matchEndedRef.current) {
                 // Server finalized — first to finish wins, notify opponent
                 matchEndedRef.current = true;
+                // Write bot's simulated progress to server (for result screen display)
+                if (isBot && opponentIdRef.current) {
+                  try {
+                    fetch(`/api/h2h/match/${matchId}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action: 'bot-progress', botCards: opponentIndexRef.current }),
+                      keepalive: true,
+                    });
+                  } catch { /* best effort */ }
+                }
                 broadcastResult(channelRef.current, {
                   winnerId: data.winnerId ?? playerId,
                   player1PointsDelta: isPlayer1Ref.current ? (data.myPointsDelta ?? 0) : 0,
