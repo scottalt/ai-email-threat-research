@@ -157,7 +157,7 @@ export function H2HResult({
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
+    async function load(attempt = 0) {
       try {
         const [matchRes, statsRes] = await Promise.all([
           fetch(`/api/h2h/match/${matchId}`),
@@ -206,6 +206,12 @@ export function H2HResult({
             myPointsDeltaFromServer: serverMyDelta ?? null,
             serverWinnerId: m.winnerId ?? null,
           });
+
+          // Retry if delta not yet written (PATCH complete still in-flight)
+          if (serverMyDelta === null && m.status === 'complete' && attempt < 3) {
+            await new Promise((r) => setTimeout(r, 1000));
+            if (!cancelled) return load(attempt + 1);
+          }
 
           // Store review cards and player's answers
           if (data.reviewCards) setReviewCards(data.reviewCards);
