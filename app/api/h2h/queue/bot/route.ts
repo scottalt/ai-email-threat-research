@@ -129,17 +129,17 @@ export async function POST() {
       });
 
       if (eligibleBots.length > 0) {
-        // Sort by rank tier proximity to the player
-        eligibleBots.sort((a, b) => {
-          const statsA = Array.isArray(a.h2h_player_stats) ? a.h2h_player_stats[0] : a.h2h_player_stats;
-          const statsB = Array.isArray(b.h2h_player_stats) ? b.h2h_player_stats[0] : b.h2h_player_stats;
-          const pointsA = statsA?.rank_points ?? 0;
-          const pointsB = statsB?.rank_points ?? 0;
-          const rankIndexA = H2H_RANKS.findIndex((r) => r.tier === getRankFromPoints(pointsA).tier);
-          const rankIndexB = H2H_RANKS.findIndex((r) => r.tier === getRankFromPoints(pointsB).tier);
-          return Math.abs(rankIndexA - playerRankIndex) - Math.abs(rankIndexB - playerRankIndex);
+        // Group by tier proximity, then pick randomly within the closest group
+        const withDiff = eligibleBots.map((bot) => {
+          const statsBot = Array.isArray(bot.h2h_player_stats) ? bot.h2h_player_stats[0] : bot.h2h_player_stats;
+          const botPoints = statsBot?.rank_points ?? 0;
+          const botRankIdx = H2H_RANKS.findIndex((r) => r.tier === getRankFromPoints(botPoints).tier);
+          return { bot, tierDiff: Math.abs(botRankIdx - playerRankIndex) };
         });
-        botPlayerId = eligibleBots[0].id as string;
+        const minDiff = Math.min(...withDiff.map((b) => b.tierDiff));
+        const closestBots = withDiff.filter((b) => b.tierDiff === minDiff);
+        const picked = closestBots[Math.floor(Math.random() * closestBots.length)];
+        botPlayerId = picked.bot.id as string;
         console.log(`[bot] selected persistent bot ${botPlayerId.slice(0,8)} for ${playerId.slice(0,8)}`);
       } else {
         console.log(`[bot] no eligible persistent bots — falling back to ghost match`);
