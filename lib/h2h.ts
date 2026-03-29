@@ -10,6 +10,16 @@ export const H2H_DAILY_RATED_CAP = 20;
 export const H2H_DAILY_HALF_RATE_AFTER = 10;
 export const CURRENT_SEASON = 'season-0';
 
+// ── Persistent bot players ──
+
+export const BOT_PLAYER_ID_PREFIX = '00000000-0000-0000-b070-';
+
+export interface BotConfig {
+  speed_factor: number;   // 0.6–1.0 — multiplier on base answer time (lower = faster)
+  accuracy: number;       // 0.82–0.95 — per-card chance of getting it right
+  hesitation_chance: number; // 0.05–0.25 — chance of pausing on a card
+}
+
 // ── Bot names for solo matches ──
 
 const BOT_NAMES = [
