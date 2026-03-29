@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getRankFromPoints } from '@/lib/h2h';
 import { H2HRankGuide } from './H2HRankGuide';
+import { playMatchFound } from '@/lib/sounds';
 
 interface Props {
   profile: { id: string; displayName: string | null };
@@ -71,6 +72,7 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
       if (data.matched && data.matchId) {
         matchedRef.current = true;
         cleanup();
+        playMatchFound();
         onMatchFound(data.matchId, data.isBot ?? false);
       }
     } catch {
@@ -195,6 +197,7 @@ export function H2HQueue({ profile, onMatchFound, onCancel }: Props) {
           if (data.matchId) {
             matchedRef.current = true;
             cleanup();
+            playMatchFound();
             onMatchFound(data.matchId, true);
             return;
           }
