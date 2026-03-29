@@ -528,13 +528,13 @@ export function H2HMatch({ matchId, playerId, isBot, onMatchEnd }: Props) {
     // ── Personality: randomize bot behavior per match ──
     const speedFactor = 0.6 + Math.random() * 0.4; // 0.6x (fast) to 1.0x (moderate)
 
-    // ── Per-card timing: skilled player reading patterns ──
+    // ── Per-card timing: competent but beatable ──
     const botTimes = cards.map((card) => {
       const len = card.body.length;
       let baseMs: number;
-      if (len < 300) baseMs = 2000 + Math.random() * 3000;       // 2-5s
-      else if (len < 600) baseMs = 3500 + Math.random() * 4500;  // 3.5-8s
-      else baseMs = 5000 + Math.random() * 6000;                  // 5-11s
+      if (len < 300) baseMs = 3000 + Math.random() * 4000;       // 3-7s
+      else if (len < 600) baseMs = 5000 + Math.random() * 5000;  // 5-10s
+      else baseMs = 7000 + Math.random() * 7000;                  // 7-14s
 
       baseMs *= speedFactor;
 
