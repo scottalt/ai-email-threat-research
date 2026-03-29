@@ -72,10 +72,10 @@ export async function GET(
   const playerIds = [match.player1_id, match.player2_id].filter(Boolean);
   const { data: players } = await admin
     .from('players')
-    .select('id, display_name, featured_badge, featured_badges, theme_id, is_bot')
+    .select('id, display_name, featured_badge, featured_badges, theme_id, is_bot, bot_config')
     .in('id', playerIds);
 
-  const playerMap: Record<string, { displayName: string; featuredBadge: string | null; themeColor: string; nameEffect: string | null; isBot: boolean }> = {};
+  const playerMap: Record<string, { displayName: string; featuredBadge: string | null; themeColor: string; nameEffect: string | null; isBot: boolean; botConfig: Record<string, number> | null }> = {};
   for (const p of players ?? []) {
     const badges = p.featured_badges as string[] | null;
     const pvpBadge = badges?.[0] ?? p.featured_badge ?? null;
@@ -86,6 +86,7 @@ export async function GET(
       themeColor: theme?.colors.primary ?? '#00ff41',
       nameEffect: theme?.nameEffect ?? null,
       isBot: p.is_bot ?? false,
+      botConfig: p.bot_config ?? null,
     };
   }
 
@@ -188,7 +189,7 @@ export async function GET(
       cardIds: match.card_ids,
       status: match.status,
       winnerId: match.winner_id,
-      isBotMatch: match.is_ghost_match,
+      isBotMatch: match.is_ghost_match || Object.values(playerMap).some((p) => p.isBot),
       isRated: match.is_rated,
       startedAt: match.started_at,
       endedAt: match.ended_at,
