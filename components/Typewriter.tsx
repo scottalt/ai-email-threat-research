@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { getCtx } from '@/lib/sounds';
+import { getCtx, ensureUnlocked } from '@/lib/sounds';
 
 interface Props {
   text: string;
@@ -46,7 +46,8 @@ export function Typewriter({ text: rawText, speed = 30, delay = 0, onComplete, c
       // Play typing sound every 3rd character (not every char — too rapid)
       if (sound && nextChar !== ' ' && charCount.current % 3 === 0) {
         try {
-          const ctx = getCtx(); // Shared context — works on Safari
+          ensureUnlocked();
+          const ctx = getCtx();
           const t = ctx.currentTime;
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
