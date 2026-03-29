@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
-import { CURRENT_SEASON, H2H_CARDS_PER_MATCH, H2H_MATCH_TTL } from '@/lib/h2h';
+import { CURRENT_SEASON, H2H_CARDS_PER_MATCH, H2H_MATCH_TTL, H2H_RANKS, getRankFromPoints } from '@/lib/h2h';
 
 // POST /api/h2h/queue/bot — Create a bot match directly (called by client after queue timeout)
 
@@ -94,16 +94,68 @@ export async function POST() {
   }
   console.log(`[bot] creating match for ${playerId.slice(0,8)}`);
 
+  // Pick a persistent bot player if feature flag is enabled
+  let botPlayerId: string | null = null;
+  if (process.env.H2H_PERSISTENT_BOTS === 'true') {
+    // Get the player's current rank points
+    const { data: playerStats } = await admin
+      .from('h2h_player_stats')
+      .select('rank_points')
+      .eq('player_id', playerId)
+      .maybeSingle();
+    const playerPoints = playerStats?.rank_points ?? 0;
+    const playerRankIndex = H2H_RANKS.findIndex(
+      (r) => r.tier === getRankFromPoints(playerPoints).tier
+    );
+
+    // Query all bot players with their stats
+    const { data: botPlayers } = await admin
+      .from('players')
+      .select('id, bot_config, h2h_player_stats!player_id(rank_points, rated_matches_today, last_match_date)')
+      .eq('is_bot', true);
+
+    if (botPlayers && botPlayers.length > 0) {
+      const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+      const eligibleBots = botPlayers.filter((bot) => {
+        const stats = Array.isArray(bot.h2h_player_stats)
+          ? bot.h2h_player_stats[0]
+          : bot.h2h_player_stats;
+        if (!stats) return true; // no stats yet — under cap
+        const isToday = stats.last_match_date?.slice(0, 10) === todayStr;
+        const matchesToday = isToday ? (stats.rated_matches_today ?? 0) : 0;
+        return matchesToday < 20;
+      });
+
+      if (eligibleBots.length > 0) {
+        // Sort by rank tier proximity to the player
+        eligibleBots.sort((a, b) => {
+          const statsA = Array.isArray(a.h2h_player_stats) ? a.h2h_player_stats[0] : a.h2h_player_stats;
+          const statsB = Array.isArray(b.h2h_player_stats) ? b.h2h_player_stats[0] : b.h2h_player_stats;
+          const pointsA = statsA?.rank_points ?? 0;
+          const pointsB = statsB?.rank_points ?? 0;
+          const rankIndexA = H2H_RANKS.findIndex((r) => r.tier === getRankFromPoints(pointsA).tier);
+          const rankIndexB = H2H_RANKS.findIndex((r) => r.tier === getRankFromPoints(pointsB).tier);
+          return Math.abs(rankIndexA - playerRankIndex) - Math.abs(rankIndexB - playerRankIndex);
+        });
+        botPlayerId = eligibleBots[0].id as string;
+        console.log(`[bot] selected persistent bot ${botPlayerId.slice(0,8)} for ${playerId.slice(0,8)}`);
+      } else {
+        console.log(`[bot] no eligible persistent bots — falling back to ghost match`);
+      }
+    }
+  }
+
   // Create bot match
   const { data: match, error } = await admin
     .from('h2h_matches')
     .insert({
       season: CURRENT_SEASON,
       player1_id: playerId,
-      player2_id: null,
+      player2_id: botPlayerId,
       card_ids: [],
       status: 'active',
-      is_ghost_match: true,
+      is_ghost_match: botPlayerId === null,
       is_rated: true,
       started_at: new Date().toISOString(),
     })
@@ -157,6 +209,9 @@ export async function POST() {
 
   await redis.set(`match-cards:${match.id}`, JSON.stringify(cards), { ex: H2H_MATCH_TTL });
   await redis.set(`match-render:${match.id}:${playerId}:0`, Date.now(), { ex: H2H_MATCH_TTL });
+  if (botPlayerId) {
+    await redis.set(`match-render:${match.id}:${botPlayerId}:0`, Date.now(), { ex: H2H_MATCH_TTL });
+  }
   await admin.from('h2h_matches').update({ card_ids: cards.map((c) => c.id) }).eq('id', match.id);
 
   console.log(`[bot] match created for ${playerId.slice(0,8)}: ${match.id}`);
