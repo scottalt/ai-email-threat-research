@@ -72,10 +72,10 @@ export async function GET(
   const playerIds = [match.player1_id, match.player2_id].filter(Boolean);
   const { data: players } = await admin
     .from('players')
-    .select('id, display_name, featured_badge, featured_badges, theme_id')
+    .select('id, display_name, featured_badge, featured_badges, theme_id, is_bot')
     .in('id', playerIds);
 
-  const playerMap: Record<string, { displayName: string; featuredBadge: string | null; themeColor: string; nameEffect: string | null }> = {};
+  const playerMap: Record<string, { displayName: string; featuredBadge: string | null; themeColor: string; nameEffect: string | null; isBot: boolean }> = {};
   for (const p of players ?? []) {
     const badges = p.featured_badges as string[] | null;
     const pvpBadge = badges?.[0] ?? p.featured_badge ?? null;
@@ -85,6 +85,7 @@ export async function GET(
       featuredBadge: pvpBadge,
       themeColor: theme?.colors.primary ?? '#00ff41',
       nameEffect: theme?.nameEffect ?? null,
+      isBot: p.is_bot ?? false,
     };
   }
 
@@ -141,7 +142,8 @@ export async function GET(
 
   // AFK check — for active, non-bot matches only
   let afkForfeited: string | null = null;
-  if (match.status === 'active' && !match.is_ghost_match && match.player1_id && match.player2_id) {
+  const anyPlayerIsBot = Object.values(playerMap).some((p) => p.isBot);
+  if (match.status === 'active' && !match.is_ghost_match && !anyPlayerIsBot && match.player1_id && match.player2_id) {
     const afk = await checkMatchAfk(
       match.id,
       match.player1_id,
