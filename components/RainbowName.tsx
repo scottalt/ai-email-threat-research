@@ -29,8 +29,8 @@ export function RainbowName({
 }) {
   const { theme: currentTheme } = useTheme();
 
-  // Is this rendering another player's name? (any external prop provided)
-  const isOtherPlayer = !!(themeId || themeColor || nameEffect);
+  // Is this rendering another player's name? (any external prop provided, even if null)
+  const isOtherPlayer = themeId !== undefined || themeColor !== undefined || nameEffect !== undefined;
 
   // Rainbow check: explicit nameEffect, or themeId resolves to rainbow
   const isRainbow = nameEffect === 'rainbow'
