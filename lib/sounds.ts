@@ -47,12 +47,20 @@ export function ensureUnlocked() {
   } catch {}
 }
 
-// Auto-warm on first tap/click/key — keeps retrying until actually unlocked
+// Auto-warm on first tap/click/key — keeps retrying until actually unlocked.
+// On iOS the first gesture unlocks the context, but the sound triggered by
+// that same gesture misses because the context was still suspended when the
+// SFX handler fired. Fix: await resume, then retroactively play the click
+// so the user hears feedback on their very first tap.
 if (typeof window !== 'undefined') {
-  const warmUp = () => {
+  const warmUp = async () => {
     ensureUnlocked();
-    // Only remove listeners once context is actually running
-    if (_ctx?.state === 'running' && _unlocked) {
+    // Wait for resume to actually complete
+    await resumeIfSuspended();
+    if (_ctx?.state === 'running') {
+      _unlocked = true;
+      // Retroactively play click so first tap isn't silent
+      playFromPool(_clickPool, '/audio/click.wav', 0.3);
       window.removeEventListener('click', warmUp, true);
       window.removeEventListener('touchstart', warmUp, true);
       window.removeEventListener('keydown', warmUp, true);
