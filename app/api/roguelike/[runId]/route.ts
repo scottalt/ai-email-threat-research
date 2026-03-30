@@ -11,6 +11,7 @@ import {
   calculateFinalScore,
 } from '@/lib/roguelike';
 import { checkRoguelikeAchievements } from '@/lib/achievement-checker';
+import { getLevelFromXp } from '@/lib/xp';
 
 async function getPlayerId(userId: string): Promise<string | null> {
   const admin = getSupabaseAdminClient();
@@ -251,6 +252,35 @@ export async function PATCH(
       console.error(`[roguelike/${runId}] Achievement check failed:`, err);
     }
 
+    // ── Award XP for the run ──
+    const XP_PER_CORRECT = 10;
+    const XP_WIN_BONUS = 50;
+    const XP_FLOOR_BONUS = 20;
+
+    const xpEarned = ((state.cardsCorrect ?? 0) * XP_PER_CORRECT)
+      + (state.floorsCleared * XP_FLOOR_BONUS)
+      + (state.floorsCleared >= state.totalFloors ? XP_WIN_BONUS : 0);
+
+    let levelUp = false;
+    if (xpEarned > 0) {
+      const { data: playerRow } = await admin
+        .from('players')
+        .select('xp, level')
+        .eq('id', playerId)
+        .single();
+
+      if (playerRow) {
+        const newXp = (playerRow.xp ?? 0) + xpEarned;
+        const newLevel = getLevelFromXp(newXp);
+        levelUp = newLevel > (playerRow.level ?? 0);
+
+        await admin
+          .from('players')
+          .update({ xp: newXp, level: newLevel, updated_at: new Date().toISOString() })
+          .eq('id', playerId);
+      }
+    }
+
     // Fix 5: Return clearanceEarned (not clearance) to match client expectation
     return NextResponse.json({
       finalScore,
@@ -265,6 +295,8 @@ export async function PATCH(
       status: state.status,
       completedAt,
       newAchievements,
+      xpEarned,
+      levelUp,
     });
   } catch (err) {
     console.error(`[roguelike/${runId}] Unhandled error in PATCH:`, err);
