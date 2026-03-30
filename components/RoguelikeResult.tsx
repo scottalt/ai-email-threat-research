@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { GIMMICK_DEFS, ROGUELIKE_FLOORS } from '@/lib/roguelike';
 import type { GimmickId } from '@/lib/roguelike';
+import { ACHIEVEMENTS } from '@/lib/achievements';
 import { playVictory, playDefeat, playClick } from '@/lib/sounds';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { useSigint } from '@/lib/SigintContext';
@@ -18,6 +19,8 @@ interface Props {
   cardsCorrect: number;
   gimmicks: (GimmickId | null)[];
   won: boolean;             // true if all floors cleared
+  newAchievements?: string[]; // achievement IDs earned this run
+  xpEarned?: number;
   onPlayAgain: () => void;
   onBack: () => void;
 }
@@ -33,6 +36,8 @@ export function RoguelikeResult({
   cardsCorrect,
   gimmicks,
   won,
+  newAchievements,
+  xpEarned,
   onPlayAgain,
   onBack,
 }: Props) {
@@ -145,7 +150,38 @@ export function RoguelikeResult({
           valueColor="#ffaa00"
           fullWidth
         />
+        {xpEarned !== undefined && xpEarned > 0 && (
+          <StatCell
+            label="XP EARNED"
+            value={`+${xpEarned}`}
+            valueColor="var(--c-accent)"
+            fullWidth
+          />
+        )}
       </div>
+
+      {/* New achievements */}
+      {newAchievements && newAchievements.length > 0 && (
+        <div
+          className="term-border p-4 w-full space-y-2 anim-fade-in-up"
+          style={{ animationDelay: '375ms', animationFillMode: 'both' }}
+        >
+          <div className="text-xs text-[var(--c-accent)] tracking-widest text-center">NEW ACHIEVEMENTS</div>
+          {newAchievements.map(id => {
+            const ach = ACHIEVEMENTS.find(a => a.id === id);
+            if (!ach) return null;
+            return (
+              <div key={id} className="flex items-center gap-3 text-sm">
+                <span className="text-lg">{ach.icon}</span>
+                <div>
+                  <div className="text-[var(--c-primary)] font-bold tracking-wide">{ach.name}</div>
+                  <div className="text-[var(--c-muted)] text-xs">{ach.description}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Floor breakdown */}
       <div

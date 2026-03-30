@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { RoguelikeHUD } from './RoguelikeHUD';
 import { RoguelikePerkShop } from './RoguelikePerkShop';
 import { RoguelikeResult } from './RoguelikeResult';
+import { RoguelikeUpgrades } from './RoguelikeUpgrades';
+import type { UpgradeId } from '@/lib/roguelike-upgrades';
 import { useSigint } from '@/lib/SigintContext';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { playCorrect, playWrong, playFloorClear, playLifeLost } from '@/lib/sounds';
@@ -52,9 +54,11 @@ interface ResultData {
   cardsAnswered: number;
   cardsCorrect: number;
   operationName: string;
+  newAchievements?: string[];
+  xpEarned?: number;
 }
 
-type Phase = 'loading' | 'floor' | 'feedback' | 'shop' | 'result' | 'floor-intro' | 'wager';
+type Phase = 'loading' | 'floor' | 'feedback' | 'shop' | 'result' | 'floor-intro' | 'wager' | 'upgrades';
 
 interface Props {
   onBack: () => void;
@@ -89,6 +93,11 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   const [streak, setStreak] = useState(0);
   const [deaths, setDeaths] = useState(0);
   const [perks, setPerks] = useState<PerkId[]>([]);
+
+  // ── Upgrade state ──
+  const [ownedUpgrades, setOwnedUpgrades] = useState<UpgradeId[]>([]);
+  const [upgradeClearance, setUpgradeClearance] = useState(0);
+  const [upgradeReturnPhase, setUpgradeReturnPhase] = useState<Phase>('loading');
 
   // ── Floor card state ──
   const [cards, setCards] = useState<SafeCard[]>([]);
@@ -149,6 +158,19 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     sigintFired.current = true;
     triggerSigint('first_roguelike');
   }, [triggerSigint]);
+
+  // ── Fetch upgrades on mount so lobby button shows clearance ──
+  useEffect(() => {
+    fetch('/api/roguelike/upgrades')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setOwnedUpgrades(data.upgrades ?? []);
+          setUpgradeClearance(data.clearance ?? 0);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Cleanup timeouts on unmount ──
   useEffect(() => {
@@ -506,6 +528,40 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     setInspectedFields((prev) => new Set(prev).add(field));
   }
 
+  // ── Upgrade panel ──
+  async function fetchUpgrades() {
+    try {
+      const res = await fetch('/api/roguelike/upgrades');
+      if (!res.ok) return;
+      const data = await res.json();
+      setOwnedUpgrades(data.upgrades ?? []);
+      setUpgradeClearance(data.clearance ?? 0);
+    } catch {
+      // Silently fail — upgrades are optional
+    }
+  }
+
+  function openUpgrades(returnPhase: Phase) {
+    setUpgradeReturnPhase(returnPhase);
+    fetchUpgrades();
+    setPhase('upgrades');
+  }
+
+  async function handleUpgradePurchase(id: UpgradeId) {
+    const res = await fetch('/api/roguelike/upgrades', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ upgradeId: id }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? 'Purchase failed');
+    }
+    const data = await res.json();
+    setOwnedUpgrades(data.upgrades ?? []);
+    setUpgradeClearance(data.clearance ?? 0);
+  }
+
   // ── Shop SIGINT quips ──
   const SHOP_QUIPS = [
     "Choose wisely. Intel doesn't grow on trees.",
@@ -624,6 +680,18 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     return '#ff3333';
   }
 
+  // ── Render: upgrades panel ──
+  if (phase === 'upgrades') {
+    return (
+      <RoguelikeUpgrades
+        upgrades={ownedUpgrades}
+        clearance={upgradeClearance}
+        onPurchase={handleUpgradePurchase}
+        onClose={() => setPhase(upgradeReturnPhase)}
+      />
+    );
+  }
+
   // ── Render: loading / mission lobby ──
   if (phase === 'loading') {
     return (
@@ -679,6 +747,18 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             <div className="text-sm tracking-widest" style={{ color: '#ff3333' }}>
               ♥♥♥ 3 LIVES
             </div>
+
+            {/* Upgrades button */}
+            <button
+              onClick={() => openUpgrades('loading')}
+              className="py-2 px-4 term-border text-sm tracking-widest active:scale-95 transition-all"
+              style={{ color: '#00d4ff', borderColor: 'rgba(0,212,255,0.35)' }}
+            >
+              [ UPGRADES ]
+              {upgradeClearance > 0 && (
+                <span className="text-[var(--c-muted)] text-xs ml-2">{upgradeClearance} CLR</span>
+              )}
+            </button>
 
             {/* Status */}
             <p className="text-xs text-[var(--c-muted)] tracking-widest animate-pulse">
@@ -761,6 +841,8 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         cardsCorrect={resultData.cardsCorrect}
         gimmicks={gimmicks}
         won={won}
+        newAchievements={resultData.newAchievements}
+        xpEarned={resultData.xpEarned}
         onPlayAgain={onPlayAgain}
         onBack={onBack}
       />
