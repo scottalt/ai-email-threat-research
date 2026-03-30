@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { RoguelikeHUD } from './RoguelikeHUD';
 import { RoguelikePerkShop } from './RoguelikePerkShop';
 import { RoguelikeResult } from './RoguelikeResult';
 import { useSigint } from '@/lib/SigintContext';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { playCorrect, playWrong, playFloorClear, playLifeLost } from '@/lib/sounds';
+import { getTimerDuration } from '@/lib/roguelike-gimmicks';
+import { GIMMICK_DEFS, INTEL_WAGER_OPTIONS } from '@/lib/roguelike';
 import type { GimmickId, PerkId, CardModifier } from '@/lib/roguelike';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -52,12 +54,16 @@ interface ResultData {
   operationName: string;
 }
 
-type Phase = 'loading' | 'floor' | 'feedback' | 'shop' | 'result';
+type Phase = 'loading' | 'floor' | 'feedback' | 'shop' | 'result' | 'floor-intro' | 'wager';
 
 interface Props {
   onBack: () => void;
   onPlayAgain: () => void;
 }
+
+// ── Timer constants ──
+const TIMED_MODIFIER_DURATION = 12000;
+const SLOW_TIME_BONUS = 5000;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -97,6 +103,21 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   const [resultData, setResultData] = useState<ResultData | null>(null);
   const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
 
+  // ── Gimmick-specific state ──
+  const [wrongShake, setWrongShake] = useState(false);
+  const [pendingAnswer, setPendingAnswer] = useState<'legit' | 'phishing' | null>(null);
+  const [selectedWager, setSelectedWager] = useState<number>(0);
+  const [wagerResult, setWagerResult] = useState<{ won: boolean; amount: number } | null>(null);
+  const [inspectedFields, setInspectedFields] = useState<Set<string>>(new Set());
+  const [floorIntroGimmick, setFloorIntroGimmick] = useState<GimmickId | null>(null);
+
+  // ── Timer state ──
+  const [timerActive, setTimerActive] = useState(false);
+  const [timerDurationMs, setTimerDurationMs] = useState(0);
+  const [timerProgress, setTimerProgress] = useState(1); // 1 = full, 0 = expired
+  const timerStartRef = useRef(0);
+  const timerRafRef = useRef<number>(0);
+
   // ── Refs ──
   const renderTimestamp = useRef(Date.now());
   const sigintFired = useRef(false);
@@ -108,6 +129,34 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     sigintFired.current = true;
     triggerSigint('first_roguelike');
   }, [triggerSigint]);
+
+  // ── Compute effective timer duration for current card ──
+  const getEffectiveTimerMs = useCallback((): number | null => {
+    const currentAssignment = assignments[cardIndex] ?? null;
+    const currentModifiers: CardModifier[] = currentAssignment?.modifiers ?? [];
+
+    // UNDER_PRESSURE gimmick timer
+    const gimmickTimer = getTimerDuration(gimmick, floor);
+    // TIMED modifier timer
+    const hasTimedModifier = currentModifiers.includes('TIMED');
+
+    // Pick the timer source (gimmick takes precedence, modifier as fallback)
+    let baseMs: number | null = null;
+    if (gimmickTimer !== null) {
+      baseMs = gimmickTimer;
+    } else if (hasTimedModifier) {
+      baseMs = TIMED_MODIFIER_DURATION;
+    }
+
+    if (baseMs === null) return null;
+
+    // SLOW_TIME perk adds +5000ms
+    if (perks.includes('SLOW_TIME')) {
+      baseMs += SLOW_TIME_BONUS;
+    }
+
+    return baseMs;
+  }, [assignments, cardIndex, gimmick, floor, perks]);
 
   // ── Start the run ──
   useEffect(() => {
@@ -132,14 +181,16 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         setIntel(data.intel);
         setScore(data.score);
         setGimmick(data.gimmick ?? null);
-        // Build gimmicks array from floorGimmicks + current
         const floorGimmicksArr: (GimmickId | null)[] = data.floorGimmicks ?? [];
         setGimmicks(floorGimmicksArr);
         setCards(data.cards ?? []);
         setAssignments(data.assignments ?? []);
         setCardIndex(0);
         renderTimestamp.current = Date.now();
-        setPhase('floor');
+
+        // Show floor intro
+        setFloorIntroGimmick(data.gimmick ?? null);
+        setPhase('floor-intro');
       } catch (err) {
         if (cancelled) return;
         setLoadError(err instanceof Error ? err.message : 'Failed to start run');
@@ -150,15 +201,101 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     return () => { cancelled = true; };
   }, []);
 
+  // ── Floor intro auto-dismiss ──
+  useEffect(() => {
+    if (phase !== 'floor-intro') return;
+    const timeout = setTimeout(() => {
+      setPhase('floor');
+      renderTimestamp.current = Date.now();
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, [phase]);
+
   // ── Reset renderTimestamp each time cardIndex changes ──
   useEffect(() => {
     renderTimestamp.current = Date.now();
   }, [cardIndex]);
 
+  // ── Timer management — start/stop on card change or phase change ──
+  useEffect(() => {
+    // Clean up any existing timer
+    if (timerRafRef.current) {
+      cancelAnimationFrame(timerRafRef.current);
+      timerRafRef.current = 0;
+    }
+
+    if (phase !== 'floor') {
+      setTimerActive(false);
+      return;
+    }
+
+    const effectiveMs = getEffectiveTimerMs();
+    if (effectiveMs === null) {
+      setTimerActive(false);
+      return;
+    }
+
+    setTimerDurationMs(effectiveMs);
+    setTimerActive(true);
+    setTimerProgress(1);
+    timerStartRef.current = Date.now();
+
+    function tick() {
+      const elapsed = Date.now() - timerStartRef.current;
+      const remaining = 1 - elapsed / effectiveMs!;
+      if (remaining <= 0) {
+        setTimerProgress(0);
+        setTimerActive(false);
+        return;
+      }
+      setTimerProgress(remaining);
+      timerRafRef.current = requestAnimationFrame(tick);
+    }
+
+    timerRafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (timerRafRef.current) {
+        cancelAnimationFrame(timerRafRef.current);
+        timerRafRef.current = 0;
+      }
+    };
+  }, [phase, cardIndex, getEffectiveTimerMs]);
+
+  // ── Timer expiry — auto-submit wrong answer ──
+  useEffect(() => {
+    if (!timerActive && timerProgress <= 0 && phase === 'floor' && timerDurationMs > 0) {
+      // Timer expired — force wrong answer
+      handleAnswer('legit', true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerActive, timerProgress, phase]);
+
   // ── Derived: current card & modifiers ──
   const currentCard = cards[cardIndex] ?? null;
   const currentAssignment = assignments[cardIndex] ?? null;
   const currentModifiers: CardModifier[] = currentAssignment?.modifiers ?? [];
+
+  // ── BLACKOUT gimmick — determine what to redact per card ──
+  const isBlackout = gimmick === 'BLACKOUT';
+  const blackoutRedactSender = isBlackout && cardIndex % 2 === 0;
+  const blackoutRedactSubject = isBlackout && cardIndex % 2 !== 0;
+
+  // Combined with REDACTED_SENDER modifier: if BLACKOUT + REDACTED_SENDER, redact both
+  const hasRedactedSender = currentModifiers.includes('REDACTED_SENDER');
+  const showSenderRedacted = hasRedactedSender || blackoutRedactSender || (isBlackout && hasRedactedSender);
+  const showSubjectRedacted = blackoutRedactSubject || (isBlackout && hasRedactedSender);
+
+  // ── INVESTIGATION gimmick ──
+  const isInvestigation = gimmick === 'INVESTIGATION';
+
+  // ── CONFIDENCE gimmick ──
+  const isConfidence = gimmick === 'CONFIDENCE';
+
+  // ── Modifier flags ──
+  const hasLookalikeDomain = currentModifiers.includes('LOOKALIKE_DOMAIN');
+  const hasDecoyRedFlags = currentModifiers.includes('DECOY_RED_FLAGS');
+  const hasAiEnhanced = currentModifiers.includes('AI_ENHANCED');
 
   // ── Finalize run (PATCH) ──
   async function finalizeRun(id: string): Promise<ResultData | null> {
@@ -181,21 +318,46 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   }
 
   // ── Handle answer ──
-  async function handleAnswer(userAnswer: 'legit' | 'phishing') {
+  async function handleAnswer(userAnswer: 'legit' | 'phishing', timerExpired = false) {
     if (!runId || !currentCard || answering.current) return;
     answering.current = true;
 
+    // Stop timer
+    if (timerRafRef.current) {
+      cancelAnimationFrame(timerRafRef.current);
+      timerRafRef.current = 0;
+    }
+    setTimerActive(false);
+
     const timeFromRenderMs = Date.now() - renderTimestamp.current;
+
+    // If CONFIDENCE gimmick and not a timer expiry, show wager UI first
+    if (isConfidence && !timerExpired && phase !== 'wager') {
+      setPendingAnswer(userAnswer);
+      setSelectedWager(0);
+      setWagerResult(null);
+      setPhase('wager');
+      answering.current = false;
+      return;
+    }
+
+    // Build the request body
+    const bodyPayload: Record<string, unknown> = {
+      cardIndex,
+      userAnswer: timerExpired ? 'legit' : userAnswer, // timer expired = forced wrong-ish
+      timeFromRenderMs,
+    };
+
+    // Include wager if in confidence mode
+    if (isConfidence && selectedWager > 0) {
+      bodyPayload.wager = selectedWager;
+    }
 
     try {
       const res = await fetch(`/api/roguelike/${runId}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cardIndex,
-          userAnswer,
-          timeFromRenderMs,
-        }),
+        body: JSON.stringify(bodyPayload),
       });
 
       if (!res.ok) {
@@ -213,10 +375,20 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       setScore(data.score);
       setStreak(data.streak);
 
-      // Track deaths
+      // Track deaths + shake effect
       if (!data.correct) {
         const liveLost = data.lives < lives;
         if (liveLost) setDeaths((d) => d + 1);
+        setWrongShake(true);
+        setTimeout(() => setWrongShake(false), 700);
+      }
+
+      // Wager result
+      if (isConfidence && selectedWager > 0) {
+        setWagerResult({
+          won: data.correct,
+          amount: selectedWager,
+        });
       }
 
       // Sounds
@@ -231,15 +403,17 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       }
 
       setFeedbackData(data);
+      setPendingAnswer(null);
       setPhase('feedback');
 
-      // Auto-advance after 1.5s
+      // Auto-advance after 1.5s (longer for death)
+      const delay = data.status === 'dead' ? 2500 : 1500;
       setTimeout(async () => {
         setFeedbackData(null);
+        setWagerResult(null);
         answering.current = false;
 
         if (data.status === 'dead') {
-          // Finalize and show result
           const result = await finalizeRun(runId);
           setResultData(result);
           setPhase('result');
@@ -247,15 +421,15 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         }
 
         if (data.floorCleared) {
-          // Fetch shop offerings
           await loadShop(runId);
           return;
         }
 
-        // Next card
+        // Next card — reset inspection state
+        setInspectedFields(new Set());
         setCardIndex((i) => i + 1);
         setPhase('floor');
-      }, 1500);
+      }, delay);
 
     } catch (err) {
       console.error('[RoguelikeRun] Answer failed:', err);
@@ -263,12 +437,26 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     }
   }
 
+  // ── Submit wager ──
+  function handleWagerSubmit() {
+    if (!pendingAnswer) return;
+    // Set phase back to floor temporarily so handleAnswer proceeds
+    setPhase('floor');
+    handleAnswer(pendingAnswer);
+  }
+
+  // ── Handle inspect (INVESTIGATION gimmick) ──
+  function handleInspect(field: string) {
+    if (intel < 3) return;
+    setIntel((prev) => prev - 3);
+    setInspectedFields((prev) => new Set(prev).add(field));
+  }
+
   // ── Load shop ──
   async function loadShop(id: string) {
     try {
       const res = await fetch(`/api/roguelike/${id}/shop`);
       if (!res.ok) {
-        // Skip shop, go to next floor
         await advanceToNextFloor(id);
         return;
       }
@@ -313,7 +501,6 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     try {
       const res = await fetch(`/api/roguelike/${id}/next-floor`, { method: 'POST' });
       if (!res.ok) {
-        // Fallback: finalize
         const result = await finalizeRun(id);
         setResultData(result);
         setPhase('result');
@@ -334,7 +521,6 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       setGimmick(data.gimmick ?? null);
       setGimmicks((prev) => {
         const updated = [...prev];
-        // patch in the newly revealed gimmick at its floor index
         if (data.currentFloor !== undefined && data.gimmick !== undefined) {
           updated[data.currentFloor] = data.gimmick ?? null;
         }
@@ -343,19 +529,29 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       setCards(data.cards ?? []);
       setAssignments(data.assignments ?? []);
       setCardIndex(0);
+      setInspectedFields(new Set());
       if (data.lives !== undefined) setLives(data.lives);
       if (data.intel !== undefined) setIntel(data.intel);
       if (data.score !== undefined) setScore(data.score);
 
-      // Preview the NEXT floor's gimmick for the shop (store for next shop visit)
       setNextGimmick(null);
-      setPhase('floor');
+
+      // Show floor intro
+      setFloorIntroGimmick(data.gimmick ?? null);
+      setPhase('floor-intro');
     } catch (err) {
       console.error('[RoguelikeRun] Next floor failed:', err);
       const result = await finalizeRun(id);
       setResultData(result);
       setPhase('result');
     }
+  }
+
+  // ── Timer color based on progress ──
+  function getTimerColor(progress: number): string {
+    if (progress > 0.5) return '#00ff41';
+    if (progress > 0.25) return '#ffaa00';
+    return '#ff3333';
   }
 
   // ── Render: loading ──
@@ -379,12 +575,44 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             </button>
           </>
         ) : (
-          <>
-            <p className="text-sm text-[var(--c-muted)] tracking-widest animate-pulse">
-              INITIALIZING OPERATION...
-            </p>
-          </>
+          <p className="text-sm text-[var(--c-muted)] tracking-widest animate-pulse">
+            INITIALIZING OPERATION...
+          </p>
         )}
+      </div>
+    );
+  }
+
+  // ── Render: floor intro ──
+  if (phase === 'floor-intro') {
+    const introGimmickDef = floorIntroGimmick ? GIMMICK_DEFS[floorIntroGimmick] : null;
+    const introGimmickColor = introGimmickDef
+      ? (introGimmickDef.tier === 1 ? '#00ff41' : '#00d4ff')
+      : '#00ff41';
+
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-8 font-mono min-h-[300px]">
+        <div className="anim-floor-intro text-center space-y-3">
+          <p
+            className="text-4xl font-black tracking-widest glow"
+            style={{ color: 'var(--c-primary)' }}
+          >
+            FLOOR {floor + 1}
+          </p>
+          {introGimmickDef && (
+            <p
+              className="text-lg font-bold tracking-widest"
+              style={{ color: introGimmickColor }}
+            >
+              {introGimmickDef.label.toUpperCase()}
+            </p>
+          )}
+          {introGimmickDef && (
+            <p className="text-xs text-[var(--c-muted)] max-w-xs">
+              {introGimmickDef.description}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -425,6 +653,87 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     );
   }
 
+  // ── Render: wager selection (CONFIDENCE gimmick) ──
+  if (phase === 'wager' && pendingAnswer) {
+    return (
+      <div className="flex flex-col gap-4 w-full max-w-md mx-auto p-4 font-mono anim-fade-in-up">
+        <RoguelikeHUD
+          floor={floor}
+          gimmick={gimmick}
+          lives={lives}
+          livesMax={livesMax}
+          intel={intel}
+          streak={streak}
+          cardIndex={cardIndex}
+          totalCards={cards.length}
+          modifiers={currentModifiers}
+        />
+
+        <div className="term-border p-6 space-y-4 text-center">
+          <p className="text-xs text-[var(--c-muted)] tracking-widest">CONFIDENCE WAGER</p>
+          <p className="text-sm text-[var(--c-secondary)]">
+            You answered{' '}
+            <span
+              className="font-bold tracking-wide"
+              style={{ color: pendingAnswer === 'phishing' ? '#ff3333' : 'var(--c-primary)' }}
+            >
+              {pendingAnswer.toUpperCase()}
+            </span>
+          </p>
+
+          <div className="flex items-center justify-center gap-2 py-2">
+            <span className="text-2xl font-black tabular-nums" style={{ color: '#ffaa00' }}>
+              {intel}
+            </span>
+            <span className="text-xs text-[var(--c-muted)]">INTEL AVAILABLE</span>
+          </div>
+
+          <p className="text-xs text-[var(--c-muted)]">How much Intel will you wager?</p>
+
+          <div className="flex gap-2 justify-center flex-wrap">
+            {/* Skip (0) option */}
+            <button
+              onClick={() => setSelectedWager(0)}
+              className={`py-2 px-4 term-border text-sm tracking-widest transition-all active:scale-95 ${
+                selectedWager === 0 ? 'bg-[color-mix(in_srgb,var(--c-primary)_12%,transparent)]' : ''
+              }`}
+              style={{
+                color: selectedWager === 0 ? 'var(--c-primary)' : 'var(--c-muted)',
+                borderColor: selectedWager === 0 ? 'var(--c-primary)' : undefined,
+              }}
+            >
+              SKIP
+            </button>
+
+            {INTEL_WAGER_OPTIONS.map((amount) => (
+              <button
+                key={amount}
+                onClick={() => setSelectedWager(amount)}
+                disabled={intel < amount}
+                className={`py-2 px-4 term-border text-sm tracking-widest transition-all active:scale-95 ${
+                  selectedWager === amount ? 'anim-wager-pulse' : ''
+                } ${intel < amount ? 'opacity-30 cursor-not-allowed' : ''}`}
+                style={{
+                  color: selectedWager === amount ? '#ffaa00' : 'var(--c-secondary)',
+                  borderColor: selectedWager === amount ? '#ffaa00' : undefined,
+                }}
+              >
+                {amount}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={handleWagerSubmit}
+            className="w-full py-3 term-border text-sm tracking-widest text-[var(--c-primary)] hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:scale-95 transition-all mt-2"
+          >
+            [ CONFIRM ]
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Render: floor / feedback ──
   if (!currentCard || !gimmick) {
     return (
@@ -434,8 +743,15 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     );
   }
 
+  // Death-level shake is more dramatic
+  const isDead = feedbackData?.status === 'dead';
+  const shakeClass = wrongShake
+    ? (isDead ? 'anim-death-shake' : 'anim-shake')
+    : '';
+  const redFlashClass = wrongShake ? 'anim-red-flash' : '';
+
   return (
-    <div className="flex flex-col gap-4 w-full max-w-md mx-auto p-4 font-mono anim-fade-in-up">
+    <div className={`flex flex-col gap-4 w-full max-w-md mx-auto p-4 font-mono anim-fade-in-up ${shakeClass}`}>
       {/* HUD */}
       <RoguelikeHUD
         floor={floor}
@@ -452,17 +768,17 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       {/* Feedback overlay */}
       {phase === 'feedback' && feedbackData && (
         <div
-          className="term-border p-4 space-y-2 anim-fade-in-up"
+          className={`term-border p-4 space-y-2 anim-fade-in-up ${isDead ? 'p-6' : ''}`}
           style={{
             borderColor: feedbackData.correct ? '#00ff41' : '#ff3333',
             background: feedbackData.correct ? '#00ff4110' : '#ff333310',
           }}
         >
           <p
-            className="text-lg font-black tracking-widest text-center"
+            className={`font-black tracking-widest text-center ${isDead ? 'text-2xl' : 'text-lg'}`}
             style={{ color: feedbackData.correct ? '#00ff41' : '#ff3333' }}
           >
-            {feedbackData.correct ? '[ CORRECT ]' : '[ WRONG ]'}
+            {isDead ? '[ MISSION FAILED ]' : feedbackData.correct ? '[ CORRECT ]' : '[ WRONG ]'}
           </p>
           {feedbackData.explanation && (
             <p className="text-xs text-[var(--c-secondary)] leading-relaxed">
@@ -472,6 +788,15 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
           {feedbackData.technique && (
             <p className="text-xs text-[var(--c-muted)] tracking-wide">
               TECHNIQUE: {feedbackData.technique}
+            </p>
+          )}
+          {/* Wager result */}
+          {wagerResult && (
+            <p
+              className="text-sm font-bold tabular-nums text-center"
+              style={{ color: wagerResult.won ? '#00ff41' : '#ff3333' }}
+            >
+              {wagerResult.won ? '+' : '-'}{wagerResult.amount} INTEL (WAGER)
             </p>
           )}
           <p
@@ -486,21 +811,119 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       {/* Card display */}
       {phase === 'floor' && (
         <>
-          <div className="term-border p-4 space-y-3">
+          {/* DECOY_RED_FLAGS modifier — suspicious marker (misleading on legit cards) */}
+          {hasDecoyRedFlags && (
+            <div className="text-xs tracking-widest text-center" style={{ color: '#ff333388' }}>
+              {'>'} SUSPICIOUS {'<'}
+            </div>
+          )}
+
+          <div className={`term-border p-4 space-y-3 ${redFlashClass}`}>
+            {/* Timer progress bar */}
+            {timerActive && timerDurationMs > 0 && (
+              <div
+                className="w-full h-1 rounded-full overflow-hidden"
+                style={{ background: 'var(--c-dark)' }}
+              >
+                <div
+                  className="h-full rounded-full transition-colors duration-300"
+                  style={{
+                    width: `${timerProgress * 100}%`,
+                    background: getTimerColor(timerProgress),
+                  }}
+                />
+              </div>
+            )}
+
+            {/* AI_ENHANCED badge */}
+            {hasAiEnhanced && (
+              <div
+                className="text-[10px] tracking-widest font-bold inline-block px-1.5 py-0.5 rounded-sm border"
+                style={{ color: '#bf5fff', borderColor: '#bf5fff44', background: '#bf5fff18' }}
+              >
+                {'>'} AI-ENHANCED
+              </div>
+            )}
+
             {/* FROM */}
-            {!currentModifiers.includes('REDACTED_SENDER') && (
+            {showSenderRedacted ? (
               <div className="text-sm">
                 <span className="text-[var(--c-muted)]">FROM: </span>
-                <span className="text-[var(--c-secondary)]">{currentCard.from}</span>
+                <span style={{ color: '#ff333366' }}>[REDACTED]</span>
+              </div>
+            ) : (
+              <div className="text-sm flex items-center gap-2">
+                <div>
+                  <span className="text-[var(--c-muted)]">FROM: </span>
+                  <span className="text-[var(--c-secondary)]">{currentCard.from}</span>
+                </div>
+                {/* LOOKALIKE_DOMAIN warning badge */}
+                {hasLookalikeDomain && (
+                  <span
+                    className="text-[10px] tracking-wide font-bold"
+                    style={{ color: '#ffaa0088' }}
+                  >
+                    {'>'} DOMAIN ALERT
+                  </span>
+                )}
+                {/* INVESTIGATION: inspect FROM button */}
+                {isInvestigation && !inspectedFields.has('from') && (
+                  <button
+                    onClick={() => handleInspect('from')}
+                    disabled={intel < 3}
+                    className={`text-[10px] tracking-wide px-1.5 py-0.5 term-border transition-all active:scale-95 ${
+                      intel < 3 ? 'opacity-30 cursor-not-allowed' : ''
+                    }`}
+                    style={{ color: '#00d4ff' }}
+                  >
+                    INSPECT (-3)
+                  </button>
+                )}
+                {/* INVESTIGATION: inspected FROM result */}
+                {isInvestigation && inspectedFields.has('from') && currentCard.authStatus && (
+                  <span className="text-[10px] text-[var(--c-muted)]">
+                    [{currentCard.authStatus}]
+                  </span>
+                )}
               </div>
             )}
+
             {/* SUBJECT */}
             {currentCard.subject && (
-              <div className="text-sm">
-                <span className="text-[var(--c-muted)]">SUBJ: </span>
-                <span className="text-[var(--c-secondary)]">{currentCard.subject}</span>
-              </div>
+              showSubjectRedacted ? (
+                <div className="text-sm">
+                  <span className="text-[var(--c-muted)]">SUBJ: </span>
+                  <span style={{ color: '#ff333366' }}>[REDACTED]</span>
+                </div>
+              ) : (
+                <div className="text-sm flex items-center gap-2">
+                  <div>
+                    <span className="text-[var(--c-muted)]">SUBJ: </span>
+                    <span className="text-[var(--c-secondary)]">{currentCard.subject}</span>
+                  </div>
+                  {/* INVESTIGATION: inspect SUBJECT button */}
+                  {isInvestigation && !inspectedFields.has('subject') && (
+                    <button
+                      onClick={() => handleInspect('subject')}
+                      disabled={intel < 3}
+                      className={`text-[10px] tracking-wide px-1.5 py-0.5 term-border transition-all active:scale-95 ${
+                        intel < 3 ? 'opacity-30 cursor-not-allowed' : ''
+                      }`}
+                      style={{ color: '#00d4ff' }}
+                    >
+                      INSPECT (-3)
+                    </button>
+                  )}
+                  {/* INVESTIGATION: inspected SUBJECT result — shows auth status */}
+                  {isInvestigation && inspectedFields.has('subject') && currentCard.authStatus && (
+                    <span className="text-[10px] text-[var(--c-muted)]">
+                      [{currentCard.authStatus}]
+                    </span>
+                  )}
+                </div>
+              )
             )}
+
             {/* BODY */}
             <div className="text-sm text-[var(--c-secondary)] leading-relaxed whitespace-pre-wrap">
               {currentCard.body}
