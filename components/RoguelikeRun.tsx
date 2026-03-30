@@ -136,6 +136,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   // ── Timeout refs for cleanup ──
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const floorIntroTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Refs ──
   const renderTimestamp = useRef(Date.now());
@@ -155,6 +156,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
       if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
       if (toastTimeout.current) clearTimeout(toastTimeout.current);
+      if (floorIntroTimeoutRef.current) clearTimeout(floorIntroTimeoutRef.current);
     };
   }, []);
 
@@ -232,11 +234,13 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   // ── Floor intro auto-dismiss ──
   useEffect(() => {
     if (phase !== 'floor-intro') return;
-    const timeout = setTimeout(() => {
+    floorIntroTimeoutRef.current = setTimeout(() => {
       setPhase('floor');
       renderTimestamp.current = Date.now();
     }, 2000);
-    return () => clearTimeout(timeout);
+    return () => {
+      if (floorIntroTimeoutRef.current) clearTimeout(floorIntroTimeoutRef.current);
+    };
   }, [phase]);
 
   // ── Reset renderTimestamp each time cardIndex changes ──
@@ -524,6 +528,12 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       setIntel(data.intel);
       setLives(data.lives);
       setShopSigintLine(SHOP_QUIPS[Math.floor(Math.random() * SHOP_QUIPS.length)]);
+
+      // Compute next floor's gimmick for shop preview
+      const nextFloorIndex = floor + 1;
+      const nextGimmickId = gimmicks[nextFloorIndex] ?? null;
+      setNextGimmick(nextGimmickId);
+
       setPhase('shop');
     } catch (err) {
       console.error('[RoguelikeRun] Shop load failed:', err);
@@ -666,13 +676,8 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             </div>
 
             {/* Lives indicator */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--c-muted)] tracking-widest">LIVES</span>
-              <span className="tracking-tight text-lg" aria-label="3 lives">
-                {Array.from({ length: 3 }, (_, i) => (
-                  <span key={i} style={{ color: '#ff3333' }}>♥</span>
-                ))}
-              </span>
+            <div className="text-sm tracking-widest" style={{ color: '#ff3333' }}>
+              ♥♥♥ 3 LIVES
             </div>
 
             {/* Status */}
@@ -693,7 +698,13 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       : '#00ff41';
 
     return (
-      <div className="flex flex-col items-center justify-center gap-4 p-8 font-mono min-h-[300px]">
+      <div
+        onClick={() => {
+          if (floorIntroTimeoutRef.current) clearTimeout(floorIntroTimeoutRef.current);
+          setPhase('floor');
+        }}
+        className="flex flex-col items-center justify-center gap-4 p-8 font-mono min-h-[300px] cursor-pointer select-none"
+      >
         <div className="anim-floor-intro text-center space-y-3">
           <p
             className="text-4xl font-black tracking-widest glow"
@@ -715,6 +726,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             </p>
           )}
         </div>
+        <p className="text-[var(--c-muted)] text-xs mt-4 animate-pulse">TAP TO START</p>
       </div>
     );
   }
@@ -869,7 +881,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   const redFlashClass = wrongShake ? 'anim-red-flash' : '';
 
   return (
-    <div className={`flex flex-col gap-4 w-full max-w-md mx-auto p-4 font-mono anim-fade-in-up ${shakeClass}`}>
+    <div className={`flex flex-col gap-4 w-full max-w-md mx-auto p-4 font-mono anim-fade-in-up ${phase === 'floor' ? shakeClass : ''}`}>
       {/* HUD */}
       <RoguelikeHUD
         floor={floor}
@@ -1041,7 +1053,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             )}
 
             {/* BODY */}
-            <div className="text-sm text-[var(--c-secondary)] leading-relaxed whitespace-pre-wrap">
+            <div className="text-sm text-[var(--c-secondary)] leading-relaxed whitespace-pre-wrap max-h-52 lg:max-h-none overflow-y-auto">
               {currentCard.body}
             </div>
           </div>
@@ -1077,7 +1089,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       {toast && (
         <div
           key={toastKey}
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 bg-[var(--c-bg)] border text-[var(--c-secondary)] text-xs font-mono tracking-wide anim-toast z-50 max-w-xs text-center"
+          className="fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-[var(--c-bg)] border text-[var(--c-secondary)] text-xs font-mono tracking-wide anim-toast z-50 max-w-xs text-center"
           style={{ borderColor: 'color-mix(in srgb, var(--c-primary) 40%, transparent)' }}
         >
           <span className="text-[var(--c-primary)]">SIGINT:</span> {toast}

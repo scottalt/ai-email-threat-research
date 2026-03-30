@@ -46,11 +46,6 @@ export function RoguelikePerkShop({
     }
   }
 
-  function handleSkip() {
-    if (soundEnabled) playClick();
-    onSkip();
-  }
-
   const nextGimmickDef = nextGimmick ? GIMMICK_DEFS[nextGimmick] : null;
 
   return (
@@ -165,8 +160,12 @@ export function RoguelikePerkShop({
 
       {/* Skip / Continue button */}
       <button
-        onClick={handleSkip}
-        className="w-full py-3 text-sm tracking-widest text-[var(--c-secondary)] hover:text-[var(--c-primary)] active:scale-95 transition-all term-border"
+        onClick={() => { if (soundEnabled) playClick(); onSkip(); }}
+        className={`w-full py-3 px-6 text-sm tracking-widest active:scale-95 transition-all ${
+          purchased
+            ? 'term-border-bright text-[var(--c-primary)] font-bold hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]'
+            : 'term-border text-[var(--c-secondary)] hover:text-[var(--c-primary)] hover:bg-[color-mix(in_srgb,var(--c-primary)_5%,transparent)]'
+        }`}
       >
         {purchased ? '[ NEXT FLOOR ]' : '[ SKIP — SAVE INTEL ]'}
       </button>
