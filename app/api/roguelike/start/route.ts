@@ -51,10 +51,22 @@ export async function POST() {
 
     const playerId: string = player.id;
 
-    // ── Check no active run already in progress ──
+    // ── Check for stale active run — auto-abandon if state is missing or expired ──
     const existingRunId = await redis.get<string>(`roguelike:active:${playerId}`);
     if (existingRunId) {
-      return NextResponse.json({ error: 'Active run already in progress', runId: existingRunId }, { status: 409 });
+      const existingState = await redis.get<string>(`roguelike:run:${existingRunId}`);
+      if (!existingState) {
+        // State expired but active key lingered — clean up and proceed
+        await redis.del(`roguelike:active:${playerId}`);
+        // Mark the DB record as abandoned
+        await admin.from('roguelike_runs').update({ status: 'abandoned', ended_at: new Date().toISOString() }).eq('id', existingRunId);
+      } else {
+        // Active run still has valid state — abandon it to allow a fresh start
+        await redis.del(`roguelike:active:${playerId}`);
+        await redis.del(`roguelike:run:${existingRunId}`);
+        await admin.from('roguelike_runs').update({ status: 'abandoned', ended_at: new Date().toISOString() }).eq('id', existingRunId);
+        console.warn(`[roguelike/start] Auto-abandoned stale run ${existingRunId} for player ${playerId}`);
+      }
     }
 
     // ── Fetch player's permanent upgrades ──
