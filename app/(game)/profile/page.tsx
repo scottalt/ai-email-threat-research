@@ -41,6 +41,19 @@ function AccuracyBar({ pct, color }: { pct: number; color: string }) {
   );
 }
 
+function relativeTime(iso: string | null): string {
+  if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return mins <= 1 ? 'just now' : `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 const RANKS = [
   { label: 'ZERO_DAY',         levels: '28–30', color: '#ff3333', minLevel: 28 },
   { label: 'APT_ANALYST',      levels: '25–27', color: '#ff4400', minLevel: 25 },
@@ -93,6 +106,19 @@ export default function ProfilePage() {
   const [ownedUpgrades, setOwnedUpgrades] = useState<UpgradeId[]>([]);
   const [upgradeClearance, setUpgradeClearance] = useState(0);
 
+  // Run history
+  interface RunHistoryEntry {
+    id: string;
+    operationName: string;
+    score: number;
+    floorsCleared: number;
+    floorReached: number;
+    deaths: number;
+    status: string;
+    endedAt: string | null;
+  }
+  const [runHistory, setRunHistory] = useState<RunHistoryEntry[] | null>(null);
+
   // Friends
   const [friendsData, setFriendsData] = useState<{
     friends: { playerId: string; displayName: string; level: number; rankPoints: number; rankLabel: string }[];
@@ -143,6 +169,15 @@ export default function ProfilePage() {
       })
       .catch(() => {});
   }, [signedIn]);
+
+  // Lazy-load run history when DEADLOCK tab selected
+  useEffect(() => {
+    if (profileTab !== 'deadlock' || runHistory !== null || !signedIn) return;
+    fetch('/api/roguelike/history')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setRunHistory(data.runs ?? []); })
+      .catch(() => setRunHistory([]));
+  }, [profileTab, runHistory, signedIn]);
 
   // Lazy-load friends data when tab selected (fallback if eager fetch hasn't completed)
   useEffect(() => {
@@ -1631,11 +1666,45 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {((profile as unknown as Record<string, unknown>).roguelikeTotalRuns as number ?? 0) === 0 && (
-              <div className="text-center text-sm text-[var(--c-muted)] font-mono py-4">
-                No runs yet. Start a DEADLOCK operation from the home screen.
-              </div>
-            )}
+            {/* Run history */}
+            <div className="space-y-2">
+              <div className="text-xs text-[var(--c-muted)] tracking-widest font-mono">RUN HISTORY</div>
+              {runHistory === null && (
+                <div className="text-xs text-[var(--c-muted)] font-mono py-2 animate-pulse">LOADING...</div>
+              )}
+              {runHistory !== null && runHistory.length === 0 && (
+                <div className="text-xs text-[var(--c-muted)] font-mono py-2">No runs yet. Start a DEADLOCK operation from the home screen.</div>
+              )}
+              {runHistory !== null && runHistory.length > 0 && (
+                <div className="term-border divide-y divide-[var(--c-dark)]">
+                  {runHistory.map((run) => (
+                    <div key={run.id} className="px-3 py-2 text-xs font-mono flex items-center gap-2 flex-wrap">
+                      <span className="font-bold tracking-wide flex-1 min-w-0 truncate" style={{ color: '#ffaa00' }}>
+                        {run.operationName}
+                      </span>
+                      <span className="tabular-nums text-[var(--c-secondary)] whitespace-nowrap">
+                        {run.score.toLocaleString()} pts
+                      </span>
+                      <span className="text-[var(--c-muted)] whitespace-nowrap">
+                        {run.floorsCleared}/{5} floors
+                      </span>
+                      <span className="text-[var(--c-muted)] whitespace-nowrap">
+                        {run.deaths}d
+                      </span>
+                      <span className="text-[var(--c-muted)] whitespace-nowrap">
+                        {relativeTime(run.endedAt)}
+                      </span>
+                      <span
+                        className="font-bold whitespace-nowrap"
+                        style={{ color: run.status === 'complete' ? '#00ff41' : '#ff3333' }}
+                      >
+                        {run.status === 'complete' ? '✓' : '✗'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
