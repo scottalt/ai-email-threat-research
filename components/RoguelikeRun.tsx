@@ -10,7 +10,7 @@ import { useSigint } from '@/lib/SigintContext';
 import { useSoundEnabled } from '@/lib/useSoundEnabled';
 import { playCorrect, playWrong, playFloorClear, playLifeLost } from '@/lib/sounds';
 import { getTimerDuration } from '@/lib/roguelike-gimmicks';
-import { GIMMICK_DEFS, INTEL_WAGER_OPTIONS } from '@/lib/roguelike';
+import { GIMMICK_DEFS, INTEL_WAGER_OPTIONS, ROGUELIKE_FLOORS } from '@/lib/roguelike';
 import type { GimmickId, PerkId, CardModifier } from '@/lib/roguelike';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -727,26 +727,31 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
 
             {/* Tower visualization */}
             <div className="flex flex-col items-center gap-1 w-40">
-              {[3, 2, 1].map((floorNum) => (
+              {Array.from({ length: ROGUELIKE_FLOORS }, (_, i) => ROGUELIKE_FLOORS - 1 - i).map((floorIdx) => (
                 <div
-                  key={floorNum}
+                  key={floorIdx}
                   className="w-full term-border px-3 py-2 text-center"
                   style={{
-                    opacity: floorNum === 1 ? 1 : floorNum === 2 ? 0.6 : 0.35,
+                    opacity: 1 - floorIdx * 0.15,
                     borderColor: 'color-mix(in srgb, var(--c-primary) 40%, transparent)',
                   }}
                 >
                   <span className="text-xs tracking-widest" style={{ color: 'var(--c-secondary)' }}>
-                    FLOOR {floorNum}
+                    FLOOR {floorIdx + 1}
                   </span>
                 </div>
               ))}
             </div>
 
             {/* Lives indicator */}
-            <div className="text-sm tracking-widest" style={{ color: '#ff3333' }}>
-              ♥♥♥ 3 LIVES
-            </div>
+            {(() => {
+              const lobbyLives = ownedUpgrades.includes('THICK_SKIN') ? 4 : 3;
+              return (
+                <div className="text-sm tracking-widest" style={{ color: '#ff3333' }}>
+                  {'♥'.repeat(lobbyLives)} {lobbyLives} LIVES
+                </div>
+              );
+            })()}
 
             {/* Upgrades button */}
             <button
@@ -773,9 +778,13 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   // ── Render: floor intro ──
   if (phase === 'floor-intro') {
     const introGimmickDef = floorIntroGimmick ? GIMMICK_DEFS[floorIntroGimmick] : null;
+    const isBossFloor = introGimmickDef?.tier === 3;
     const introGimmickColor = introGimmickDef
-      ? (introGimmickDef.tier === 1 ? '#00ff41' : '#00d4ff')
+      ? (isBossFloor ? '#ff3333' : introGimmickDef.tier === 1 ? '#00ff41' : '#00d4ff')
       : '#00ff41';
+    const floorGlowStyle = isBossFloor
+      ? { color: '#ff3333', textShadow: '0 0 20px #ff3333, 0 0 40px #ff333388, 0 0 80px #ff333344' }
+      : { color: 'var(--c-primary)' };
 
     return (
       <div
@@ -786,9 +795,14 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         className="flex flex-col items-center justify-center gap-4 p-8 font-mono min-h-[300px] cursor-pointer select-none"
       >
         <div className="anim-floor-intro text-center space-y-3">
+          {isBossFloor && (
+            <p className="text-sm font-bold tracking-widest animate-pulse" style={{ color: '#ff3333' }}>
+              ⚠ BOSS FLOOR ⚠
+            </p>
+          )}
           <p
             className="text-4xl font-black tracking-widest glow"
-            style={{ color: 'var(--c-primary)' }}
+            style={floorGlowStyle}
           >
             FLOOR {floor + 1}
           </p>
@@ -1029,6 +1043,37 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       {/* Card display */}
       {phase === 'floor' && (
         <>
+          {/* TRIAGE: Inbox preview */}
+          {gimmick === 'TRIAGE' && (
+            <div className="term-border divide-y divide-[var(--c-dark)]">
+              <div className="px-3 py-1.5 text-xs text-[var(--c-muted)] tracking-widest">
+                INBOX — TRIAGE {cardIndex + 1}/{cards.length}
+              </div>
+              {cards.slice(0, Math.min(cards.length, cardIndex + 3)).map((card, i) => {
+                const isCurrent = i === cardIndex;
+                const isAnswered = i < cardIndex;
+                return (
+                  <div
+                    key={i}
+                    className={`px-3 py-2 text-xs font-mono ${
+                      isCurrent ? 'bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)]' : ''
+                    } ${isAnswered ? 'opacity-40 line-through' : ''}`}
+                  >
+                    <span className={isCurrent ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'}>
+                      {card.from?.split('@')[0] ?? '???'}
+                    </span>
+                    {card.subject && (
+                      <span className="text-[var(--c-secondary)] ml-2 truncate">
+                        {card.subject}
+                      </span>
+                    )}
+                    {isCurrent && <span className="text-[var(--c-primary)] ml-2">◄</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* DECOY_RED_FLAGS modifier — suspicious marker (misleading on legit cards) */}
           {hasDecoyRedFlags && (
             <div className="text-xs tracking-widest text-center" style={{ color: '#ff333388' }}>
