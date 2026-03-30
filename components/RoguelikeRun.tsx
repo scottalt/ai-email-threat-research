@@ -454,36 +454,39 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       setFeedbackData(data);
       setPendingAnswer(null);
       setPhase('feedback');
-
-      // Auto-advance after 1.5s (longer for death)
-      const delay = data.status === 'dead' ? 2500 : 1500;
-      feedbackTimeoutRef.current = setTimeout(async () => {
-        setFeedbackData(null);
-        setWagerResult(null);
-        answering.current = false;
-
-        if (data.status === 'dead') {
-          const result = await finalizeRun(runId);
-          setResultData(result);
-          setPhase('result');
-          return;
-        }
-
-        if (data.floorCleared) {
-          await loadShop(runId);
-          return;
-        }
-
-        // Next card — reset inspection state
-        setInspectedFields(new Set());
-        setCardIndex((i) => i + 1);
-        setPhase('floor');
-      }, delay);
+      // Player must tap CONTINUE to advance (matches main game pattern)
 
     } catch (err) {
       console.error('[RoguelikeRun] Answer failed:', err);
       answering.current = false;
     }
+  }
+
+  // ── Continue after feedback (manual tap, matches main game) ──
+  async function handleContinue() {
+    if (!runId || !feedbackData) return;
+
+    const data = feedbackData;
+    setFeedbackData(null);
+    setWagerResult(null);
+    answering.current = false;
+
+    if (data.status === 'dead') {
+      const result = await finalizeRun(runId);
+      setResultData(result);
+      setPhase('result');
+      return;
+    }
+
+    if (data.floorCleared) {
+      await loadShop(runId);
+      return;
+    }
+
+    // Next card — reset inspection state
+    setInspectedFields(new Set());
+    setCardIndex((i) => i + 1);
+    setPhase('floor');
   }
 
   // ── Submit wager ──
@@ -920,6 +923,12 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
           >
             {feedbackData.cardScore > 0 ? '+' : ''}{feedbackData.cardScore} pts
           </p>
+          <button
+            onClick={handleContinue}
+            className="w-full mt-3 py-3 term-border-bright text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:scale-95 transition-all"
+          >
+            {isDead ? '[ VIEW RESULTS ]' : feedbackData.floorCleared ? '[ CONTINUE ]' : '[ NEXT CARD ]'}
+          </button>
         </div>
       )}
 
@@ -972,15 +981,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
                   <span className="text-[var(--c-muted)]">FROM: </span>
                   <span className="text-[var(--c-secondary)]">{currentCard.from}</span>
                 </div>
-                {/* LOOKALIKE_DOMAIN warning badge */}
-                {hasLookalikeDomain && (
-                  <span
-                    className="text-[10px] tracking-wide font-bold"
-                    style={{ color: '#ffaa0088' }}
-                  >
-                    {'>'} DOMAIN ALERT
-                  </span>
-                )}
+                {/* LOOKALIKE_DOMAIN: no pre-answer indicator — would spoil the challenge */}
                 {/* INVESTIGATION: inspect FROM button */}
                 {isInvestigation && !inspectedFields.has('from') && (
                   <button
@@ -1045,20 +1046,20 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             </div>
           </div>
 
-          {/* Answer buttons */}
+          {/* Answer buttons — phishing left, legit right (matches main game) */}
           <div className="flex gap-3">
+            <button
+              onClick={() => handleAnswer('phishing')}
+              className="flex-1 py-3 term-border text-sm tracking-widest hover:bg-[color-mix(in_srgb,#ff3333_8%,transparent)] active:scale-95 transition-all"
+              style={{ color: '#ff3333', borderColor: 'rgba(255,51,51,0.5)' }}
+            >
+              [ PHISHING ]
+            </button>
             <button
               onClick={() => handleAnswer('legit')}
               className="flex-1 py-3 term-border text-sm tracking-widest text-[var(--c-primary)] hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:scale-95 transition-all"
             >
               [ LEGIT ]
-            </button>
-            <button
-              onClick={() => handleAnswer('phishing')}
-              className="flex-1 py-3 term-border text-sm tracking-widest hover:bg-[color-mix(in_srgb,#ff3333_8%,transparent)] active:scale-95 transition-all"
-              style={{ color: '#ff3333' }}
-            >
-              [ PHISHING ]
             </button>
           </div>
 

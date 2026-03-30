@@ -91,25 +91,31 @@ export function RoguelikeHUD({
         )}
       </div>
 
-      {/* Row 3: Modifier badges */}
-      {modifiers.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {modifiers.map((mod) => (
-            <span
-              key={mod}
-              className="px-1.5 py-0.5 text-[10px] tracking-wide font-bold rounded-sm border"
-              style={{
-                color: MODIFIER_COLORS[mod],
-                borderColor: MODIFIER_COLORS[mod] + '66',
-                background: MODIFIER_COLORS[mod] + '18',
-              }}
-              title={MODIFIER_DEFS[mod].description}
-            >
-              {MODIFIER_DEFS[mod].label.toUpperCase()}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Row 3: Modifier badges — hide spoiler modifiers (LOOKALIKE_DOMAIN, DECOY_RED_FLAGS) */}
+      {(() => {
+        // These modifiers would give away the answer if shown before the player decides
+        const HIDDEN_MODIFIERS: CardModifier[] = ['LOOKALIKE_DOMAIN', 'DECOY_RED_FLAGS'];
+        const visibleMods = modifiers.filter((m) => !HIDDEN_MODIFIERS.includes(m));
+        if (visibleMods.length === 0) return null;
+        return (
+          <div className="flex flex-wrap gap-1">
+            {visibleMods.map((mod) => (
+              <span
+                key={mod}
+                className="px-1.5 py-0.5 text-[10px] tracking-wide font-bold rounded-sm border"
+                style={{
+                  color: MODIFIER_COLORS[mod],
+                  borderColor: MODIFIER_COLORS[mod] + '66',
+                  background: MODIFIER_COLORS[mod] + '18',
+                }}
+                title={MODIFIER_DEFS[mod].description}
+              >
+                {MODIFIER_DEFS[mod].label.toUpperCase()}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
