@@ -305,7 +305,7 @@ export function H2HResult({
 
   // Points display
   const deltaSign = effectiveDelta >= 0 ? '+' : '';
-  const deltaColor = effectiveDelta >= 0 ? 'text-[var(--c-primary)]' : 'text-[#ff3333]';
+
 
   if (loading) {
     return (
@@ -390,20 +390,62 @@ export function H2HResult({
 
       {/* Rank + Points */}
       {stats ? (
-        <div className="text-center text-sm font-mono anim-fade-in-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
-          <p>
+        <div className="w-full term-border p-4 anim-fade-in-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
+          {/* Rank tier transition */}
+          <div className="text-center text-sm font-mono">
             <span style={{ color: oldRank.color }}>{oldRank.label.toUpperCase()}</span>
-            {' → '}
-            <span className="font-bold" style={{ color: newRank.color }}>{newRank.label.toUpperCase()}</span>
-          </p>
-          <p className="mt-1">
-            <span className="text-[var(--c-secondary)] font-bold text-base">{displayPoints ?? Math.max(0, oldPoints)} pts</span>
-            {' '}
-            <span className={deltaColor}>({deltaSign}{effectiveDelta})</span>
-          </p>
+            {rankedUp && (
+              <>
+                <span className="text-[var(--c-muted)] mx-2">→</span>
+                <span className="font-bold" style={{ color: newRank.color }}>{newRank.label.toUpperCase()}</span>
+              </>
+            )}
+          </div>
+
+          {/* Points delta bar */}
+          <div className="flex items-center justify-center gap-3 mt-2 font-mono">
+            {/* Old points */}
+            <span className="text-[var(--c-muted)] text-sm tabular-nums">
+              {Math.max(0, oldPoints)}
+            </span>
+
+            {/* Delta badge */}
+            <span
+              className="text-sm font-bold px-2 py-0.5 rounded-sm tabular-nums"
+              style={{
+                color: isWin ? 'var(--c-primary)' : '#ff3333',
+                background: isWin
+                  ? 'color-mix(in srgb, var(--c-primary) 12%, transparent)'
+                  : 'rgba(255, 51, 51, 0.12)',
+                border: `1px solid ${isWin ? 'color-mix(in srgb, var(--c-primary) 30%, transparent)' : 'rgba(255, 51, 51, 0.3)'}`,
+                textShadow: isWin
+                  ? '0 0 8px color-mix(in srgb, var(--c-primary) 40%, transparent)'
+                  : '0 0 8px rgba(255, 51, 51, 0.4)',
+              }}
+            >
+              {deltaSign}{effectiveDelta}
+            </span>
+
+            <span className="text-[var(--c-muted)]">→</span>
+
+            {/* New points — animates with counter */}
+            <span
+              className="text-base font-bold tabular-nums"
+              style={{
+                color: isWin ? 'var(--c-primary)' : '#ff3333',
+                textShadow: isWin
+                  ? '0 0 6px color-mix(in srgb, var(--c-primary) 50%, transparent)'
+                  : '0 0 6px rgba(255, 51, 51, 0.5)',
+              }}
+            >
+              {displayPoints ?? Math.max(0, oldPoints)}
+            </span>
+          </div>
+
+          {/* Rank-up fanfare */}
           {rankedUp && (
             <p
-              className="mt-2 text-base font-bold anim-level-up"
+              className="mt-3 text-center text-base font-bold font-mono anim-level-up"
               style={{ color: newRank.color, textShadow: `0 0 12px ${newRank.color}, 0 0 30px ${newRank.color}40` }}
             >
               RANK UP! {newRank.label.toUpperCase()}
