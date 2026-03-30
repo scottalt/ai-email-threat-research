@@ -309,7 +309,9 @@ export async function PATCH(req: NextRequest) {
     if (playerInfo?.display_name) {
       const todayDate = new Date().toISOString().slice(0, 10);
       const dailyKey = `leaderboard:daily:${todayDate}`;
-      const member = `${playerInfo.display_name}:${playerInfo.level ?? 1}`;
+      // Use plain display_name as member — no level suffix — to prevent
+      // duplicate entries when a player levels up during the same day.
+      const member = playerInfo.display_name;
       const existing = await redis.zscore(dailyKey, member);
       if (existing === null || (existing as number) < verifiedScore) {
         await redis.zadd(dailyKey, { score: verifiedScore, member });

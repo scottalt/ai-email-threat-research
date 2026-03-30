@@ -35,48 +35,69 @@ export async function GET(req: Request) {
     withScores: true,
   }) as (string | number)[];
 
-  const entries: { name: string; score: number; level: number }[] = [];
+  const entries: { name: string; score: number }[] = [];
   for (let i = 0; i < results.length; i += 2) {
     const member = results[i] as string;
     const score = results[i + 1] as number;
-    const parts = member.split(':');
+    // Daily keys now use plain display_name as member.
+    // Legacy entries may still have ":level" suffix — strip it for dedup.
     let name: string;
-    let level: number;
-    if (parts.length >= 3) {
-      level = parseInt(parts[parts.length - 2], 10) || 1;
-      name = parts.slice(0, parts.length - 2).join(':');
-    } else if (parts.length === 2) {
-      const maybeLevel = parseInt(parts[parts.length - 1], 10);
-      level = maybeLevel >= 1 && maybeLevel <= 30 ? maybeLevel : 1;
-      name = parts.slice(0, -1).join(':');
+    if (date) {
+      // For daily leaderboard, member is just the display name (no level suffix).
+      // Handle legacy entries that still have :level by stripping trailing :number.
+      const legacyMatch = member.match(/^(.+):(\d+)$/);
+      if (legacyMatch && parseInt(legacyMatch[2], 10) >= 1 && parseInt(legacyMatch[2], 10) <= 30) {
+        name = legacyMatch[1];
+      } else {
+        name = member;
+      }
     } else {
-      level = 1;
-      name = member;
+      // Global leaderboard still uses name:level format
+      const parts = member.split(':');
+      if (parts.length >= 3) {
+        name = parts.slice(0, parts.length - 2).join(':');
+      } else if (parts.length === 2) {
+        name = parts.slice(0, -1).join(':');
+      } else {
+        name = member;
+      }
     }
-    entries.push({ name, score, level });
+    entries.push({ name, score });
   }
 
-  // Look up theme IDs for leaderboard players (for rainbow name effect)
-  const names = entries.map((e) => e.name);
+  // Deduplicate: if legacy :level entries coexist with new plain entries, keep best score
+  const bestByName = new Map<string, { name: string; score: number }>();
+  for (const e of entries) {
+    const existing = bestByName.get(e.name);
+    if (!existing || e.score > existing.score) {
+      bestByName.set(e.name, e);
+    }
+  }
+  const dedupedEntries = [...bestByName.values()].sort((a, b) => b.score - a.score);
+
+  // Look up player info (level + theme) from DB
+  const names = dedupedEntries.map((e) => e.name);
   const supabase = getSupabaseAdminClient();
-  const { data: playerThemes } = await supabase
+  const { data: playerInfo } = await supabase
     .from('players')
-    .select('display_name, theme_id')
+    .select('display_name, level, theme_id')
     .in('display_name', names);
 
-  const themeMap: Record<string, { nameEffect: string | null; color: string }> = {};
-  for (const p of playerThemes ?? []) {
+  const playerMap: Record<string, { level: number; nameEffect: string | null; color: string }> = {};
+  for (const p of playerInfo ?? []) {
     const theme = THEMES.find((t) => t.id === (p.theme_id ?? 'phosphor'));
-    themeMap[p.display_name] = {
+    playerMap[p.display_name] = {
+      level: p.level ?? 1,
       nameEffect: theme?.nameEffect ?? null,
       color: theme?.colors.primary ?? '#00ff41',
     };
   }
 
-  return NextResponse.json(entries.map((e) => ({
+  return NextResponse.json(dedupedEntries.map((e) => ({
     ...e,
-    nameEffect: themeMap[e.name]?.nameEffect ?? null,
-    themeColor: themeMap[e.name]?.color ?? null,
+    level: playerMap[e.name]?.level ?? 1,
+    nameEffect: playerMap[e.name]?.nameEffect ?? null,
+    themeColor: playerMap[e.name]?.color ?? null,
   })));
 }
 
@@ -168,9 +189,11 @@ export async function POST(req: NextRequest) {
     }
 
     const safeLevel = typeof level === 'number' && level >= 1 && level <= 30 ? level : 1;
-    const member = `${trimmed}:${safeLevel}`;
+    // Daily leaderboard: use plain name so level-ups don't create duplicate entries.
+    // Global leaderboard: keep name:level for backwards compat.
+    const member = date ? trimmed : `${trimmed}:${safeLevel}`;
 
-    // Only write if this beats the existing score for this name+level
+    // Only write if this beats the existing score for this player
     const existing = await redis.zscore(key, member);
     if (existing !== null && (existing as number) >= score) {
       return NextResponse.json({ ok: true });
