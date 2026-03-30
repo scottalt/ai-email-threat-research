@@ -168,7 +168,7 @@ export function RoguelikeResult({
                   {gimmickDef && (
                     <span
                       className="text-xs truncate"
-                      style={{ color: gimmickDef.tier === 1 ? '#00ff41' : '#00d4ff' }}
+                      style={{ color: gimmickDef.tier === 1 ? '#00ff41' : gimmickDef.tier === 3 ? '#ff3333' : '#00d4ff' }}
                     >
                       {gimmickDef.label}
                     </span>

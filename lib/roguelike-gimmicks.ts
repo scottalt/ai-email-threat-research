@@ -1,4 +1,4 @@
-import { type GimmickId, TIER1_GIMMICKS, TIER2_GIMMICKS } from './roguelike';
+import { type GimmickId, TIER1_GIMMICKS, TIER2_GIMMICKS, TIER3_GIMMICKS, ROGUELIKE_FLOORS } from './roguelike';
 
 function shuffle<T>(arr: T[]): T[] {
   const out = [...arr];
@@ -11,24 +11,33 @@ function shuffle<T>(arr: T[]): T[] {
 
 /**
  * Assign gimmicks to each floor.
- * Floor 0 gets a random Tier 1 gimmick.
- * Floors 1+ each get a unique random Tier 2 gimmick (no repeats).
- * If there are more floors than Tier 2 gimmicks available, later floors may get null.
+ * Floor 0: Tier 1 (random)
+ * Floors 1 through floorCount-2: Tier 2 (unique random, no repeats)
+ * Last floor (floorCount-1): Tier 3 boss gimmick (if 5+ floors)
+ * If there are more floors than gimmicks available, later floors may get null.
  */
-export function assignGimmicks(floorCount: number): (GimmickId | null)[] {
-  const result: (GimmickId | null)[] = [];
-
-  // Floor 0: random Tier 1
+export function assignGimmicks(floorCount: number = ROGUELIKE_FLOORS): (GimmickId | null)[] {
   const tier1 = shuffle([...TIER1_GIMMICKS]);
-  result.push(tier1[0] ?? null);
+  const tier2 = shuffle([...TIER2_GIMMICKS]);
+  const tier3 = shuffle([...TIER3_GIMMICKS]);
 
-  // Floors 1+: unique Tier 2, no repeats
-  const tier2Pool = shuffle([...TIER2_GIMMICKS]);
-  for (let i = 1; i < floorCount; i++) {
-    result.push(tier2Pool[i - 1] ?? null);
+  const gimmicks: (GimmickId | null)[] = [];
+
+  // Floor 0: Tier 1
+  gimmicks.push(tier1[0] ?? null);
+
+  // Floors 1 through floorCount-2: Tier 2
+  const tier2Count = Math.min(floorCount - 2, tier2.length);
+  for (let i = 0; i < tier2Count; i++) {
+    gimmicks.push(tier2[i] ?? null);
   }
 
-  return result;
+  // Last floor: Tier 3 (boss) if 5+ floors
+  if (floorCount >= 5 && tier3.length > 0) {
+    gimmicks.push(tier3[0] ?? null);
+  }
+
+  return gimmicks;
 }
 
 /**

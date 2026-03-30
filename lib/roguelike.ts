@@ -1,6 +1,6 @@
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-export const ROGUELIKE_FLOORS = 3;
+export const ROGUELIKE_FLOORS = 5;
 export const ROGUELIKE_CARDS_PER_FLOOR = 5;
 export const ROGUELIKE_DEFAULT_LIVES = 3;
 export const ROGUELIKE_MAX_LIVES = 5;
@@ -113,11 +113,16 @@ export type GimmickId =
   | 'BLACKOUT'
   | 'CHAIN_MAIL'
   | 'DOUBLE_AGENT'
-  | 'CONFIDENCE';
+  | 'CONFIDENCE'
+  // Tier 3 (boss)
+  | 'BREACH'
+  | 'SUPPLY_CHAIN'
+  | 'INSIDER_THREAT'
+  | 'APT';
 
 export interface GimmickDef {
   id: GimmickId;
-  tier: 1 | 2;
+  tier: 1 | 2 | 3;
   label: string;
   description: string;
 }
@@ -183,6 +188,30 @@ export const GIMMICK_DEFS: Record<GimmickId, GimmickDef> = {
     label: 'Confidence',
     description: 'You must also declare your confidence level on each answer.',
   },
+  BREACH: {
+    id: 'BREACH',
+    tier: 3,
+    label: 'Breach',
+    description: 'Company under attack. Find compromised messages.',
+  },
+  SUPPLY_CHAIN: {
+    id: 'SUPPLY_CHAIN',
+    tier: 3,
+    label: 'Supply Chain',
+    description: 'Vendor compromise. Spot the poisoned link.',
+  },
+  INSIDER_THREAT: {
+    id: 'INSIDER_THREAT',
+    tier: 3,
+    label: 'Insider Threat',
+    description: 'Internal employee gone rogue. Spot the exfil.',
+  },
+  APT: {
+    id: 'APT',
+    tier: 3,
+    label: 'APT',
+    description: 'Advanced persistent threat. Multi-stage attack.',
+  },
 };
 
 export const TIER1_GIMMICKS: GimmickId[] = ['FIRST_LOOK', 'TRIAGE', 'QUICK_SCAN'];
@@ -195,6 +224,8 @@ export const TIER2_GIMMICKS: GimmickId[] = [
   'BLACKOUT',
   'CONFIDENCE',
 ];
+
+export const TIER3_GIMMICKS: GimmickId[] = ['BREACH', 'SUPPLY_CHAIN', 'INSIDER_THREAT', 'APT'];
 
 // ─── Perks ────────────────────────────────────────────────────────────────────
 
