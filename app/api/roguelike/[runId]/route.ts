@@ -223,8 +223,9 @@ export async function PATCH(
     await redis.del(`roguelike:active:${playerId}`);
 
     // ── Check roguelike achievements ──
-    const DEFENSIVE_PERKS: PerkId[] = ['EXTRA_LIFE', 'SHIELD', 'STREAK_SAVER'];
-    const defensivePerksUsed = state.perks.some(p => DEFENSIVE_PERKS.includes(p));
+    // Track defensive perk usage: usedDefensivePerk flag set when SHIELD/STREAK_SAVER consumed
+    // EXTRA_LIFE stays in perks array (not consumed), so check it directly
+    const defensivePerksUsed = state.usedDefensivePerk === true || state.perks.includes('EXTRA_LIFE' as PerkId);
 
     // Count total completed runs for the rl_dedicated achievement
     const { count: totalRunsCount } = await admin

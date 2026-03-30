@@ -173,7 +173,7 @@ export interface RoguelikeRunData {
 type RoguelikeCheckFn = (data: RoguelikeRunData) => boolean;
 
 const ROGUELIKE_CHECKS: Record<string, RoguelikeCheckFn> = {
-  rl_first_breach:  (d) => true, // if this function is called, a run was completed
+  rl_first_breach:  (d) => true, // awarded for attempting a run (win or lose)
   rl_tower_clear:   (d) => d.floorsCleared >= d.totalFloors,
   rl_flawless:      (d) => d.floorsCleared >= d.totalFloors && d.deaths === 0,
   rl_deep_pockets:  (d) => d.maxIntel >= 100,

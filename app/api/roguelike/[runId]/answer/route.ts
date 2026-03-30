@@ -140,7 +140,7 @@ export async function POST(
       streakBroken = false;
       // Remove STREAK_SAVER from perks (one-time use)
       const saverIdx = state.perks.indexOf('STREAK_SAVER');
-      state = { ...state, perks: state.perks.filter((_, i) => i !== saverIdx) };
+      state = { ...state, perks: state.perks.filter((_, i) => i !== saverIdx), usedDefensivePerk: true };
     }
 
     const newBestStreak = Math.max(state.bestStreak, newStreak);
@@ -153,7 +153,7 @@ export async function POST(
       // SHIELD perk: negate life loss (one-time use)
       if (hasPerk(state, 'SHIELD')) {
         const shieldIdx = state.perks.indexOf('SHIELD');
-        state = { ...state, perks: state.perks.filter((_, i) => i !== shieldIdx) };
+        state = { ...state, perks: state.perks.filter((_, i) => i !== shieldIdx), usedDefensivePerk: true };
       } else {
         newLives = state.lives - 1;
         newDeaths = state.deaths + 1;

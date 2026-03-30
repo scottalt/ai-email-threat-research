@@ -64,6 +64,7 @@ export async function GET(
     return NextResponse.json({
       offerings,
       intel: state.intel,
+      lives: state.lives,
       perks: state.perks,
     });
   } catch (err) {
