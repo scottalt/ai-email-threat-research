@@ -1534,6 +1534,57 @@ export default function ProfilePage() {
             )}
           </div>
         )}
+        {/* ═══════════════ DEADLOCK TAB ═══════════════ */}
+        {profileTab === 'deadlock' && (
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="text-center">
+              <h3 className="text-lg font-bold tracking-wider font-mono" style={{ color: '#ff3333', textShadow: '0 0 8px rgba(255,51,51,0.3)' }}>
+                OPERATION: DEADLOCK
+              </h3>
+              <p className="text-xs text-[var(--c-muted)] tracking-widest mt-1">ROGUELIKE SURVIVAL MODE</p>
+            </div>
+
+            {/* Clearance balance */}
+            <div className="term-border p-4 text-center">
+              <div className="text-xs text-[var(--c-muted)] tracking-widest">CLEARANCE BALANCE</div>
+              <div className="text-2xl font-bold font-mono tabular-nums mt-1" style={{ color: '#00d4ff', textShadow: '0 0 6px rgba(0,212,255,0.3)' }}>
+                {(profile as unknown as Record<string, unknown>).roguelikeClearance as number ?? 0}
+              </div>
+            </div>
+
+            {/* Stats grid */}
+            <div className="term-border p-4 space-y-2 text-sm font-mono">
+              <div className="flex justify-between">
+                <span className="text-[var(--c-muted)]">TOTAL RUNS</span>
+                <span className="text-[var(--c-secondary)] tabular-nums">{(profile as unknown as Record<string, unknown>).roguelikeTotalRuns as number ?? 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--c-muted)]">BEST SCORE</span>
+                <span className="tabular-nums" style={{ color: '#ff3333' }}>{((profile as unknown as Record<string, unknown>).roguelikeBestScore as number ?? 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--c-muted)]">BEST FLOOR</span>
+                <span className="text-[var(--c-secondary)] tabular-nums">{(profile as unknown as Record<string, unknown>).roguelikeBestFloor as number ?? 0} / 3</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--c-muted)]">AVG ACCURACY</span>
+                <span className="text-[var(--c-secondary)] tabular-nums">{(profile as unknown as Record<string, unknown>).roguelikeAvgAccuracy as number ?? 0}%</span>
+              </div>
+              <div className="flex justify-between border-t border-[var(--c-dark)] pt-2 mt-2">
+                <span className="text-[var(--c-muted)]">TOTAL CLEARANCE EARNED</span>
+                <span className="tabular-nums" style={{ color: '#00d4ff' }}>{(profile as unknown as Record<string, unknown>).roguelikeTotalClearanceEarned as number ?? 0}</span>
+              </div>
+            </div>
+
+            {((profile as unknown as Record<string, unknown>).roguelikeTotalRuns as number ?? 0) === 0 && (
+              <div className="text-center text-sm text-[var(--c-muted)] font-mono py-4">
+                No runs yet. Start a DEADLOCK operation from the home screen.
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </main>
   );
