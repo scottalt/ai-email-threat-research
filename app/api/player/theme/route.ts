@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase';
-import { THEMES } from '@/lib/themes';
+import { THEMES, isThemeUnlocked } from '@/lib/themes';
 
 /**
  * PATCH /api/player/theme
@@ -22,11 +22,28 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const themeId = body?.themeId;
 
-  if (typeof themeId !== 'string' || !THEMES.some((t) => t.id === themeId)) {
+  const theme = THEMES.find((t) => t.id === themeId);
+  if (typeof themeId !== 'string' || !theme) {
     return NextResponse.json({ error: 'Invalid themeId' }, { status: 400 });
   }
 
   const admin = getSupabaseAdminClient();
+
+  // Server-side unlock check — prevent equipping themes the player hasn't earned
+  const { data: player } = await admin
+    .from('players')
+    .select('level, research_graduated, theme_id, unlocked_themes')
+    .eq('auth_id', user.id)
+    .single();
+
+  if (!player) {
+    return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+  }
+
+  if (!isThemeUnlocked(theme, player.level ?? 1, player.research_graduated ?? false, player.theme_id as string, (player.unlocked_themes as string[]) ?? [])) {
+    return NextResponse.json({ error: 'Theme not unlocked' }, { status: 403 });
+  }
+
   await admin.from('players').update({
     theme_id: themeId,
     updated_at: new Date().toISOString(),
