@@ -11,6 +11,8 @@ import { QUESTS } from '@/lib/quests';
 import Link from 'next/link';
 import type { PlayerBackground } from '@/lib/types';
 import { RainbowName } from '@/components/RainbowName';
+import { RoguelikeUpgrades } from '@/components/RoguelikeUpgrades';
+import type { UpgradeId } from '@/lib/roguelike-upgrades';
 
 interface SoloStats {
   totalAnswers: number;
@@ -85,6 +87,11 @@ export default function ProfilePage() {
   const [soloStats, setSoloStats] = useState<SoloStats | null>(null);
   const [soloStatsEmpty, setSoloStatsEmpty] = useState(false);
   const [soloStatsError, setSoloStatsError] = useState('');
+
+  // Upgrades
+  const [showUpgrades, setShowUpgrades] = useState(false);
+  const [ownedUpgrades, setOwnedUpgrades] = useState<UpgradeId[]>([]);
+  const [upgradeClearance, setUpgradeClearance] = useState(0);
 
   // Friends
   const [friendsData, setFriendsData] = useState<{
@@ -392,6 +399,44 @@ export default function ProfilePage() {
   const avgTimeSec = soloStats?.avgTimeMs ? (soloStats.avgTimeMs / 1000).toFixed(1) : null;
   const activityValues = soloStats ? Object.values(soloStats.activity) : [];
   const maxActivity = Math.max(...activityValues, 1);
+
+  async function fetchUpgrades() {
+    try {
+      const res = await fetch('/api/roguelike/upgrades');
+      if (!res.ok) return;
+      const data = await res.json();
+      setOwnedUpgrades(data.upgrades ?? []);
+      setUpgradeClearance(data.clearance ?? 0);
+    } catch { /* silently fail */ }
+  }
+
+  async function handleUpgradePurchase(id: UpgradeId) {
+    const res = await fetch('/api/roguelike/upgrades', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ upgradeId: id }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? 'Purchase failed');
+    }
+    const data = await res.json();
+    setOwnedUpgrades(data.upgrades ?? []);
+    setUpgradeClearance(data.clearance ?? 0);
+  }
+
+  if (showUpgrades) {
+    return (
+      <main className="min-h-screen bg-[var(--c-bg-alt)] flex items-start justify-center px-4 py-8 lg:pt-16 pb-20 lg:pb-8">
+        <RoguelikeUpgrades
+          upgrades={ownedUpgrades}
+          clearance={upgradeClearance}
+          onPurchase={handleUpgradePurchase}
+          onClose={() => setShowUpgrades(false)}
+        />
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[var(--c-bg-alt)] flex items-start justify-center px-4 py-8 lg:pt-16 pb-20 lg:pb-8">
@@ -1552,6 +1597,15 @@ export default function ProfilePage() {
                 {(profile as unknown as Record<string, unknown>).roguelikeClearance as number ?? 0}
               </div>
             </div>
+
+            {/* Upgrades button */}
+            <button
+              onClick={() => { fetchUpgrades(); setShowUpgrades(true); }}
+              className="w-full py-3 term-border text-sm tracking-widest font-mono text-[#00d4ff] hover:bg-[color-mix(in_srgb,#00d4ff_8%,transparent)] active:scale-95 transition-all"
+              style={{ borderColor: '#00d4ff44' }}
+            >
+              [ UPGRADES ]
+            </button>
 
             {/* Stats grid */}
             <div className="term-border p-4 space-y-2 text-sm font-mono">
