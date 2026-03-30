@@ -109,9 +109,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Insufficient Clearance' }, { status: 400 });
       }
 
+      const newBalance = (pData.roguelike_clearance ?? 0) - def.cost;
+      if (newBalance < 0) {
+        // Balance went negative between the canPurchase check and now (race condition)
+        return NextResponse.json({ error: 'Insufficient Clearance' }, { status: 400 });
+      }
+
       const { error: fbErr } = await admin
         .from('players')
-        .update({ roguelike_clearance: (pData.roguelike_clearance ?? 0) - def.cost })
+        .update({ roguelike_clearance: newBalance })
         .eq('id', player.id);
 
       if (fbErr) {

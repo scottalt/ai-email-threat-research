@@ -44,7 +44,7 @@ export async function GET(
 
     // ── Load state ──
     const state = await loadState(runId);
-    if (!state) return NextResponse.json({ error: 'Run not found or expired' }, { status: 404 });
+    if (!state) return NextResponse.json({ error: 'Run expired. Sessions last 1 hour.' }, { status: 404 });
     if (state.playerId !== playerId) return NextResponse.json({ error: 'Not your run' }, { status: 403 });
     if (state.status !== 'active') return NextResponse.json({ error: 'Run is not active' }, { status: 409 });
 
@@ -103,7 +103,7 @@ export async function POST(
 
     // ── Load state ──
     const state = await loadState(runId);
-    if (!state) return NextResponse.json({ error: 'Run not found or expired' }, { status: 404 });
+    if (!state) return NextResponse.json({ error: 'Run expired. Sessions last 1 hour.' }, { status: 404 });
     if (state.playerId !== playerId) return NextResponse.json({ error: 'Not your run' }, { status: 403 });
     if (state.status !== 'active') return NextResponse.json({ error: 'Run is not active' }, { status: 409 });
 

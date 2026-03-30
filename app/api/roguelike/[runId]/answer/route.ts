@@ -77,7 +77,7 @@ export async function POST(
 
     // ── Load run state from Redis ──
     const stored = await redis.get<string>(`roguelike:run:${runId}`);
-    if (!stored) return NextResponse.json({ error: 'Run not found or expired' }, { status: 404 });
+    if (!stored) return NextResponse.json({ error: 'Run expired. Sessions last 1 hour.' }, { status: 404 });
 
     let state: RoguelikeRunState = typeof stored === 'string' ? JSON.parse(stored) : stored;
 

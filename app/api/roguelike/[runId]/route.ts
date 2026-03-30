@@ -33,7 +33,7 @@ async function authAndLoad(
   if (!playerId) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
 
   const state = await loadState(runId);
-  if (!state) return NextResponse.json({ error: 'Run not found or expired' }, { status: 404 });
+  if (!state) return NextResponse.json({ error: 'Run expired. Sessions last 1 hour.' }, { status: 404 });
   if (state.playerId !== playerId) return NextResponse.json({ error: 'Not your run' }, { status: 403 });
 
   return { playerId, state };

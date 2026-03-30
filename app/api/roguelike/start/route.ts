@@ -51,6 +51,14 @@ export async function POST() {
 
     const playerId: string = player.id;
 
+    // ── Rate limit: max 5 run starts per player per hour ──
+    const rlKey = `ratelimit:roguelike-start:${playerId}`;
+    const startCount = await redis.incr(rlKey);
+    if (startCount === 1) await redis.expire(rlKey, 3600);
+    if (startCount > 5) {
+      return NextResponse.json({ error: 'Too many runs. Try again later.' }, { status: 429 });
+    }
+
     // ── Check for stale active run — auto-abandon if state is missing or expired ──
     const existingRunId = await redis.get<string>(`roguelike:active:${playerId}`);
     if (existingRunId) {

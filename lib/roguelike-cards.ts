@@ -6,6 +6,9 @@ import {
   FLOOR_MODIFIER_RANGE,
 } from './roguelike';
 
+// All difficulty levels in order from easiest to hardest
+const DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'extreme'] as const;
+
 function shuffle<T>(arr: T[]): T[] {
   const out = [...arr];
   for (let i = out.length - 1; i > 0; i--) {
@@ -60,6 +63,28 @@ export function selectFloorCards(
   const remainder = shuffle([...phishing, ...legit]);
   while (selected.length < count && remainder.length > 0) {
     selected.push(remainder.pop()!);
+  }
+
+  // Fallback: if pool too small, fill from adjacent difficulty levels
+  if (selected.length < count) {
+    const selectedIds = new Set(selected.map((c) => c.id));
+    // Expand to adjacent difficulties radiating outward from the floor's pool
+    const adjacentDifficulties = DIFFICULTY_ORDER.filter(
+      (d) => !difficultyPool.includes(d),
+    );
+    const fallbackPool = shuffle(
+      availableCards.filter(
+        (c) => adjacentDifficulties.includes(c.difficulty) && !excludeSet.has(c.id) && !selectedIds.has(c.id),
+      ),
+    );
+    if (fallbackPool.length > 0) {
+      console.warn(
+        `[roguelike] selectFloorCards: floor ${floor} pool yielded only ${selected.length}/${count} cards — filling ${count - selected.length} slot(s) from adjacent difficulties`,
+      );
+    }
+    while (selected.length < count && fallbackPool.length > 0) {
+      selected.push(fallbackPool.pop()!);
+    }
   }
 
   // Shuffle final selection order
