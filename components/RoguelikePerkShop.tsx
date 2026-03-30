@@ -114,12 +114,13 @@ export function RoguelikePerkShop({
               key={perkId}
               onClick={() => !isDisabled && handleBuy(perkId)}
               disabled={isDisabled}
+              aria-label={`${def.label} — costs ${def.cost} Intel. ${def.description}`}
               className={`
                 flex-1 term-border px-3 py-4 text-left space-y-2 transition-all active:scale-95
                 ${isPurchased
                   ? 'border-[color-mix(in_srgb,#00ff41_50%,transparent)] bg-[#00ff4110]'
                   : canAfford && !purchased
-                    ? 'hover:bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] cursor-pointer'
+                    ? 'hover:bg-[color-mix(in_srgb,var(--c-primary)_6%,transparent)] hover:shadow-[0_0_10px_1px_color-mix(in_srgb,var(--c-primary)_20%,transparent)] hover:border-[color-mix(in_srgb,var(--c-primary)_60%,transparent)] cursor-pointer'
                     : 'opacity-50 cursor-not-allowed'
                 }
               `}

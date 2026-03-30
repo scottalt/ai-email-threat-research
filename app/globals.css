@@ -805,6 +805,11 @@ body {
   animation: timer-shrink var(--timer-duration, 15s) linear forwards;
 }
 
+/* JS-driven timer bar — smooth width + color transitions */
+.roguelike-timer-bar-js {
+  transition: width 100ms linear, background-color 500ms ease;
+}
+
 /* Death screen shake — more dramatic for final death */
 @keyframes death-shake {
   0%, 100% { transform: translateX(0); }
@@ -879,11 +884,18 @@ body {
     animation: none !important;
     width: 50% !important;
   }
+  .roguelike-timer-bar-js {
+    transition: none !important;
+  }
+  .anim-shake,
   .anim-death-shake,
   .anim-red-flash,
   .anim-floor-intro,
   .anim-wager-pulse,
   .anim-toast {
     animation: none !important;
+  }
+  .anim-toast {
+    opacity: 1 !important;
   }
 }

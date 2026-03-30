@@ -959,6 +959,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             {/* Skip (0) option */}
             <button
               onClick={() => setSelectedWager(0)}
+              aria-label="Skip wager"
               className={`py-2 px-4 term-border text-sm tracking-widest transition-all active:scale-95 ${
                 selectedWager === 0 ? 'bg-[color-mix(in_srgb,var(--c-primary)_12%,transparent)]' : ''
               }`}
@@ -975,6 +976,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
                 key={amount}
                 onClick={() => setSelectedWager(amount)}
                 disabled={intel < amount}
+                aria-label={`Wager ${amount} Intel`}
                 className={`py-2 px-4 term-border text-sm tracking-widest transition-all active:scale-95 ${
                   selectedWager === amount ? 'anim-wager-pulse' : ''
                 } ${intel < amount ? 'opacity-30 cursor-not-allowed' : ''}`}
@@ -999,6 +1001,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         {/* Abort during wager */}
         <button
           onClick={onBack}
+          aria-label="Abort mission and return to menu"
           className="text-xs text-[var(--c-muted)] hover:text-[var(--c-secondary)] tracking-widest text-center pt-1 transition-colors"
         >
           [ ABORT MISSION ]
@@ -1080,6 +1083,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
           </p>
           <button
             onClick={handleContinue}
+            aria-label={isDead ? 'View results' : feedbackData.floorCleared ? 'Continue to next floor' : 'Continue to next card'}
             className="w-full mt-3 py-3 term-border-bright text-[var(--c-primary)] font-mono font-bold tracking-widest text-sm hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:scale-95 transition-all"
           >
             {isDead ? '[ VIEW RESULTS ]' : feedbackData.floorCleared ? '[ CONTINUE ]' : '[ NEXT CARD ]'}
@@ -1136,7 +1140,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
                 style={{ background: 'var(--c-dark)' }}
               >
                 <div
-                  className="h-full rounded-full transition-colors duration-300"
+                  className="h-full rounded-full roguelike-timer-bar-js"
                   style={{
                     width: `${timerProgress * 100}%`,
                     background: getTimerColor(timerProgress),
@@ -1173,6 +1177,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
                   <button
                     onClick={() => handleInspect('from')}
                     disabled={intel < 3}
+                    aria-label="Inspect sender field for 3 Intel"
                     className={`text-[10px] tracking-wide px-1.5 py-0.5 term-border transition-all active:scale-95 ${
                       intel < 3 ? 'opacity-30 cursor-not-allowed' : ''
                     }`}
@@ -1208,6 +1213,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
                     <button
                       onClick={() => handleInspect('subject')}
                       disabled={intel < 3}
+                      aria-label="Inspect subject field for 3 Intel"
                       className={`text-[10px] tracking-wide px-1.5 py-0.5 term-border transition-all active:scale-95 ${
                         intel < 3 ? 'opacity-30 cursor-not-allowed' : ''
                       }`}
@@ -1236,6 +1242,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
           <div className="flex gap-3">
             <button
               onClick={() => handleAnswer('phishing')}
+              aria-label="Mark as phishing"
               className="flex-1 py-3 term-border text-sm tracking-widest hover:bg-[color-mix(in_srgb,#ff3333_8%,transparent)] active:scale-95 transition-all"
               style={{ color: '#ff3333', borderColor: 'rgba(255,51,51,0.5)' }}
             >
@@ -1243,6 +1250,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             </button>
             <button
               onClick={() => handleAnswer('legit')}
+              aria-label="Mark as legitimate"
               className="flex-1 py-3 term-border text-sm tracking-widest text-[var(--c-primary)] hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)] active:scale-95 transition-all"
             >
               [ LEGIT ]
@@ -1252,6 +1260,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
           {/* Back link */}
           <button
             onClick={onBack}
+            aria-label="Abort mission and return to menu"
             className="text-xs text-[var(--c-muted)] hover:text-[var(--c-secondary)] tracking-widest text-center pt-1 transition-colors"
           >
             [ ABORT MISSION ]
