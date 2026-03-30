@@ -39,7 +39,7 @@ export interface RoundResult {
   pointsEarned: number;
 }
 
-export type GameMode = 'freeplay' | 'daily' | 'research' | 'preview' | 'expert' | 'h2h';
+export type GameMode = 'freeplay' | 'daily' | 'research' | 'preview' | 'expert' | 'h2h' | 'roguelike';
 
 // Research mode card — extends Card with research metadata from cards_real
 export interface ResearchCard extends Card {
