@@ -156,6 +156,79 @@ export async function checkAchievements(
   return newlyEarned;
 }
 
+// ── Roguelike Achievement Checker ────────────────────────────────────────────
+
+export interface RoguelikeRunData {
+  floorsCleared: number;
+  totalFloors: number;
+  deaths: number;
+  maxIntel: number;
+  hadWagerWin20: boolean;
+  floor1TimeMs: number;
+  survivedWithOneLife: boolean;
+  defensivePerksUsed: boolean;
+  totalRuns: number;
+}
+
+type RoguelikeCheckFn = (data: RoguelikeRunData) => boolean;
+
+const ROGUELIKE_CHECKS: Record<string, RoguelikeCheckFn> = {
+  rl_first_breach:  (d) => true, // if this function is called, a run was completed
+  rl_tower_clear:   (d) => d.floorsCleared >= d.totalFloors,
+  rl_flawless:      (d) => d.floorsCleared >= d.totalFloors && d.deaths === 0,
+  rl_deep_pockets:  (d) => d.maxIntel >= 100,
+  rl_high_roller:   (d) => d.hadWagerWin20,
+  rl_speed_demon:   (d) => d.floor1TimeMs > 0 && d.floor1TimeMs < 30_000,
+  rl_survivor:      (d) => d.survivedWithOneLife,
+  rl_glass_cannon:  (d) => d.floorsCleared >= d.totalFloors && !d.defensivePerksUsed,
+  rl_dedicated:     (d) => d.totalRuns >= 10,
+};
+
+/**
+ * Check and award roguelike-specific achievements after a DEADLOCK run.
+ * Returns array of newly unlocked achievement IDs.
+ */
+export async function checkRoguelikeAchievements(
+  admin: SupabaseClient,
+  playerId: string,
+  runData: RoguelikeRunData,
+): Promise<string[]> {
+  // 1. Fetch already-unlocked achievement IDs
+  const { data: existing } = await admin
+    .from('player_achievements')
+    .select('achievement_id')
+    .eq('player_id', playerId);
+
+  const earned = new Set((existing ?? []).map((r: { achievement_id: string }) => r.achievement_id));
+
+  // 2. Find unearned roguelike achievements
+  const roguelikeIds = Object.keys(ROGUELIKE_CHECKS);
+  const unearned = roguelikeIds.filter(id => !earned.has(id));
+  if (unearned.length === 0) return [];
+
+  // 3. Evaluate each unearned achievement
+  const newlyEarned: string[] = [];
+  for (const id of unearned) {
+    const check = ROGUELIKE_CHECKS[id];
+    if (!check) continue;
+    if (check(runData)) {
+      newlyEarned.push(id);
+    }
+  }
+
+  // 4. Batch insert newly earned achievements
+  if (newlyEarned.length > 0) {
+    await admin.from('player_achievements').insert(
+      newlyEarned.map(id => ({
+        player_id: playerId,
+        achievement_id: id,
+      }))
+    );
+  }
+
+  return newlyEarned;
+}
+
 /**
  * Backfill achievements for a single player based on their cumulative stats
  * and all historical session answers. Used for retroactive awards.

@@ -1,7 +1,7 @@
 // Achievement definitions — static registry, no DB needed for definitions.
 // Rarity determines badge color: common=dim green, uncommon=green, rare=amber, legendary=red
 
-export type AchievementCategory = 'progression' | 'skill' | 'streak' | 'speed' | 'investigation' | 'xp' | 'daily' | 'h2h' | 'season';
+export type AchievementCategory = 'progression' | 'skill' | 'streak' | 'speed' | 'investigation' | 'xp' | 'daily' | 'h2h' | 'roguelike' | 'season';
 export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'legendary' | 'mythic' | 'secret' | 'unique';
 
 export interface AchievementDef {
@@ -61,6 +61,17 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'h2h_perfect',    name: 'FLAWLESS_VICTORY',    description: 'Win H2H with 5/5 correct',         category: 'h2h', rarity: 'rare',      icon: '⚔' },
   { id: 'h2h_streak_5',   name: 'DOMINATION',          description: '5 H2H wins in a row',              category: 'h2h', rarity: 'rare',      icon: '⚔' },
 
+  // ── Roguelike (DEADLOCK) ──
+  { id: 'rl_first_breach',  name: 'FIRST BREACH',   description: 'Complete a DEADLOCK run',               category: 'roguelike', rarity: 'common',    icon: '⚡' },
+  { id: 'rl_tower_clear',   name: 'TOWER CLEAR',    description: 'Clear all 5 floors',                    category: 'roguelike', rarity: 'rare',      icon: '🏔️' },
+  { id: 'rl_flawless',      name: 'FLAWLESS OP',    description: 'Full clear with no deaths',             category: 'roguelike', rarity: 'legendary', icon: '💎' },
+  { id: 'rl_deep_pockets',  name: 'DEEP POCKETS',   description: 'Accumulate 100 Intel in a single run',  category: 'roguelike', rarity: 'uncommon',  icon: '💰' },
+  { id: 'rl_high_roller',   name: 'HIGH ROLLER',    description: 'Win a 20-Intel confidence wager',        category: 'roguelike', rarity: 'uncommon',  icon: '🎰' },
+  { id: 'rl_speed_demon',   name: 'SPEED DEMON',    description: 'Clear floor 1 in under 30 seconds',     category: 'roguelike', rarity: 'rare',      icon: '⚡' },
+  { id: 'rl_survivor',      name: 'SURVIVOR',       description: 'Clear a floor with 1 life remaining',   category: 'roguelike', rarity: 'uncommon',  icon: '🩸' },
+  { id: 'rl_glass_cannon',  name: 'GLASS CANNON',   description: 'Full clear with no defensive perks',    category: 'roguelike', rarity: 'legendary', icon: '🔫' },
+  { id: 'rl_dedicated',     name: 'DEDICATED',       description: 'Complete 10 DEADLOCK runs',             category: 'roguelike', rarity: 'uncommon',  icon: '🔁' },
+
   // ── Season 0 Exclusive ──
   { id: 'founder',        name: 'FOUNDER',             description: 'Played during Season 0 — the founding season', category: 'season', rarity: 'mythic', icon: '♛', season: 'season-0' },
   { id: 's0_silver',      name: 'S0: SILVER',          description: 'Reached Silver rank in Season 0',  category: 'season', rarity: 'uncommon',  icon: '◆',  season: 'season-0' },
@@ -113,5 +124,6 @@ export const CATEGORY_LABELS: Record<AchievementCategory, string> = {
   xp:            'XP / RANK',
   daily:         'DAILY',
   h2h:           'PvP',
+  roguelike:     'DEADLOCK',
   season:        'SEASON EXCLUSIVE',
 };

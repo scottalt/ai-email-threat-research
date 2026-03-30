@@ -5,10 +5,12 @@ import { getSupabaseAdminClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import {
   type RoguelikeRunState,
+  type PerkId,
   ROGUELIKE_SESSION_TTL,
   calculateRunClearance,
   calculateFinalScore,
 } from '@/lib/roguelike';
+import { checkRoguelikeAchievements } from '@/lib/achievement-checker';
 
 async function getPlayerId(userId: string): Promise<string | null> {
   const admin = getSupabaseAdminClient();
@@ -219,6 +221,36 @@ export async function PATCH(
     // ── Clean up active run key ──
     await redis.del(`roguelike:active:${playerId}`);
 
+    // ── Check roguelike achievements ──
+    const DEFENSIVE_PERKS: PerkId[] = ['EXTRA_LIFE', 'SHIELD', 'STREAK_SAVER'];
+    const defensivePerksUsed = state.perks.some(p => DEFENSIVE_PERKS.includes(p));
+
+    // Count total completed runs for the rl_dedicated achievement
+    const { count: totalRunsCount } = await admin
+      .from('roguelike_runs')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', playerId)
+      .not('ended_at', 'is', null);
+
+    // Fetch peak Intel from Redis state history (use current intel as proxy for max)
+    // floor1TimeMs: not tracked in state — pass 0 to skip rl_speed_demon for now
+    let newAchievements: string[] = [];
+    try {
+      newAchievements = await checkRoguelikeAchievements(admin, playerId, {
+        floorsCleared: state.floorsCleared,
+        totalFloors: state.totalFloors,
+        deaths: state.deaths,
+        maxIntel: state.intel,
+        hadWagerWin20: false, // TODO: track wager wins in state
+        floor1TimeMs: 0,     // TODO: track per-floor timing in state
+        survivedWithOneLife: state.lives === 1 && state.floorsCleared > 0,
+        defensivePerksUsed,
+        totalRuns: totalRunsCount ?? 0,
+      });
+    } catch (err) {
+      console.error(`[roguelike/${runId}] Achievement check failed:`, err);
+    }
+
     // Fix 5: Return clearanceEarned (not clearance) to match client expectation
     return NextResponse.json({
       finalScore,
@@ -232,6 +264,7 @@ export async function PATCH(
       operationName: state.operationName,
       status: state.status,
       completedAt,
+      newAchievements,
     });
   } catch (err) {
     console.error(`[roguelike/${runId}] Unhandled error in PATCH:`, err);
