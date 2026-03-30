@@ -32,12 +32,15 @@ export function RoguelikePerkShop({
   const [purchased, setPurchased] = useState<PerkId | null>(null);
 
   async function handleBuy(perkId: PerkId) {
-    if (buying) return;
+    if (buying || purchased) return;
     setBuying(perkId);
     try {
       await onBuy(perkId);
       if (soundEnabled) playPerkBuy();
       setPurchased(perkId);
+    } catch (err) {
+      console.error('[PerkShop] Purchase failed:', err);
+      // Don't set purchased — the purchase failed
     } finally {
       setBuying(null);
     }

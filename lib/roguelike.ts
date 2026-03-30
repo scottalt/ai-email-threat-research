@@ -207,8 +207,7 @@ export type PerkId =
   | 'REVEAL_CLUE'
   | 'STREAK_SAVER'
   | 'FLOOR_SKIP'
-  | 'INTEL_CACHE'
-  | 'SECOND_CHANCE';
+  | 'INTEL_CACHE';
 
 export interface PerkDef {
   id: PerkId;
@@ -291,14 +290,6 @@ export const PERK_DEFS: PerkDef[] = [
     cost: 0,
     stackable: true,
     maxOwned: 99,
-  },
-  {
-    id: 'SECOND_CHANCE',
-    label: 'Second Chance',
-    description: 'If you die on the next card, you get one retry.',
-    cost: 35,
-    stackable: false,
-    maxOwned: 1,
   },
 ];
 

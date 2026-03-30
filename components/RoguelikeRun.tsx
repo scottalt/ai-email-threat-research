@@ -133,6 +133,10 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   // ── Shop SIGINT line state ──
   const [shopSigintLine, setShopSigintLine] = useState<string>('');
 
+  // ── Timeout refs for cleanup ──
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ── Refs ──
   const renderTimestamp = useRef(Date.now());
   const sigintFired = useRef(false);
@@ -144,6 +148,15 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     sigintFired.current = true;
     triggerSigint('first_roguelike');
   }, [triggerSigint]);
+
+  // ── Cleanup timeouts on unmount ──
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+      if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+      if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    };
+  }, []);
 
   // ── Compute effective timer duration for current card ──
   const getEffectiveTimerMs = useCallback((): number | null => {
@@ -378,6 +391,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         console.error(`[RoguelikeRun] Answer failed: HTTP ${res.status}`, body);
+        showToast('Answer failed. Try again.');
         answering.current = false;
         return;
       }
@@ -395,7 +409,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         const liveLost = data.lives < lives;
         if (liveLost) setDeaths((d) => d + 1);
         setWrongShake(true);
-        setTimeout(() => setWrongShake(false), 700);
+        shakeTimeoutRef.current = setTimeout(() => setWrongShake(false), 700);
       }
 
       // Wager result
@@ -443,7 +457,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
 
       // Auto-advance after 1.5s (longer for death)
       const delay = data.status === 'dead' ? 2500 : 1500;
-      setTimeout(async () => {
+      feedbackTimeoutRef.current = setTimeout(async () => {
         setFeedbackData(null);
         setWagerResult(null);
         answering.current = false;
@@ -475,8 +489,6 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   // ── Submit wager ──
   function handleWagerSubmit() {
     if (!pendingAnswer) return;
-    // Set phase back to floor temporarily so handleAnswer proceeds
-    setPhase('floor');
     handleAnswer(pendingAnswer);
   }
 
@@ -527,7 +539,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       console.error(`[RoguelikeRun] Buy perk failed: HTTP ${res.status}`, body);
-      return;
+      throw new Error(body.error ?? 'Purchase failed');
     }
     const data = await res.json();
     setIntel(data.intel);
@@ -704,6 +716,21 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     );
   }
 
+  // ── Render: result (fallback when resultData failed to load) ──
+  if (phase === 'result' && !resultData) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-8 font-mono">
+        <p className="text-sm text-[#ff3333] tracking-wide">Failed to load run results.</p>
+        <button onClick={onPlayAgain} className="py-2 px-6 term-border text-sm tracking-widest text-[var(--c-primary)] active:scale-95 transition-all">
+          [ PLAY AGAIN ]
+        </button>
+        <button onClick={onBack} className="text-xs text-[var(--c-muted)] hover:text-[var(--c-secondary)] tracking-widest">
+          [ BACK ]
+        </button>
+      </div>
+    );
+  }
+
   // ── Render: result ──
   if (phase === 'result' && resultData) {
     const won = (resultData.floorsCleared ?? 0) >= totalFloors;
@@ -823,7 +850,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   }
 
   // ── Render: floor / feedback ──
-  if (!currentCard || !gimmick) {
+  if (!currentCard) {
     return (
       <div className="flex items-center justify-center p-8 font-mono">
         <p className="text-sm text-[var(--c-muted)] tracking-widest animate-pulse">LOADING FLOOR...</p>

@@ -146,6 +146,8 @@ export async function PATCH(
         perks_purchased: state.perks,
         best_streak: state.bestStreak,
         deaths: state.deaths,
+        cards_answered: state.cardHistory.length,
+        cards_correct: state.cardsCorrect ?? 0,
         status: dbStatus,
         ended_at: completedAt,
       })
@@ -171,10 +173,11 @@ export async function PATCH(
           .eq('id', playerId)
           .single();
         if (pData) {
-          await admin
+          const { error: fbErr } = await admin
             .from('players')
             .update({ roguelike_clearance: (pData.roguelike_clearance ?? 0) + clearance })
             .eq('id', playerId);
+          if (fbErr) console.error(`[roguelike/${runId}] Clearance fallback write failed:`, fbErr);
         }
       }
     }
@@ -190,9 +193,6 @@ export async function PATCH(
 
     // Fix 1: Only update leaderboard if new score is higher than existing
     const existingScore = await redis.zscore('leaderboard:roguelike', playerId);
-    if (existingScore === null || (existingScore as number) < finalScore) {
-      await redis.zadd('leaderboard:roguelike', { score: finalScore, member: playerId });
-    }
 
     // ── Store run metadata in Redis for leaderboard display ──
     const runMeta = {
@@ -208,9 +208,13 @@ export async function PATCH(
       clearance,
       completedAt,
     };
-    await redis.set(`roguelike:meta:${playerId}`, JSON.stringify(runMeta), {
-      ex: ROGUELIKE_SESSION_TTL * 24 * 7, // keep for 7 days
-    });
+
+    if (existingScore === null || (existingScore as number) < finalScore) {
+      await redis.zadd('leaderboard:roguelike', { score: finalScore, member: playerId });
+      await redis.set(`roguelike:meta:${playerId}`, JSON.stringify(runMeta), {
+        ex: ROGUELIKE_SESSION_TTL * 24 * 7, // keep for 7 days
+      });
+    }
 
     // ── Clean up active run key ──
     await redis.del(`roguelike:active:${playerId}`);
