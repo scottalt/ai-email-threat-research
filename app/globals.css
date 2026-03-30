@@ -843,6 +843,17 @@ body {
   animation: wager-pulse 1.5s ease-in-out infinite;
 }
 
+/* SIGINT mid-floor toast */
+@keyframes toast-fade {
+  0%   { opacity: 0; transform: translate(-50%, 10px); }
+  10%  { opacity: 1; transform: translate(-50%, 0); }
+  80%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -5px); }
+}
+.anim-toast {
+  animation: toast-fade 2s ease-in-out forwards;
+}
+
 /* Respect reduced motion — pause new animations too */
 @media (prefers-reduced-motion: reduce) {
   .anim-xp-pop,
@@ -871,7 +882,8 @@ body {
   .anim-death-shake,
   .anim-red-flash,
   .anim-floor-intro,
-  .anim-wager-pulse {
+  .anim-wager-pulse,
+  .anim-toast {
     animation: none !important;
   }
 }

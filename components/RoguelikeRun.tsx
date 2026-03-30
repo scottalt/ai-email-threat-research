@@ -118,6 +118,21 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   const timerStartRef = useRef(0);
   const timerRafRef = useRef<number>(0);
 
+  // ── Toast state ──
+  const [toast, setToast] = useState<string | null>(null);
+  const [toastKey, setToastKey] = useState(0);
+  const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(msg: string) {
+    if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    setToast(msg);
+    setToastKey((k) => k + 1);
+    toastTimeout.current = setTimeout(() => setToast(null), 2000);
+  }
+
+  // ── Shop SIGINT line state ──
+  const [shopSigintLine, setShopSigintLine] = useState<string>('');
+
   // ── Refs ──
   const renderTimestamp = useRef(Date.now());
   const sigintFired = useRef(false);
@@ -402,6 +417,26 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         }
       }
 
+      // SIGINT mid-floor toasts
+      if (data.floorCleared) {
+        showToast('Floor cleared. Requisition incoming.');
+      } else if (data.correct) {
+        if (data.streak === 5) {
+          showToast("You're on fire, operative.");
+        } else if (data.streak === 3) {
+          showToast('Nice read. Keep that up.');
+        }
+      } else {
+        const liveLost = data.lives < lives;
+        if (liveLost) {
+          if (data.lives === 1) {
+            showToast("One more slip and we're dark.");
+          } else {
+            showToast('Shake it off. Stay focused.');
+          }
+        }
+      }
+
       setFeedbackData(data);
       setPendingAnswer(null);
       setPhase('feedback');
@@ -452,6 +487,15 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     setInspectedFields((prev) => new Set(prev).add(field));
   }
 
+  // ── Shop SIGINT quips ──
+  const SHOP_QUIPS = [
+    "Choose wisely. Intel doesn't grow on trees.",
+    "Every edge counts in there.",
+    "I'd take the defensive option, but that's just me.",
+    "Your call, operative.",
+    "Spend smart. The next floor won't be easy.",
+  ] as const;
+
   // ── Load shop ──
   async function loadShop(id: string) {
     try {
@@ -464,6 +508,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       setShopPerks(data.offerings ?? []);
       setIntel(data.intel);
       setLives(data.lives);
+      setShopSigintLine(SHOP_QUIPS[Math.floor(Math.random() * SHOP_QUIPS.length)]);
       setPhase('shop');
     } catch (err) {
       console.error('[RoguelikeRun] Shop load failed:', err);
@@ -554,10 +599,10 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     return '#ff3333';
   }
 
-  // ── Render: loading ──
+  // ── Render: loading / mission lobby ──
   if (phase === 'loading') {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 p-8 font-mono anim-fade-in-up">
+      <div className="flex flex-col items-center justify-center gap-6 p-8 font-mono min-h-[360px] anim-fade-in-up">
         {loadError ? (
           <>
             <p className="text-sm text-[#ff3333] tracking-wide">{loadError}</p>
@@ -575,9 +620,51 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             </button>
           </>
         ) : (
-          <p className="text-sm text-[var(--c-muted)] tracking-widest animate-pulse">
-            INITIALIZING OPERATION...
-          </p>
+          <>
+            {/* Operation name */}
+            <div className="text-center space-y-1">
+              <p className="text-xs text-[var(--c-muted)] tracking-widest">OPERATION</p>
+              <p
+                className="text-2xl font-black tracking-widest glow animate-pulse"
+                style={{ color: 'var(--c-primary)' }}
+              >
+                {operationName || '██████████'}
+              </p>
+            </div>
+
+            {/* Tower visualization */}
+            <div className="flex flex-col items-center gap-1 w-40">
+              {[3, 2, 1].map((floorNum) => (
+                <div
+                  key={floorNum}
+                  className="w-full term-border px-3 py-2 text-center"
+                  style={{
+                    opacity: floorNum === 1 ? 1 : floorNum === 2 ? 0.6 : 0.35,
+                    borderColor: 'color-mix(in srgb, var(--c-primary) 40%, transparent)',
+                  }}
+                >
+                  <span className="text-xs tracking-widest" style={{ color: 'var(--c-secondary)' }}>
+                    FLOOR {floorNum}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Lives indicator */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--c-muted)] tracking-widest">LIVES</span>
+              <span className="tracking-tight text-lg" aria-label="3 lives">
+                {Array.from({ length: 3 }, (_, i) => (
+                  <span key={i} style={{ color: '#ff3333' }}>♥</span>
+                ))}
+              </span>
+            </div>
+
+            {/* Status */}
+            <p className="text-xs text-[var(--c-muted)] tracking-widest animate-pulse">
+              INITIALIZING...
+            </p>
+          </>
         )}
       </div>
     );
@@ -647,6 +734,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         lives={lives}
         floor={floor}
         nextGimmick={nextGimmick}
+        sigintLine={shopSigintLine}
         onBuy={handleBuyPerk}
         onSkip={handleSkipShop}
       />
@@ -955,6 +1043,17 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
             [ ABORT MISSION ]
           </button>
         </>
+      )}
+
+      {/* SIGINT mid-floor toast */}
+      {toast && (
+        <div
+          key={toastKey}
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 bg-[var(--c-bg)] border text-[var(--c-secondary)] text-xs font-mono tracking-wide anim-toast z-50 max-w-xs text-center"
+          style={{ borderColor: 'color-mix(in srgb, var(--c-primary) 40%, transparent)' }}
+        >
+          <span className="text-[var(--c-primary)]">SIGINT:</span> {toast}
+        </div>
       )}
     </div>
   );
