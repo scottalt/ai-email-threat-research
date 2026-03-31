@@ -833,7 +833,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
           <>
             <p className="text-sm text-[#ff3333] tracking-wide">{loadError}</p>
             <button
-              onClick={() => { setLoadError(null); setPhase('loading'); }}
+              onClick={() => { setLoadError(null); setPhase('lobby'); setTimeout(() => setPhase('loading'), 100); }}
               className="py-2 px-6 term-border text-sm tracking-widest text-[var(--c-primary)] active:scale-95 transition-all"
             >
               [ RETRY ]
