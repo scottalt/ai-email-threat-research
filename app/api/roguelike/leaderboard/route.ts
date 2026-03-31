@@ -31,10 +31,23 @@ export async function GET() {
       return NextResponse.json({ leaderboard: [] });
     }
 
-    // entries is an array of alternating [member, score] pairs from Upstash
-    // When withScores:true, Upstash returns [{member, score}, ...] objects
+    // Upstash zrange with withScores may return either:
+    // - flat array: [member, score, member, score, ...]
+    // - object array: [{member, score}, ...]
+    // Handle both formats
     type ZEntry = { member: string; score: number };
-    const ranked = entries as unknown as ZEntry[];
+    let ranked: ZEntry[];
+
+    if (entries.length > 0 && typeof entries[0] === 'object' && entries[0] !== null && 'member' in (entries[0] as object)) {
+      ranked = entries as unknown as ZEntry[];
+    } else {
+      // Flat alternating array
+      ranked = [];
+      const flat = entries as unknown as (string | number)[];
+      for (let i = 0; i < flat.length; i += 2) {
+        ranked.push({ member: String(flat[i]), score: Number(flat[i + 1]) });
+      }
+    }
 
     const playerIds = ranked.map((e) => e.member);
 
