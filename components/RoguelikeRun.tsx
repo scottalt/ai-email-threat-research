@@ -627,7 +627,11 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         return;
       }
       const data = await res.json();
-      setShopPerks(data.offerings ?? []);
+      // API returns full perk def objects; extract IDs for the shop component
+      const offeringIds = (data.offerings ?? []).map((p: { id: string } | string) =>
+        typeof p === 'string' ? p : p.id
+      ) as PerkId[];
+      setShopPerks(offeringIds);
       setIntel(data.intel);
       setLives(data.lives);
 
