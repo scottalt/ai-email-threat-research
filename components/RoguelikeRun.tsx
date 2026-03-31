@@ -118,6 +118,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   const [selectedWager, setSelectedWager] = useState<number>(0);
   const [wagerResult, setWagerResult] = useState<{ won: boolean; amount: number } | null>(null);
   const [inspectedFields, setInspectedFields] = useState<Set<string>>(new Set());
+  const [freeInspections, setFreeInspections] = useState(0);
   const [floorIntroGimmick, setFloorIntroGimmick] = useState<GimmickId | null>(null);
 
   // ── Timer state ──
@@ -238,6 +239,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         setCards(data.cards ?? []);
         setAssignments(data.assignments ?? []);
         setCardIndex(0);
+        if (data.freeInspections) setFreeInspections(data.freeInspections);
         renderTimestamp.current = Date.now();
 
         // Show floor intro
@@ -343,8 +345,9 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   // ── INVESTIGATION gimmick ──
   const isInvestigation = gimmick === 'INVESTIGATION';
 
-  // ── CONFIDENCE gimmick ──
-  const isConfidence = gimmick === 'CONFIDENCE';
+  // ── CONFIDENCE gimmick / HIGH_ROLLER upgrade (wager from floor 2+) ──
+  const isConfidence = gimmick === 'CONFIDENCE' ||
+    (ownedUpgrades.includes('HIGH_ROLLER') && floor >= 1);
 
   // ── Modifier flags ──
   const hasLookalikeDomain = currentModifiers.includes('LOOKALIKE_DOMAIN');
@@ -549,6 +552,12 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
 
   // ── Handle inspect (INVESTIGATION gimmick) ──
   function handleInspect(field: string) {
+    // ANALYST_EYE upgrade: use free inspection first
+    if (freeInspections > 0) {
+      setFreeInspections((prev) => prev - 1);
+      setInspectedFields((prev) => new Set(prev).add(field));
+      return;
+    }
     if (intel < 3) return;
     setIntel((prev) => prev - 3);
     setInspectedFields((prev) => new Set(prev).add(field));
@@ -932,6 +941,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
           cardIndex={cardIndex}
           totalCards={cards.length}
           modifiers={currentModifiers}
+          omniscience={ownedUpgrades.includes('OMNISCIENCE')}
         />
 
         <div className="term-border p-6 space-y-4 text-center">
@@ -1039,6 +1049,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         cardIndex={cardIndex}
         totalCards={cards.length}
         modifiers={currentModifiers}
+        omniscience={ownedUpgrades.includes('OMNISCIENCE')}
       />
 
       {/* Feedback overlay */}

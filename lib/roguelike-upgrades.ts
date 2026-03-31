@@ -27,7 +27,7 @@ export const UPGRADE_DEFS: UpgradeDef[] = [
   { id: 'LAST_STAND',       branch: 'survival',     tier: 4, name: 'LAST STAND',       description: 'At 1 life, correct answers give +3 Intel bonus', cost: 80 },
   // Intelligence branch
   { id: 'ANALYST_EYE',      branch: 'intelligence', tier: 1, name: 'ANALYST EYE',      description: 'Start each run with 1 free inspection',          cost: 20 },
-  { id: 'DEEP_NETWORK',     branch: 'intelligence', tier: 2, name: 'DEEP NETWORK',     description: 'Unlock REVEAL_CLUE perk in shop',                cost: 40 },
+  { id: 'DEEP_NETWORK',     branch: 'intelligence', tier: 2, name: 'DEEP NETWORK',     description: 'Unlock REVEAL_CLUE perk in shop (Phase 3)',       cost: 40 },
   { id: 'SIGNAL_INTERCEPT', branch: 'intelligence', tier: 3, name: 'SIGNAL INTERCEPT', description: 'Floor briefings reveal the gimmick name',         cost: 60 },
   { id: 'OMNISCIENCE',      branch: 'intelligence', tier: 4, name: 'OMNISCIENCE',      description: 'See all card modifiers before answering',         cost: 80 },
   // Profit branch

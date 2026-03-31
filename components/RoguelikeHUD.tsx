@@ -13,6 +13,7 @@ interface Props {
   cardIndex: number;       // 0-indexed
   totalCards: number;
   modifiers: CardModifier[];
+  omniscience?: boolean;   // OMNISCIENCE upgrade: show all modifiers (no spoiler hiding)
 }
 
 const MODIFIER_COLORS: Record<CardModifier, string> = {
@@ -33,6 +34,7 @@ export function RoguelikeHUD({
   cardIndex,
   totalCards,
   modifiers,
+  omniscience,
 }: Props) {
   const gimmickDef = gimmick ? GIMMICK_DEFS[gimmick] : null;
   const gimmickColor = gimmickDef
@@ -91,11 +93,13 @@ export function RoguelikeHUD({
         )}
       </div>
 
-      {/* Row 3: Modifier badges — hide spoiler modifiers (LOOKALIKE_DOMAIN, DECOY_RED_FLAGS) */}
+      {/* Row 3: Modifier badges — hide spoiler modifiers unless OMNISCIENCE upgrade is active */}
       {(() => {
         // These modifiers would give away the answer if shown before the player decides
         const HIDDEN_MODIFIERS: CardModifier[] = ['LOOKALIKE_DOMAIN', 'DECOY_RED_FLAGS'];
-        const visibleMods = modifiers.filter((m) => !HIDDEN_MODIFIERS.includes(m));
+        const visibleMods = omniscience
+          ? modifiers
+          : modifiers.filter((m) => !HIDDEN_MODIFIERS.includes(m));
         if (visibleMods.length === 0) return null;
         return (
           <div className="flex flex-wrap gap-1">

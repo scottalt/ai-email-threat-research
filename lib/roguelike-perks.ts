@@ -22,11 +22,21 @@ export function hasPerk(state: RoguelikeRunState, perkId: PerkId): boolean {
 }
 
 /**
+ * Perks gated behind permanent upgrades.
+ * If the player doesn't own the required upgrade, the perk is excluded from the shop pool.
+ */
+const UPGRADE_GATED_PERKS: Partial<Record<PerkId, string>> = {
+  SHIELD: 'SECOND_WIND', // Survival tier 3 — unlock SHIELD in shop
+  // Phase 3: REVEAL_CLUE gated behind DEEP_NETWORK
+};
+
+/**
  * Return a random selection of available perks for the shop.
  *
  * Filters out:
  * - Non-stackable perks the player already owns
  * - EXTRA_LIFE when the player is already at max lives
+ * - Perks gated behind permanent upgrades the player doesn't own
  *
  * @param state  - Current run state.
  * @param count  - How many offerings to return (may be fewer if pool is small).
@@ -37,9 +47,17 @@ export function getShopOfferings(state: RoguelikeRunState, count: number): PerkI
     ownedCounts.set(perk, (ownedCounts.get(perk) ?? 0) + 1);
   }
 
+  const activeUpgrades = state.activeUpgrades ?? [];
+
   const available = PERK_DEFS.filter((def) => {
     // EXTRA_LIFE: cannot exceed max lives
     if (def.id === 'EXTRA_LIFE' && state.lives >= ROGUELIKE_MAX_LIVES) {
+      return false;
+    }
+
+    // Upgrade-gated: exclude if the required upgrade is not owned
+    const requiredUpgrade = UPGRADE_GATED_PERKS[def.id];
+    if (requiredUpgrade && !activeUpgrades.includes(requiredUpgrade)) {
       return false;
     }
 

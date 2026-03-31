@@ -233,11 +233,11 @@ export type PerkId =
   | 'EXTRA_LIFE'
   | 'SHIELD'
   | 'DOUBLE_INTEL'
-  | 'SKIP_CARD'
+  // Phase 3: SKIP_CARD — skip the current card without penalty
+  // Phase 3: REVEAL_CLUE — reveal one hidden clue per card this floor
+  // Phase 3: FLOOR_SKIP — skip the next floor entirely
   | 'SLOW_TIME'
-  | 'REVEAL_CLUE'
   | 'STREAK_SAVER'
-  | 'FLOOR_SKIP'
   | 'INTEL_CACHE';
 
 export interface PerkDef {
@@ -274,14 +274,7 @@ export const PERK_DEFS: PerkDef[] = [
     stackable: false,
     maxOwned: 1,
   },
-  {
-    id: 'SKIP_CARD',
-    label: 'Skip Card',
-    description: 'Skip the current card without penalty.',
-    cost: 15,
-    stackable: true,
-    maxOwned: 3,
-  },
+  // Phase 3: SKIP_CARD, REVEAL_CLUE, FLOOR_SKIP — not yet implemented
   {
     id: 'SLOW_TIME',
     label: 'Slow Time',
@@ -291,26 +284,10 @@ export const PERK_DEFS: PerkDef[] = [
     maxOwned: 1,
   },
   {
-    id: 'REVEAL_CLUE',
-    label: 'Reveal Clue',
-    description: 'Reveal one hidden clue per card this floor.',
-    cost: 20,
-    stackable: false,
-    maxOwned: 1,
-  },
-  {
     id: 'STREAK_SAVER',
     label: 'Streak Saver',
     description: 'Preserve your streak on the next wrong answer.',
     cost: 15,
-    stackable: false,
-    maxOwned: 1,
-  },
-  {
-    id: 'FLOOR_SKIP',
-    label: 'Floor Skip',
-    description: 'Skip the next floor entirely, counting it as cleared.',
-    cost: 50,
     stackable: false,
     maxOwned: 1,
   },
