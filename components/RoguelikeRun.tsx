@@ -259,17 +259,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     return () => { cancelled = true; };
   }, [phase]);
 
-  // ── Floor intro auto-dismiss ──
-  useEffect(() => {
-    if (phase !== 'floor-intro') return;
-    floorIntroTimeoutRef.current = setTimeout(() => {
-      setPhase('floor');
-      renderTimestamp.current = Date.now();
-    }, 2000);
-    return () => {
-      if (floorIntroTimeoutRef.current) clearTimeout(floorIntroTimeoutRef.current);
-    };
-  }, [phase]);
+  // Floor intro requires tap to proceed (no auto-dismiss)
 
   // ── Reset renderTimestamp each time cardIndex changes ──
   useEffect(() => {
