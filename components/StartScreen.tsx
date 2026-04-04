@@ -271,7 +271,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   }, [bootDone, bootHidden]);
 
   // SIGINT milestone unlocks — fire when player crosses answer thresholds
-  const { triggerSigint } = useSigint();
+  const { triggerSigint, isShowing: sigintShowing } = useSigint();
 
   // ── SIGINT home screen logic ──
   //
@@ -326,35 +326,48 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
     // We're going to speak — set the flag
     sessionSet('sigint_spoke', '1');
 
-    // v2_intro for v1 veterans — takes precedence over milestones (shows once)
-    if (answers > 0 && !hasSeenMoment('v2_intro')) {
-      const d = dynamicDialogue('v2_intro', callsign);
-      if (d) {
-        setHandlerLines(d.lines);
-        setHandlerButton(d.buttonText ?? 'GOT IT');
-        setShowHandlerGreeting(true);
-      }
-      return;
-    }
+    // Check for pending admin messages — if any exist, skip the greeting
+    // so the custom SIGINT message from admin doesn't overlap
+    (async () => {
+      try {
+        const msgRes = await fetch('/api/player/messages');
+        if (msgRes.ok) {
+          const msgData = await msgRes.json();
+          const targeted = (msgData.messages ?? []).filter((m: { isGlobal: boolean }) => !m.isGlobal);
+          if (targeted.length > 0) return; // admin message will show via AnnouncementBanner
+        }
+      } catch {}
 
-    // Milestone takes priority over greeting (but not v2_intro)
-    if (milestone) { triggerSigint(milestone); return; }
-
-    // Boot greeting (new) or welcome back (returning)
-    if (answers === 0) {
-      const d = bootGreetingNamed(callsign);
-      setHandlerLines(d.lines);
-      setHandlerButton(d.buttonText ?? "LET'S GO");
-      setShowHandlerGreeting(true);
-      try { markMomentSeen('v2_intro'); } catch {}
-    } else {
-      const d = dynamicDialogue('welcome_back', callsign);
-      if (d) {
-        setHandlerLines(d.lines);
-        setHandlerButton(d.buttonText ?? 'CONTINUE');
-        setShowHandlerGreeting(true);
+      // v2_intro for v1 veterans — takes precedence over milestones (shows once)
+      if (answers > 0 && !hasSeenMoment('v2_intro')) {
+        const d = dynamicDialogue('v2_intro', callsign);
+        if (d) {
+          setHandlerLines(d.lines);
+          setHandlerButton(d.buttonText ?? 'GOT IT');
+          setShowHandlerGreeting(true);
+        }
+        return;
       }
-    }
+
+      // Milestone takes priority over greeting (but not v2_intro)
+      if (milestone) { triggerSigint(milestone); return; }
+
+      // Boot greeting (new) or welcome back (returning)
+      if (answers === 0) {
+        const d = bootGreetingNamed(callsign);
+        setHandlerLines(d.lines);
+        setHandlerButton(d.buttonText ?? "LET'S GO");
+        setShowHandlerGreeting(true);
+        try { markMomentSeen('v2_intro'); } catch {}
+      } else {
+        const d = dynamicDialogue('welcome_back', callsign);
+        if (d) {
+          setHandlerLines(d.lines);
+          setHandlerButton(d.buttonText ?? 'CONTINUE');
+          setShowHandlerGreeting(true);
+        }
+      }
+    })();
   }, [showButton, signedIn, profile, triggerSigint]);
 
   // Hide nav bar during boot and until player profile is fully set up
@@ -496,7 +509,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
       )}
 
       {/* SIGINT handler greeting — new players only, above main content */}
-      {showHandlerGreeting && handlerLines.length > 0 && (
+      {showHandlerGreeting && handlerLines.length > 0 && !sigintShowing && (
         <Handler
           lines={handlerLines}
           buttonText={handlerButton}
