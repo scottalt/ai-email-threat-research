@@ -781,7 +781,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
                         </button>
                       </>
                     )}
-                    {canSeeH2HLb && (
+                    {canSeeH2HLb && canAccessDeadlock && (
                       <>
                         <span className="text-[var(--c-muted)] text-sm">|</span>
                         <button
@@ -860,7 +860,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
                   {canSeeH2HLb && activeTab === 'h2h' && h2hLeaderboard.length === 0 && (
                     <div className="px-3 py-4 text-center text-[var(--c-muted)] text-sm font-mono">No ranked matches yet. Be the first.</div>
                   )}
-                  {canSeeH2HLb && activeTab === 'roguelike' && roguelikeLeaderboard.length > 0 && (
+                  {canAccessDeadlock && activeTab === 'roguelike' && roguelikeLeaderboard.length > 0 && (
                     <div key={`roguelike-${roguelikeLeaderboard.length}`} className="divide-y divide-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]">
                       {roguelikeLeaderboard.map((entry, i) => (
                         <div key={i} className="flex items-center gap-3 px-3 py-1.5 lg:py-2.5 anim-fade-in-up" style={{ opacity: 0, animationDelay: `${Math.min(i, 10) * 60}ms` }}>
@@ -883,7 +883,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
                       ))}
                     </div>
                   )}
-                  {canSeeH2HLb && activeTab === 'roguelike' && roguelikeLeaderboard.length === 0 && (
+                  {canAccessDeadlock && activeTab === 'roguelike' && roguelikeLeaderboard.length === 0 && (
                     <div className="px-3 py-4 text-center text-[var(--c-muted)] text-sm font-mono">No runs yet. Be the first to survive.</div>
                   )}
                   {!lbExpanded && (xpLeaderboard.length >= 10 || dailyLeaderboard.length >= 10) && (
