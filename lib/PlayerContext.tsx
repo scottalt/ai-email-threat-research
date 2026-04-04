@@ -78,8 +78,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setProfile(null);
       }
     });
-    return () => subscription.unsubscribe();
-  }, [refreshProfile]);
+    // Refresh profile when tab becomes visible again (picks up admin flag changes, etc.)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && profile) refreshProfile();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [refreshProfile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function signInWithEmail(email: string) {
     try {
