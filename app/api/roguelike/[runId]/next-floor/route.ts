@@ -130,6 +130,7 @@ export async function POST(
       .filter((c): c is Card => c !== undefined);
 
     const nextGimmick = state.floorGimmicks[nextFloor] ?? null;
+    const nextSecondaryGimmick = state.floorSecondaryGimmicks?.[nextFloor] ?? null;
 
     // ── Update state ──
     let updatedState: RoguelikeRunState = {
@@ -166,6 +167,7 @@ export async function POST(
       runComplete: false,
       currentFloor: nextFloor,
       gimmick: nextGimmick,
+      secondaryGimmick: nextSecondaryGimmick,
       cards: safeCards,
       assignments: nextFloorAssignments,
       lives: updatedState.lives,

@@ -89,6 +89,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   const [floor, setFloor] = useState(0);
   const [totalFloors, setTotalFloors] = useState(ROGUELIKE_FLOORS);
   const [gimmick, setGimmick] = useState<GimmickId | null>(null);
+  const [secondaryGimmick, setSecondaryGimmick] = useState<GimmickId | null>(null);
   const [gimmicks, setGimmicks] = useState<(GimmickId | null)[]>([]);
   const [lives, setLives] = useState(3);
   const [livesMax, setLivesMax] = useState(3);
@@ -200,15 +201,18 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     const currentAssignment = assignments[cardIndex] ?? null;
     const currentModifiers: CardModifier[] = currentAssignment?.modifiers ?? [];
 
-    // UNDER_PRESSURE gimmick timer
-    const gimmickTimer = getTimerDuration(gimmick, floor);
+    // UNDER_PRESSURE gimmick timer (primary or secondary)
+    const primaryTimer = getTimerDuration(gimmick, floor);
+    const secondaryTimer = getTimerDuration(secondaryGimmick, floor);
     // TIMED modifier timer
     const hasTimedModifier = currentModifiers.includes('TIMED');
 
-    // Pick the timer source (gimmick takes precedence, modifier as fallback)
+    // Pick the timer source (primary gimmick takes precedence, then secondary, then modifier)
     let baseMs: number | null = null;
-    if (gimmickTimer !== null) {
-      baseMs = gimmickTimer;
+    if (primaryTimer !== null) {
+      baseMs = primaryTimer;
+    } else if (secondaryTimer !== null) {
+      baseMs = secondaryTimer;
     } else if (hasTimedModifier) {
       baseMs = TIMED_MODIFIER_DURATION;
     }
@@ -221,7 +225,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     }
 
     return baseMs;
-  }, [assignments, cardIndex, gimmick, floor, perks]);
+  }, [assignments, cardIndex, gimmick, secondaryGimmick, floor, perks]);
 
   // ── Start the run (only when player clicks START from lobby) ──
   useEffect(() => {
@@ -254,6 +258,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         setIntel(data.intel);
         setScore(data.score);
         setGimmick(data.gimmick ?? null);
+        setSecondaryGimmick(data.secondaryGimmick ?? null);
         setGimmicks([data.gimmick ?? null]);
         setCards(data.cards ?? []);
         setAssignments(data.assignments ?? []);
@@ -753,6 +758,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       if (data.freeInspections) setFreeInspections(data.freeInspections);
       if (data.activeUpgrades) setOwnedUpgrades(data.activeUpgrades as UpgradeId[]);
       setPausedRunInfo(null);
+      setSecondaryGimmick(null); // resumed runs go to shop, secondary set on next floor advance
 
       // Player paused at the shop — take them back there
       await loadShop(data.runId);
@@ -802,6 +808,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       // Load next floor data
       setFloor(data.currentFloor);
       setGimmick(data.gimmick ?? null);
+      setSecondaryGimmick(data.secondaryGimmick ?? null);
       setGimmicks((prev) => {
         const updated = [...prev];
         if (data.currentFloor !== undefined && data.gimmick !== undefined) {
@@ -1008,6 +1015,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       <RoguelikeFloorIntro
         floor={floor}
         gimmick={floorIntroGimmick}
+        secondaryGimmick={secondaryGimmick}
         onSkip={() => {
           if (floorIntroTimeoutRef.current) clearTimeout(floorIntroTimeoutRef.current);
           setPhase('floor');

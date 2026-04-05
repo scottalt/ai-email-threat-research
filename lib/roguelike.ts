@@ -366,6 +366,7 @@ export interface RoguelikeRunState {
   currentCardIndex: number;
   currentGimmick: GimmickId | null;
   floorGimmicks: (GimmickId | null)[];
+  floorSecondaryGimmicks?: (GimmickId | null)[];
   startedAt: string;          // ISO timestamp
   completedAt: string | null;
   status: 'active' | 'dead' | 'completed' | 'paused';

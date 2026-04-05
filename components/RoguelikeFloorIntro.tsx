@@ -6,10 +6,11 @@ import type { GimmickId } from '@/lib/roguelike';
 interface FloorIntroProps {
   floor: number;
   gimmick: GimmickId | null;
+  secondaryGimmick?: GimmickId | null;
   onSkip: () => void;
 }
 
-export function RoguelikeFloorIntro({ floor, gimmick, onSkip }: FloorIntroProps) {
+export function RoguelikeFloorIntro({ floor, gimmick, secondaryGimmick, onSkip }: FloorIntroProps) {
   const introGimmickDef = gimmick ? GIMMICK_DEFS[gimmick] : null;
   const isBossFloor = introGimmickDef?.tier === 3;
   const introGimmickColor = introGimmickDef
@@ -48,6 +49,20 @@ export function RoguelikeFloorIntro({ floor, gimmick, onSkip }: FloorIntroProps)
           <p className="text-xs text-[var(--c-muted)] max-w-xs">
             {introGimmickDef.description}
           </p>
+        )}
+        {secondaryGimmick && GIMMICK_DEFS[secondaryGimmick] && (
+          <>
+            <p className="text-xs text-[var(--c-muted)] tracking-widest mt-2">+</p>
+            <p
+              className="text-sm font-bold tracking-widest"
+              style={{ color: '#ffaa00' }}
+            >
+              {GIMMICK_DEFS[secondaryGimmick].label.toUpperCase()}
+            </p>
+            <p className="text-xs text-[var(--c-muted)] max-w-xs">
+              {GIMMICK_DEFS[secondaryGimmick].description}
+            </p>
+          </>
         )}
       </div>
       <p className="text-[var(--c-muted)] text-xs mt-4 animate-pulse">TAP TO START</p>

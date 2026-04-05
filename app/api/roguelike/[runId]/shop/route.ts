@@ -66,6 +66,9 @@ export async function GET(
     const nextGimmick = hasSignalIntercept
       ? state.floorGimmicks[state.currentFloor + 1] ?? null
       : null;
+    const nextSecondaryGimmick = hasSignalIntercept
+      ? state.floorSecondaryGimmicks?.[state.currentFloor + 1] ?? null
+      : null;
 
     return NextResponse.json({
       offerings,
@@ -73,6 +76,7 @@ export async function GET(
       lives: state.lives,
       perks: state.perks,
       nextGimmick,
+      nextSecondaryGimmick,
     });
   } catch (err) {
     console.error(`[roguelike/${runId}/shop] Unhandled error in GET:`, err);

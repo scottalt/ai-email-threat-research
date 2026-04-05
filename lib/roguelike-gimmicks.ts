@@ -9,35 +9,63 @@ function shuffle<T>(arr: T[]): T[] {
   return out;
 }
 
+/** Allowed secondary gimmicks — lighter modifiers that layer well */
+const SECONDARY_GIMMICKS: GimmickId[] = ['UNDER_PRESSURE', 'DECEPTION', 'CHAIN_MAIL'];
+
+interface GimmickAssignment {
+  primary: (GimmickId | null)[];
+  secondary: (GimmickId | null)[];
+}
+
 /**
  * Assign gimmicks to each floor.
- * Floor 0: Tier 1 (random)
- * Floors 1 through floorCount-2: Tier 2 (unique random, no repeats)
- * Last floor (floorCount-1): Tier 3 boss gimmick (if 5+ floors)
- * If there are more floors than gimmicks available, later floors may get null.
+ * Floor 0: Tier 1 (random), no secondary
+ * Floor 1: Tier 2, no secondary
+ * Floors 2-3: Tier 2 primary + secondary from allowed list
+ * Last floor (floorCount-1): Tier 3 boss gimmick, no secondary
  */
-export function assignGimmicks(floorCount: number = ROGUELIKE_FLOORS): (GimmickId | null)[] {
+export function assignGimmicks(floorCount: number = ROGUELIKE_FLOORS): GimmickAssignment {
   const tier1 = shuffle([...TIER1_GIMMICKS]);
   const tier2 = shuffle([...TIER2_GIMMICKS]);
   const tier3 = shuffle([...TIER3_GIMMICKS]);
 
-  const gimmicks: (GimmickId | null)[] = [];
+  const primary: (GimmickId | null)[] = [];
+  const secondary: (GimmickId | null)[] = [];
 
-  // Floor 0: Tier 1
-  gimmicks.push(tier1[0] ?? null);
+  // Floor 0: Tier 1, no secondary
+  primary.push(tier1[0] ?? null);
+  secondary.push(null);
 
   // Floors 1 through floorCount-2: Tier 2
   const tier2Count = Math.min(floorCount - 2, tier2.length);
+  const shuffledSecondary = shuffle([...SECONDARY_GIMMICKS]);
+  let secondaryIdx = 0;
+
   for (let i = 0; i < tier2Count; i++) {
-    gimmicks.push(tier2[i] ?? null);
+    const floorIdx = i + 1;
+    primary.push(tier2[i] ?? null);
+
+    if (floorIdx >= 2) {
+      // Floors 2+ get a secondary, but not the same as the primary
+      let sec = shuffledSecondary[secondaryIdx] ?? null;
+      if (sec === tier2[i]) {
+        secondaryIdx++;
+        sec = shuffledSecondary[secondaryIdx] ?? null;
+      }
+      secondary.push(sec);
+      secondaryIdx++;
+    } else {
+      secondary.push(null);
+    }
   }
 
-  // Last floor: Tier 3 (boss) if 5+ floors
+  // Last floor: Tier 3 (boss), no secondary
   if (floorCount >= 5 && tier3.length > 0) {
-    gimmicks.push(tier3[0] ?? null);
+    primary.push(tier3[0] ?? null);
+    secondary.push(null);
   }
 
-  return gimmicks;
+  return { primary, secondary };
 }
 
 /**

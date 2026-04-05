@@ -116,7 +116,7 @@ export async function POST() {
 
     // ── Generate operation name + assign floor gimmicks ──
     const operationName = generateOperationName();
-    const floorGimmicks = assignGimmicks(ROGUELIKE_FLOORS);
+    const { primary: floorGimmicks, secondary: floorSecondaryGimmicks } = assignGimmicks(ROGUELIKE_FLOORS);
 
     // ── Fetch card pool from DB ──
     let { data: dbRows } = await admin
@@ -230,6 +230,7 @@ export async function POST() {
       currentCardIndex: 0,
       currentGimmick: floorGimmicks[0] ?? null,
       floorGimmicks,
+      floorSecondaryGimmicks,
       startedAt: now,
       completedAt: null,
       status: 'active',
@@ -275,6 +276,7 @@ export async function POST() {
       intel: 0,
       score: 0,
       gimmick: floorGimmicks[0] ?? null,
+      secondaryGimmick: floorSecondaryGimmicks[0] ?? null,
       activeUpgrades: ownedUpgrades.length > 0 ? ownedUpgrades : undefined,
       freeInspections: freeInspections > 0 ? freeInspections : undefined,
       cards: safeCards,
