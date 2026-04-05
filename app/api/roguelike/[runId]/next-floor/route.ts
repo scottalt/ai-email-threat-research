@@ -9,6 +9,7 @@ import {
   ROGUELIKE_SESSION_TTL,
 } from '@/lib/roguelike';
 import { selectFloorCards } from '@/lib/roguelike-cards';
+import { hasSynergy } from '@/lib/roguelike-perks';
 import type { Card } from '@/lib/types';
 
 async function getPlayerId(userId: string): Promise<string | null> {
@@ -131,13 +132,18 @@ export async function POST(
     const nextGimmick = state.floorGimmicks[nextFloor] ?? null;
 
     // ── Update state ──
-    const updatedState: RoguelikeRunState = {
+    let updatedState: RoguelikeRunState = {
       ...state,
       currentFloor: nextFloor,
       currentFloorCardIds: nextFloorCardIds,
       currentCardIndex: 0,
       currentGimmick: nextGimmick,
     };
+
+    // FORTIFIED synergy: auto-add SHIELD at start of each floor
+    if (hasSynergy(updatedState, 'FORTIFIED') && !updatedState.perks.includes('SHIELD')) {
+      updatedState = { ...updatedState, perks: [...updatedState.perks, 'SHIELD'] };
+    }
 
     // ── Store updated state and floor data in Redis ──
     await Promise.all([
