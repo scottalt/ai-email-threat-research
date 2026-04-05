@@ -40,7 +40,8 @@ import Anthropic from '@anthropic-ai/sdk';
 // Constants
 // ---------------------------------------------------------------------------
 
-const GENERATION_VERSION = '1.0';
+const GENERATION_VERSION = '2.0';
+const PROMPT_DIR = 'docs/prompts/v2';
 
 const INDUSTRIES = [
   'healthcare and medical',
@@ -269,6 +270,8 @@ async function main() {
   const industryArg = getArg('--industry');
   const modelArg = getArg('--model');
   const isDryRun = hasFlag('--dry-run');
+  const isDirect = hasFlag('--direct');
+  const poolArg = getArg('--pool') ?? 'freeplay';
   const forceAttachment = hasFlag('--attachment');
   const count = countArg ? parseInt(countArg, 10) : 20;
 
@@ -294,8 +297,8 @@ async function main() {
     console.error(`Unknown category: ${category}`);
     process.exit(1);
   }
-  if (technique && !difficulty) {
-    console.error('--difficulty is required for phishing cards (easy | medium | hard | extreme)');
+  if (!difficulty) {
+    console.error('--difficulty is required (easy | medium | hard | extreme)');
     process.exit(1);
   }
   if (difficulty && !['easy', 'medium', 'hard', 'extreme'].includes(difficulty)) {
@@ -306,6 +309,11 @@ async function main() {
     console.error('--count must be between 1 and 50');
     process.exit(1);
   }
+  const VALID_POOLS = ['freeplay', 'expert', 'roguelike'];
+  if (isDirect && !VALID_POOLS.includes(poolArg)) {
+    console.error(`--pool must be one of: ${VALID_POOLS.join(', ')}`);
+    process.exit(1);
+  }
   if (providerArg === 'anthropic' && count > 10) {
     console.warn(`Warning: Anthropic batches > 10 may exceed output token limits. Consider --count 10 and running multiple times.`);
   }
@@ -314,18 +322,18 @@ async function main() {
     process.exit(1);
   }
 
-  // Load prompts
-  const systemPrompt = loadFile('docs/prompts/system.md');
+  // Load prompts (v2 by default)
+  const systemPrompt = loadFile(`${PROMPT_DIR}/system.md`);
   const techniqueContext = technique
-    ? loadFile(`docs/prompts/phishing/${technique}.md`)
-    : loadFile(`docs/prompts/legitimate/${category}.md`);
+    ? loadFile(`${PROMPT_DIR}/phishing/${technique}.md`)
+    : loadFile(`${PROMPT_DIR}/legitimate/${category}.md`);
 
   // Build user message
   const industryContext = ` All scenarios in this batch must be set in the ${industry} industry — company names, sender roles, referenced systems, and scenario contexts must reflect that industry specifically.`;
   const attachmentContext = forceAttachment ? ' Every email in this batch must reference an attached file — the scenario must naturally involve a document, form, invoice, report, or similar attachment that the recipient is expected to open. Set attachmentName accordingly.' : '';
   const userMessage = technique
     ? `Generate ${count} ${difficulty} difficulty phishing emails using the "${technique}" technique.${industryContext}${attachmentContext}`
-    : `Generate ${count} legitimate ${category} emails.${industryContext}${attachmentContext}`;
+    : `Generate ${count} ${difficulty} difficulty legitimate ${category} emails.${industryContext}${attachmentContext}`;
 
   // Build generator
   let generator: CardGenerator;
@@ -362,8 +370,44 @@ async function main() {
     return;
   }
 
-  // Create import batch
   const supabase = getAdminClient();
+
+  if (isDirect) {
+    // ── Direct mode: insert straight into cards_generated (skip staging) ──
+    console.log(`\nDirect mode: inserting into cards_generated (pool: ${poolArg})`);
+    let inserted = 0;
+    for (const card of validCards) {
+      const cardId = `gen-${poolArg[0]}-${Date.now()}-${inserted}`;
+
+      const { error } = await supabase.from('cards_generated').insert({
+        card_id: cardId,
+        pool: poolArg,
+        type: 'email',
+        is_phishing: technique !== null,
+        difficulty: difficulty ?? 'medium',
+        from_address: card.from,
+        subject: card.subject ?? null,
+        body: card.body,
+        clues: card.clues,
+        explanation: card.explanation,
+        highlights: card.highlights,
+        technique: technique ?? null,
+        auth_status: card.authStatus ?? 'verified',
+      });
+
+      if (error) {
+        console.warn(`  Failed to insert card: ${error.message}`);
+      } else {
+        inserted++;
+      }
+    }
+
+    console.log(`\nInserted ${inserted} / ${validCards.length} cards into cards_generated (pool: ${poolArg})`);
+    console.log(`Provider: ${generator.provider} / ${generator.modelId}`);
+    return;
+  }
+
+  // ── Staging mode: insert into cards_staging for admin review ──
   const notes = technique
     ? `technique=${technique}, difficulty=${difficulty}, provider=${generator.provider}, model=${generator.modelId}, prompt_version=${GENERATION_VERSION}`
     : `category=${category}, provider=${generator.provider}, model=${generator.modelId}, prompt_version=${GENERATION_VERSION}`;
@@ -379,7 +423,6 @@ async function main() {
     process.exit(1);
   }
 
-  // Insert cards
   let inserted = 0;
   for (const card of validCards) {
     const rawEmailHash = createHash('sha256')
@@ -420,7 +463,6 @@ async function main() {
     }
   }
 
-  // Update batch counts
   const { error: updateError } = await supabase
     .from('import_batches')
     .update({ raw_count: validCards.length, processed_count: inserted })
