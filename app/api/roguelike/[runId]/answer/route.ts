@@ -18,7 +18,7 @@ import {
   calculateCardScore,
   calculateStreakIntel,
 } from '@/lib/roguelike';
-import { hasPerk } from '@/lib/roguelike-perks';
+import { hasPerk, hasSynergy } from '@/lib/roguelike-perks';
 import type { Card } from '@/lib/types';
 import type { RoguelikeCardAssignment } from '@/lib/roguelike-cards';
 
@@ -133,9 +133,12 @@ export async function POST(
     // ── Update streak ──
     let newStreak = correct ? state.streak + 1 : 0;
     let streakBroken = !correct && state.streak > 0;
+    let synergyRefund = 0;
 
     // STREAK_SAVER perk: preserve streak on wrong answer (consumed after use)
     if (!correct && streakBroken && hasPerk(state, 'STREAK_SAVER')) {
+      // FAILSAFE synergy check before consuming the perk
+      if (hasSynergy(state, 'FAILSAFE')) synergyRefund += 4; // 25% of 18
       newStreak = state.streak;
       streakBroken = false;
       // Remove STREAK_SAVER from perks (one-time use)
@@ -144,6 +147,7 @@ export async function POST(
     }
 
     const newBestStreak = Math.max(state.bestStreak, newStreak);
+    let streakMilestone: { type: 'intel' | 'life'; amount: number } | null = null;
 
     // ── Update lives and deaths ──
     let newLives = state.lives;
@@ -152,6 +156,8 @@ export async function POST(
     if (!correct) {
       // SHIELD perk: negate life loss (one-time use)
       if (hasPerk(state, 'SHIELD')) {
+        // FAILSAFE synergy check before consuming the perk
+        if (hasSynergy(state, 'FAILSAFE')) synergyRefund += 8; // 25% of 35
         const shieldIdx = state.perks.indexOf('SHIELD');
         state = { ...state, perks: state.perks.filter((_, i) => i !== shieldIdx), usedDefensivePerk: true };
       } else {
@@ -189,10 +195,28 @@ export async function POST(
 
       intelDelta += earned;
 
-      // Streak bonus
-      intelDelta += calculateStreakIntel(newStreak, INTEL_STREAK_MIN);
+      // Streak bonus (MOMENTUM synergy: double streak intel if SLOW_TIME + STREAK_SAVER owned)
+      let streakIntel = calculateStreakIntel(newStreak, INTEL_STREAK_MIN);
+      if (streakIntel > 0 && hasSynergy(state, 'MOMENTUM')) {
+        streakIntel *= 2;
+      }
+      intelDelta += streakIntel;
     } else {
       intelDelta = INTEL_WRONG;
+    }
+
+    // Streak milestones (only trigger on the exact streak count)
+    if (correct && newStreak === 5) {
+      intelDelta += 5;
+      streakMilestone = { type: 'intel', amount: 5 };
+    } else if (correct && newStreak === 10) {
+      if (newLives < state.maxLives) {
+        newLives += 1;
+        streakMilestone = { type: 'life', amount: 1 };
+      } else {
+        intelDelta += 10;
+        streakMilestone = { type: 'intel', amount: 10 };
+      }
     }
 
     // ── Handle wager (Fix 6: validate against allowed values) ──
@@ -202,7 +226,7 @@ export async function POST(
     }
 
     // ── Update intel and score ──
-    const newIntel = Math.max(0, state.intel + intelDelta + wagerDelta);
+    const newIntel = Math.max(0, state.intel + intelDelta + wagerDelta + synergyRefund);
     const newScore = state.score + cardScore;
 
     // ── Update card history and card index ──
@@ -274,6 +298,7 @@ export async function POST(
       floorCleared: floorComplete && newStatus === 'active',
       floorsCleared: newFloorsCleared,
       modifiers: assignment?.modifiers ?? [],
+      streakMilestone,
     });
   } catch (err) {
     console.error(`[roguelike/${runId}/answer] Unhandled error:`, err);
