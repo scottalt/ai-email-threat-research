@@ -295,7 +295,7 @@ export const PERK_DEFS: PerkDef[] = [
   {
     id: 'INTEL_CACHE',
     label: 'Intel Cache',
-    description: 'Immediately gain 10 Intel.',
+    description: 'Immediately gain 20 Intel.',
     cost: 10,
     stackable: true,
     maxOwned: 2,
