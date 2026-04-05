@@ -209,9 +209,16 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   // Auto-dismiss floor clear after 1.5s
   useEffect(() => {
     if (phase !== 'floor-clear' || !runId) return;
-    const timer = setTimeout(() => loadShop(runId), 1500);
+    const timer = setTimeout(() => {
+      // Final floor — finalize instead of going to shop
+      if (floor + 1 >= totalFloors) {
+        advanceToNextFloor(runId);
+      } else {
+        loadShop(runId);
+      }
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [phase, runId]);
+  }, [phase, runId, floor, totalFloors]);
 
   // ── Compute effective timer duration for current card ──
   const getEffectiveTimerMs = useCallback((): number | null => {
@@ -1129,7 +1136,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   if (phase === 'floor-clear') {
     return (
       <div
-        onClick={() => { if (runId) loadShop(runId); }}
+        onClick={() => { if (runId) { floor + 1 >= totalFloors ? advanceToNextFloor(runId) : loadShop(runId); } }}
         className="flex flex-col items-center justify-center gap-4 p-8 font-mono min-h-[300px] cursor-pointer select-none"
       >
         <div className="anim-floor-intro text-center space-y-3">

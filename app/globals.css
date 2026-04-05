@@ -805,9 +805,9 @@ body {
   animation: timer-shrink var(--timer-duration, 15s) linear forwards;
 }
 
-/* JS-driven timer bar — smooth width + color transitions */
+/* JS-driven timer bar — color transitions only, width driven by RAF */
 .roguelike-timer-bar-js {
-  transition: width 100ms linear, background-color 500ms ease;
+  transition: background-color 500ms ease;
 }
 
 /* Death screen shake — more dramatic for final death */

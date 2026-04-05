@@ -99,7 +99,7 @@ export function RoguelikeCardDisplay({
         {/* Timer progress bar */}
         {timerProgress !== null && (
           <div
-            className="w-full h-1 rounded-full overflow-hidden"
+            className="w-full h-1.5 rounded-full overflow-hidden"
             style={{ background: 'var(--c-dark)' }}
           >
             <div
