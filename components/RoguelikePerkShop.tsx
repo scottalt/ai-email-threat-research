@@ -15,6 +15,7 @@ interface Props {
   sigintLine?: string;
   onBuy: (perkId: PerkId) => Promise<void>;
   onSkip: () => void;
+  onPause?: () => void;
 }
 
 export function RoguelikePerkShop({
@@ -26,6 +27,7 @@ export function RoguelikePerkShop({
   sigintLine,
   onBuy,
   onSkip,
+  onPause,
 }: Props) {
   const { soundEnabled } = useSoundEnabled();
   const [buying, setBuying] = useState<PerkId | null>(null);
@@ -175,6 +177,16 @@ export function RoguelikePerkShop({
       >
         {purchased ? '[ NEXT FLOOR ]' : '[ SKIP — SAVE INTEL ]'}
       </button>
+
+      {/* Pause mission */}
+      {onPause && (
+        <button
+          onClick={() => { if (soundEnabled) playClick(); onPause(); }}
+          className="text-xs text-[var(--c-muted)] hover:text-[var(--c-secondary)] tracking-widest text-center pt-1 transition-colors"
+        >
+          [ PAUSE MISSION ]
+        </button>
+      )}
     </div>
   );
 }

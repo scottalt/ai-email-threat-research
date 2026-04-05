@@ -62,7 +62,7 @@ interface ResultData {
   xpEarned?: number;
 }
 
-type Phase = 'lobby' | 'loading' | 'floor' | 'feedback' | 'shop' | 'result' | 'floor-intro' | 'wager' | 'upgrades';
+type Phase = 'lobby' | 'loading' | 'floor' | 'feedback' | 'shop' | 'result' | 'floor-intro' | 'wager' | 'upgrades' | 'paused-prompt';
 
 interface Props {
   onBack: () => void;
@@ -124,6 +124,13 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
   const [inspectedFields, setInspectedFields] = useState<Set<string>>(new Set());
   const [freeInspections, setFreeInspections] = useState(0);
   const [floorIntroGimmick, setFloorIntroGimmick] = useState<GimmickId | null>(null);
+
+  // ── Paused run prompt state ──
+  const [pausedRunInfo, setPausedRunInfo] = useState<{
+    runId: string; operationName: string; score: number;
+    floorReached: number; floorsCleared: number; livesRemaining: number;
+  } | null>(null);
+  const [pauseLoading, setPauseLoading] = useState(false);
 
   // ── Timer state ──
   const [timerActive, setTimerActive] = useState(false);
@@ -229,6 +236,13 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         }
         const data = await res.json();
         if (cancelled) return;
+
+        // Server found a paused run — prompt user to resume or abandon
+        if (data.pausedRun) {
+          setPausedRunInfo(data.pausedRun);
+          setPhase('paused-prompt');
+          return;
+        }
 
         setRunId(data.runId);
         setOperationName(data.operationName);
@@ -683,6 +697,91 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     await advanceToNextFloor(runId);
   }
 
+  // ── Pause mission ──
+  async function handlePause() {
+    if (!runId) return;
+    setPauseLoading(true);
+    try {
+      const res = await fetch(`/api/roguelike/${runId}/pause`, { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        showToast(body.error ?? 'Failed to pause');
+        return;
+      }
+      onBack();
+    } catch {
+      showToast('Failed to pause');
+    } finally {
+      setPauseLoading(false);
+    }
+  }
+
+  // ── Resume a paused run ──
+  async function handleResume() {
+    if (!pausedRunInfo) return;
+    setPauseLoading(true);
+    try {
+      const res = await fetch(`/api/roguelike/${pausedRunInfo.runId}/resume`, { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? 'Failed to resume');
+      }
+      const data = await res.json();
+
+      if (data.runComplete) {
+        setRunId(data.runId);
+        setOperationName(data.operationName);
+        const result = await finalizeRun(data.runId);
+        setResultData(result);
+        setPhase('result');
+        return;
+      }
+
+      setRunId(data.runId);
+      setOperationName(data.operationName);
+      setFloor(data.currentFloor);
+      setTotalFloors(data.totalFloors);
+      setLives(data.lives);
+      setLivesMax(data.maxLives);
+      setIntel(data.intel);
+      setScore(data.score);
+      setGimmick(data.gimmick ?? null);
+      setGimmicks((prev) => [...prev, data.gimmick ?? null]);
+      setCards(data.cards ?? []);
+      setAssignments(data.assignments ?? []);
+      setCardIndex(0);
+      setStreak(data.streak ?? 0);
+      setDeaths(data.deaths ?? 0);
+      setPerks(data.perks ?? []);
+      if (data.freeInspections) setFreeInspections(data.freeInspections);
+      if (data.activeUpgrades) setOwnedUpgrades(data.activeUpgrades as UpgradeId[]);
+      renderTimestamp.current = Date.now();
+      setPausedRunInfo(null);
+
+      setFloorIntroGimmick(data.gimmick ?? null);
+      setPhase('floor-intro');
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to resume');
+    } finally {
+      setPauseLoading(false);
+    }
+  }
+
+  // ── Abandon a paused run and start fresh ──
+  async function handleAbandonPaused() {
+    if (!pausedRunInfo) return;
+    setPauseLoading(true);
+    try {
+      await fetch(`/api/roguelike/${pausedRunInfo.runId}`, { method: 'DELETE' });
+      setPausedRunInfo(null);
+      setPhase('loading'); // triggers startRun again
+    } catch {
+      showToast('Failed to abandon run');
+    } finally {
+      setPauseLoading(false);
+    }
+  }
+
   // ── POST next-floor and either start next floor or finalize ──
   async function advanceToNextFloor(id: string) {
     try {
@@ -854,6 +953,58 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
     );
   }
 
+  // ── Render: paused run prompt ──
+  if (phase === 'paused-prompt' && pausedRunInfo) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-5 p-8 font-mono min-h-[360px] anim-fade-in-up">
+        <h2 className="text-lg font-bold tracking-widest" style={{ color: '#ff3333' }}>
+          PAUSED OPERATION
+        </h2>
+        <div className="term-border p-4 space-y-2 text-sm w-full max-w-xs">
+          <div className="text-center font-bold text-[var(--c-primary)] tracking-wider">
+            {pausedRunInfo.operationName}
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[var(--c-muted)]">SCORE</span>
+            <span className="text-[var(--c-secondary)] tabular-nums">{pausedRunInfo.score.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[var(--c-muted)]">FLOOR</span>
+            <span className="text-[var(--c-secondary)] tabular-nums">{pausedRunInfo.floorsCleared} cleared</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[var(--c-muted)]">LIVES</span>
+            <span className="tabular-nums" style={{ color: '#ff3333' }}>
+              {Array.from({ length: pausedRunInfo.livesRemaining }, (_, i) => (
+                <span key={i}>♥</span>
+              ))}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={handleResume}
+          disabled={pauseLoading}
+          className="w-full max-w-xs py-3 px-6 term-border-bright text-sm tracking-widest text-[var(--c-primary)] font-bold active:scale-95 transition-all hover:bg-[color-mix(in_srgb,var(--c-primary)_8%,transparent)]"
+        >
+          {pauseLoading ? 'RESUMING...' : '[ RESUME MISSION ]'}
+        </button>
+        <button
+          onClick={handleAbandonPaused}
+          disabled={pauseLoading}
+          className="w-full max-w-xs py-3 px-6 term-border text-sm tracking-widest text-[var(--c-muted)] hover:text-[#ff3333] active:scale-95 transition-all"
+        >
+          [ ABANDON — START NEW ]
+        </button>
+        <button
+          onClick={onBack}
+          className="text-xs text-[var(--c-muted)] hover:text-[var(--c-secondary)] tracking-widest"
+        >
+          [ BACK ]
+        </button>
+      </div>
+    );
+  }
+
   // ── Render: floor intro ──
   if (phase === 'floor-intro') {
     return (
@@ -918,6 +1069,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
         sigintLine={shopSigintLine}
         onBuy={handleBuyPerk}
         onSkip={handleSkipShop}
+        onPause={handlePause}
       />
     );
   }

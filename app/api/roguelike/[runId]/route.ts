@@ -304,3 +304,48 @@ export async function PATCH(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// DELETE /api/roguelike/[runId] — Abandon a paused run
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ runId: string }> },
+) {
+  const { runId } = await params;
+
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } },
+    );
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const playerId = await getPlayerId(user.id);
+    if (!playerId) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+
+    const admin = getSupabaseAdminClient();
+    const { data: run } = await admin
+      .from('roguelike_runs')
+      .select('id, player_id, status')
+      .eq('id', runId)
+      .single();
+
+    if (!run) return NextResponse.json({ error: 'Run not found' }, { status: 404 });
+    if (run.player_id !== playerId) return NextResponse.json({ error: 'Not your run' }, { status: 403 });
+    if (run.status !== 'paused') return NextResponse.json({ error: 'Run is not paused' }, { status: 409 });
+
+    await admin
+      .from('roguelike_runs')
+      .update({ status: 'abandoned', paused_state: null, ended_at: new Date().toISOString() })
+      .eq('id', runId);
+
+    return NextResponse.json({ abandoned: true });
+  } catch (err) {
+    console.error(`[roguelike/${runId}] Unhandled error in DELETE:`, err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

@@ -327,7 +327,7 @@ export interface RoguelikeRunState {
   floorGimmicks: (GimmickId | null)[];
   startedAt: string;          // ISO timestamp
   completedAt: string | null;
-  status: 'active' | 'dead' | 'completed';
+  status: 'active' | 'dead' | 'completed' | 'paused';
   usedDefensivePerk?: boolean;     // True if SHIELD or STREAK_SAVER was consumed (for glass cannon achievement)
   // Phase 2: permanent upgrades active for this run
   activeUpgrades?: string[];       // UpgradeId[] active for this run

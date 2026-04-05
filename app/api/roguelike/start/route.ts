@@ -57,6 +57,30 @@ export async function POST() {
 
     const playerId: string = player.id;
 
+    // ── Check for paused run — return it so client can offer resume/abandon ──
+    const { data: pausedRun } = await admin
+      .from('roguelike_runs')
+      .select('id, operation_name, score, floor_reached, floors_cleared, lives_remaining, deaths')
+      .eq('player_id', playerId)
+      .eq('status', 'paused')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (pausedRun) {
+      return NextResponse.json({
+        pausedRun: {
+          runId: pausedRun.id,
+          operationName: pausedRun.operation_name,
+          score: pausedRun.score,
+          floorReached: pausedRun.floor_reached,
+          floorsCleared: pausedRun.floors_cleared,
+          livesRemaining: pausedRun.lives_remaining,
+          deaths: pausedRun.deaths,
+        },
+      });
+    }
+
     // ── Rate limit: max 30 run starts per player per hour ──
     const rlKey = `ratelimit:roguelike-start:${playerId}`;
     const startCount = await redis.incr(rlKey);
