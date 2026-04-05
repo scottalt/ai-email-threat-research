@@ -728,15 +728,7 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       }
       const data = await res.json();
 
-      if (data.runComplete) {
-        setRunId(data.runId);
-        setOperationName(data.operationName);
-        const result = await finalizeRun(data.runId);
-        setResultData(result);
-        setPhase('result');
-        return;
-      }
-
+      // Restore run state
       setRunId(data.runId);
       setOperationName(data.operationName);
       setFloor(data.currentFloor);
@@ -745,23 +737,18 @@ export function RoguelikeRun({ onBack, onPlayAgain }: Props) {
       setLivesMax(data.maxLives);
       setIntel(data.intel);
       setScore(data.score);
-      setGimmick(data.gimmick ?? null);
-      setGimmicks((prev) => [...prev, data.gimmick ?? null]);
-      setCards(data.cards ?? []);
-      setAssignments(data.assignments ?? []);
-      setCardIndex(0);
       setStreak(data.streak ?? 0);
       setDeaths(data.deaths ?? 0);
       setPerks(data.perks ?? []);
       if (data.freeInspections) setFreeInspections(data.freeInspections);
       if (data.activeUpgrades) setOwnedUpgrades(data.activeUpgrades as UpgradeId[]);
-      renderTimestamp.current = Date.now();
       setPausedRunInfo(null);
 
-      setFloorIntroGimmick(data.gimmick ?? null);
-      setPhase('floor-intro');
+      // Player paused at the shop — take them back there
+      await loadShop(data.runId);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to resume');
+      setPhase('loading'); // show error with retry
     } finally {
       setPauseLoading(false);
     }
