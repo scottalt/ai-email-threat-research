@@ -216,8 +216,9 @@ function isValidCard(card: unknown, index: number): card is GeneratedCard {
     console.warn(`  Card ${index + 1}: missing 'explanation' — skipped`);
     return false;
   }
-  if ((c.highlights as unknown[]).length !== (c.clues as unknown[]).length) {
-    console.warn(`  Card ${index + 1}: highlights/clues length mismatch (${(c.highlights as unknown[]).length} vs ${(c.clues as unknown[]).length}) — skipped`);
+  // Allow mismatch — highlights and clues serve different purposes
+  if ((c.highlights as unknown[]).length === 0 && (c.clues as unknown[]).length === 0) {
+    console.warn(`  Card ${index + 1}: both highlights and clues empty — skipped`);
     return false;
   }
   return true;
@@ -352,15 +353,16 @@ async function main() {
     rawCards = await generator.generate(systemPrompt, techniqueContext, userMessage);
   } catch (err) {
     console.error('Generation failed:', (err as Error).message);
-    process.exit(1);
+    console.warn('Skipping this batch.');
+    return;
   }
 
   const validCards = rawCards.filter((card, i) => isValidCard(card, i));
   console.log(`Generated: ${rawCards.length} total, ${validCards.length} valid`);
 
   if (validCards.length === 0) {
-    console.error('No valid cards generated.');
-    process.exit(1);
+    console.warn('No valid cards generated — skipping this batch.');
+    return;
   }
 
   if (isDryRun) {

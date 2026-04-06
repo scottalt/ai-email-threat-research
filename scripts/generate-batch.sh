@@ -14,7 +14,7 @@
 # Prerequisites:
 #   ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY in .env.local
 
-set -e
+set +e  # continue on individual batch failures
 
 EXTRA="$@"
 POOL="freeplay"
