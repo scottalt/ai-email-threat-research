@@ -253,32 +253,62 @@ export async function PATCH(
       console.error(`[roguelike/${runId}] Achievement check failed:`, err);
     }
 
-    // ── Award XP for the run ──
+    // ── Award XP for the run (rate-limited, shared budget with other modes) ──
     const XP_PER_CORRECT = 10;
     const XP_WIN_BONUS = 50;
     const XP_FLOOR_BONUS = 20;
+    const MAX_XP_SESSIONS_PER_HOUR = 12;
+    const MAX_XP_SESSIONS_PER_DAY = 30;
 
     const xpEarned = ((state.cardsCorrect ?? 0) * XP_PER_CORRECT)
       + (state.floorsCleared * XP_FLOOR_BONUS)
       + (state.floorsCleared >= state.totalFloors ? XP_WIN_BONUS : 0);
 
     let levelUp = false;
+    let xpRateLimited = false;
+
     if (xpEarned > 0) {
-      const { data: playerRow } = await admin
-        .from('players')
-        .select('xp, level')
-        .eq('id', playerId)
-        .single();
+      // Check rate limits (same keys as /api/player/xp)
+      const nowHour = new Date().toISOString().slice(0, 13);
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const hourlyKey = `ratelimit:xp:${user.id}:h:${nowHour}`;
+      const dailyKey = `ratelimit:xp:${user.id}:d:${todayStr}`;
 
-      if (playerRow) {
-        const newXp = (playerRow.xp ?? 0) + xpEarned;
-        const newLevel = getLevelFromXp(newXp);
-        levelUp = newLevel > (playerRow.level ?? 0);
+      const [hourlyCount, dailyCount] = await Promise.all([
+        redis.get<number>(hourlyKey),
+        redis.get<number>(dailyKey),
+      ]);
 
-        await admin
+      const hCount = hourlyCount ?? 0;
+      const dCount = dailyCount ?? 0;
+
+      if (hCount >= MAX_XP_SESSIONS_PER_HOUR || dCount >= MAX_XP_SESSIONS_PER_DAY) {
+        xpRateLimited = true;
+      } else {
+        const { data: playerXpRow } = await admin
           .from('players')
-          .update({ xp: newXp, level: newLevel, updated_at: new Date().toISOString() })
-          .eq('id', playerId);
+          .select('xp, level')
+          .eq('id', playerId)
+          .single();
+
+        if (playerXpRow) {
+          const newXp = (playerXpRow.xp ?? 0) + xpEarned;
+          const newLevel = getLevelFromXp(newXp);
+          levelUp = newLevel > (playerXpRow.level ?? 0);
+
+          await admin
+            .from('players')
+            .update({ xp: newXp, level: newLevel, updated_at: new Date().toISOString() })
+            .eq('id', playerId);
+        }
+
+        // Increment rate limit counters after successful XP award
+        const [newH, newD] = await Promise.all([
+          redis.incr(hourlyKey),
+          redis.incr(dailyKey),
+        ]);
+        if (newH === 1) await redis.expire(hourlyKey, 3600);
+        if (newD === 1) await redis.expire(dailyKey, 86400);
       }
     }
 
@@ -311,8 +341,9 @@ export async function PATCH(
       status: state.status,
       completedAt,
       newAchievements,
-      xpEarned,
+      xpEarned: xpRateLimited ? 0 : xpEarned,
       levelUp,
+      xpRateLimited,
       techniqueBreakdown,
     });
   } catch (err) {
