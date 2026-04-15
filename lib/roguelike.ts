@@ -19,9 +19,9 @@ export const INTEL_WAGER_OPTIONS = [5, 10, 15] as const;
 export const INVESTIGATION_INSPECT_COST = 8;
 
 // Clearance (balanced: full perfect clear = ~60, realistic run = 15-30, max tree ~15-20 runs)
-export const CLEARANCE_PER_FLOOR = [2, 4, 8, 12, 20] as const;
-export const CLEARANCE_FULL_CLEAR = 10;
-export const CLEARANCE_NO_DEATHS = 5;
+export const CLEARANCE_PER_FLOOR = [2, 3, 5, 7, 10] as const;
+export const CLEARANCE_FULL_CLEAR = 5;
+export const CLEARANCE_NO_DEATHS = 3;
 
 // Score
 export const SCORE_CORRECT_BASE = 100;
