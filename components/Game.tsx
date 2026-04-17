@@ -172,7 +172,6 @@ export function Game({ previewMode = false }: { previewMode?: boolean }) {
     }
 
     if (newMode === 'roguelike') {
-      if (profile?.featureFlags?.deadlock !== true) return;
       setRoguelikeActive(true);
       return;
     }

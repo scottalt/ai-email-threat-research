@@ -471,7 +471,7 @@ export function StartScreen({ onStart, musicEnabled, onToggleMusic: toggleMusic 
   const needsCallsign = signedIn && !profile?.displayName;
 
   const stage: 1 | 2 | 3 | 4 = researchCapped ? 4 : dailyUnlocked ? 3 : graduated ? 2 : 1;
-  const canAccessDeadlock = graduated && profile?.featureFlags?.deadlock === true;
+  const canAccessDeadlock = researchCapped;
   const [questExpanded, setQuestExpanded] = useState(false);
 
   return (

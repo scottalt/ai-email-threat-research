@@ -700,6 +700,7 @@ export const ROGUELIKE_DIALOGUES = {
       "Five floors of escalating threats. Three lives. Perks between floors.",
       "The emails get harder. The modifiers stack. And if you run out of lives...",
       "...you start from scratch.",
+      "One thing — DEADLOCK is still in beta. Rough edges are possible. If something breaks, report it.",
       "Good luck in there. I'll be on comms.",
     ],
     buttonText: "BEGIN OPERATION",

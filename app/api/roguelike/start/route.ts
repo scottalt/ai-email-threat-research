@@ -36,23 +36,17 @@ export async function POST() {
     const admin = getSupabaseAdminClient();
 
     // ── Look up player (must be research_graduated) ──
-    const [{ data: player, error: playerError }, { data: globalSettings }] = await Promise.all([
-      admin.from('players').select('id, research_graduated, feature_flags').eq('auth_id', user.id).single(),
-      admin.from('app_settings').select('value').eq('key', 'feature_flags').maybeSingle(),
-    ]);
+    const { data: player, error: playerError } = await admin
+      .from('players')
+      .select('id, research_graduated')
+      .eq('auth_id', user.id)
+      .single();
 
     if (playerError || !player) {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
     if (!player.research_graduated) {
       return NextResponse.json({ error: 'Must complete research graduation to play Roguelike mode' }, { status: 403 });
-    }
-
-    // Feature flag gate (override mode: global true OR per-player true)
-    const globalFlags = (globalSettings?.value as Record<string, boolean>) ?? {};
-    const playerFlags = (player.feature_flags as Record<string, boolean>) ?? {};
-    if (globalFlags.deadlock !== true && playerFlags.deadlock !== true) {
-      return NextResponse.json({ error: 'DEADLOCK mode is not yet available' }, { status: 403 });
     }
 
     const playerId: string = player.id;
