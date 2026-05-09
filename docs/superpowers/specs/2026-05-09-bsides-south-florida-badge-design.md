@@ -25,7 +25,7 @@ To be added to `lib/achievements.ts` under the existing "Promo Exclusive" or "Ad
   description: "Heard the architect explain the system, in person. Boca Raton sector, May 2026. The briefing came before the deployment.",
   category: 'season',
   rarity: 'mythic',
-  icon: '⟐',
+  icon: '⎇',
 }
 ```
 
@@ -36,7 +36,7 @@ Field rationale:
 - **description**: Lore-tied flavor. The phrase "the briefing came before the deployment" only fully lands for an attendee who is now playing the game. No em dashes per user preference.
 - **category**: `'season'` matches the existing precedent for promo and admin-granted badges (`THOUGHT_LEADER`, `ARCHITECT`, `HANDLER_APPROVED` all use `'season'`).
 - **rarity**: `'mythic'`. Reasoning: `unique` is reserved for one-of-one badges (`ARCHITECT`); `secret` implies the player discovered the badge through hidden play; `mythic` is the established tier for "rare prestige granted to a defined cohort" (per `FOUNDER`, `THOUGHT_LEADER`). Renders gold (`#ffd700`) per `RARITY_COLORS`.
-- **icon**: `⟐` (white concave-sided diamond with leftwards tick). Matches the geometric, terminal-friendly Unicode glyph style used elsewhere in the registry. Visually distinct from existing icons.
+- **icon**: `⎇` (Unicode alternate-key glyph). Conceptually nods to the "alternative track" / "B-side" meaning of the event format without using the trademarked name. Originally proposed `⟐` but that collides with `beta_tester`'s icon.
 - **season**: Omitted. The badge is not tied to a game season.
 
 ## Placement in registry
@@ -45,7 +45,7 @@ In `lib/achievements.ts`, add a new section header just below the existing `// �
 
 ```ts
 // ── Event Exclusive (manually granted only) ──
-{ id: 'briefed_by_architect', name: 'BRIEFED_BY_ARCHITECT', description: "Heard the architect explain the system, in person. Boca Raton sector, May 2026. The briefing came before the deployment.", category: 'season', rarity: 'mythic', icon: '⟐' },
+{ id: 'briefed_by_architect', name: 'BRIEFED_BY_ARCHITECT', description: "Heard the architect explain the system, in person. Boca Raton sector, May 2026. The briefing came before the deployment.", category: 'season', rarity: 'mythic', icon: '⎇' },
 ```
 
 Reasoning for a new section rather than merging into Admin Exclusive: future event badges (other talks, conferences, partner promotions) will accumulate here. Giving real-world-event badges their own group keeps the registry navigable as it grows.
