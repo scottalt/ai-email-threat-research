@@ -91,7 +91,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'handler_approved', name: 'HANDLER_APPROVED', description: 'Personally vetted by SIGINT. Not everyone gets a name in the handler\'s file.', category: 'season', rarity: 'unique', icon: '☑' },
 
   // ── Event Exclusive (manually granted only) ──
-  { id: 'briefed_by_architect', name: 'BRIEFED_BY_ARCHITECT', description: "Heard the architect explain the system, in person. Boca Raton sector, May 2026. The briefing came before the deployment.", category: 'season', rarity: 'mythic', icon: '⎇' },
+  { id: 'briefed_by_architect', name: 'BRIEFED_BY_ARCHITECT', description: "Heard the architect explain the system, in person. Boca Raton sector, May 2026. The briefing came before the deployment.", category: 'season', rarity: 'mythic', icon: '🌴' },
 ];
 
 export const ACHIEVEMENT_MAP = new Map(ACHIEVEMENTS.map(a => [a.id, a]));
