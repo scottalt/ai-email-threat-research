@@ -90,8 +90,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'beta_tester', name: 'BETA_TESTER', description: 'Broke things so others didn\'t have to. Tested before the terminal was ready. Early access operator.', category: 'season', rarity: 'secret', icon: '⟐' },
   { id: 'handler_approved', name: 'HANDLER_APPROVED', description: 'Personally vetted by SIGINT. Not everyone gets a name in the handler\'s file.', category: 'season', rarity: 'unique', icon: '☑' },
 
-  // ── Event Exclusive (manually granted only) ──
+  // ── Event Exclusive ──
   { id: 'briefed_by_architect', name: 'BRIEFED_BY_ARCHITECT', description: "Heard the architect explain the system, in person. Boca Raton sector, May 2026. The briefing came before the deployment.", category: 'season', rarity: 'mythic', icon: '🌴' },
+  { id: 'threat_brief_attendee', name: 'THREAT_BRIEF_ATTENDEE', description: "Attended a field briefing in the South Florida sector, 2026. Some signals only travel through conference rooms.", category: 'season', rarity: 'mythic', icon: '📋' },
 ];
 
 export const ACHIEVEMENT_MAP = new Map(ACHIEVEMENTS.map(a => [a.id, a]));
