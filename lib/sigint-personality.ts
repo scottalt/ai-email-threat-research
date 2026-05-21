@@ -688,6 +688,25 @@ export const PROMO_DIALOGUES = {
     ],
     buttonText: "WORTH A SHOT",
   } as SigintDialogue,
+
+  briefing_success: {
+    lines: [
+      "Code accepted. Briefing logged.",
+      "South Florida sector. Industry channel.",
+      "You sat through one of these in person. I'm impressed. Or concerned. Depends on the speaker.",
+      "Wear it in PvP. Other operatives will know you do this on purpose.",
+    ],
+    buttonText: "AGREED",
+  } as SigintDialogue,
+
+  briefing_already: {
+    lines: [
+      "You already redeemed this one. I keep the receipts.",
+      "You only sat in the briefing once. Same code, same rule.",
+      "Check your badges. The clipboard is already on your shelf.",
+    ],
+    buttonText: "FAIR",
+  } as SigintDialogue,
 };
 
 // ── Roguelike mode dialogues ──
