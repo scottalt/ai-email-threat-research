@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    return NextResponse.json({ error: 'ALREADY_REDEEMED', message: 'You already redeemed this code.' }, { status: 409 });
+    return NextResponse.json({ error: 'ALREADY_REDEEMED', message: 'You already redeemed this code.', badgeId: promo.badge_id }, { status: 409 });
   }
 
   // Atomically increment uses via SQL (prevents race where concurrent requests read same value)
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
 
   if (redemptionErr) {
     console.error(`[promo] Redemption insert failed for player ${player.id}:`, redemptionErr.message);
-    return NextResponse.json({ error: 'ALREADY_REDEEMED', message: 'You already redeemed this code.' }, { status: 409 });
+    return NextResponse.json({ error: 'ALREADY_REDEEMED', message: 'You already redeemed this code.', badgeId: promo.badge_id }, { status: 409 });
   }
 
   // Award the badge
