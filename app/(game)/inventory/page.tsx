@@ -411,11 +411,19 @@ function CodesTab({ refreshProfile }: { refreshProfile: () => Promise<void> }) {
 
       if (res.ok) {
         setUnlockedBadgeId(data.badgeId);
-        setResultDialogue(PROMO_DIALOGUES.code_success);
+        setResultDialogue(
+          data.badgeId === 'threat_brief_attendee'
+            ? PROMO_DIALOGUES.briefing_success
+            : PROMO_DIALOGUES.code_success,
+        );
         refreshProfile();
         setCode('');
       } else if (data.error === 'ALREADY_REDEEMED') {
-        setResultDialogue(PROMO_DIALOGUES.code_already);
+        setResultDialogue(
+          data.badgeId === 'threat_brief_attendee'
+            ? PROMO_DIALOGUES.briefing_already
+            : PROMO_DIALOGUES.code_already,
+        );
       } else if (data.error === 'EXHAUSTED' || data.error === 'EXPIRED') {
         setResultDialogue(data.error === 'EXPIRED' ? PROMO_DIALOGUES.code_expired : PROMO_DIALOGUES.code_exhausted);
       } else if (res.status === 429) {
