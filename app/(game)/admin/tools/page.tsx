@@ -133,6 +133,15 @@ export default function AdminTools() {
               </Link>
             ))}
           </div>
+          <div className="text-[var(--c-muted)] text-xs font-mono mb-1 mt-3">FLAGS (RESEARCH)</div>
+          <div className="flex gap-2">
+            <a
+              href="/api/admin/export-flags"
+              className="flex-1 py-2 term-border text-[#ff3333] font-mono text-xs tracking-widest text-center hover:text-[var(--c-primary)] transition-all"
+            >
+              [ CSV ]
+            </a>
+          </div>
         </div>
       </div>
 
